@@ -69,3 +69,6 @@ if(BUILD_TEST_CLIENT)
    target_link_libraries(testclient  simple-websocket-server)
    target_include_directories(testclient PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/jsoncons)
 endif(BUILD_TEST_CLIENT)
+
+install( TARGETS ${PROJECT_NAME} DESTINATION /usr/bin/w3c-visserver)
+
