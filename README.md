@@ -57,3 +57,13 @@ Enter the same vss path as above and fuction as get. You should receive the prev
 | Secure WebSocket  | :heavy_check_mark: |   
 | Authentification  | :heavy_multiplication_x: |
 
+## Running on AGL on Raspberry Pi 3
+
+* Create an AGL image using the instructions in `agl-kuksa` project.
+* Burn the image on to an SD card and boot the image on a Raspi 3.
+* ssh into the raspi 3 with root.
+* create self-signed cerificates using steps mentioned [here] (https://kb.op5.com/pages/viewpage.action?pageId=19073746#sthash.GHsaFkZe.dpbs) and rename the files to Server.key, Server.pem. Make sure you use the same CA while creating Client certificates that connect to the w3c-visserver.
+* Then copy the Server.key and Server.pem to /usr/bin/w3c-visserver-api using a ssh connection.
+* Copy the vss data files https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.csv and https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.json into /usr/bin/
+* Launch the app. Using command `./usr/bin/w3c-visserver-api/w3c-visserver`
+
