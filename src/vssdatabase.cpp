@@ -20,10 +20,10 @@ vssdatabase::vssdatabase(class subscriptionhandler* subHandle) {
 }
 
 void vssdatabase::initJsonTree() {
-
-    std::ifstream is("vss_rel_1.0.json");
+    string fileName = "vss_rel_1.0.json";
+    std::ifstream is(fileName);
     is >> vss_tree;
-    cout << "VSS tree initialized using JSON file" << endl;
+    cout << "VSS tree initialized using JSON file = " << fileName << endl;
     is.close();
 	
 }
