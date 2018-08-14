@@ -12,11 +12,9 @@
  * *****************************************************************************
  */
 
-#include "vss.hpp"
 #include <string>
 #include <stdint.h>
 using namespace std;
 
 
-string serializeSignal(signal sig,uint32_t request_id);
 

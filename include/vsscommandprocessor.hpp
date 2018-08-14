@@ -15,10 +15,27 @@
 #define __VSSCOMMANDPROCESSOR_H__
 
 #include <string>
+#include "wschannel.hpp"
+#include "vssdatabase.hpp"
+#include "subscriptionhandler.hpp"
 using namespace std;
 
+class vsscommandprocessor {
 
-string processQuery(string req_json , uint32_t connectionID);
-void removeAllSubscriptions (UInt32 clientID);
+private:
+   class  vssdatabase* database = NULL;
+   class  subscriptionhandler* subHandler = NULL;
+
+   string processGet(uint32_t request_id, string path);
+   string processSet(uint32_t request_id, string path, string value);
+   string processSubscribe(uint32_t request_id, string path, uint32_t connectionID);
+   string processUnsubscribe(uint32_t request_id, uint32_t subscribeID);
+   string processGetMetaData(int32_t request_id, string path); 
+
+public:
+   vsscommandprocessor(class vssdatabase* database, class subscriptionhandler* subhandler);
+   string processQuery(string req_json ,class wschannel channel);
+};
+
 
 #endif

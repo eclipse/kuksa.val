@@ -13,15 +13,13 @@
  */
 #include <stdexcept>
 #include "vssdatabase.hpp"
-#include "vss.hpp"
 #include "visconf.hpp"
 
-using jsoncons::json;
-extern UInt32 subscribeHandle[MAX_SIGNALS][MAX_CLIENTS];
-void (*jSubCallBack)(string, uint32_t);
-json vss_tree;
+vssdatabase::vssdatabase(class subscriptionhandler* subHandle) {
+   subHandler = subHandle;
+}
 
-void initJsonTree() {
+void vssdatabase::initJsonTree() {
 
     std::ifstream is("vss_rel_1.0.json");
     is >> vss_tree;
@@ -45,7 +43,7 @@ vector<string> getPathTokens(string path) {
 }
 
 
-string getVSSSpecificPath (string path, bool &isBranch) {
+string vssdatabase::getVSSSpecificPath (string path, bool &isBranch) {
 
     vector<string> tokens = getPathTokens(path);
     int tokLength = tokens.size();
@@ -112,7 +110,7 @@ vector<string> getVSSTokens(string path) {
 }
 
 
-json getMetaData(string path) {
+json vssdatabase::getMetaData(string path) {
   
 	cout <<"Meta Data Path =" << path << endl;
 
@@ -189,7 +187,7 @@ json getMetaData(string path) {
        return result;
 }
 
-int setSignal(string path, void* value) {
+int vssdatabase::setSignal(string path, string value) {
 
     bool isBranch = false;
     string jPath = getVSSSpecificPath(path, isBranch);
@@ -211,25 +209,28 @@ int setSignal(string path, void* value) {
           string value_type = resJson["type"].as<string>();
 
 	  if( value_type == "UInt8") {
-	     resJson.insert_or_assign("value", *((UInt8*)value));
+	     resJson.insert_or_assign("value", stoi(value));
 	  }else if (value_type == "UInt16") {
-	     resJson.insert_or_assign("value", *((UInt16*)value));
+	     resJson.insert_or_assign("value", stoi(value));
 	  }else if (value_type == "UInt32") {
-	     resJson.insert_or_assign("value", *((UInt32*)value));
+	     resJson.insert_or_assign("value", stoi(value));
 	  }else if (value_type == "Int8") {
-	     resJson.insert_or_assign("value", *((Int8*)value));
+	     resJson.insert_or_assign("value", stoi(value));
 	  }else if (value_type == "Int16") {
-	     resJson.insert_or_assign("value", *((Int16*)value));
+	     resJson.insert_or_assign("value", stoi(value));
 	  }else if (value_type == "Int32") {
-	     resJson.insert_or_assign("value", *((Int32*)value));
+	     resJson.insert_or_assign("value", stoi(value));
 	  }else if (value_type == "Float") {
-	    resJson.insert_or_assign("value", *((Float*)value));
+	    resJson.insert_or_assign("value", stof(value));
 	  }else if (value_type == "Double") {
-	     resJson.insert_or_assign("value", *((Double*)value));
+	     resJson.insert_or_assign("value", stod(value));
 	  }else if (value_type == "Boolean") {
-	     resJson.insert_or_assign("value", *((Boolean*)value));
+             if( value == "true")
+	        resJson.insert_or_assign("value", true);
+             else
+                resJson.insert_or_assign("value", false);
 	  }else if (value_type == "String") {
-	     resJson.insert_or_assign("value", string((char*)value));
+	     resJson.insert_or_assign("value", value);
 	  }else {
 	     cout<< "The value type "<< value_type <<" is not supported"<< endl;
 	     return -2;
@@ -241,21 +242,10 @@ int setSignal(string path, void* value) {
         cout << " new value set at path " << path << endl;
         //-------------------------------------
 
-
         int signalID = resJson["id"].as<int>();
-        for(int i=0 ; i < MAX_CLIENTS; i++) {
-           if( subscribeHandle[signalID][i] != 0) {
-              json answer;
-              answer["action"] = "subscribe";
-              answer["subscriptionId"] = subscribeHandle[signalID][i];
-              answer.insert_or_assign("value", resJson["value"].as<string>());
-              answer["timestamp"] = time(NULL);
-              stringstream ss;
-              ss << pretty_print(answer);
-              jSubCallBack(ss.str(), subscribeHandle[signalID][i]);
-
-           }
-         }
+        // TODO- check if possible without converting to string.
+        string value = resJson["value"].as<string>();
+        subHandler->update(signalID, value);
 
       } else {
           cout << "Type key not found for " << jPath << endl;
@@ -269,7 +259,7 @@ int setSignal(string path, void* value) {
     return 0;
 }
 
-json getSignal(string path) {
+json vssdatabase::getSignal(string path) {
     
     bool isBranch = false;
     string jPath = getVSSSpecificPath(path, isBranch);
@@ -296,42 +286,3 @@ json getSignal(string path) {
     }   
     return NULL;
 }
-
-int jAddSubscription (string path , uint32_t subId ) {
-
-    bool isBranch = false;
-    string jPath = getVSSSpecificPath(path, isBranch);
-    int clientID = subId/CLIENT_MASK;
-    if(jPath == "") {
-        return -1;
-    } 
-
-    json resArray = json_query(vss_tree , jPath);
-
-    if(resArray.is_array() && resArray.size() == 1) {
-
-       json result = resArray[0];
-       int sigId = result["id"].as<int>();
-
-       if(subscribeHandle[sigId][clientID] != 0) {
-          cout <<"Updating the previous subscribe ID with a new one"<< endl;
-       }
-       
-       subscribeHandle[sigId][clientID] = subId;
-       return 0;        
-     } else if(resArray.is_array()) {
-       cout <<resArray.size()<<"signals found in path" << path <<". Subscribe works for 1 signal at a time" << endl;
-       return -2;
-     } else {
-       cout <<" some error occured while adding subscription"<<endl;
-       return -3;
-     }
-
-}
-
-void jSetSubscribeCallback(void(*sendMessageToClient)(std::string, uint32_t)){
-     jSubCallBack = sendMessageToClient;
-}
-
-
-

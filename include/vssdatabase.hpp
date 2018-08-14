@@ -16,19 +16,29 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <stdint.h>
 #include <jsoncons/json.hpp>
 #include <jsoncons_ext/jsonpath/json_query.hpp>
+#include "subscriptionhandler.hpp"
 
 using namespace std;
 using namespace jsoncons;
 using namespace jsoncons::jsonpath;
+using jsoncons::json;
 
-void initJsonTree();
-json getMetaData(string path);
-int setSignal(string path, void* value);
-json getSignal(string path);
-int jAddSubscription (string path , uint32_t subId);
-void jSetSubscribeCallback(void(*sendMessageToClient)(std::string, uint32_t));
+class vssdatabase {
 
+friend class subscriptionhandler;
 
+ private:
+  json vss_tree;
+  class subscriptionhandler* subHandler;
+ public:
+  vssdatabase(class subscriptionhandler* subHandle);
+  void initJsonTree();
+  string getVSSSpecificPath (string path, bool &isBranch);
+  json getMetaData(string path);
+  int setSignal(string path, string value);
+  json getSignal(string path);
+};
 #endif
