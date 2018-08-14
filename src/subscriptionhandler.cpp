@@ -1,10 +1,15 @@
 #include "subscriptionhandler.hpp"
 
 
+pthread_mutex_t subMutex;
+
 
 subscriptionhandler::subscriptionhandler(class wsserver* wserver, class authenticator* authenticate) {
    server = wserver;
    validator = authenticate;
+   pthread_mutex_init (&subMutex, NULL);
+   threadRun = true;
+   startThread();
 }
 
 
@@ -70,34 +75,75 @@ int subscriptionhandler::unsubscribeAll ( uint32_t connectionID) {
 int subscriptionhandler::update (int signalID, string value) {
 
   for(int i=0 ; i< MAX_CLIENTS ; i++) {
-     if( subscribeHandle[signalID][i] != 0) {
-        json answer;
-        uint32_t subID = subscribeHandle[signalID][i];
-        answer["action"] = "subscribe";
-        answer["subscriptionId"] = subID;
-        answer.insert_or_assign("value", value);
-        answer["timestamp"] = time(NULL);
-
-        stringstream ss;
-        ss << pretty_print(answer);
-        string message = ss.str();
-
-        uint32_t connectionID = (subID/CLIENT_MASK)*CLIENT_MASK;
-        server->sendToConnection(connectionID , message);
-        //cout << " sending sub message to client "<<endl;
-        
-       /* cout <<"No connection available with conn ID ="<<connectionID<<"Therefore trying to remove the subscription associated with the connection!"<<endl; 
-        int res = removeSubscription (subID);
-         if(res == 0) {
-           cout<<"Removed the sub ID " << subID <<endl;
-         } else {
-           cout << "could not remove the sub ID " << subID <<endl;
-         }*/
+    uint32_t subID = subscribeHandle[signalID][i];
+     if( subID != 0) {
+        pthread_mutex_lock (&subMutex);
+        pair<uint32_t, string> newSub;
+        newSub = std::make_pair (subID,value);
+        buffer.push(newSub);
+        pthread_mutex_unlock (&subMutex);
      }
   }
   return 0;
+}
+
+class wsserver* subscriptionhandler::getServer() {
+    return server;
 }
    
 int subscriptionhandler::update (string path, string value) {
   return 0;
 }
+
+void* subThread(void * instance) {
+    subscriptionhandler* handler = (subscriptionhandler*) instance;
+#ifdef DEBUG
+    cout << "Started Subscription Thread!"<<endl;
+#endif
+    while (handler->threadRun) {
+          
+       pthread_mutex_lock (&subMutex);
+       if(handler->buffer.size() > 0) {
+
+          pair<uint32_t, string> newSub = handler->buffer.front();
+          handler->buffer.pop();
+          pthread_mutex_unlock (&subMutex);
+
+          uint32_t subID = newSub.first;
+          string value = newSub.second;
+
+          json answer;
+          answer["action"] = "subscribe";
+          answer["subscriptionId"] = subID;
+          answer.insert_or_assign("value", value);
+          answer["timestamp"] = time(NULL);
+
+          stringstream ss;
+          ss << pretty_print(answer);
+          string message = ss.str();
+  
+          uint32_t connectionID = (subID/CLIENT_MASK) * CLIENT_MASK;
+          handler->getServer()->sendToConnection(connectionID , message);
+       }
+        usleep(10000);
+     }
+     cout << "Subscription handler thread stopped running"<<endl;
+}
+
+int subscriptionhandler::startThread() {
+
+    pthread_t subscription_thread;
+    if(pthread_create(&subscription_thread, NULL, &subThread, this)) {
+      cout << "Error creating subscription handler thread"<<endl;
+      return 1;
+    }
+}
+
+int subscriptionhandler::stopThread() {  
+   threadRun = false;
+}
+
+
+bool subscriptionhandler::isThreadRunning() {
+   return threadRun; 
+} 
