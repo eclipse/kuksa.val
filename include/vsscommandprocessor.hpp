@@ -18,6 +18,7 @@
 #include "wschannel.hpp"
 #include "vssdatabase.hpp"
 #include "subscriptionhandler.hpp"
+#include "accesschecker.hpp"
 using namespace std;
 
 class vsscommandprocessor {
@@ -25,16 +26,19 @@ class vsscommandprocessor {
 private:
    class  vssdatabase* database = NULL;
    class  subscriptionhandler* subHandler = NULL;
+   class  authenticator* tokenValidator = NULL;
+   class  accesschecker* accessValidator = NULL;
 
    string processGet(uint32_t request_id, string path);
    string processSet(uint32_t request_id, string path, string value);
    string processSubscribe(uint32_t request_id, string path, uint32_t connectionID);
    string processUnsubscribe(uint32_t request_id, uint32_t subscribeID);
-   string processGetMetaData(int32_t request_id, string path); 
+   string processGetMetaData(uint32_t request_id, string path); 
+   string processAuthorize (uint32_t request_id, string token ,class wschannel& channel);
 
 public:
-   vsscommandprocessor(class vssdatabase* database, class subscriptionhandler* subhandler);
-   string processQuery(string req_json ,class wschannel channel);
+   vsscommandprocessor(class vssdatabase* database, class  authenticator* vdator , class subscriptionhandler* subhandler);
+   string processQuery(string req_json , class wschannel& channel);
 };
 
 

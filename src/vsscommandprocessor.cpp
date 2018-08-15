@@ -21,6 +21,7 @@
 #include "server_ws.hpp"
 #include "visconf.hpp"
 
+
 using namespace std;
 
 string malFormedRequestResponse(int32_t request_id, const string action) {
@@ -73,9 +74,11 @@ string pathNotFoundResponse(int32_t request_id, const string action, const strin
 //}
 
 
-vsscommandprocessor::vsscommandprocessor(class vssdatabase* dbase, class subscriptionhandler* subhandler) {
+vsscommandprocessor::vsscommandprocessor(class vssdatabase* dbase, class  authenticator* vdator , class subscriptionhandler* subhandler) {
    database = dbase;
+   tokenValidator = vdator;
    subHandler = subhandler;
+   accessValidator = new accesschecker(); 
 }
 
 
@@ -249,7 +252,7 @@ string vsscommandprocessor::processUnsubscribe(uint32_t request_id, uint32_t sub
 
 }
 
-string vsscommandprocessor::processGetMetaData(int32_t request_id, string path) {
+string vsscommandprocessor::processGetMetaData(uint32_t request_id, string path) {
 	json st = database->getMetaData(path);
 	
 	json result;
@@ -264,60 +267,101 @@ string vsscommandprocessor::processGetMetaData(int32_t request_id, string path) 
 	return ss.str(); 
 }
 
+string vsscommandprocessor::processAuthorize (uint32_t request_id, string token ,class wschannel& channel) {
 
-string vsscommandprocessor::processQuery(string req_json , wschannel channel) {
+
+        int ttl = tokenValidator->validate(channel, token);
+
+        if( ttl == -1) {
+           json result;
+	   result["action"] ="authorize";
+           result["requestId"] = request_id; 
+           result["error"]= "Invalid Token";
+	   result["timestamp"]= time(NULL);
+	
+	   std::stringstream ss;
+   	   ss << pretty_print(result);
+	   return ss.str();
+
+        } else {
+
+           json result;
+	   result["action"] ="authorize";
+           result["requestId"] = request_id; 
+           result["TTL"]= ttl;
+	   result["timestamp"]= time(NULL);
+	
+	   std::stringstream ss;
+   	   ss << pretty_print(result);
+	   return ss.str();
+        } 
+
+}
+
+
+string vsscommandprocessor::processQuery(string req_json , class wschannel& channel) {
 
 	json root;
-
         string response;
-
         root = json::parse(req_json);
-	
 	string action = root["action"].as<string>();
 	
-	if (action == "get")  {
-		string path = root["path"].as<string>();
-		uint32_t request_id = root["requestId"].as<int>();
+        if ( action == "authorize") {
+                string token = root["tokens"].as<string>();
+                uint32_t request_id = root["requestId"].as<int>();
 #ifdef DEBUG
-		cout << "get query  for " << path << " with request id " <<  request_id << endl;
+		cout << "authorize query with token = " << token << " with request id " <<  request_id << endl;
 #endif
-                response = processGet(request_id, path);
-	} else if(action == "set")  {
-		string path = root["path"].as<string>();
-		uint32_t request_id = root["requestId"].as<int>();
-		string value = root["value"].as<string>();
+                response = processAuthorize (request_id, token , channel); 
+        } else if(action == "unsubscribe")  {
+		   uint32_t request_id = root["requestId"].as<int>();
+                   uint32_t subscribeID = root["subscriptionId"].as<int>();
 #ifdef DEBUG
-		cout << "set query  for " << path << " with request id " <<  request_id  << "value " << value << endl;
+		   cout << "unsubscribe query  for sub ID = " << subscribeID << " with request id " <<  request_id << endl;
 #endif
-		response = processSet(request_id, path , value);
-       	} else if(action == "subscribe")  {
-		string path = root["path"].as<string>();
-		uint32_t request_id = root["requestId"].as<int>();
+		   response = processUnsubscribe(request_id, subscribeID);
+       	} else {
+                string path = root["path"].as<string>();
+                uint32_t request_id = root["requestId"].as<int>();
+                bool hasAccess = accessValidator->checkAccess(channel , path);
+                
+                if (!hasAccess) {
+                    json result;
+	   	    result["action"] =action;
+           	    result["requestId"] = request_id; 
+           	    result["error"]= "Not Authorized. You need to authorize with a valid token!";
+	   	    result["timestamp"]= time(NULL);
+	
+	            std::stringstream ss;
+   	            ss << pretty_print(result);
+	            return ss.str();
+
+                }
+                if (action == "get")  { 
 #ifdef DEBUG
-		cout << "subscribe query  for " << path << " with request id " <<  request_id << endl;
+		   cout << "get query  for " << path << " with request id " <<  request_id << endl;
 #endif
-		response = processSubscribe(request_id, path , channel.getConnID());
-       	} else if(action == "unsubscribe")  {
-		uint32_t request_id = root["requestId"].as<int>();
-                uint32_t subscribeID = root["subscriptionId"].as<int>();
+                   response = processGet(request_id, path);
+	        } else if(action == "set")  {
+		   string value = root["value"].as<string>();
 #ifdef DEBUG
-		cout << "unsubscribe query  for sub ID = " << subscribeID << " with request id " <<  request_id << endl;
+		   cout << "set query  for " << path << " with request id " <<  request_id  << "value " << value << endl;
 #endif
-		response = processUnsubscribe(request_id, subscribeID);
-       	}else if (action == "getMetadata") {
-		/*string resp = checkRequest(action,root);
-		if (resp != "") {
-			return resp;
-		}*/
-		uint32_t request_id = root["requestId"].as<int>();
-		string path = root["path"].as<string>();
+		   response = processSet(request_id, path , value);
+       	        } else if(action == "subscribe")  {
 #ifdef DEBUG
-		cout << "metadata query  for " << path << " with request id " <<  request_id << endl;
+		   cout << "subscribe query  for " << path << " with request id " <<  request_id << endl;
 #endif
-		response = processGetMetaData(request_id,path);
-	}  else {
-		cout << "Unknown action " << action << endl;
-	}
+		   response = processSubscribe(request_id, path , channel.getConnID());
+       	        }  else if (action == "getMetadata") {
+#ifdef DEBUG
+		   cout << "metadata query  for " << path << " with request id " <<  request_id << endl;
+#endif
+		   response = processGetMetaData(request_id,path);
+	        }  else {
+		   cout << "Unknown action " << action << endl;
+	        }
+        }
 
    return response;
 

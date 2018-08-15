@@ -113,7 +113,7 @@ void* subThread(void * instance) {
 #ifdef DEBUG
     cout << "Started Subscription Thread!"<<endl;
 #endif
-    while (handler->threadRun) {
+    while (handler->isThreadRunning()) {
           
        pthread_mutex_lock (&subMutex);
        if(handler->buffer.size() > 0) {

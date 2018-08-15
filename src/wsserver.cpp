@@ -46,10 +46,10 @@ wsserver::wsserver(int port, bool secure) {
      insecureServer->config.port = port;
   }
   
-  validator =  new authenticator();
-  subHandler = new subscriptionhandler(this, validator);
+  tokenValidator =  new authenticator("appstacle", "HS256");
+  subHandler = new subscriptionhandler(this, tokenValidator);
   database = new vssdatabase(subHandler);
-  cmdProcessor = new vsscommandprocessor(database, subHandler);
+  cmdProcessor = new vsscommandprocessor(database, tokenValidator, subHandler);
   wserver = this;
 }
 

@@ -11,26 +11,9 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#ifndef __AUTHENTICATOR_H__
-#define __AUTHENTICATOR_H__
 
-#include <stdio.h>
-#include <jwt-cpp/jwt.h>
-#include "wschannel.hpp"
+#include"accesschecker.hpp"
 
-using namespace std;
-
-
-class authenticator {
-
-private:
-    string key = "secret";
-    string algorithm = "HS256";
-
-public:
-   authenticator(string secretkey, string algorithm);
-   int validate (wschannel &channel , string authToken);
-   bool isStillValid (wschannel &channel);
-
-};
-#endif
+bool accesschecker::checkAccess(class wschannel& channel , string path) {
+   return channel.isAuthorized();
+} 

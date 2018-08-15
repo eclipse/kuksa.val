@@ -38,7 +38,7 @@ class wsserver {
     
     class vsscommandprocessor* cmdProcessor;
     class subscriptionhandler* subHandler;
-    class authenticator* validator;
+    class authenticator* tokenValidator;
     class vssdatabase* database;
 
     wsserver(int port, bool secure);
