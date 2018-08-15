@@ -201,7 +201,7 @@ void* startWSServer(void * arg) {
 int main(int argc, char* argv[])
 {
  
-        wsserver server(PORT, false);
+        wsserver server(PORT, true);
         server.database->initJsonTree();
         pthread_t startWSServer_thread;
         
