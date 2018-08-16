@@ -50,16 +50,16 @@ uint32_t subscriptionhandler::subscribe (class vssdatabase* db, uint32_t channel
        int sigID = result["id"].as<int>();
 #ifdef DEBUG
        if(subscribeHandle[sigID][clientID] != 0) {
-          cout <<"Updating the previous subscribe ID with a new one"<< endl;
+          cout <<"subscriptionhandler::subscribe: Updating the previous subscribe ID with a new one"<< endl;
        }
 #endif
        subscribeHandle[sigID][clientID] = subId;
        return subId;        
      } else if(resArray.is_array()) {
-       cout <<resArray.size()<<"signals found in path" << path <<". Subscribe works for 1 signal at a time" << endl;
+       cout <<resArray.size()<<"subscriptionhandler::subscribe :signals found in path" << path <<". Subscribe works for 1 signal at a time" << endl;
        return -2;
      } else {
-       cout <<" some error occured while adding subscription"<<endl;
+       cout <<"subscriptionhandler::subscribe: some error occured while adding subscription"<<endl;
        return -3;
      }
 }
@@ -80,7 +80,7 @@ int subscriptionhandler::unsubscribeAll ( uint32_t connectionID) {
           subscribeHandle[i][connectionID] = 0;
    }
 #ifdef DEBUG 
-   cout <<"Removed all subscriptions for client with ID ="<< connectionID*CLIENT_MASK << endl;
+   cout <<"subscriptionhandler::unsubscribeAll: Removed all subscriptions for client with ID ="<< connectionID*CLIENT_MASK << endl;
 #endif
    return 0;
 }
@@ -111,7 +111,7 @@ int subscriptionhandler::update (string path, string value) {
 void* subThread(void * instance) {
     subscriptionhandler* handler = (subscriptionhandler*) instance;
 #ifdef DEBUG
-    cout << "Started Subscription Thread!"<<endl;
+    cout << "SubscribeThread: Started Subscription Thread!"<<endl;
 #endif
     while (handler->isThreadRunning()) {
           
@@ -140,14 +140,14 @@ void* subThread(void * instance) {
        }
         usleep(10000);
      }
-     cout << "Subscription handler thread stopped running"<<endl;
+     cout << "SubscribeThread: Subscription handler thread stopped running"<<endl;
 }
 
 int subscriptionhandler::startThread() {
 
     pthread_t subscription_thread;
     if(pthread_create(&subscription_thread, NULL, &subThread, this)) {
-      cout << "Error creating subscription handler thread"<<endl;
+      cout << "subscriptionhandler::startThread: Error creating subscription handler thread"<<endl;
       return 1;
     }
 }

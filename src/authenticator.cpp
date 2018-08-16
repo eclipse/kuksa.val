@@ -54,7 +54,7 @@ int authenticator::validate (wschannel &channel , string authToken) {
   try {
       verifier.verify(decoded);
   } catch (const std::runtime_error& e) {
-      cout << " "<< e.what() << " Exception occured while authentification. Token is not valid!"<<endl;
+      cout << "authenticator::validate: "<< e.what() << " Exception occured while authentification. Token is not valid!"<<endl;
       return -1; 
   }
 

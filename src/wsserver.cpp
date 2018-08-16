@@ -61,7 +61,7 @@ wsserver::~wsserver() {
 
 static void onMessage (shared_ptr<WssServer::Connection> connection, string message) {
   #ifdef DEBUG
-      cout << "Server: Message received: \"" << message << "\" from " << connection->remote_endpoint_address() << endl;
+      cout << "main::onMessage: Message received: \"" << message << "\" from " << connection->remote_endpoint_address() << endl;
   #endif
       string response = wserver->cmdProcessor->processQuery(message, connection->channel);
      
@@ -73,7 +73,7 @@ static void onMessage (shared_ptr<WssServer::Connection> connection, string mess
 
 static void onMessage (shared_ptr<WsServer::Connection> connection, string message) {
   #ifdef DEBUG
-      cout << "Server: Message received: \"" << message << "\" from " << connection->remote_endpoint_address() << endl;
+      cout << "main::onMessage: Message received: \"" << message << "\" from " << connection->remote_endpoint_address() << endl;
   #endif
       string response = wserver->cmdProcessor->processQuery(message, connection->channel);
      
@@ -84,9 +84,7 @@ static void onMessage (shared_ptr<WsServer::Connection> connection, string messa
 
 
 void wsserver::startServer(string endpointName) {
-   if( isSecure ) {
-   cout<<"starting secure WS server"<<endl;
-           
+   if( isSecure ) {        
     auto &vssEndpoint = secureServer->endpoint["^/vss/?$"];
 
    vssEndpoint.on_message = [](shared_ptr<WssServer::Connection> connection, shared_ptr<WssServer::Message> message) {
@@ -97,7 +95,7 @@ void wsserver::startServer(string endpointName) {
 
    vssEndpoint.on_open = [](shared_ptr<WssServer::Connection> connection) {
        connection->channel.setConnID(generateConnID());
-       cout << "Server: Opened connection " << connection->remote_endpoint_address()<< "conn ID " << connection->channel.getConnID() << endl;
+       cout << "wsserver: Opened connection " << connection->remote_endpoint_address()<< "conn ID " << connection->channel.getConnID() << endl;
     };
 
    // See RFC 6455 7.4.1. for status codes
@@ -105,7 +103,7 @@ void wsserver::startServer(string endpointName) {
         uint32_t clientID = connection->channel.getConnID()/CLIENT_MASK;
         connections[clientID] = 0;
         //removeAllSubscriptions(clientID);
-        cout << "Server: Closed connection " << connection->remote_endpoint_address() << " with status code " << status << endl;
+        cout << "wsserver: Closed connection " << connection->remote_endpoint_address() << " with status code " << status << endl;
     };
 
    // See http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/reference.html, Error Codes for error code meanings
@@ -113,17 +111,14 @@ void wsserver::startServer(string endpointName) {
         uint32_t clientID = connection->channel.getConnID()/CLIENT_MASK;
         connections[clientID] = 0;
         //removeAllSubscriptions(clientID);
-        cout << "Server: Error in connection " << connection->remote_endpoint_address()<<" with con ID "<< connection->channel.getConnID()<< ". "
+        cout << "wsserver: Error in connection " << connection->remote_endpoint_address()<<" with con ID "<< connection->channel.getConnID()<< ". "
          << "Error: " << ec << ", error message: " << ec.message() << endl;
     };
 
       cout << "started Secure WS server" << endl; 
       secureServer->start();
    } else {
-
-     cout<<"starting insecure WS server"<<endl;
-  
-           
+       
    auto &vssEndpoint = insecureServer->endpoint["^/vss/?$"];
 
    vssEndpoint.on_message = [](shared_ptr<WsServer::Connection> connection, shared_ptr<WsServer::Message> message) {
@@ -134,7 +129,9 @@ void wsserver::startServer(string endpointName) {
 
    vssEndpoint.on_open = [](shared_ptr<WsServer::Connection> connection) {
        connection->channel.setConnID(generateConnID());
-       cout << "Server: Opened connection " << connection->remote_endpoint_address()<< "conn ID " << connection->channel.getConnID() << endl;
+#ifdef DEBUG
+       cout << "wsserver: Opened connection " << connection->remote_endpoint_address()<< "conn ID " << connection->channel.getConnID() << endl;
+#endif
     };
 
    // See RFC 6455 7.4.1. for status codes
@@ -142,7 +139,7 @@ void wsserver::startServer(string endpointName) {
         uint32_t clientID = connection->channel.getConnID()/CLIENT_MASK;
         connections[clientID] = 0;
         //removeAllSubscriptions(clientID);
-        cout << "Server: Closed connection " << connection->remote_endpoint_address() << " with status code " << status << endl;
+        cout << "wsserver: Closed connection " << connection->remote_endpoint_address() << " with status code " << status << endl;
     };
 
    // See http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/reference.html, Error Codes for error code meanings
@@ -150,11 +147,11 @@ void wsserver::startServer(string endpointName) {
         uint32_t clientID = connection->channel.getConnID()/CLIENT_MASK;
         connections[clientID] = 0;
         //removeAllSubscriptions(clientID);
-        cout << "Server: Error in connection " << connection->remote_endpoint_address()<<" with con ID "<< connection->channel.getConnID()<< ". "
+        cout << "wsserver: Error in connection " << connection->remote_endpoint_address()<<" with con ID "<< connection->channel.getConnID()<< ". "
          << "Error: " << ec << ", error message: " << ec.message() << endl;
     };
 
-      cout << "started insecure WS server" << endl; 
+      cout << "started Insecure WS server" << endl; 
       insecureServer->start();
 
    
@@ -208,7 +205,7 @@ int main(int argc, char* argv[])
         
         /* create the web socket server thread. */
         if(pthread_create(&startWSServer_thread, NULL, &startWSServer, NULL )) {
-         cout << "Error creating websocket server run thread"<<endl;
+         cout << "main: Error creating websocket server run thread"<<endl;
          return 1;
 
         }

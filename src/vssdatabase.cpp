@@ -23,7 +23,9 @@ void vssdatabase::initJsonTree() {
     string fileName = "vss_rel_1.0.json";
     std::ifstream is(fileName);
     is >> vss_tree;
-    cout << "VSS tree initialized using JSON file = " << fileName << endl;
+#ifdef DEBUG
+    cout << "vssdatabase::vssdatabase : VSS tree initialized using JSON file = " << fileName << endl;
+#endif
     is.close();
 	
 }
@@ -68,12 +70,12 @@ string vssdatabase::getVSSSpecificPath (string path, bool &isBranch) {
              isBranch = false;
              break;
          } else {
-             cout << "Path is invalid !!" << endl;
+             cout << "vssdatabase::getVSSSpecificPath : Path is invalid !!" << endl;
              return ""; 
          }
 
       } catch (...) {
-         cout << "Exception occured while querying JSON. Check Path!"<<endl;
+         cout << "vssdatabase::getVSSSpecificPath :Exception occured while querying JSON. Check Path!"<<endl;
          return ""; 
       }
     }
@@ -111,24 +113,19 @@ vector<string> getVSSTokens(string path) {
 
 
 json vssdatabase::getMetaData(string path) {
-  
-	cout <<"Meta Data Path =" << path << endl;
 
 	string format_path = "$";
-
         bool isBranch = false;
-
         string jPath = getVSSSpecificPath(path, isBranch);
 
         if(jPath == "") {
             return NULL;
         }
-
-        
-        cout << jPath << endl;
+#ifdef DEBUG
+        cout << "vssdatabase::getMetaData: VSS specific path =" << jPath << endl;
+#endif
 
         vector<string> tokens = getVSSTokens(jPath);
-
 	int tokLength = tokens.size();
 
 	json parentArray[16];
@@ -157,7 +154,7 @@ json vssdatabase::getMetaData(string path) {
                  }
 	   } else {
                  // handle exception.
-                 cout << "More than 1 Branch/ value found!. Path requested needs to be more refined" << endl;
+                 cout << "vssdatabase::getMetaData : More than 1 Branch/ value found! Path requested needs to be more refined" << endl;
                  return NULL;
            }
 
@@ -193,10 +190,10 @@ int vssdatabase::setSignal(string path, string value) {
     string jPath = getVSSSpecificPath(path, isBranch);
 
     if(jPath == "") {
-         cout <<"Path " << path <<" not available in the DB"<<endl;
+         cout <<"vssdatabase::setSignal: Path " << path <<" not available in the DB"<<endl;
          return -1;
     } else if (isBranch) {
-         cout <<"Path " << path <<" is a branch, need a path to a signal to set data"<<endl;
+         cout <<"vssdatabase::setSignal: Path " << path <<" is a branch, need a path to a signal to set data"<<endl;
          return -2;
     }
 
@@ -232,14 +229,16 @@ int vssdatabase::setSignal(string path, string value) {
 	  }else if (value_type == "String") {
 	     resJson.insert_or_assign("value", value);
 	  }else {
-	     cout<< "The value type "<< value_type <<" is not supported"<< endl;
+	     cout<< "vssdatabase::setSignal: The value type "<< value_type <<" is not supported"<< endl;
 	     return -2;
 	  }
 
         //TODO- add mutex here.
         
         json_replace(vss_tree , jPath, resJson);
-        cout << " new value set at path " << path << endl;
+#ifdef DEBUG
+        cout << "vssdatabase::setSignal: new value set at path " << path << endl;
+#endif
         //-------------------------------------
 
         int signalID = resJson["id"].as<int>();
@@ -248,15 +247,50 @@ int vssdatabase::setSignal(string path, string value) {
         subHandler->update(signalID, value);
 
       } else {
-          cout << "Type key not found for " << jPath << endl;
+          cout << "vssdatabase::setSignal: Type key not found for " << jPath << endl;
       }
         
     } else if (resArray.is_array()) {
-        cout <<"Path " << path <<" has "<<resArray.size()<<" signals, the path needs refinement"<<endl;
+        cout <<"vssdatabase::setSignal : Path " << path <<" has "<<resArray.size()<<" signals, the path needs refinement"<<endl;
         return -3;
     }
    
     return 0;
+}
+
+
+void setJsonValue(json& dest , json& source , string key) {
+
+  if(!source.has_key("type")) {
+     cout << "vssdatabase::setJsonValue : could not set value! type is not present in source json!"<< endl;
+     return;
+  }
+
+  string type = source["type"].as<string>();
+
+  if(type == "String") {
+      dest[key] = source["value"].as<string>();
+  } else if (type == "UInt8") {
+      dest[key] = source["value"].as<uint8_t>();
+  } else if (type == "UInt16") {
+      dest[key] = source["value"].as<uint16_t>();
+  } else if (type == "UInt32") {
+      dest[key] = source["value"].as<uint32_t>();
+  } else if (type == "Int8") {
+      dest[key] = source["value"].as<int8_t>();
+  } else if (type == "Int16") {
+      dest[key] = source["value"].as<int16_t>();
+  } else if (type == "Int32") {
+      dest[key] = source["value"].as<int32_t>();
+  } else if (type == "Float") {
+      dest[key] = source["value"].as<float>();
+  } else if (type == "Double") {
+      dest[key] = source["value"].as<double>();
+  } else if (type == "Boolean") {
+      dest[key] = source["value"].as<bool>();
+  } else {
+      cout << "vssdatabase::setJsonValue : could not set value! type was unknown"<<endl;
+  }
 }
 
 json vssdatabase::getSignal(string path) {
@@ -266,23 +300,23 @@ json vssdatabase::getSignal(string path) {
 
     if(jPath == "") {
         json answer;
-        answer[path] = NULL;
         return answer;
     } 
 
-    cout << " GET request for "<< jPath << endl;
+#ifdef DEBUG
+    cout << "vssdatabase::getSignal:GET request for "<< jPath << endl;
+#endif
     json resArray = json_query(vss_tree , jPath);
-
+    json answer;
     if(resArray.is_array() && resArray.size() == 1) {
-       json answer;
        json result = resArray[0];
        if(result.has_key("value")) {
-          answer[path] = result["value"].as<string>();
+          setJsonValue(answer , result, "value");
           return answer;
        }else {
-          answer[path] = NULL;
+          answer["value"] = 0;
           return answer;
        }
-    }   
-    return NULL;
+    }
+    return answer;
 }
