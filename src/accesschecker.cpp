@@ -14,6 +14,15 @@
 
 #include"accesschecker.hpp"
 
+accesschecker::accesschecker(class  authenticator* vdator) {
+   tokenValidator = vdator;
+}
+
 bool accesschecker::checkAccess(class wschannel& channel , string path) {
-   return channel.isAuthorized();
+ 
+   if (channel.isAuthorized() ) {
+       return tokenValidator->isStillValid (channel); 
+   } else {
+       return false;
+   }
 } 

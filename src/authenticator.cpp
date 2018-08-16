@@ -15,6 +15,12 @@
 
 # include "authenticator.hpp"
 #include <iostream>
+#include <jsoncons/json.hpp>
+#include <iostream>
+#include <fstream>
+
+using namespace jsoncons;
+using jsoncons::json;
 
 authenticator::authenticator( string secretkey, string algo) {
    algorithm = algo; 
@@ -22,16 +28,29 @@ authenticator::authenticator( string secretkey, string algo) {
 
 }
 
+string getPublicKey (string fileName) {
+
+  std::ifstream fileStream (fileName);
+  std::string key( (std::istreambuf_iterator<char>(fileStream)),
+                       (std::istreambuf_iterator<char>()));
+
+  return key;
+}
+
 int authenticator::validate (wschannel &channel , string authToken) {
   
   auto decoded = jwt::decode(authToken);
-
-  for(auto& e : decoded.get_payload_claims())
+  json claims;
+  for(auto& e : decoded.get_payload_claims()) {
       std::cout << e.first << " = " << e.second.to_json() << std::endl;
+      claims[e.first] = e.second.to_json().to_str();
+  }
+
+   string rsa_pub_key = getPublicKey("jwt.key.pub");
+   auto verifier =jwt::verify()
+   .allow_algorithm(jwt::algorithm::rs256(rsa_pub_key, "", "", "")).
+   with_issuer("kuksa");
   
-  auto verifier = jwt::verify()
-	.allow_algorithm(jwt::algorithm::hs256{ key })
-	.with_issuer("kuksa");
   try {
       verifier.verify(decoded);
   } catch (const std::runtime_error& e) {
@@ -39,7 +58,7 @@ int authenticator::validate (wschannel &channel , string authToken) {
       return -1; 
   }
 
-  int ttl = 0;
+  int ttl = claims["exp"].as<int>();
   channel.setAuthorized(true);
   channel.setAuthToken(authToken);
 

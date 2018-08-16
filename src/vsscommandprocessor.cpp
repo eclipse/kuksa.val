@@ -56,29 +56,11 @@ string pathNotFoundResponse(int32_t request_id, const string action, const strin
    return ss.str();
 }
 
-
-/** check if requestmalformed. Returns empty string if it is fine, or error JSON */
-//string checkRequest(const string action, const json query) {
-	/*if ( !vssPathExists("path",query) || !vssPathExists("requestId",query)) {
-		int32_t request_id=query.get<int32_t>("request_id",-1);
-		return malFormedRequestResponse(request_id,action);
-	}
-		
-	std::string path = query.get<string>("path");
-	if (!vssPathExists(path) ) {
-		int32_t request_id=query.get<int32_t>("requestId",-1);
-		return pathNotFoundResponse(request_id,action,path);
-	}*/
-		
-//	return "";
-//}
-
-
 vsscommandprocessor::vsscommandprocessor(class vssdatabase* dbase, class  authenticator* vdator , class subscriptionhandler* subhandler) {
    database = dbase;
    tokenValidator = vdator;
    subHandler = subhandler;
-   accessValidator = new accesschecker(); 
+   accessValidator = new accesschecker(tokenValidator); 
 }
 
 
