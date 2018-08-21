@@ -19,6 +19,7 @@
 #include "vssdatabase.hpp"
 #include "server_ws.hpp"
 #include "visconf.hpp"
+#include "exception.hpp"
 
 
 using namespace std;
@@ -68,7 +69,7 @@ vsscommandprocessor::vsscommandprocessor(class vssdatabase* dbase, class  authen
 string vsscommandprocessor::processGet(uint32_t request_id, string path) {
 
 #ifdef DEBUG
-   cout<< "GET :: path received from client"<< path <<endl;
+   cout<< "GET :: path received from client = "<< path <<endl;
 #endif
    json res = database->getSignal(path);
 
@@ -76,7 +77,6 @@ string vsscommandprocessor::processGet(uint32_t request_id, string path) {
       return pathNotFoundResponse(request_id, "get", path);
    } else {
       res["action"] = "get";
-      res["path"] = path;
       res["requestId"] = request_id;
       res["timestamp"]= time(NULL);
       stringstream ss; 
@@ -86,7 +86,7 @@ string vsscommandprocessor::processGet(uint32_t request_id, string path) {
 }
 
 
-string vsscommandprocessor::processSet(uint32_t request_id, string path, string value) {
+string vsscommandprocessor::processSet(uint32_t request_id, string path, json value) {
 
 #ifdef DEBUG
    cout<< "vsscommandprocessor::processSet: path received from client"<< path <<endl;
@@ -94,43 +94,40 @@ string vsscommandprocessor::processSet(uint32_t request_id, string path, string 
 
    const char *path_c=path.c_str();
    char * nonconst=strdup(path_c);
-   int res = database->setSignal(path, value);
+   try {
+       database->setSignal(path, value);
+   } catch ( genException &e ) {
+       cout << e.what() << endl;
+       json root;
+       json error;
+
+       root["action"] = "set";
+       root["requestId"] = request_id;
+
+       error["number"] = 401;
+       error["reason"] = "Unknown error";
+       error["message"] = e.what();
+
+       root["error"] = error;
+       root["timestamp"] = time(NULL);
+
+       std::stringstream ss;
+       ss << pretty_print(root);
+       return ss.str();
+   } catch (noPathFoundonTree &e) {
+       cout << e.what() << endl;
+       pathNotFoundResponse(request_id, "set", path);
+   }
    
-   if (res < 0) {
-        return pathNotFoundResponse (request_id , "set", path);
-   }   
-
-   if(res == 1) {
-       // TODO handle also multiple signals. 
-   } else if(res == 0) {
-        json answer;
-        answer["action"] ="set";
-        answer["requestId"] = request_id;
-        answer["timestamp"] = time(NULL);
    
-        std::stringstream ss;
-        ss << pretty_print(answer);
-        return ss.str();
-   } else {
-
-        json root;
-        json error;
-
-	root["action"] = "set";
-	root["requestId"] = request_id;
-
-        error["number"] = 401;
-        error["reason"] = "Unknown error";
-        error["message"] = "Error while setting data";
-
-
-	root["error"] = error;
-	root["timestamp"] = time(NULL);
-
-	std::stringstream ss;
-	ss << pretty_print(root);
-        return ss.str();
-   } 
+   json answer;
+   answer["action"] ="set";
+   answer["requestId"] = request_id;
+   answer["timestamp"] = time(NULL);
+   
+   std::stringstream ss;
+   ss << pretty_print(answer);
+   return ss.str();    
 }
 
 string vsscommandprocessor::processSubscribe(uint32_t request_id, string path, uint32_t connectionID) {
@@ -139,10 +136,8 @@ string vsscommandprocessor::processSubscribe(uint32_t request_id, string path, u
     cout<< "vsscommandprocessor::processSubscribe: path received from client for subscription"<< path<<endl;
 #endif
    
-
       uint32_t subId = -1;
       subId = subHandler->subscribe(database, connectionID , path);
-
 
     if( subId > 0) {
        json answer;
@@ -325,9 +320,9 @@ string vsscommandprocessor::processQuery(string req_json , class wschannel& chan
 #endif
                    response = processGet(request_id, path);
 	        } else if(action == "set")  {
-		   string value = root["value"].as<string>();
+		   json value = root["value"];
 #ifdef DEBUG
-		   cout << "vsscommandprocessor::processQuery: set query  for " << path << " with request id " <<  request_id  << "value " << value << endl;
+		   cout << "vsscommandprocessor::processQuery: set query  for " << path << " with request id " <<  request_id  << " value " << pretty_print(value) << endl;
 #endif
 		   response = processSet(request_id, path , value);
        	        } else if(action == "subscribe")  {

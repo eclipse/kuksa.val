@@ -14,6 +14,8 @@
 #include <stdexcept>
 #include "vssdatabase.hpp"
 #include "visconf.hpp"
+#include <regex>
+#include "exception.hpp"
 
 vssdatabase::vssdatabase(class subscriptionhandler* subHandle) {
    subHandler = subHandle;
@@ -26,8 +28,7 @@ void vssdatabase::initJsonTree() {
 #ifdef DEBUG
     cout << "vssdatabase::vssdatabase : VSS tree initialized using JSON file = " << fileName << endl;
 #endif
-    is.close();
-	
+    is.close();	
 }
 
 vector<string> getPathTokens(string path) {
@@ -44,67 +45,109 @@ vector<string> getPathTokens(string path) {
     return tokens;
 }
 
+string getReadablePath(string jsonpath) {
+  stringstream ss;
+  // regex to remove special characters from JSONPath and make it VSS compatible.
+  std::regex bracket("[$\\[\\]']{2,4}");
+  std::copy( std::sregex_token_iterator(jsonpath.begin(), jsonpath.end(), bracket, -1),
+              std::sregex_token_iterator(),
+              std::ostream_iterator<std::string>(ss, "."));
+
+  ss.seekg(0, ios::end);
+  int size = ss.tellg();
+  string readablePath = ss.str().substr(1, size-2);
+  regex e ("\\b(.children)([]*)");
+  readablePath = regex_replace (readablePath,e,"");
+  return readablePath;
+}
+
 
 string vssdatabase::getVSSSpecificPath (string path, bool &isBranch) {
-
     vector<string> tokens = getPathTokens(path);
     int tokLength = tokens.size();
-    string format_path = "$.";
+    string format_path = "$";
     for(int i=0; i < tokLength; i++) {
       try {
-         format_path = format_path + tokens[i];
-       
+         format_path = format_path + "." + tokens[i];
          json res = json_query(vss_tree , format_path);
-       
          string type = "";
-         if(res.is_array()) {
+         if((res.is_array() && res.size() > 0) && res[0].has_key("type")) {
 	   type = res[0]["type"].as<string>();
-	 } else {
+	 } else if (res.has_key("type")) {
            type = res["type"].as<string>();
          }
 
-         if (type != "" && type == "branch") {             
-             format_path = format_path + ".children.";
+         if (type != "" && type == "branch") {
+             if( i <  (tokLength - 1)) {           
+                format_path = format_path + ".children";
+             }
              isBranch = true;
          } else if (type != "") {
              isBranch = false;
              break;
          } else {
-             cout << "vssdatabase::getVSSSpecificPath : Path is invalid !!" << endl;
+             isBranch = false;
+             cout << "vssdatabase::getVSSSpecificPath : Path "<< format_path <<" is invalid or is an empty tag!" << endl;
              return ""; 
          }
 
-      } catch (...) {
-         cout << "vssdatabase::getVSSSpecificPath :Exception occured while querying JSON. Check Path!"<<endl;
+      } catch (exception& e) {
+         cout << "vssdatabase::getVSSSpecificPath :Exception "<< "\"" << e.what() << "\"" <<" occured while querying JSON. Check Path!"<<endl;
+         isBranch = false;
          return ""; 
       }
-    }
-  
+   }
+  return format_path;
+}
+
+string vssdatabase::getPathForMetadata(string path , bool &isBranch) {
+
+    string format_path = getVSSSpecificPath(path, isBranch); 
     json pathRes =  json_query(vss_tree , format_path, result_type::path);
     string jPath = pathRes[0].as<string>();
     return jPath;
 }
 
+list<string> vssdatabase::getPathForGet(string path , bool &isBranch) {
 
+    list<string> paths;
+    string format_path = getVSSSpecificPath(path, isBranch); 
+    json pathRes =  json_query(vss_tree , format_path, result_type::path);
+    
+    for ( int i=0 ; i < pathRes.size(); i++) {
+        string jPath = pathRes[i].as<string>();
+        json resArray = json_query(vss_tree , jPath);
+        if( resArray.size() == 0) {
+            continue;
+        }
+        json result = resArray[0];
+        if(!result.has_key("id") && (result.has_key("type") && result["type"].as<string>() == "branch")) {
+             bool dummy = true;
+             paths.merge(getPathForGet( getReadablePath(jPath)+".*" , dummy));
+             continue;
+         } else {
+             paths.push_back(pathRes[i].as<string>());
+         }
+    }
+    return paths;
+}
+
+
+// TODO- Regex could be used here?? 
 vector<string> getVSSTokens(string path) {
 
     vector<string> tokens;
-
     char* path_char = (char *) path.c_str();
- 
     char* tok = strtok ( path_char , "['");
     int count = 1;
     while ( tok != NULL) {
-
-       string tokString = string(tok);
-       
+       string tokString = string(tok); 
        if( count % 2 == 0) {
            tok = strtok( NULL ,"']");
            tokens.push_back(tokString);
        } else {
            tok = strtok( NULL ,"['");
        }
-       
        count ++;
     }
 
@@ -116,7 +159,7 @@ json vssdatabase::getMetaData(string path) {
 
 	string format_path = "$";
         bool isBranch = false;
-        string jPath = getVSSSpecificPath(path, isBranch);
+        string jPath = getPathForMetadata(path, isBranch);
 
         if(jPath == "") {
             return NULL;
@@ -184,78 +227,162 @@ json vssdatabase::getMetaData(string path) {
        return result;
 }
 
-int vssdatabase::setSignal(string path, string value) {
+json vssdatabase::getPathForSet(string path, json values) {
 
-    bool isBranch = false;
-    string jPath = getVSSSpecificPath(path, isBranch);
+  json setValues;
+  if(values.is_array()) {
+     std::size_t found = path.find("*");
+     if (found==std::string::npos) {
+         path = path + ".";
+         found = path.length();
+     }
+     setValues = json::make_array(values.size());
+     for( int i=0 ;i < values.size() ; i++) {
+         json value = values[i];
+         string readablePath = path;
+         string replaceString; 
+         auto iter = value.object_range();
 
-    if(jPath == "") {
-         cout <<"vssdatabase::setSignal: Path " << path <<" not available in the DB"<<endl;
-         return -1;
-    } else if (isBranch) {
-         cout <<"vssdatabase::setSignal: Path " << path <<" is a branch, need a path to a signal to set data"<<endl;
-         return -2;
-    }
+         int size = std::distance(iter.begin(),iter.end());
 
-    json resArray = json_query(vss_tree , jPath);
-    json  resJson;
-    if(resArray.is_array() && resArray.size() == 1) {
-        resJson = resArray[0];
+         if( size == 1) {
+              for (const auto& member : iter)
+              {
+                  replaceString = string(member.key());
+              }
+         } else {
+             stringstream msg;
+             msg << "More than 1 signal found while setting for path = " << path << " with values " <<   pretty_print(values);
+             throw genException(msg.str());
+         }
 
-    if(resJson.has_key("type")) {
-          string value_type = resJson["type"].as<string>();
+         
+         readablePath.replace(found,readablePath.length(), replaceString); 
+         json pathValue;
+         bool isBranch = false;
+         string absolutePath = getVSSSpecificPath(readablePath , isBranch);
+         if( isBranch ) {
+             stringstream msg;
+             msg<< "Path = " << path << " with values " <<  pretty_print(values) << " points to a branch. Needs to point to a signal";
+             throw genException (msg.str());
+         }
+         
+         pathValue["path"] = absolutePath;
+         pathValue["value"] = value[replaceString];
+         setValues[i] = pathValue;
+     }
+  } else {
+       setValues = json::make_array(1);
+       json pathValue;
+       bool isBranch = false;
+       string absolutePath = getVSSSpecificPath(path , isBranch);
+         if( isBranch ) {
+             stringstream msg;
+             msg << "Path = " << path << " with values " <<   pretty_print(values) << " points to a branch. Needs to point to a signal";
+             throw genException (msg.str());
+         }
+         
+       pathValue["path"] = absolutePath;
+       pathValue["value"] = values;
+       setValues[0] = pathValue;
+  }
+  return setValues;
+}
 
-	  if( value_type == "UInt8") {
-	     resJson.insert_or_assign("value", stoi(value));
-	  }else if (value_type == "UInt16") {
-	     resJson.insert_or_assign("value", stoi(value));
-	  }else if (value_type == "UInt32") {
-	     resJson.insert_or_assign("value", stoi(value));
-	  }else if (value_type == "Int8") {
-	     resJson.insert_or_assign("value", stoi(value));
-	  }else if (value_type == "Int16") {
-	     resJson.insert_or_assign("value", stoi(value));
-	  }else if (value_type == "Int32") {
-	     resJson.insert_or_assign("value", stoi(value));
-	  }else if (value_type == "Float") {
-	    resJson.insert_or_assign("value", stof(value));
-	  }else if (value_type == "Double") {
-	     resJson.insert_or_assign("value", stod(value));
-	  }else if (value_type == "Boolean") {
-             if( value == "true")
-	        resJson.insert_or_assign("value", true);
-             else
-                resJson.insert_or_assign("value", false);
-	  }else if (value_type == "String") {
-	     resJson.insert_or_assign("value", value);
-	  }else {
-	     cout<< "vssdatabase::setSignal: The value type "<< value_type <<" is not supported"<< endl;
-	     return -2;
-	  }
 
-        //TODO- add mutex here.
-        
-        json_replace(vss_tree , jPath, resJson);
+void vssdatabase::setSignal(string path, json valueJson) {
+
+
+    if(path == "") {
+         string msg = "Path is empty while setting";
+         throw genException (msg);
+    } 
+
+    json setValues = getPathForSet(path, valueJson); 
+    if(setValues.is_array()) {
+
+      for( int i=0 ; i< setValues.size() ; i++) {
+         json item = setValues[i];
+         string jPath = item["path"].as<string>();
+
 #ifdef DEBUG
-        cout << "vssdatabase::setSignal: new value set at path " << path << endl;
+         cout << "vssdatabase::setSignal: path found = "<< jPath << endl;
 #endif
-        //-------------------------------------
+          
+         json resArray = json_query(vss_tree , jPath);
+         if(resArray.is_array() && resArray.size() == 1) {
+            json resJson = resArray[0];
 
-        int signalID = resJson["id"].as<int>();
-        // TODO- check if possible without converting to string.
-        string value = resJson["value"].as<string>();
-        subHandler->update(signalID, value);
+           if(resJson.has_key("type")) {
+              string value_type = resJson["type"].as<string>();
 
-      } else {
-          cout << "vssdatabase::setSignal: Type key not found for " << jPath << endl;
-      }
+	      if( value_type == "UInt8") {
+                  uint8_t val = item["value"].as<uint8_t>();
+	          resJson.insert_or_assign("value", val);
+	      }else if (value_type == "UInt16") {
+	          uint16_t val = item["value"].as<uint16_t>();
+	          resJson.insert_or_assign("value", val);
+	      }else if (value_type == "UInt32") {
+	          uint32_t val = item["value"].as<uint32_t>();
+	          resJson.insert_or_assign("value", val);
+	      }else if (value_type == "Int8") {
+	          int8_t val = item["value"].as<int8_t>();
+	          resJson.insert_or_assign("value", val);
+	      }else if (value_type == "Int16") {
+	          int16_t val = item["value"].as<int16_t>();
+	          resJson.insert_or_assign("value", val);
+	      }else if (value_type == "Int32") {
+	          int32_t val = item["value"].as<int32_t>();
+	          resJson.insert_or_assign("value", val);
+	      }else if (value_type == "Float") {
+	          float val = item["value"].as<float>();
+	          resJson.insert_or_assign("value", val);
+	      }else if (value_type == "Double") {
+	          double val = item["value"].as<double>();
+	          resJson.insert_or_assign("value", val);
+	      }else if (value_type == "Boolean") {
+                 bool val = item["value"].as<bool>();
+	          resJson.insert_or_assign("value", val);
+	      }else if (value_type == "String") {
+	         string val = item["value"].as<string>();
+	          resJson.insert_or_assign("value", val);
+	      }else {
+	         cout<< "vssdatabase::setSignal: The value type "<< value_type <<" is not supported"<< endl;
+                 string msg = "The value type " + value_type +" is not supported";
+	         throw genException (msg);
+	      }
+
+              //TODO- add mutex here.
         
-    } else if (resArray.is_array()) {
-        cout <<"vssdatabase::setSignal : Path " << path <<" has "<<resArray.size()<<" signals, the path needs refinement"<<endl;
-        return -3;
+              json_replace(vss_tree , jPath, resJson);
+#ifdef DEBUG
+              cout << "vssdatabase::setSignal: new value set at path " << jPath << endl;
+#endif
+               //-------------------------------------
+
+               int signalID = resJson["id"].as<int>();
+               // TODO- check if possible without converting to string.
+               string value = resJson["value"].as<string>();
+               subHandler->update(signalID, value);
+
+            } else {
+               stringstream msg;
+               msg << "Type key not found for " << jPath;
+               throw genException (msg.str());
+            }
+        
+         } else if (resArray.is_array()) {
+                cout <<"vssdatabase::setSignal : Path " << jPath <<" has "<<resArray.size()<<" signals, the path needs refinement"<<endl;
+                stringstream msg;
+                msg << "Path " << jPath <<" has " << resArray.size() << " signals, the path needs refinement";
+                throw genException (msg.str());
+         }           
+      } 
+
+    } else {
+        string msg = "Exception occured while setting data for " + path;
+        throw genException (msg);
     }
-   
-    return 0;
 }
 
 
@@ -293,30 +420,80 @@ void setJsonValue(json& dest , json& source , string key) {
   }
 }
 
+
 json vssdatabase::getSignal(string path) {
     
     bool isBranch = false;
-    string jPath = getVSSSpecificPath(path, isBranch);
-
-    if(jPath == "") {
+    list<string> jPaths = getPathForGet(path, isBranch);
+    int pathsFound = jPaths.size();
+    if(pathsFound == 0) {
         json answer;
         return answer;
     } 
-
 #ifdef DEBUG
-    cout << "vssdatabase::getSignal:GET request for "<< jPath << endl;
+    cout << "vssdatabase::getSignal: "<< pathsFound << " signals found under path = "<< "\"" << path << "\"" << endl;
 #endif
-    json resArray = json_query(vss_tree , jPath);
-    json answer;
-    if(resArray.is_array() && resArray.size() == 1) {
-       json result = resArray[0];
-       if(result.has_key("value")) {
-          setJsonValue(answer , result, "value");
-          return answer;
-       }else {
-          answer["value"] = 0;
-          return answer;
-       }
+    if(isBranch) {
+       json answer;    
+#ifdef DEBUG
+       cout << " vssdatabase::getSignal :"<< "\"" << path << "\"" << " is a Branch." <<endl;
+#endif
+       if (pathsFound == 0) {
+          throw noPathFoundonTree(path);
+       } else {
+          json value;
+          for( int i=0 ; i< pathsFound ; i++) {
+              string jPath = jPaths.back();
+              json resArray = json_query(vss_tree , jPath);
+              jPaths.pop_back();
+              json result = resArray[0];
+              if(result.has_key("value")) {
+                  setJsonValue(value , result, getReadablePath(jPath));   
+              } else {
+                  value[getReadablePath(jPath)] = "---";
+              }
+          }
+          answer["value"] = value;
+       } 
+       return answer;
+        
+    } else if (pathsFound == 1) {
+      string jPath = jPaths.back();
+      json resArray = json_query(vss_tree , jPath);
+      json answer;
+      answer["path"] = getReadablePath(jPath); 
+      json result = resArray[0];
+      if(result.has_key("value")) {
+         setJsonValue(answer , result, "value");
+         return answer;
+      } else {
+         if(!result.has_key("type")) {
+             string msg = "Unknown type for signal found at " + getReadablePath(jPath);
+             throw genException (msg); 
+         }
+         answer["value"] = "---";
+         return answer;
+      }
+       
+    } else if (pathsFound > 1) {
+       json answer;
+       json valueArray = json::make_array(pathsFound);
+        for (int i=0 ; i< pathsFound; i++) {
+              json value;
+              string jPath = jPaths.back();
+              json resArray = json_query(vss_tree , jPath);
+              jPaths.pop_back();
+              json result = resArray[0];
+              if(result.has_key("value")) {
+                  setJsonValue(value , result, getReadablePath(jPath));   
+              } else {
+                  value[getReadablePath(jPath)] = "---";
+              }
+              
+              valueArray[i] = value;
+             
+        }
+        answer["value"] = valueArray;
+        return answer;
     }
-    return answer;
 }

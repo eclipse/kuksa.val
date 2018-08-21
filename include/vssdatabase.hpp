@@ -16,6 +16,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <list>
 #include <stdint.h>
 #include <jsoncons/json.hpp>
 #include <jsoncons_ext/jsonpath/json_query.hpp>
@@ -38,7 +39,10 @@ friend class subscriptionhandler;
   void initJsonTree();
   string getVSSSpecificPath (string path, bool &isBranch);
   json getMetaData(string path);
-  int setSignal(string path, string value);
+  void setSignal(string path, json value);
   json getSignal(string path);
+  string getPathForMetadata(string path , bool &isBranch);
+  list<string>getPathForGet(string path , bool &isBranch);
+  json getPathForSet(string path,  json value);
 };
 #endif

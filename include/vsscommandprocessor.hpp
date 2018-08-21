@@ -20,6 +20,10 @@
 #include "subscriptionhandler.hpp"
 #include "accesschecker.hpp"
 using namespace std;
+using namespace jsoncons;
+using namespace jsoncons::jsonpath;
+using jsoncons::json;
+
 
 class vsscommandprocessor {
 
@@ -30,7 +34,7 @@ private:
    class  accesschecker* accessValidator = NULL;
 
    string processGet(uint32_t request_id, string path);
-   string processSet(uint32_t request_id, string path, string value);
+   string processSet(uint32_t request_id, string path, json value);
    string processSubscribe(uint32_t request_id, string path, uint32_t connectionID);
    string processUnsubscribe(uint32_t request_id, uint32_t subscribeID);
    string processGetMetaData(uint32_t request_id, string path); 
