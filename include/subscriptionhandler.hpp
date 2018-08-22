@@ -23,7 +23,9 @@
 
 
 using namespace std;
-
+using namespace jsoncons;
+using namespace jsoncons::jsonpath;
+using jsoncons::json;
 
 class subscriptionhandler {
 
@@ -38,13 +40,13 @@ class subscriptionhandler {
  public:
 
    
-   queue<pair<uint32_t, string>> buffer; 
+   queue<pair<uint32_t, json>> buffer; 
    subscriptionhandler(class wsserver* server, class authenticator* authenticate);
    uint32_t subscribe (class vssdatabase* db, uint32_t channelID  , string path);
    int unsubscribe (uint32_t subscribeID);
    int unsubscribeAll (uint32_t connectionID);
-   int update ( int signalID, string value);
-   int update ( string path, string value);
+   int update ( int signalID, json value);
+   int update ( string path, json value);
    class wsserver* getServer();
    int startThread();
    int stopThread();

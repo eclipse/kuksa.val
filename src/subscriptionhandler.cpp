@@ -85,14 +85,14 @@ int subscriptionhandler::unsubscribeAll ( uint32_t connectionID) {
    return 0;
 }
 
-int subscriptionhandler::update (int signalID, string value) {
+int subscriptionhandler::update (int signalID, json value) {
 
   for(int i=0 ; i< MAX_CLIENTS ; i++) {
     uint32_t subID = subscribeHandle[signalID][i];
      if( subID != 0) {
         pthread_mutex_lock (&subMutex);
-        pair<uint32_t, string> newSub;
-        newSub = std::make_pair (subID,value);
+        pair<uint32_t, json> newSub;
+        newSub = std::make_pair(subID, value);
         buffer.push(newSub);
         pthread_mutex_unlock (&subMutex);
      }
@@ -104,7 +104,7 @@ class wsserver* subscriptionhandler::getServer() {
     return server;
 }
    
-int subscriptionhandler::update (string path, string value) {
+int subscriptionhandler::update (string path, json value) {
   return 0;
 }
 
@@ -118,12 +118,12 @@ void* subThread(void * instance) {
        pthread_mutex_lock (&subMutex);
        if(handler->buffer.size() > 0) {
 
-          pair<uint32_t, string> newSub = handler->buffer.front();
+          pair<uint32_t, json> newSub = handler->buffer.front();
           handler->buffer.pop();
-          pthread_mutex_unlock (&subMutex);
+          
 
           uint32_t subID = newSub.first;
-          string value = newSub.second;
+          json value = newSub.second;
 
           json answer;
           answer["action"] = "subscribe";
@@ -138,6 +138,7 @@ void* subThread(void * instance) {
           uint32_t connectionID = (subID/CLIENT_MASK) * CLIENT_MASK;
           handler->getServer()->sendToConnection(connectionID , message);
        }
+        pthread_mutex_unlock (&subMutex);
         usleep(10000);
      }
      cout << "SubscribeThread: Subscription handler thread stopped running"<<endl;

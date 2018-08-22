@@ -362,7 +362,7 @@ void vssdatabase::setSignal(string path, json valueJson) {
 
                int signalID = resJson["id"].as<int>();
                // TODO- check if possible without converting to string.
-               string value = resJson["value"].as<string>();
+               json value = resJson["value"];
                subHandler->update(signalID, value);
 
             } else {
