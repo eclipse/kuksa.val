@@ -17,6 +17,8 @@
 #include <regex>
 #include "exception.hpp"
 
+
+
 vssdatabase::vssdatabase(class subscriptionhandler* subHandle) {
    subHandler = subHandle;
 }
@@ -69,7 +71,9 @@ string vssdatabase::getVSSSpecificPath (string path, bool &isBranch) {
     for(int i=0; i < tokLength; i++) {
       try {
          format_path = format_path + "." + tokens[i];
+         pthread_mutex_lock (&rwMutex);
          json res = json_query(vss_tree , format_path);
+         pthread_mutex_unlock (&rwMutex);
          string type = "";
          if((res.is_array() && res.size() > 0) && res[0].has_key("type")) {
 	   type = res[0]["type"].as<string>();
@@ -102,8 +106,10 @@ string vssdatabase::getVSSSpecificPath (string path, bool &isBranch) {
 
 string vssdatabase::getPathForMetadata(string path , bool &isBranch) {
 
-    string format_path = getVSSSpecificPath(path, isBranch); 
+    string format_path = getVSSSpecificPath(path, isBranch);
+    pthread_mutex_lock (&rwMutex); 
     json pathRes =  json_query(vss_tree , format_path, result_type::path);
+    pthread_mutex_unlock (&rwMutex);
     string jPath = pathRes[0].as<string>();
     return jPath;
 }
@@ -111,12 +117,16 @@ string vssdatabase::getPathForMetadata(string path , bool &isBranch) {
 list<string> vssdatabase::getPathForGet(string path , bool &isBranch) {
 
     list<string> paths;
-    string format_path = getVSSSpecificPath(path, isBranch); 
+    string format_path = getVSSSpecificPath(path, isBranch);
+    pthread_mutex_lock (&rwMutex); 
     json pathRes =  json_query(vss_tree , format_path, result_type::path);
+    pthread_mutex_unlock (&rwMutex);
     
     for ( int i=0 ; i < pathRes.size(); i++) {
         string jPath = pathRes[i].as<string>();
+        pthread_mutex_lock (&rwMutex);
         json resArray = json_query(vss_tree , jPath);
+        pthread_mutex_unlock (&rwMutex);
         if( resArray.size() == 0) {
             continue;
         }
@@ -182,8 +192,9 @@ json vssdatabase::getMetaData(string path) {
            if( (i < tokLength-1) && (tokens[i] == "children")) {
                continue;
            }
-
+           pthread_mutex_lock (&rwMutex);
 	   json resArray = json_query(vss_tree , format_path);
+           pthread_mutex_unlock (&rwMutex);
 	  	  
 	   if(resArray.is_array() && resArray.size() == 1) {
               resJson = resArray[0];
@@ -308,8 +319,10 @@ void vssdatabase::setSignal(string path, json valueJson) {
 #ifdef DEBUG
          cout << "vssdatabase::setSignal: path found = "<< jPath << endl;
 #endif
-          
+         pthread_mutex_lock (&rwMutex);
          json resArray = json_query(vss_tree , jPath);
+         pthread_mutex_unlock (&rwMutex);
+
          if(resArray.is_array() && resArray.size() == 1) {
             json resJson = resArray[0];
 
@@ -352,16 +365,17 @@ void vssdatabase::setSignal(string path, json valueJson) {
 	         throw genException (msg);
 	      }
 
-              //TODO- add mutex here.
+              pthread_mutex_lock (&rwMutex);
         
               json_replace(vss_tree , jPath, resJson);
+              
+              pthread_mutex_unlock (&rwMutex);
 #ifdef DEBUG
               cout << "vssdatabase::setSignal: new value set at path " << jPath << endl;
 #endif
-               //-------------------------------------
 
                int signalID = resJson["id"].as<int>();
-               // TODO- check if possible without converting to string.
+               
                json value = resJson["value"];
                subHandler->update(signalID, value);
 
@@ -442,9 +456,12 @@ json vssdatabase::getSignal(string path) {
           throw noPathFoundonTree(path);
        } else {
           json value;
+          
           for( int i=0 ; i< pathsFound ; i++) {
               string jPath = jPaths.back();
+              pthread_mutex_lock (&rwMutex);
               json resArray = json_query(vss_tree , jPath);
+              pthread_mutex_unlock (&rwMutex);
               jPaths.pop_back();
               json result = resArray[0];
               if(result.has_key("value")) {
@@ -459,7 +476,9 @@ json vssdatabase::getSignal(string path) {
         
     } else if (pathsFound == 1) {
       string jPath = jPaths.back();
+      pthread_mutex_lock (&rwMutex);
       json resArray = json_query(vss_tree , jPath);
+      pthread_mutex_unlock (&rwMutex);
       json answer;
       answer["path"] = getReadablePath(jPath); 
       json result = resArray[0];
@@ -478,10 +497,13 @@ json vssdatabase::getSignal(string path) {
     } else if (pathsFound > 1) {
        json answer;
        json valueArray = json::make_array(pathsFound);
+       
         for (int i=0 ; i< pathsFound; i++) {
               json value;
               string jPath = jPaths.back();
+              pthread_mutex_lock (&rwMutex);
               json resArray = json_query(vss_tree , jPath);
+              pthread_mutex_unlock (&rwMutex);
               jPaths.pop_back();
               json result = resArray[0];
               if(result.has_key("value")) {

@@ -48,8 +48,7 @@ int authenticator::validate (wschannel &channel , string authToken) {
 
    string rsa_pub_key = getPublicKey("jwt.key.pub");
    auto verifier =jwt::verify()
-   .allow_algorithm(jwt::algorithm::rs256(rsa_pub_key, "", "", "")).
-   with_issuer("kuksa");
+   .allow_algorithm(jwt::algorithm::rs256(rsa_pub_key, "", "", ""));
   
   try {
       verifier.verify(decoded);
