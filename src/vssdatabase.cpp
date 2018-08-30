@@ -24,13 +24,19 @@ vssdatabase::vssdatabase(class subscriptionhandler* subHandle) {
 }
 
 void vssdatabase::initJsonTree() {
+    try {
     string fileName = "vss_rel_1.0.json";
     std::ifstream is(fileName);
-    is >> vss_tree;
+    is >> data_tree;
+    meta_tree = data_tree;
 #ifdef DEBUG
     cout << "vssdatabase::vssdatabase : VSS tree initialized using JSON file = " << fileName << endl;
 #endif
-    is.close();	
+    is.close();
+    } catch ( exception const &e) {
+       cout << "Exception occured while initializing database/ tree structure. Probably the init json file not found!" << e.what() << endl;
+       throw e; 
+    }	
 }
 
 vector<string> getPathTokens(string path) {
@@ -64,16 +70,14 @@ string getReadablePath(string jsonpath) {
 }
 
 
-string vssdatabase::getVSSSpecificPath (string path, bool &isBranch) {
+string vssdatabase::getVSSSpecificPath (string path, bool &isBranch , json& tree) {
     vector<string> tokens = getPathTokens(path);
     int tokLength = tokens.size();
     string format_path = "$";
     for(int i=0; i < tokLength; i++) {
       try {
          format_path = format_path + "." + tokens[i];
-         pthread_mutex_lock (&rwMutex);
-         json res = json_query(vss_tree , format_path);
-         pthread_mutex_unlock (&rwMutex);
+         json res = json_query(tree , format_path);
          string type = "";
          if((res.is_array() && res.size() > 0) && res[0].has_key("type")) {
 	   type = res[0]["type"].as<string>();
@@ -106,10 +110,8 @@ string vssdatabase::getVSSSpecificPath (string path, bool &isBranch) {
 
 string vssdatabase::getPathForMetadata(string path , bool &isBranch) {
 
-    string format_path = getVSSSpecificPath(path, isBranch);
-    pthread_mutex_lock (&rwMutex); 
-    json pathRes =  json_query(vss_tree , format_path, result_type::path);
-    pthread_mutex_unlock (&rwMutex);
+    string format_path = getVSSSpecificPath(path, isBranch , meta_tree); 
+    json pathRes =  json_query(meta_tree , format_path, result_type::path);
     string jPath = pathRes[0].as<string>();
     return jPath;
 }
@@ -117,16 +119,12 @@ string vssdatabase::getPathForMetadata(string path , bool &isBranch) {
 list<string> vssdatabase::getPathForGet(string path , bool &isBranch) {
 
     list<string> paths;
-    string format_path = getVSSSpecificPath(path, isBranch);
-    pthread_mutex_lock (&rwMutex); 
-    json pathRes =  json_query(vss_tree , format_path, result_type::path);
-    pthread_mutex_unlock (&rwMutex);
+    string format_path = getVSSSpecificPath(path, isBranch, data_tree);
+    json pathRes =  json_query(data_tree , format_path, result_type::path);
     
     for ( int i=0 ; i < pathRes.size(); i++) {
         string jPath = pathRes[i].as<string>();
-        pthread_mutex_lock (&rwMutex);
-        json resArray = json_query(vss_tree , jPath);
-        pthread_mutex_unlock (&rwMutex);
+        json resArray = json_query(data_tree , jPath);
         if( resArray.size() == 0) {
             continue;
         }
@@ -169,7 +167,9 @@ json vssdatabase::getMetaData(string path) {
 
 	string format_path = "$";
         bool isBranch = false;
+        pthread_mutex_lock (&rwMutex);
         string jPath = getPathForMetadata(path, isBranch);
+        pthread_mutex_unlock (&rwMutex);
 
         if(jPath == "") {
             return NULL;
@@ -193,7 +193,7 @@ json vssdatabase::getMetaData(string path) {
                continue;
            }
            pthread_mutex_lock (&rwMutex);
-	   json resArray = json_query(vss_tree , format_path);
+	   json resArray = json_query(meta_tree , format_path);
            pthread_mutex_unlock (&rwMutex);
 	  	  
 	   if(resArray.is_array() && resArray.size() == 1) {
@@ -215,7 +215,7 @@ json vssdatabase::getMetaData(string path) {
            // last element is the requested signal.
 	   if ((i == tokLength-1) && (tokens[i] != "children")) {
 	      json value;
-	      value.insert_or_assign(tokens[i],resJson); 
+	      value.insert_or_assign(tokens[i],resJson);
 	      resJson = value;
            }
 
@@ -271,7 +271,7 @@ json vssdatabase::getPathForSet(string path, json values) {
          readablePath.replace(found,readablePath.length(), replaceString); 
          json pathValue;
          bool isBranch = false;
-         string absolutePath = getVSSSpecificPath(readablePath , isBranch);
+         string absolutePath = getVSSSpecificPath(readablePath , isBranch , data_tree);
          if( isBranch ) {
              stringstream msg;
              msg<< "Path = " << path << " with values " <<  pretty_print(values) << " points to a branch. Needs to point to a signal";
@@ -286,7 +286,7 @@ json vssdatabase::getPathForSet(string path, json values) {
        setValues = json::make_array(1);
        json pathValue;
        bool isBranch = false;
-       string absolutePath = getVSSSpecificPath(path , isBranch);
+       string absolutePath = getVSSSpecificPath(path , isBranch, data_tree);
          if( isBranch ) {
              stringstream msg;
              msg << "Path = " << path << " with values " <<   pretty_print(values) << " points to a branch. Needs to point to a signal";
@@ -308,8 +308,10 @@ void vssdatabase::setSignal(string path, json valueJson) {
          string msg = "Path is empty while setting";
          throw genException (msg);
     } 
-
-    json setValues = getPathForSet(path, valueJson); 
+    pthread_mutex_lock (&rwMutex);
+    json setValues = getPathForSet(path, valueJson);
+    pthread_mutex_unlock (&rwMutex);
+ 
     if(setValues.is_array()) {
 
       for( int i=0 ; i< setValues.size() ; i++) {
@@ -320,7 +322,7 @@ void vssdatabase::setSignal(string path, json valueJson) {
          cout << "vssdatabase::setSignal: path found = "<< jPath << endl;
 #endif
          pthread_mutex_lock (&rwMutex);
-         json resArray = json_query(vss_tree , jPath);
+         json resArray = json_query(data_tree , jPath);
          pthread_mutex_unlock (&rwMutex);
 
          if(resArray.is_array() && resArray.size() == 1) {
@@ -367,7 +369,7 @@ void vssdatabase::setSignal(string path, json valueJson) {
 
               pthread_mutex_lock (&rwMutex);
         
-              json_replace(vss_tree , jPath, resJson);
+              json_replace(data_tree , jPath, resJson);
               
               pthread_mutex_unlock (&rwMutex);
 #ifdef DEBUG
@@ -438,7 +440,9 @@ void setJsonValue(json& dest , json& source , string key) {
 json vssdatabase::getSignal(string path) {
     
     bool isBranch = false;
+    pthread_mutex_lock (&rwMutex);
     list<string> jPaths = getPathForGet(path, isBranch);
+    pthread_mutex_unlock (&rwMutex);
     int pathsFound = jPaths.size();
     if(pathsFound == 0) {
         json answer;
@@ -460,7 +464,7 @@ json vssdatabase::getSignal(string path) {
           for( int i=0 ; i< pathsFound ; i++) {
               string jPath = jPaths.back();
               pthread_mutex_lock (&rwMutex);
-              json resArray = json_query(vss_tree , jPath);
+              json resArray = json_query(data_tree , jPath);
               pthread_mutex_unlock (&rwMutex);
               jPaths.pop_back();
               json result = resArray[0];
@@ -477,7 +481,7 @@ json vssdatabase::getSignal(string path) {
     } else if (pathsFound == 1) {
       string jPath = jPaths.back();
       pthread_mutex_lock (&rwMutex);
-      json resArray = json_query(vss_tree , jPath);
+      json resArray = json_query(data_tree , jPath);
       pthread_mutex_unlock (&rwMutex);
       json answer;
       answer["path"] = getReadablePath(jPath); 
@@ -502,7 +506,7 @@ json vssdatabase::getSignal(string path) {
               json value;
               string jPath = jPaths.back();
               pthread_mutex_lock (&rwMutex);
-              json resArray = json_query(vss_tree , jPath);
+              json resArray = json_query(data_tree , jPath);
               pthread_mutex_unlock (&rwMutex);
               jPaths.pop_back();
               json result = resArray[0];

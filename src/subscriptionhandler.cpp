@@ -35,14 +35,14 @@ uint32_t subscriptionhandler::subscribe (class vssdatabase* db, uint32_t channel
 
    
     bool isBranch = false;
-    string jPath = db->getVSSSpecificPath(path, isBranch);
+    string jPath = db->getVSSSpecificPath(path, isBranch, db->data_tree);
     
     if(jPath == "") {
         return -1;
     } 
 
     int clientID = channelID/CLIENT_MASK;
-    json resArray = json_query(db->vss_tree , jPath);
+    json resArray = json_query(db->data_tree , jPath);
 
     if(resArray.is_array() && resArray.size() == 1) {
 
@@ -139,6 +139,7 @@ void* subThread(void * instance) {
           handler->getServer()->sendToConnection(connectionID , message);
        }
         pthread_mutex_unlock (&subMutex);
+        // sleep 10 ms
         usleep(10000);
      }
      cout << "SubscribeThread: Subscription handler thread stopped running"<<endl;

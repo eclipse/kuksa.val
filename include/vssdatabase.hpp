@@ -33,17 +33,18 @@ friend class subscriptionhandler;
 
  private:
   pthread_mutex_t rwMutex;
-  json vss_tree;
+  json data_tree;
+  json meta_tree;
   class subscriptionhandler* subHandler;
- public:
-  vssdatabase(class subscriptionhandler* subHandle);
-  void initJsonTree();
-  string getVSSSpecificPath (string path, bool &isBranch);
-  json getMetaData(string path);
-  void setSignal(string path, json value);
-  json getSignal(string path);
+  string getVSSSpecificPath (string path, bool &isBranch, json& tree);
   string getPathForMetadata(string path , bool &isBranch);
   list<string>getPathForGet(string path , bool &isBranch);
   json getPathForSet(string path,  json value);
+ public:
+  vssdatabase(class subscriptionhandler* subHandle);
+  void initJsonTree();
+  json getMetaData(string path);
+  void setSignal(string path, json value);
+  json getSignal(string path); 
 };
 #endif

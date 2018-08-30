@@ -20,11 +20,11 @@ accesschecker::accesschecker(class  authenticator* vdator) {
 
 bool accesschecker::checkAccess(class wschannel& channel , string path) {
  
-   if (channel.isAuthorized() ) {
+  /* if (channel.isAuthorized() ) {
        return tokenValidator->isStillValid (channel); 
    } else {
        return false;
-   }
+   }*/
 
    return true;
 } 

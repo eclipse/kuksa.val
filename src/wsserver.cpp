@@ -46,7 +46,7 @@ wsserver::wsserver(int port, bool secure) {
      insecureServer->config.port = port;
   }
   
-  tokenValidator =  new authenticator("appstacle", "HS256");
+  tokenValidator =  new authenticator("appstacle", "RS256");
   subHandler = new subscriptionhandler(this, tokenValidator);
   database = new vssdatabase(subHandler);
   cmdProcessor = new vsscommandprocessor(database, tokenValidator, subHandler);
@@ -198,7 +198,7 @@ void* startWSServer(void * arg) {
 int main(int argc, char* argv[])
 {
  
-        wsserver server(PORT, true);
+        wsserver server(PORT, false);
         server.database->initJsonTree();
         pthread_t startWSServer_thread;
         
