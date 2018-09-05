@@ -21,6 +21,7 @@
 
 vssdatabase::vssdatabase(class subscriptionhandler* subHandle) {
    subHandler = subHandle;
+   rwMutex = new pthread_mutex_t();
 }
 
 void vssdatabase::initJsonTree() {
@@ -167,9 +168,9 @@ json vssdatabase::getMetaData(string path) {
 
 	string format_path = "$";
         bool isBranch = false;
-        pthread_mutex_lock (&rwMutex);
+        pthread_mutex_lock (rwMutex);
         string jPath = getPathForMetadata(path, isBranch);
-        pthread_mutex_unlock (&rwMutex);
+        pthread_mutex_unlock (rwMutex);
 
         if(jPath == "") {
             return NULL;
@@ -192,9 +193,9 @@ json vssdatabase::getMetaData(string path) {
            if( (i < tokLength-1) && (tokens[i] == "children")) {
                continue;
            }
-           pthread_mutex_lock (&rwMutex);
+           pthread_mutex_lock (rwMutex);
 	   json resArray = json_query(meta_tree , format_path);
-           pthread_mutex_unlock (&rwMutex);
+           pthread_mutex_unlock (rwMutex);
 	  	  
 	   if(resArray.is_array() && resArray.size() == 1) {
               resJson = resArray[0];
@@ -308,9 +309,9 @@ void vssdatabase::setSignal(string path, json valueJson) {
          string msg = "Path is empty while setting";
          throw genException (msg);
     } 
-    pthread_mutex_lock (&rwMutex);
+    pthread_mutex_lock (rwMutex);
     json setValues = getPathForSet(path, valueJson);
-    pthread_mutex_unlock (&rwMutex);
+    pthread_mutex_unlock (rwMutex);
  
     if(setValues.is_array()) {
 
@@ -321,9 +322,9 @@ void vssdatabase::setSignal(string path, json valueJson) {
 #ifdef DEBUG
          cout << "vssdatabase::setSignal: path found = "<< jPath << endl;
 #endif
-         pthread_mutex_lock (&rwMutex);
+         pthread_mutex_lock (rwMutex);
          json resArray = json_query(data_tree , jPath);
-         pthread_mutex_unlock (&rwMutex);
+         pthread_mutex_unlock (rwMutex);
 
          if(resArray.is_array() && resArray.size() == 1) {
             json resJson = resArray[0];
@@ -366,12 +367,13 @@ void vssdatabase::setSignal(string path, json valueJson) {
                  string msg = "The value type " + value_type +" is not supported";
 	         throw genException (msg);
 	      }
-
-              pthread_mutex_lock (&rwMutex);
+      
+               cout <<" enter lock 7" <<endl;
+              pthread_mutex_lock (rwMutex);
         
               json_replace(data_tree , jPath, resJson);
               
-              pthread_mutex_unlock (&rwMutex);
+              pthread_mutex_unlock (rwMutex);
 #ifdef DEBUG
               cout << "vssdatabase::setSignal: new value set at path " << jPath << endl;
 #endif
@@ -440,9 +442,11 @@ void setJsonValue(json& dest , json& source , string key) {
 json vssdatabase::getSignal(string path) {
     
     bool isBranch = false;
-    pthread_mutex_lock (&rwMutex);
+    
+    pthread_mutex_lock (rwMutex);
     list<string> jPaths = getPathForGet(path, isBranch);
-    pthread_mutex_unlock (&rwMutex);
+    
+    pthread_mutex_unlock (rwMutex);
     int pathsFound = jPaths.size();
     if(pathsFound == 0) {
         json answer;
@@ -463,9 +467,9 @@ json vssdatabase::getSignal(string path) {
           
           for( int i=0 ; i< pathsFound ; i++) {
               string jPath = jPaths.back();
-              pthread_mutex_lock (&rwMutex);
+              pthread_mutex_lock (rwMutex);
               json resArray = json_query(data_tree , jPath);
-              pthread_mutex_unlock (&rwMutex);
+              pthread_mutex_unlock (rwMutex);
               jPaths.pop_back();
               json result = resArray[0];
               if(result.has_key("value")) {
@@ -480,9 +484,9 @@ json vssdatabase::getSignal(string path) {
         
     } else if (pathsFound == 1) {
       string jPath = jPaths.back();
-      pthread_mutex_lock (&rwMutex);
+      pthread_mutex_lock (rwMutex);
       json resArray = json_query(data_tree , jPath);
-      pthread_mutex_unlock (&rwMutex);
+      pthread_mutex_unlock (rwMutex);
       json answer;
       answer["path"] = getReadablePath(jPath); 
       json result = resArray[0];
@@ -505,9 +509,9 @@ json vssdatabase::getSignal(string path) {
         for (int i=0 ; i< pathsFound; i++) {
               json value;
               string jPath = jPaths.back();
-              pthread_mutex_lock (&rwMutex);
+              pthread_mutex_lock (rwMutex);
               json resArray = json_query(data_tree , jPath);
-              pthread_mutex_unlock (&rwMutex);
+              pthread_mutex_unlock (rwMutex);
               jPaths.pop_back();
               json result = resArray[0];
               if(result.has_key("value")) {

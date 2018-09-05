@@ -20,7 +20,9 @@ using namespace jsoncons;
 
 using WssClient = SimpleWeb::SocketClient<SimpleWeb::WSS>;
 
-string url = "localhost:9000/vss";
+string url = "localhost:8090/vss";
+
+bool subThread = false;
 
 
 string getRequest(string path ) {
@@ -48,12 +50,47 @@ string setRequest(string path, int val) {
 
 }
 
+string getMetarequest( string path ) {
+
+  json req;
+   req["requestId"] = 1236;
+   req["action"]= "getMetadata";
+   req["path"] = string(path);
+   stringstream ss; 
+   ss << pretty_print(req);
+   return ss.str();
+}
+
+string getSubRequest (string path) {
+
+   json req;
+   req["requestId"] = 1237;
+   req["action"]= "subscribe";
+   req["path"] = string(path);
+   stringstream ss; 
+   ss << pretty_print(req);
+   return ss.str();
+
+}
+
+string getAuthRequest(string token) {
+
+  json req;
+   req["requestId"] = 1238;
+   req["action"]= "authorize";
+   req["tokens"] = string(token);
+   stringstream ss; 
+   ss << pretty_print(req);
+   return ss.str();
+
+}
+
 void sendRequest(shared_ptr<WssClient::Connection> connection) {
 
     string path, function;
     cout << "Enter vss path eg : Signal.Drivetrain.InternalCombustionEngine.RPM " <<endl;
     getline (cin, path);
-    cout << "Enter vis Function eg: get, set "<< endl;
+    cout << "Enter vis Function eg: authorize, get, set, getmetadata "<< endl;
     getline (cin, function);
     string command;
     if(function == "get") {
@@ -64,6 +101,13 @@ void sendRequest(shared_ptr<WssClient::Connection> connection) {
        getline (cin, val);
        int value = atoi(val.c_str());
        command = setRequest(path, value);
+    } else if (function == "getmetadata") {
+        command = getMetarequest(path);
+    } else if (function == "authorize") {
+        string token;
+        cout << "Enter Token "<< endl;
+        getline (cin, token);
+        command = getAuthRequest(token);
     }
     
     auto send_stream = make_shared<WssClient::SendStream>();
@@ -75,7 +119,7 @@ void sendRequest(shared_ptr<WssClient::Connection> connection) {
 
 void startWSClient() {
 
-  WssClient client(url , false);
+  WssClient client(url , true ,"Client.pem", "Client.key","CA.pem");
 
   client.on_message = [](shared_ptr<WssClient::Connection> connection, shared_ptr<WssClient::Message> message) {
     cout << "Response >> " << message->string() << endl;
@@ -83,7 +127,7 @@ void startWSClient() {
   };
 
   client.on_open = [](shared_ptr<WssClient::Connection> connection) {
-    cout << "Connection wirh server at " << url << " opened" << endl;
+    cout << "Connection with server at " << url << " opened" << endl;
     sendRequest(connection); 
   };
 

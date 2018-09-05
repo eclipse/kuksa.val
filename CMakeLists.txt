@@ -19,7 +19,7 @@ project(w3c-visserver)
 set(BUILD_EXE ON)
 
 #set this variable to ON to build the testclient
-set(BUILD_TEST_CLIENT OFF)
+set(BUILD_TEST_CLIENT ON)
 
 
 

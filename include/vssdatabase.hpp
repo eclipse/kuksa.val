@@ -32,7 +32,7 @@ class vssdatabase {
 friend class subscriptionhandler;
 
  private:
-  pthread_mutex_t rwMutex;
+  pthread_mutex_t* rwMutex;
   json data_tree;
   json meta_tree;
   class subscriptionhandler* subHandler;

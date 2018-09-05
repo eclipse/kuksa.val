@@ -306,7 +306,7 @@ string vsscommandprocessor::processQuery(string req_json , class wschannel& chan
                     error["reason"] = "Forbidden";
                     error["message"] = "Not authorized to access resource";
 
-	            root["error"] = error;
+	            result["error"] = error;
 	   	    result["timestamp"]= time(NULL);
 	
 	            std::stringstream ss;
