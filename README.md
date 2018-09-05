@@ -40,7 +40,7 @@ In this case the server and the client are built on the same folder, hence copy 
 
 The w3c-visserver needs authentification Token to allow access to server side resources. You can create a dummy JWT Token from https://jwt.io/. Use the RSA256 algorithm from the drop down and enter valid "iat" and "exp" data and set "iss : kuksa" and generate a JWT. Once the JWT is generated on the left side. Copy the Public key from the Text box on the right side to a file and rename the fiel to jwt.pub.key and copy the file to  `w3c-visserver/build` folder. Also store the JWT token somewhere so that you could pass the Token to the server for authentication.
 
-![Alt text](./pictures/test1.png?raw=true "jwt")
+![Alt text](./pictures/jwt.png?raw=true "jwt")
 
 Now the apps are ready for testing. Run w3c-visserver using `./w3c-visserver` command and then in a separate terminal start testclient using `./testclient`.
 
@@ -48,7 +48,7 @@ Testclient should connect to the w3c-visserver and promt a message as below
 ![Alt text](./pictures/test1.png?raw=true "test1")
 
 Authenticate with the server using the JWT token
-![Alt text](./pictures/test1.png?raw=true "test4")
+![Alt text](./pictures/test4.png?raw=true "test4")
 
 Enter the vss path and function as set and a dummy integer value.
 ![Alt text](./pictures/test2.png?raw=true "test2")
