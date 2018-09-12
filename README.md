@@ -25,7 +25,7 @@ This application needs the input vss data to create the tree structure. The inpu
 Add the files to the location where the application executable is run from.
 
 
-# Test Secure Websocket connection with JWT authentication
+# How tos
 Create a self-signed certificate using the steps mention [here]( https://kb.op5.com/pages/viewpage.action?pageId=19073746#sthash.GHsaFkZe.WDGgcOja.dpbs).
 
 Follow the instructions create the private and public key files. Follow the process create 2 sets of key pairs using the same CA ( Certificate authority ) and at the end rename the MyRoot.key to CA.key. Use CA.key and one set of keys (.key and .pem) on the client side ( rename files to Client.pem and Client.key). and use the other set of keys (.pem and .key) on the server side ( rename files to Server.pem and Server.key).
@@ -72,8 +72,7 @@ Enter the same vss path as above and fuction as get. You should receive the prev
 * Create an AGL image using the instructions in `agl-kuksa` project.
 * Burn the image on to an SD card and boot the image on a Raspi 3.
 * ssh into the raspi 3 with root.
-* Create a self-signed certificate using the steps mention [here]( https://kb.op5.com/pages/viewpage.action?pageId=19073746#sthash.GHsaFkZe.WDGgcOja.dpbs) and rename the files to Server.key,   Server.pem. Make sure you use the same CA while creating Client certificates that connect to the w3c-visserver.
-* Then copy the Server.key and Server.pem to /usr/bin/w3c-visserver-api using a ssh connection.
-* Copy the vss data file https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.json into `./usr/bin/w3c-visserver-api`
+* Go to /usr/bin/w3c-visserver-api using the ssh connection.
+* Copy the vss data file https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.json into `./usr/bin/w3c-visserver-api`. By default the AGL build will contain demo cerificates that work with other apps in the repo. You could create your own cerificates and tokens using the instaructions above.
 * Launch the app. Using command `./usr/bin/w3c-visserver-api/w3c-visserver`
 

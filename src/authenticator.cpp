@@ -46,7 +46,7 @@ int authenticator::validate (wschannel &channel , string authToken) {
       claims[e.first] = e.second.to_json().to_str();
   }
 
-   string rsa_pub_key = getPublicKey("jwt.key.pub");
+   string rsa_pub_key = getPublicKey("jwt.pub.key");
    auto verifier =jwt::verify()
    .allow_algorithm(jwt::algorithm::rs256(rsa_pub_key, "", "", ""));
   

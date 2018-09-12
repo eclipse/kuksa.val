@@ -70,5 +70,12 @@ if(BUILD_TEST_CLIENT)
    target_include_directories(testclient PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/jsoncons)
 endif(BUILD_TEST_CLIENT)
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/jwt.pub.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+
 install( TARGETS ${PROJECT_NAME} DESTINATION /usr/bin/w3c-visserver)
+install( TARGETS jwt.pub.key DESTINATION /usr/bin/w3c-visserver)
+install( TARGETS Server.pem DESTINATION /usr/bin/w3c-visserver)
+install( TARGETS Server.key DESTINATION /usr/bin/w3c-visserver)
 
