@@ -1,0 +1,8 @@
+[Unit]
+Description = w3c VIS server
+
+[Service]
+ExecStart = /usr/bin/w3c-visserver/w3c-visserver
+
+[Install]
+WantedBy = multi-user.target
