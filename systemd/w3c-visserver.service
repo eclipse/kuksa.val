@@ -1,8 +1,11 @@
 [Unit]
-Description = w3c VIS server
+Description=w3c VIS server
+After=network.target
 
 [Service]
-ExecStart = /usr/bin/w3c-visserver/w3c-visserver
+WorkingDirectory=/usr/bin/w3c-visserver
+ExecStart=/usr/bin/w3c-visserver/w3c-visserver
+Restart=on-abort
 
 [Install]
-WantedBy = multi-user.target
+WantedBy=multi-user.target
