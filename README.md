@@ -13,7 +13,7 @@ The implementation at the moment is in a nacent state and includes only the basi
 # How to build
 w3c-visserver can be built as a library which could be used in another application. Eg: could be found in the vehicle2cloud app.
 ```
-cd w3c-visserver
+cd w3c-visserver-api
 mkdir build
 cd build
 cmake ..
