@@ -71,8 +71,13 @@ Enter the same vss path as above and fuction as get. You should receive the prev
 
 * Create an AGL image using the instructions in `agl-kuksa` project.
 * Burn the image on to an SD card and boot the image on a Raspi 3.
+* w3c-visserver is deployed as a systemd service `w3c-visserver.service` which opens a secure websocket connection on port 8090.
+
+
+#### On first launch
+
 * ssh into the raspi 3 with root.
-* Go to /usr/bin/w3c-visserver-api using the ssh connection.
-* Copy the vss data file https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.json into `./usr/bin/w3c-visserver-api`. By default the AGL build will contain demo cerificates that work with other apps in the repo. You could create your own cerificates and tokens using the instaructions above.
-* Launch the app. Using command `./usr/bin/w3c-visserver-api/w3c-visserver`
+* Go to `/usr/bin/w3c-visserver` using the ssh connection.
+* copy the vss data file https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.json into `./usr/bin/w3c-visserver`. By default the AGL build will contain demo cerificates that work with other apps in the repo. You could create your own cerificates and tokens using the instaructions above.
+* Reboot the raspi 3
 
