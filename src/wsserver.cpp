@@ -210,7 +210,7 @@ int main(int argc, char* argv[])
 
         }
 
-      getchar();
+      while (1) { usleep (1000000); };
 }
 
 
