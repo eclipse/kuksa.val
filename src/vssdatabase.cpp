@@ -367,12 +367,9 @@ void vssdatabase::setSignal(string path, json valueJson) {
                  string msg = "The value type " + value_type +" is not supported";
 	         throw genException (msg);
 	      }
-      
-               cout <<" enter lock 7" <<endl;
+
               pthread_mutex_lock (rwMutex);
-        
               json_replace(data_tree , jPath, resJson);
-              
               pthread_mutex_unlock (rwMutex);
 #ifdef DEBUG
               cout << "vssdatabase::setSignal: new value set at path " << jPath << endl;
