@@ -22,6 +22,7 @@
 vssdatabase::vssdatabase(class subscriptionhandler* subHandle) {
    subHandler = subHandle;
    rwMutex = new pthread_mutex_t();
+   pthread_mutex_init(rwMutex, NULL);
 }
 
 void vssdatabase::initJsonTree() {
