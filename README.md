@@ -26,9 +26,25 @@ Add the files to the location where the application executable is run from.
 
 
 # How tos
-Create a self-signed certificate using the steps mention [here]( https://kb.op5.com/pages/viewpage.action?pageId=19073746#sthash.GHsaFkZe.WDGgcOja.dpbs).
 
-Follow the instructions create the private and public key files. Follow the process create 2 sets of key pairs using the same CA ( Certificate authority ) and at the end rename the MyRoot.key to CA.key. Use CA.key and one set of keys (.key and .pem) on the client side ( rename files to Client.pem and Client.key). and use the other set of keys (.pem and .key) on the server side ( rename files to Server.pem and Server.key).
+Demo Certificates are available in the examples/demo-certificates folder and these certs are automatically copied on building the apps and api. In case you need to create new certs follow the steps below, otherwise skip the steps below.
+
+### Create PKI certificates
+
+Go to examples/demo-certificates folder. Make changes in the openssl.cnf file regarding the Company name and the allowed IPs and DNS server names. Make sure you also add the IPs and DNS to v3.ext file as well.
+
+1. openssl genrsa -out MyRootCA.key 2048
+2. openssl req -x509 -new -nodes -key MyRootCA.key -sha256 -days 1024 -out MyRootCA.pem -config openssl.cnf
+3. openssl genrsa -out MyClient1.key 2048
+4. openssl req -new -key MyClient1.key -out MyClient1.csr -config openssl.cnf
+5. openssl x509 -req -in MyClient1.csr -extfile v3.ext -CA MyRootCA.pem -CAkey MyRootCA.key -CAcreateserial -out MyClient1.pem -days 1024 -sha256
+6. Rename the MyClient1.pem and MyClient1.key to Server.pem and Server.key
+7. follow step 3 to 5 to create another set of certs.
+8. Rename the MyClient1.pem and MyClient1.key to Client.pem and Client.key and rename MyRootCA.pem and MyRootCA.key to CA.pem and CA.key respectively.
+
+Steps were taken from [here]( https://kb.op5.com/pages/viewpage.action?pageId=19073746#sthash.GHsaFkZe.WDGgcOja.dpbs) & [here](https://stackoverflow.com/questions/18233835/creating-an-x509-v3-user-certificate-by-signing-csr).
+
+### Build W3C-Server
 
 Now enable `BUILD_EXE` and `BUILD_TEST_CLIENT` flags by changing to ON in w3cvisserver/CMakeLists.txt.
 
