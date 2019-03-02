@@ -57,6 +57,23 @@ string pathNotFoundResponse(uint32_t request_id, const string action, const stri
 }
 
 
+string valueOutOfBoundsResponse(uint32_t request_id, const string action, const string message) {
+
+   json answer;
+   answer["action"] = action;
+   answer["requestId"]= request_id;
+   json error;
+   error["number"] = 400;
+   error["reason"] = "Value passed is out of bounds";
+   error["message"] = message;
+   answer["error"] = error;
+   answer["timestamp"] = time(NULL);
+   stringstream ss; 
+   ss << pretty_print(answer);
+   return ss.str();
+}
+
+
 
 vsscommandprocessor::vsscommandprocessor(class vssdatabase* dbase, class  authenticator* vdator , class subscriptionhandler* subhandler) {
    database = dbase;
@@ -116,7 +133,10 @@ string vsscommandprocessor::processSet(uint32_t request_id, string path, json va
        return ss.str();
    } catch (noPathFoundonTree &e) {
        cout << e.what() << endl;
-       pathNotFoundResponse(request_id, "set", path);
+       return pathNotFoundResponse(request_id, "set", path);
+   } catch (outOfBoundException &outofboundExp) {
+       cout << outofboundExp.what() << endl;
+       return valueOutOfBoundsResponse(request_id ,"set",outofboundExp.what());
    }
    
    

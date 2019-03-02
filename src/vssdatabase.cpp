@@ -12,6 +12,7 @@
  * *****************************************************************************
  */
 #include <stdexcept>
+#include <limits> 
 #include "vssdatabase.hpp"
 #include "visconf.hpp"
 #include <regex>
@@ -302,6 +303,103 @@ json vssdatabase::getPathForSet(string path, json values) {
   return setValues;
 }
 
+// Check the value type and if the value is within the range
+void checkTypeAndBound (string value_type, json val) {
+    bool typeValid = false;
+     
+    if(value_type == "UInt8") {
+       typeValid = true;
+       long double longDoubleVal = val.as<long double>();
+       if(!((longDoubleVal <= numeric_limits<uint8_t>::max()) && (longDoubleVal >= numeric_limits<uint8_t>::min()))) {
+          cout<< "vssdatabase::setSignal: The value passed " << val.as<float>() << "for type "<< value_type <<" is out of bound."<< endl;
+          std::stringstream msg;
+          msg << "The type " << value_type << " with value " << val.as<float>() << " is out of bound";
+          throw outOfBoundException (msg.str());  
+       }
+	         
+    }else if (value_type == "UInt16") {
+       typeValid = true;
+       long double longDoubleVal = val.as<long double>();
+       if(!((longDoubleVal <= numeric_limits<uint16_t>::max()) && (longDoubleVal >= numeric_limits<uint16_t>::min()))) {
+          cout<< "vssdatabase::setSignal: The value passed " << val.as<float>() << "for type "<< value_type <<" is out of bound."<< endl;
+          std::stringstream msg;
+          msg << "The type " << value_type << " with value " << val.as<float>() << " is out of bound";
+          throw outOfBoundException (msg.str());
+       } 
+	         
+    }else if (value_type == "UInt32") {
+       typeValid = true;
+       long double longDoubleVal = val.as<long double>();
+       if(!((longDoubleVal <= numeric_limits<uint32_t>::max()) && (longDoubleVal >= numeric_limits<uint32_t>::min()))) {
+          cout<< "vssdatabase::setSignal: The value passed " << val.as<float>() << " for type "<< value_type <<" is out of bound."<< endl;
+          std::stringstream msg;
+          msg << "The type " << value_type << " with value " << val.as<float>() << " is out of bound";
+          throw outOfBoundException (msg.str());
+       } 
+	         
+    }else if (value_type == "Int8") {
+       typeValid = true;
+       long double longDoubleVal = val.as<long double>();
+       if(!((longDoubleVal <= numeric_limits<int8_t>::max()) && (longDoubleVal >= numeric_limits<int8_t>::min()))) {
+          cout<< "vssdatabase::setSignal: The value passed " << val.as<float>() << "for type "<< value_type <<" is out of bound."<< endl;
+          std::stringstream msg;
+          msg << "The type " << value_type << " with value " << val.as<float>() << " is out of bound";
+          throw outOfBoundException (msg.str());  
+       }         
+    }else if (value_type == "Int16") {
+       typeValid = true;
+       long double longDoubleVal = val.as<long double>();
+       if(!((longDoubleVal <= numeric_limits<int16_t>::max()) && (longDoubleVal >= numeric_limits<int16_t>::min()))) {
+          cout<< "vssdatabase::setSignal: The value passed " << val.as<float>() << "for type "<< value_type <<" is out of bound."<< endl;
+          std::stringstream msg;
+          msg << "The type " << value_type << " with value " << val.as<float>() << " is out of bound";
+          throw outOfBoundException (msg.str());  
+       } 
+	         
+    }else if (value_type == "Int32") {
+       typeValid = true;
+       long double longDoubleVal = val.as<long double>();
+       if(!((longDoubleVal <= numeric_limits<int32_t>::max()) && (longDoubleVal >= numeric_limits<int32_t>::min()))) {
+          cout<< "vssdatabase::setSignal: The value passed " << val.as<float>() << "for type "<< value_type <<" is out of bound."<< endl;
+          std::stringstream msg;
+          msg << "The type " << value_type << " with value " << val.as<float>() << " is out of bound";
+          throw outOfBoundException (msg.str());   
+       }        
+    }else if (value_type == "Float") {
+       typeValid = true;
+       long double longDoubleVal = val.as<long double>();
+       float max = numeric_limits<float>::max();
+       float min = numeric_limits<float>::min();
+       if(!((longDoubleVal <= max) && (longDoubleVal >= min) || (longDoubleVal >= ( max * -1)) && (longDoubleVal <= (min * -1)))) {
+          cout<< "vssdatabase::setSignal: The value passed " << val.as<double>() << "for type "<< value_type <<" is out of bound."<< endl;
+          std::stringstream msg;
+          msg << "The type " << value_type << " with value " << val.as<double>() << " is out of bound";
+          throw outOfBoundException (msg.str());   
+       }        
+    }else if (value_type == "Double") {
+       typeValid = true;
+       long double longDoubleVal = val.as<long double>();
+       double max = numeric_limits<double>::max();
+       double min = numeric_limits<double>::min();
+       if(!((longDoubleVal <= max) && (longDoubleVal >= min) || (longDoubleVal >= (max * -1)) && (longDoubleVal <= (min * -1)))) {
+          cout<< "vssdatabase::setSignal: The value passed " << val.as<long double>() << "for type "<< value_type <<" is out of bound."<< endl;
+          std::stringstream msg;
+          msg << "The type " << value_type << " with value " << val.as<long double>() << " is out of bound";
+          throw outOfBoundException (msg.str());   
+       }
+	         
+    }else if (value_type == "Boolean"){
+       typeValid = true;         
+    }else if (value_type == "String") {
+       typeValid = true;
+    }
+
+    if (!typeValid) {
+        cout<< "vssdatabase::setSignal: The  type "<< value_type <<" is either not supported "<< endl;
+        string msg = "The type " + value_type +" is not supported ";
+        throw genException (msg);
+    } 
+}
 
 void vssdatabase::setSignal(string path, json valueJson) {
 
@@ -322,52 +420,19 @@ void vssdatabase::setSignal(string path, json valueJson) {
 
 #ifdef DEBUG
          cout << "vssdatabase::setSignal: path found = "<< jPath << endl;
+         cout << "value to set asstring = " << item["value"].as<string>() <<endl;
 #endif
          pthread_mutex_lock (rwMutex);
          json resArray = json_query(data_tree , jPath);
          pthread_mutex_unlock (rwMutex);
-
          if(resArray.is_array() && resArray.size() == 1) {
             json resJson = resArray[0];
-
            if(resJson.has_key("type")) {
               string value_type = resJson["type"].as<string>();
-
-	      if( value_type == "UInt8") {
-                  uint8_t val = item["value"].as<uint8_t>();
-	          resJson.insert_or_assign("value", val);
-	      }else if (value_type == "UInt16") {
-	          uint16_t val = item["value"].as<uint16_t>();
-	          resJson.insert_or_assign("value", val);
-	      }else if (value_type == "UInt32") {
-	          uint32_t val = item["value"].as<uint32_t>();
-	          resJson.insert_or_assign("value", val);
-	      }else if (value_type == "Int8") {
-	          int8_t val = item["value"].as<int8_t>();
-	          resJson.insert_or_assign("value", val);
-	      }else if (value_type == "Int16") {
-	          int16_t val = item["value"].as<int16_t>();
-	          resJson.insert_or_assign("value", val);
-	      }else if (value_type == "Int32") {
-	          int32_t val = item["value"].as<int32_t>();
-	          resJson.insert_or_assign("value", val);
-	      }else if (value_type == "Float") {
-	          float val = item["value"].as<float>();
-	          resJson.insert_or_assign("value", val);
-	      }else if (value_type == "Double") {
-	          double val = item["value"].as<double>();
-	          resJson.insert_or_assign("value", val);
-	      }else if (value_type == "Boolean") {
-                 bool val = item["value"].as<bool>();
-	          resJson.insert_or_assign("value", val);
-	      }else if (value_type == "String") {
-	         string val = item["value"].as<string>();
-	          resJson.insert_or_assign("value", val);
-	      }else {
-	         cout<< "vssdatabase::setSignal: The value type "<< value_type <<" is not supported"<< endl;
-                 string msg = "The value type " + value_type +" is not supported";
-	         throw genException (msg);
-	      }
+              json val = item["value"];
+	      checkTypeAndBound(value_type, val);
+              
+              resJson.insert_or_assign("value", val);
 
               pthread_mutex_lock (rwMutex);
               json_replace(data_tree , jPath, resJson);
@@ -406,34 +471,10 @@ void setJsonValue(json& dest , json& source , string key) {
 
   if(!source.has_key("type")) {
      cout << "vssdatabase::setJsonValue : could not set value! type is not present in source json!"<< endl;
-     return;
+     string msg = "Unknown type for signal found at " + key;
+     throw genException (msg); 
   }
-
-  string type = source["type"].as<string>();
-
-  if(type == "String") {
-      dest[key] = source["value"].as<string>();
-  } else if (type == "UInt8") {
-      dest[key] = source["value"].as<uint8_t>();
-  } else if (type == "UInt16") {
-      dest[key] = source["value"].as<uint16_t>();
-  } else if (type == "UInt32") {
-      dest[key] = source["value"].as<uint32_t>();
-  } else if (type == "Int8") {
-      dest[key] = source["value"].as<int8_t>();
-  } else if (type == "Int16") {
-      dest[key] = source["value"].as<int16_t>();
-  } else if (type == "Int32") {
-      dest[key] = source["value"].as<int32_t>();
-  } else if (type == "Float") {
-      dest[key] = source["value"].as<float>();
-  } else if (type == "Double") {
-      dest[key] = source["value"].as<double>();
-  } else if (type == "Boolean") {
-      dest[key] = source["value"].as<bool>();
-  } else {
-      cout << "vssdatabase::setJsonValue : could not set value! type was unknown"<<endl;
-  }
+  dest[key] = source["value"];
 }
 
 
@@ -492,10 +533,6 @@ json vssdatabase::getSignal(string path) {
          setJsonValue(answer , result, "value");
          return answer;
       } else {
-         if(!result.has_key("type")) {
-             string msg = "Unknown type for signal found at " + getReadablePath(jPath);
-             throw genException (msg); 
-         }
          answer["value"] = "---";
          return answer;
       }

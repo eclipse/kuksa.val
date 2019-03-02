@@ -12,10 +12,6 @@
  * *****************************************************************************
  */
 #include "wsserver.hpp"
-#include "vsscommandprocessor.hpp"
-#include "visconf.hpp"
-
-#define PORT 8090
  
 
 uint16_t connections[MAX_CLIENTS + 1] = {0};
@@ -179,8 +175,6 @@ void wsserver::sendToConnection(uint32_t connectionID, string message) {
           }
       }
 
-
-
     }
 }
 
@@ -191,26 +185,19 @@ void* startWSServer(void * arg) {
 
 }
 
-/**
- * @brief  Test main.
- * @return
- */
-int main(int argc, char* argv[])
+
+void wsserver::start()
 {
- 
-        wsserver server(PORT, true);
-        server.database->initJsonTree();
+        this->database->initJsonTree();
         pthread_t startWSServer_thread;
         
         
         /* create the web socket server thread. */
         if(pthread_create(&startWSServer_thread, NULL, &startWSServer, NULL )) {
          cout << "main: Error creating websocket server run thread"<<endl;
-         return 1;
 
         }
 
-      while (1) { usleep (1000000); };
 }
 
 

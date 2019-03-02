@@ -53,4 +53,21 @@ class genException: public exception
   }
 } ;
 
+// value out of bound exception
+class outOfBoundException: public exception
+{
+  private:
+    string message;
+
+  public:
+    
+    outOfBoundException(string msg) {
+       message = msg;
+    }
+
+  virtual const char* what() const throw()
+  {
+    return message.c_str();
+  }
+} ;
 

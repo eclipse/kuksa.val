@@ -22,6 +22,10 @@
 #include <jsoncons_ext/jsonpath/json_query.hpp>
 #include "subscriptionhandler.hpp"
 
+#ifdef UNIT_TEST
+#include "w3cunittest.hpp"
+#endif
+
 using namespace std;
 using namespace jsoncons;
 using namespace jsoncons::jsonpath;
@@ -30,6 +34,10 @@ using jsoncons::json;
 class vssdatabase {
 
 friend class subscriptionhandler;
+
+#ifdef UNIT_TEST
+     friend class w3cunittest;
+#endif
 
  private:
   pthread_mutex_t* rwMutex;

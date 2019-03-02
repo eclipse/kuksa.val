@@ -17,6 +17,7 @@
 #include "subscriptionhandler.hpp"
 #include "vssdatabase.hpp"
 #include "authenticator.hpp"
+#include "visconf.hpp"
 
 using namespace std;
 
@@ -45,6 +46,7 @@ class wsserver {
     ~wsserver();
     void startServer(string endpointName);
     void sendToConnection(uint32_t connID, string message);
+    void start();
 
 };
 #endif
