@@ -21,6 +21,9 @@
 #include "visconf.hpp"
 #include "exception.hpp"
 
+#ifdef JSON_SIGNING_ON
+#include "signing.hpp"
+#endif
 
 using namespace std;
 
@@ -80,6 +83,9 @@ vsscommandprocessor::vsscommandprocessor(class vssdatabase* dbase, class  authen
    tokenValidator = vdator;
    subHandler = subhandler;
    accessValidator = new accesschecker(tokenValidator); 
+#ifdef JSON_SIGNING_ON
+   signer = new signing();
+#endif
 }
 
 
@@ -339,6 +345,9 @@ string vsscommandprocessor::processQuery(string req_json , class wschannel& chan
 		   cout << "vsscommandprocessor::processQuery: get query  for " << path << " with request id " <<  request_id << endl;
 #endif
                    response = processGet(request_id, path);
+#ifdef JSON_SIGNING_ON
+                   response = signer->sign(response);
+#endif
 	        } else if(action == "set")  {
 		   json value = root["value"];
 #ifdef DEBUG

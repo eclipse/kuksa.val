@@ -34,6 +34,7 @@ set(TEST_SRC_FILES
          ${CMAKE_CURRENT_SOURCE_DIR}/../src/authenticator.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/../src/subscriptionhandler.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/../src/wsserver.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/../src/signing.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/w3cunittest.cpp
 )
 add_executable(${PROJECT_NAME} ${TEST_SRC_FILES})

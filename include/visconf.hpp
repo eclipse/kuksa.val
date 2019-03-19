@@ -20,5 +20,6 @@
 #define MAX_SIGNALS 2000
 #define MAX_TREENODES 1024
 #define MAX_PARENT_BRANCHES 10
+//#define JSON_SIGNING_ON
 
 #endif

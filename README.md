@@ -20,6 +20,21 @@ cmake ..
 make
 ```
 
+JSON Signing has been introduced additionally to sign the JSON response for GET and SUBSCRIBE Response. By default this has been disabled. To enable this feature go to visconf.hpp file and uncomment the line `define JSON_SIGNING_ON`. Please note, JSON signing works only with a valid pair of public / private certificate. For testing, you could create example certificates by following the below steps.
+Do not add any passphrase when asked for.
+
+```
+ssh-keygen -t rsa -b 4096 -m PEM -f signing.private.key 
+openssl rsa -in signing.private.key  -pubout -outform PEM -out signing.public.key
+```
+
+Copy the files signing.private.key & signing.public.key to the build directory.
+
+The client also needs to validate the signed JSON using the public certificate when JSON signing is enabled in server.
+
+This could also be easily extended to support JSON signing for the requests as well with very little effort.
+
+
 # How to run
 This application needs the input vss data to create the tree structure. The input file can be taken from https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.json. Clone the files and place them in the build folder where the executables are built. Keep the names of the files the same.
 Add the files to the location where the application executable is run from.
@@ -82,6 +97,7 @@ Enter the same vss path as above and fuction as get. You should receive the prev
 | GETMETA  | :heavy_check_mark: |
 | Secure WebSocket  | :heavy_check_mark: |   
 | Authentification  | :heavy_check_mark: |
+| JSON signing    | :heavy_check_mark:  |
 
 ## Running on AGL on Raspberry Pi 3
 

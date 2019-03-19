@@ -11,32 +11,34 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#ifndef __W3CUNITTEST_HPP__
-#define __W3CUNITTEST_HPP__
+#ifndef __SIGNING_H__
+#define __SIGNING_H__
 
-
-#include "vssdatabase.hpp"
-#include "wsserver.hpp"
-#include "subscriptionhandler.hpp"
-#include "authenticator.hpp"
-#include "accesschecker.hpp"
-#include "signing.hpp"
+#include <jwt-cpp/base.h>
+#include <jwt-cpp/jwt.h>
+#include <jsoncons/json.hpp>
+#include <iostream>
 
 using namespace std;
 using namespace jsoncons;
-using namespace jsoncons::jsonpath;
-using jsoncons::json;
+using namespace jwt;
 
-class w3cunittest {
+class signing {
 
- public:
+private:
+    string key = "";
+    string pubkey = "";
+    string algorithm = "RS256";
 
-    w3cunittest(bool secure);
-    ~w3cunittest();
-    list<string> test_wrap_getPathForGet(string path , bool &isBranch);
-    json test_wrap_getPathForSet(string path,  json value);
+public:
+   signing();
+   string getKey (string fileName);
+   string getPublicKey (string fileName);
+   string sign(json data);
+   string sign(string data);
+#ifdef UNIT_TEST
+   string decode(string signedData);
+#endif
 };
-
-
 
 #endif

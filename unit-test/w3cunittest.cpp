@@ -28,6 +28,7 @@ subscriptionhandler* subhandler;
 authenticator* authhandler;
 accesschecker* accesshandler;
 vssdatabase* database;
+signing* json_signer;
 vsscommandprocessor* commandProc;
 
 class w3cunittest unittestObj(false);
@@ -38,6 +39,7 @@ w3cunittest::w3cunittest(bool secure) {
    subhandler = new subscriptionhandler(webSocket, authhandler); 
    database = new vssdatabase(subhandler);
    commandProc = new vsscommandprocessor(database, authhandler , subhandler);
+   json_signer = new signing();
    database->initJsonTree();
 }
 
@@ -1132,6 +1134,9 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 	})");
    
    string response = commandProc->processQuery(get_request,channel);
+#ifdef JSON_SIGNING_ON   
+   response = json_signer->decode(response);
+#endif 
    
    json expected = json::parse(R"({
     "action": "get",
@@ -1172,7 +1177,13 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
     "value": 2345
     })");
    
+#ifdef JSON_SIGNING_ON   
+   response = json_signer->decode(response);
+#endif 
+
    json response_json = json::parse(response);
+   
+   
    
 
    BOOST_TEST(response_json.has_key("timestamp") == true);
@@ -1242,7 +1253,11 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
       ]
     }
     )");
-   
+
+#ifdef JSON_SIGNING_ON   
+   response = json_signer->decode(response);
+#endif 
+
    json response_json = json::parse(response);
    
    BOOST_TEST(response_json.has_key("timestamp") == true);
@@ -1265,6 +1280,9 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 	})");
    
    string response = commandProc->processQuery(request,channel);
+#ifdef JSON_SIGNING_ON   
+   response = json_signer->decode(response);
+#endif 
    
    json expected = json::parse(R"({
                          "action":"get",
@@ -1389,7 +1407,11 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
     "path": "Signal.OBD.RPM",
     "requestId": 8756, 
     "value": 2345 
-    })");          
+    })");
+
+#ifdef JSON_SIGNING_ON   
+   response_getvalid = json_signer->decode(response_getvalid);
+#endif           
    
    json response_response_getvalid_json = json::parse(response_getvalid);
    
@@ -1400,4 +1422,61 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
    response_response_getvalid_json.erase("timestamp");
    BOOST_TEST(response_response_getvalid_json == expected_getvalid);
 }
+
+//----------------------------------------------------json signing Tests ------------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(json_signing)
+{
+
+   wschannel channel;
+   channel.setConnID(1234);
+   channel.setAuthorized(true);
+   channel.setAuthToken(AUTH_JWT);
+   
+   string get_request(R"({
+		"action": "get",
+		"path": "Signal.OBD.RPM",
+		"requestId": "8756"
+	})");
+   
+   string response = commandProc->processQuery(get_request,channel);
+#ifdef JSON_SIGNING_ON   
+   response = json_signer->decode(response);
+#endif  
+   json response_json = json::parse(response);
+  
+   BOOST_TEST(response_json.has_key("timestamp") == true);
+   // remove timestamp to match
+   response_json.erase("timestamp");
+   
+   json expected = json::parse(R"({
+    "action": "get",
+    "path": "Signal.OBD.RPM",
+    "requestId": 8756,
+    "value": 2345
+    })");
+   
+   // Pre-check
+   BOOST_TEST(response_json == expected);
+   
+   // sign the response json
+   string signedData = json_signer->sign(response_json);
+   //cout << signedData << endl;
+  
+   // Assert signed data.
+   BOOST_TEST(signedData == "ewoJCSJhbGciOiAiUlMyNTYiLAoJCSJ0eXAiOiAiR0VOSVZJLVZTUyIKICAgfQ.eyJhY3Rpb24iOiJnZXQiLCJwYXRoIjoiU2lnbmFsLk9CRC5SUE0iLCJyZXF1ZXN0SWQiOjg3NTYsInZhbHVlIjoyMzQ1fQ.oNr3kbJMX5aAbTw92xN5HmFMMYyTDMcbPJSX0_F1W29HTdPEauYJo2i5Q-oyi5od-yAX-kznpIcT9rrlyKGvYXKxm5V9auhLsvMkgdTLIHURUbq7NEd8XOeYmNOw0X1rtouuNjXJQ4_00ulFwI2notQQ0Cnln2TpR2JnS0AO8-MwGj70DfFc36nN-oE4WwMimkEfxE2C9WqsRvnS5_wELFXe1j60Q_gvcdnVa62tluhwgz9GnJp_7WA-eEajmRWk9rmsxjuVa5pFsIn1a1y--nLIrFI1r9pftVcRVxxlRzp8tMUaevTbVUvU-vo16wYt9Uxj66e67sfr189Qur9YxheRjjA5G1XWL27K3J9anH73eJ1Bxb6_c6k1bmnky15W75uuFX8YPm_Lsm5xeYl_jcF6JnkecujhFEFKyMb_c2x9eW5LPWyIOuZYkFP006tClwS_BgiyPf5Wz2ItJ6UJKCMDY-SwnkHUDI9Ed30yDBDmD8wg92zBrRboXG16RR0zIPugVi4ag6E9DVyCJDsGp_ZzKt8Ez6kltRslYodMvtBqA185cWReTPPP6v9p0seC9z75sYXWyYO5nu60kIrhIXQc-BApyUfWeA9-lPgHn2uUP1DiSRlec_olWhxMMbZ6TfOGzr59mJdZWRk1bydZ5lQfYmY3Vu9U4nJe9B6T0-4"); 
+   
+
+   // now decode the signed json 
+   string decoded_json_as_string = json_signer->decode(signedData);
+   json decoded_json = json::parse(decoded_json_as_string);
+
+   
+   // Assert decodes and the expected json
+   BOOST_TEST(decoded_json == expected);
+
+}
+
+
+
 
