@@ -18,14 +18,15 @@
 #include <regex>
 #include "exception.hpp"
 
-
-
-vssdatabase::vssdatabase(class subscriptionhandler* subHandle) {
+// Constructor
+vssdatabase::vssdatabase(class subscriptionhandler* subHandle, class accesschecker* accValidator) {
    subHandler = subHandle;
+   accessValidator = accValidator;
    rwMutex = new pthread_mutex_t();
    pthread_mutex_init(rwMutex, NULL);
 }
 
+// Initializer
 void vssdatabase::initJsonTree() {
     try {
     string fileName = "vss_rel_1.0.json";
@@ -42,8 +43,8 @@ void vssdatabase::initJsonTree() {
     }	
 }
 
+// Tokenizes path with '.' as separator.
 vector<string> getPathTokens(string path) {
-
     vector<string> tokens;
     char* path_char = (char *) path.c_str();
     char* tok = strtok ( path_char , ".");
@@ -52,11 +53,13 @@ vector<string> getPathTokens(string path) {
        tokens.push_back(string(tok));
        tok = strtok( NULL ,".");
     }
-
     return tokens;
 }
 
-string getReadablePath(string jsonpath) {
+// Removes the internally used "children" tag and "$" tag and returns a client readable path.
+// Eg: jsonpath = $['Signal']['children']['OBD']['children']['RPM']
+// The method returns Signal.OBD.RPM 
+string vssdatabase::getReadablePath(string jsonpath) {
   stringstream ss;
   // regex to remove special characters from JSONPath and make it VSS compatible.
   std::regex bracket("[$\\[\\]']{2,4}");
@@ -72,14 +75,19 @@ string getReadablePath(string jsonpath) {
   return readablePath;
 }
 
-
+// Appends the internally used "children" tag to the path. And also formats the path in JSONPath querry format.
+// Eg: path = Signal.OBD.RPM
+// The method returns $['Signal']['children']['OBD']['children']['RPM'] and updates isBranch to false.
 string vssdatabase::getVSSSpecificPath (string path, bool &isBranch , json& tree) {
     vector<string> tokens = getPathTokens(path);
     int tokLength = tokens.size();
     string format_path = "$";
     for(int i=0; i < tokLength; i++) {
       try {
-         format_path = format_path + "." + tokens[i];
+         if(tokens[i] == "*")
+            format_path = format_path + "[" + tokens[i] + "]";
+         else
+            format_path = format_path + "[\'" + tokens[i] + "\']";
          json res = json_query(tree , format_path);
          string type = "";
          if((res.is_array() && res.size() > 0) && res[0].has_key("type")) {
@@ -90,7 +98,7 @@ string vssdatabase::getVSSSpecificPath (string path, bool &isBranch , json& tree
 
          if (type != "" && type == "branch") {
              if( i <  (tokLength - 1)) {           
-                format_path = format_path + ".children";
+                format_path = format_path + "[\'children\']";
              }
              isBranch = true;
          } else if (type != "") {
@@ -108,17 +116,26 @@ string vssdatabase::getVSSSpecificPath (string path, bool &isBranch , json& tree
          return ""; 
       }
    }
-  return format_path;
+   return format_path;
 }
 
+// Returns the absolute path but does not resolve wild card. Used only for metadata request.   
 string vssdatabase::getPathForMetadata(string path , bool &isBranch) {
-
     string format_path = getVSSSpecificPath(path, isBranch , meta_tree); 
     json pathRes =  json_query(meta_tree , format_path, result_type::path);
-    string jPath = pathRes[0].as<string>();
-    return jPath;
+    if(pathRes.size() > 0) {
+       string jPath = pathRes[0].as<string>();
+       return jPath;
+    } else {
+       return "";
+    }
+
 }
 
+// This method uses recursion.
+// Returns the path for get method. Resolves wild card and gives the absolute path.
+// For eg : path = Signal.*.RPM
+// The method would return a list containing 1 signal path =  $['Signal']['children']['OBD']['children']['RPM']
 list<string> vssdatabase::getPathForGet(string path , bool &isBranch) {
 
     list<string> paths;
@@ -143,7 +160,7 @@ list<string> vssdatabase::getPathForGet(string path , bool &isBranch) {
     return paths;
 }
 
-
+// Tokenizes the signal path with '[' - ']' as separator for internal processing.
 // TODO- Regex could be used here?? 
 vector<string> getVSSTokens(string path) {
 
@@ -165,7 +182,7 @@ vector<string> getVSSTokens(string path) {
     return tokens;
 }
 
-
+// Returns the response JSON for metadata request.
 json vssdatabase::getMetaData(string path) {
 
 	string format_path = "$";
@@ -241,6 +258,10 @@ json vssdatabase::getMetaData(string path) {
        return result;
 }
 
+// returns the absolute path based on the base path and the path in the values JSON.
+// eg : path = Signal.*
+//      values = {"OBD.RPM" : 23, "OBD.Speed" : 10}
+// The function would return = {{"path" : "$.Signal.children.OBD.children.RPM", "value" : 23}, {"path" : "$.Signal.children.OBD.children.Speed", "value" : 10}}
 json vssdatabase::getPathForSet(string path, json values) {
 
   json setValues;
@@ -269,8 +290,6 @@ json vssdatabase::getPathForSet(string path, json values) {
              msg << "More than 1 signal found while setting for path = " << path << " with values " <<   pretty_print(values);
              throw genException(msg.str());
          }
-
-         
          readablePath.replace(found,readablePath.length(), replaceString); 
          json pathValue;
          bool isBranch = false;
@@ -290,12 +309,11 @@ json vssdatabase::getPathForSet(string path, json values) {
        json pathValue;
        bool isBranch = false;
        string absolutePath = getVSSSpecificPath(path , isBranch, data_tree);
-         if( isBranch ) {
-             stringstream msg;
-             msg << "Path = " << path << " with values " <<   pretty_print(values) << " points to a branch. Needs to point to a signal";
-             throw genException (msg.str());
-         }
-         
+       if( isBranch ) {
+           stringstream msg;
+           msg << "Path = " << path << " with values " <<   pretty_print(values) << " points to a branch. Needs to point to a signal";
+           throw genException (msg.str());
+       } 
        pathValue["path"] = absolutePath;
        pathValue["value"] = values;
        setValues[0] = pathValue;
@@ -401,8 +419,9 @@ void checkTypeAndBound (string value_type, json val) {
     } 
 }
 
-void vssdatabase::setSignal(string path, json valueJson) {
 
+// Method for setting values to signals.
+void vssdatabase::setSignal(class wschannel& channel,string path, json valueJson) {
 
     if(path == "") {
          string msg = "Path is empty while setting";
@@ -411,62 +430,67 @@ void vssdatabase::setSignal(string path, json valueJson) {
     pthread_mutex_lock (rwMutex);
     json setValues = getPathForSet(path, valueJson);
     pthread_mutex_unlock (rwMutex);
- 
+    
     if(setValues.is_array()) {
+       // check if all the paths have write access.
+       bool haveAccess = accessValidator->checkPathWriteAccess(channel, setValues);
+       if(!haveAccess) {
+         stringstream msg;
+         msg << "Path(s) in set request do not have write access or is invalid";
+         throw noPermissionException (msg.str());
+       } 
 
-      for( int i=0 ; i< setValues.size() ; i++) {
-         json item = setValues[i];
-         string jPath = item["path"].as<string>();
-
+       for( int i=0 ; i< setValues.size() ; i++) {
+          json item = setValues[i];
+          string jPath = item["path"].as<string>();
 #ifdef DEBUG
-         cout << "vssdatabase::setSignal: path found = "<< jPath << endl;
-         cout << "value to set asstring = " << item["value"].as<string>() <<endl;
+          cout << "vssdatabase::setSignal: path found = "<< jPath << endl;
+          cout << "value to set asstring = " << item["value"].as<string>() <<endl;
 #endif
-         pthread_mutex_lock (rwMutex);
-         json resArray = json_query(data_tree , jPath);
-         pthread_mutex_unlock (rwMutex);
-         if(resArray.is_array() && resArray.size() == 1) {
-            json resJson = resArray[0];
-           if(resJson.has_key("type")) {
-              string value_type = resJson["type"].as<string>();
-              json val = item["value"];
-	      checkTypeAndBound(value_type, val);
+          pthread_mutex_lock (rwMutex);
+          json resArray = json_query(data_tree , jPath);
+          pthread_mutex_unlock (rwMutex);
+          if(resArray.is_array() && resArray.size() == 1) {
+             json resJson = resArray[0];
+             if(resJson.has_key("type")) {
+                string value_type = resJson["type"].as<string>();
+                json val = item["value"];
+	        checkTypeAndBound(value_type, val);
               
-              resJson.insert_or_assign("value", val);
+                resJson.insert_or_assign("value", val);
 
-              pthread_mutex_lock (rwMutex);
-              json_replace(data_tree , jPath, resJson);
-              pthread_mutex_unlock (rwMutex);
+                pthread_mutex_lock (rwMutex);
+                json_replace(data_tree , jPath, resJson);
+                pthread_mutex_unlock (rwMutex);
 #ifdef DEBUG
-              cout << "vssdatabase::setSignal: new value set at path " << jPath << endl;
+                cout << "vssdatabase::setSignal: new value set at path " << jPath << endl;
 #endif
 
-               int signalID = resJson["id"].as<int>();
+                int signalID = resJson["id"].as<int>();
                
-               json value = resJson["value"];
-               subHandler->update(signalID, value);
+                json value = resJson["value"];
+                subHandler->update(signalID, value);
 
-            } else {
-               stringstream msg;
-               msg << "Type key not found for " << jPath;
-               throw genException (msg.str());
-            }
-        
-         } else if (resArray.is_array()) {
-                cout <<"vssdatabase::setSignal : Path " << jPath <<" has "<<resArray.size()<<" signals, the path needs refinement"<<endl;
+             } else {
                 stringstream msg;
-                msg << "Path " << jPath <<" has " << resArray.size() << " signals, the path needs refinement";
+                msg << "Type key not found for " << jPath;
                 throw genException (msg.str());
-         }           
-      } 
-
+             }
+        
+          } else if (resArray.is_array()) { 
+               cout <<"vssdatabase::setSignal : Path " << jPath <<" has "<<resArray.size()<<" signals, the path needs refinement"<<endl;
+               stringstream msg;
+               msg << "Path " << jPath <<" has " << resArray.size() << " signals, the path needs refinement";
+               throw genException (msg.str());
+          }           
+       } 
     } else {
         string msg = "Exception occured while setting data for " + path;
         throw genException (msg);
     }
 }
 
-
+// Utility method for setting values to JSON.
 void setJsonValue(json& dest , json& source , string key) {
 
   if(!source.has_key("type")) {
@@ -477,14 +501,13 @@ void setJsonValue(json& dest , json& source , string key) {
   dest[key] = source["value"];
 }
 
-
-json vssdatabase::getSignal(string path) {
+// Returns response JSON for get request.
+json vssdatabase::getSignal(class wschannel& channel,string path) {
     
     bool isBranch = false;
     
     pthread_mutex_lock (rwMutex);
     list<string> jPaths = getPathForGet(path, isBranch);
-    
     pthread_mutex_unlock (rwMutex);
     int pathsFound = jPaths.size();
     if(pathsFound == 0) {
@@ -506,23 +529,38 @@ json vssdatabase::getSignal(string path) {
           
           for( int i=0 ; i< pathsFound ; i++) {
               string jPath = jPaths.back();
+              // check Read access here.
+              if (!accessValidator->checkReadAccess(channel , jPath)) {
+                 // Allow the permitted signals to return. If exception is enable here, then say only "Signal.OBD.RPM" is permitted and get request is made for a branch like "Signal.OBD" then 
+                 // an error would be returned. By disabling the exception the value for Signal.OBD.RPM (only) will be returned.
+                 /*stringstream msg;
+                 msg << "No read access to  " << getReadablePath(jPath);
+                 throw genException (msg.str());*/
+                 jPaths.pop_back();
+                 continue;
+              }
               pthread_mutex_lock (rwMutex);
               json resArray = json_query(data_tree , jPath);
               pthread_mutex_unlock (rwMutex);
               jPaths.pop_back();
               json result = resArray[0];
               if(result.has_key("value")) {
-                  setJsonValue(value , result, getReadablePath(jPath));   
+                  setJsonValue(value , result, getReadablePath(jPath));  
               } else {
                   value[getReadablePath(jPath)] = "---";
               }
           }
           answer["value"] = value;
        } 
-       return answer;
-        
+       return answer;   
     } else if (pathsFound == 1) {
       string jPath = jPaths.back();
+      // check Read access here.
+      if (!accessValidator->checkReadAccess(channel , jPath)) {
+         stringstream msg;
+         msg << "No read access to  " << getReadablePath(jPath);
+         throw noPermissionException (msg.str());
+      }
       pthread_mutex_lock (rwMutex);
       json resArray = json_query(data_tree , jPath);
       pthread_mutex_unlock (rwMutex);
@@ -539,11 +577,21 @@ json vssdatabase::getSignal(string path) {
        
     } else if (pathsFound > 1) {
        json answer;
-       json valueArray = json::make_array(pathsFound);
+       json valueArray = json::array();
        
         for (int i=0 ; i< pathsFound; i++) {
               json value;
               string jPath = jPaths.back();
+              // Check access here.
+              if (!accessValidator->checkReadAccess(channel , jPath)) {
+                 // Allow the permitted signals to return. If exception is enable here, then say only "Signal.OBD.RPM" is permitted and get request is made using wildcard like "Signal.OBD.*" then 
+                 // an error would be returned. By disabling the exception the value for Signal.OBD.RPM (only) will be returned.
+                 /*stringstream msg;
+                 msg << "No read access to  " << getReadablePath(jPath);
+                 throw genException (msg.str());*/
+                 jPaths.pop_back();
+                 continue;
+              }
               pthread_mutex_lock (rwMutex);
               json resArray = json_query(data_tree , jPath);
               pthread_mutex_unlock (rwMutex);
@@ -554,9 +602,7 @@ json vssdatabase::getSignal(string path) {
               } else {
                   value[getReadablePath(jPath)] = "---";
               }
-              
-              valueArray[i] = value;
-             
+              valueArray.insert(valueArray.array_range().end(), value);
         }
         answer["value"] = valueArray;
         return answer;

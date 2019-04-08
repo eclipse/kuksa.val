@@ -11,6 +11,9 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
+#ifndef __EXCEPTION_HPP__
+#define __EXCEPTION_HPP__
+
 #include <exception>
 #include <string>
 
@@ -20,17 +23,16 @@ using namespace std;
 class noPathFoundonTree: public exception
 {
   private:
-    string loc;
+    string message; 
 
   public:
     
     noPathFoundonTree(string path) {
-        loc = path;
+        message = "Path " + path + " not found on the VSS Tree";
     }
 
   virtual const char* what() const throw()
   {
-    string message = "Path " + loc + " not found on the VSS Tree";
     return message.c_str();
   }
 } ;
@@ -44,6 +46,24 @@ class genException: public exception
   public:
     
     genException(string msg) {
+       message = msg;
+    }
+
+  virtual const char* what() const throw()
+  {
+    return message.c_str();
+  }
+} ;
+
+// not permitted- no permission
+class noPermissionException: public exception
+{
+  private:
+    string message;
+
+  public:
+    
+    noPermissionException(string msg) {
        message = msg;
     }
 
@@ -70,4 +90,6 @@ class outOfBoundException: public exception
     return message.c_str();
   }
 } ;
+
+#endif
 

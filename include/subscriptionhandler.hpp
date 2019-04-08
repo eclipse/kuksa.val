@@ -14,12 +14,13 @@
 #ifndef __SUBSCRIPTIONHANDLER_H__
 #define __SUBSCRIPTIONHANDLER_H__
 
-#include <stdio.h>
 #include <queue>
 #include "visconf.hpp"
 #include "wsserver.hpp"
 #include "authenticator.hpp"
 #include "vssdatabase.hpp"
+#include "accesschecker.hpp"
+#include "exception.hpp"
 
 
 using namespace std;
@@ -33,6 +34,7 @@ class subscriptionhandler {
    uint32_t subscribeHandle[MAX_SIGNALS][MAX_CLIENTS];
    class wsserver* server;
    authenticator* validator;
+   accesschecker* checkAccess;
    bool threadRun;
    
    
@@ -41,8 +43,8 @@ class subscriptionhandler {
 
    
    queue<pair<uint32_t, json>> buffer; 
-   subscriptionhandler(class wsserver* server, class authenticator* authenticate);
-   uint32_t subscribe (class vssdatabase* db, uint32_t channelID  , string path);
+   subscriptionhandler(class wsserver* wserver, class authenticator* authenticate, class accesschecker* checkAccess);
+   uint32_t subscribe (class wschannel& channel, class vssdatabase* db, uint32_t channelID, string path);
    int unsubscribe (uint32_t subscribeID);
    int unsubscribeAll (uint32_t connectionID);
    int update ( int signalID, json value);

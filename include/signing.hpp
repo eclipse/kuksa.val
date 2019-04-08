@@ -17,6 +17,7 @@
 #include <jwt-cpp/base.h>
 #include <jwt-cpp/jwt.h>
 #include <jsoncons/json.hpp>
+#include <fstream>
 #include <iostream>
 
 using namespace std;

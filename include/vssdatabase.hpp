@@ -21,6 +21,8 @@
 #include <jsoncons/json.hpp>
 #include <jsoncons_ext/jsonpath/json_query.hpp>
 #include "subscriptionhandler.hpp"
+#include "authenticator.hpp"
+#include "wschannel.hpp"
 
 #ifdef UNIT_TEST
 #include "w3cunittest.hpp"
@@ -34,7 +36,7 @@ using jsoncons::json;
 class vssdatabase {
 
 friend class subscriptionhandler;
-
+friend class authenticator;
 #ifdef UNIT_TEST
      friend class w3cunittest;
 #endif
@@ -44,15 +46,17 @@ friend class subscriptionhandler;
   json data_tree;
   json meta_tree;
   class subscriptionhandler* subHandler;
+  class accesschecker* accessValidator;
   string getVSSSpecificPath (string path, bool &isBranch, json& tree);
   string getPathForMetadata(string path , bool &isBranch);
   list<string>getPathForGet(string path , bool &isBranch);
   json getPathForSet(string path,  json value);
+  string getReadablePath(string jsonpath);
  public:
-  vssdatabase(class subscriptionhandler* subHandle);
+  vssdatabase(class subscriptionhandler* subHandle , class accesschecker* accValidator);
   void initJsonTree();
   json getMetaData(string path);
-  void setSignal(string path, json value);
-  json getSignal(string path); 
+  void setSignal(class wschannel& channel,string path, json value);
+  json getSignal(class wschannel& channel,string path); 
 };
 #endif

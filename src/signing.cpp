@@ -30,10 +30,10 @@ signing::signing() {
  Get the private key for signing.
 */
 string signing::getKey (string fileName) {
-
-  std::ifstream fileStream (fileName);
-  std::string privatekey( (std::istreambuf_iterator<char>(fileStream)),
-                       (std::istreambuf_iterator<char>()));
+  
+  std::ifstream fileStream(fileName);
+  std::string privatekey((std::istreambuf_iterator<char>(fileStream)),
+                          (std::istreambuf_iterator<char>()));
   key = privatekey;
   return key;
 }

@@ -59,6 +59,21 @@ string pathNotFoundResponse(uint32_t request_id, const string action, const stri
    return ss.str();
 }
 
+string noAccessResponse (uint32_t request_id, const string action , string message) {
+   json result;
+   json error;
+   result["action"] =action;
+   result["requestId"] = request_id; 
+   error["number"] = 403;
+   error["reason"] = "Forbidden";
+   error["message"] = message;
+   result["error"] = error;
+   result["timestamp"]= time(NULL);
+   std::stringstream ss;
+   ss << pretty_print(result);
+   return ss.str();
+}
+
 
 string valueOutOfBoundsResponse(uint32_t request_id, const string action, const string message) {
 
@@ -89,13 +104,18 @@ vsscommandprocessor::vsscommandprocessor(class vssdatabase* dbase, class  authen
 }
 
 
-string vsscommandprocessor::processGet(uint32_t request_id, string path) {
+string vsscommandprocessor::processGet(class wschannel& channel,uint32_t request_id, string path) {
 
 #ifdef DEBUG
    cout<< "GET :: path received from client = "<< path <<endl;
 #endif
-   json res = database->getSignal(path);
-
+   json res;
+   try {
+      res = database->getSignal(channel,path);
+   } catch (noPermissionException &nopermission) {
+      cout << nopermission.what() << endl;
+      return noAccessResponse(request_id , "get" , nopermission.what());  
+   }
    if(!res.has_key("value")) {
       return pathNotFoundResponse(request_id, "get", path);
    } else {
@@ -109,7 +129,7 @@ string vsscommandprocessor::processGet(uint32_t request_id, string path) {
 }
 
 
-string vsscommandprocessor::processSet(uint32_t request_id, string path, json value) {
+string vsscommandprocessor::processSet(class wschannel& channel,uint32_t request_id, string path, json value) {
 
 #ifdef DEBUG
    cout<< "vsscommandprocessor::processSet: path received from client"<< path <<endl;
@@ -118,7 +138,7 @@ string vsscommandprocessor::processSet(uint32_t request_id, string path, json va
    const char *path_c=path.c_str();
    char * nonconst=strdup(path_c);
    try {
-       database->setSignal(path, value);
+       database->setSignal(channel,path, value);
    } catch ( genException &e ) {
        cout << e.what() << endl;
        json root;
@@ -143,6 +163,9 @@ string vsscommandprocessor::processSet(uint32_t request_id, string path, json va
    } catch (outOfBoundException &outofboundExp) {
        cout << outofboundExp.what() << endl;
        return valueOutOfBoundsResponse(request_id ,"set",outofboundExp.what());
+   } catch (noPermissionException &nopermission) {
+       cout << nopermission.what() << endl;
+       return noAccessResponse(request_id , "set" , nopermission.what());
    }
    
    
@@ -156,14 +179,25 @@ string vsscommandprocessor::processSet(uint32_t request_id, string path, json va
    return ss.str();    
 }
 
-string vsscommandprocessor::processSubscribe(uint32_t request_id, string path, uint32_t connectionID) {
+string vsscommandprocessor::processSubscribe(class wschannel& channel,uint32_t request_id, string path, uint32_t connectionID) {
 
 #ifdef DEBUG
     cout<< "vsscommandprocessor::processSubscribe: path received from client for subscription"<< path<<endl;
 #endif
    
       uint32_t subId = -1;
-      subId = subHandler->subscribe(database, connectionID , path);
+      try {
+         subId = subHandler->subscribe(channel, database, connectionID , path);
+      } catch (noPathFoundonTree &noPathFound) {
+        cout << noPathFound.what() << endl;
+        return pathNotFoundResponse(request_id, "subscribe", path);
+      } catch (genException &outofboundExp) {
+        cout << outofboundExp.what() << endl;
+        return valueOutOfBoundsResponse(request_id ,"subscribe",outofboundExp.what());
+      } catch (noPermissionException &nopermission) {
+        cout << nopermission.what() << endl;
+        return noAccessResponse(request_id , "subscribe" , nopermission.what());
+      }
 
     if( subId > 0) {
        json answer;
@@ -178,32 +212,21 @@ string vsscommandprocessor::processSubscribe(uint32_t request_id, string path, u
 
     } else {
 
-        json root;
-        json error;
+       json root;
+       json error;
 
-	root["action"] = "subscribe";
-	root["requestId"] = request_id;
-      
-        if(subId == -1) {
-           error["number"] = 404;
-           error["reason"] =  "invalid_path";
-           error["message"] = "The specified data path does not exist.";
-        }else if (subId == -2) {
-           error["number"] = 404;
-           error["reason"] = "Too many signals in subscribe request";
-           error["message"] = "The specified data path has more than 1 signal.";
-        } else {
-           error["number"] = 400;
-           error["reason"] = "Bad Request";
-           error["message"] = "Unknown";
-        }
+       root["action"] = "subscribe";
+       root["requestId"] = request_id;
+       error["number"] = 400;
+       error["reason"] = "Bad Request";
+       error["message"] = "Unknown";
+        
+       root["error"] = error;
+       root["timestamp"] = time(NULL);
 
-	root["error"] = error;
-	root["timestamp"] = time(NULL);
+       std::stringstream ss;
 
-	std::stringstream ss;
-
-	ss << pretty_print(root);
+       ss << pretty_print(root);
        return ss.str();
 
     }
@@ -211,7 +234,7 @@ string vsscommandprocessor::processSubscribe(uint32_t request_id, string path, u
 
 string vsscommandprocessor::processUnsubscribe(uint32_t request_id, uint32_t subscribeID) {
 
-   int res = -1;
+   int res = subHandler->unsubscribe(subscribeID);
    if( res == 0) {
        json answer;
        answer["action"] = "unsubscribe";
@@ -260,10 +283,10 @@ string vsscommandprocessor::processGetMetaData(uint32_t request_id, string path)
 	return ss.str(); 
 }
 
-string vsscommandprocessor::processAuthorize (uint32_t request_id, string token ,class wschannel& channel) {
+string vsscommandprocessor::processAuthorize (class wschannel& channel,uint32_t request_id, string token) {
 
 
-        int ttl = tokenValidator->validate(channel, token);
+        int ttl = tokenValidator->validate(channel,database,token);
 
         if( ttl == -1) {
            json result;
@@ -310,7 +333,7 @@ string vsscommandprocessor::processQuery(string req_json , class wschannel& chan
 #ifdef DEBUG
 		cout << "vsscommandprocessor::processQuery: authorize query with token = " << token << " with request id " <<  request_id << endl;
 #endif
-                response = processAuthorize (request_id, token , channel); 
+                response = processAuthorize (channel, request_id, token ); 
         } else if(action == "unsubscribe")  {
 		   uint32_t request_id = root["requestId"].as<int>();
                    uint32_t subscribeID = root["subscriptionId"].as<int>();
@@ -321,44 +344,31 @@ string vsscommandprocessor::processQuery(string req_json , class wschannel& chan
        	} else {
                 string path = root["path"].as<string>();
                 uint32_t request_id = root["requestId"].as<int>();
-                bool hasAccess = accessValidator->checkAccess(channel , path);
                 
-                if (!hasAccess) {
-                    json result;
-                    json error;
-	   	    result["action"] =action;
-           	    result["requestId"] = request_id; 
-           	    error["number"] = 403;
-                    error["reason"] = "Forbidden";
-                    error["message"] = "Not authorized to access resource";
-
-	            result["error"] = error;
-	   	    result["timestamp"]= time(NULL);
-	
-	            std::stringstream ss;
-   	            ss << pretty_print(result);
-	            return ss.str();
-
-                }
+                
+                
                 if (action == "get")  { 
 #ifdef DEBUG
 		   cout << "vsscommandprocessor::processQuery: get query  for " << path << " with request id " <<  request_id << endl;
-#endif
-                   response = processGet(request_id, path);
+#endif             
+                     
+                   response = processGet(channel,request_id, path);
 #ifdef JSON_SIGNING_ON
                    response = signer->sign(response);
 #endif
 	        } else if(action == "set")  {
+                    
 		   json value = root["value"];
 #ifdef DEBUG
 		   cout << "vsscommandprocessor::processQuery: set query  for " << path << " with request id " <<  request_id  << " value " << pretty_print(value) << endl;
 #endif
-		   response = processSet(request_id, path , value);
+		   response = processSet(channel, request_id, path , value);	
        	        } else if(action == "subscribe")  {
+                   
 #ifdef DEBUG
 		   cout << "vsscommandprocessor::processQuery: subscribe query  for " << path << " with request id " <<  request_id << endl;
 #endif
-		   response = processSubscribe(request_id, path , channel.getConnID());
+		   response = processSubscribe(channel, request_id, path , channel.getConnID());
        	        }  else if (action == "getMetadata") {
 #ifdef DEBUG
 		   cout << "vsscommandprocessor::processQuery: metadata query  for " << path << " with request id " <<  request_id << endl;

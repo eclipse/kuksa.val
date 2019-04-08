@@ -14,12 +14,14 @@
 #ifndef __AUTHENTICATOR_H__
 #define __AUTHENTICATOR_H__
 
-#include <stdio.h>
 #include <jwt-cpp/jwt.h>
+#include <jsoncons/json.hpp>
 #include "wschannel.hpp"
+#include "vssdatabase.hpp"
 
 using namespace std;
-
+using namespace jsoncons;
+using jsoncons::json;
 
 class authenticator {
 
@@ -29,8 +31,9 @@ private:
 
 public:
    authenticator(string secretkey, string algorithm);
-   int validate (wschannel &channel , string authToken);
+   int validate (wschannel &channel, class vssdatabase* database, string authToken);
    bool isStillValid (wschannel &channel);
+   json resolvePermissions(wschannel &channel, class vssdatabase* database);
 
 };
 #endif

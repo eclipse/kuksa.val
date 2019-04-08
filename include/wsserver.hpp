@@ -11,13 +11,13 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#include <stdio.h>
 #include "server_wss.hpp"
 #include "vsscommandprocessor.hpp"
 #include "subscriptionhandler.hpp"
 #include "vssdatabase.hpp"
 #include "authenticator.hpp"
 #include "visconf.hpp"
+#include "accesschecker.hpp"
 
 using namespace std;
 
@@ -41,6 +41,7 @@ class wsserver {
     class subscriptionhandler* subHandler;
     class authenticator* tokenValidator;
     class vssdatabase* database;
+    class accesschecker* accessCheck;
 
     wsserver(int port, bool secure);
     ~wsserver();

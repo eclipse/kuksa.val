@@ -14,13 +14,14 @@
 #ifndef __ACCESSCHECKER_H__
 #define __ACCESSCHECKER_H__
 
-
-#include <stdio.h>
 #include <string>
+#include <jsoncons/json.hpp>
 #include "wschannel.hpp"
 #include "authenticator.hpp"
 
 using namespace std;
+using namespace jsoncons;
+using jsoncons::json;
 
 class accesschecker {
 
@@ -29,7 +30,9 @@ class accesschecker {
 
   public:  
      accesschecker(class  authenticator* vdator);
-     bool checkAccess (class wschannel& channel, string path); 
+     bool checkReadAccess (class wschannel& channel, string path);
+     bool checkWriteAccess (class wschannel& channel, string path);
+     bool checkPathWriteAccess (class wschannel& channel, json paths);  
 
 };
 

@@ -43,8 +43,9 @@ wsserver::wsserver(int port, bool secure) {
   }
   
   tokenValidator =  new authenticator("appstacle", "RS256");
-  subHandler = new subscriptionhandler(this, tokenValidator);
-  database = new vssdatabase(subHandler);
+  accessCheck = new accesschecker(tokenValidator);
+  subHandler = new subscriptionhandler(this, tokenValidator, accessCheck);
+  database = new vssdatabase(subHandler , accessCheck);
   cmdProcessor = new vsscommandprocessor(database, tokenValidator, subHandler);
   wserver = this;
 }

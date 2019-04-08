@@ -17,16 +17,17 @@
 pthread_mutex_t subMutex;
 
 
-subscriptionhandler::subscriptionhandler(class wsserver* wserver, class authenticator* authenticate) {
+subscriptionhandler::subscriptionhandler(class wsserver* wserver, class authenticator* authenticate, class accesschecker* checkAcc) {
    server = wserver;
    validator = authenticate;
+   checkAccess = checkAcc;
    pthread_mutex_init (&subMutex, NULL);
    threadRun = true;
    startThread();
 }
 
 
-uint32_t subscriptionhandler::subscribe (class vssdatabase* db, uint32_t channelID, string path) {
+uint32_t subscriptionhandler::subscribe (class wschannel& channel, class vssdatabase* db, uint32_t channelID, string path) {
  
     // generate subscribe ID "randomly".
     uint32_t subId = rand() % 9999999;
@@ -38,8 +39,12 @@ uint32_t subscriptionhandler::subscribe (class vssdatabase* db, uint32_t channel
     string jPath = db->getVSSSpecificPath(path, isBranch, db->data_tree);
     
     if(jPath == "") {
-        return -1;
-    } 
+       throw noPathFoundonTree(path);
+    } else if (!checkAccess->checkReadAccess(channel, jPath)) {
+        stringstream msg;
+        msg << "no permission to subscribe to path" ;
+        throw noPermissionException(msg.str());
+    }
 
     int clientID = channelID/CLIENT_MASK;
     json resArray = json_query(db->data_tree , jPath);
@@ -57,10 +62,14 @@ uint32_t subscriptionhandler::subscribe (class vssdatabase* db, uint32_t channel
        return subId;        
      } else if(resArray.is_array()) {
        cout <<resArray.size()<<"subscriptionhandler::subscribe :signals found in path" << path <<". Subscribe works for 1 signal at a time" << endl;
-       return -2;
+       stringstream msg;
+       msg << "signals found in path" << path <<". Subscribe works for 1 signal at a time" ;
+       throw noPathFoundonTree(msg.str());
      } else {
        cout <<"subscriptionhandler::subscribe: some error occured while adding subscription"<<endl;
-       return -3;
+       stringstream msg;
+       msg << "some error occured while adding subscription for path = " << path ;
+       throw genException(msg.str());
      }
 }
    

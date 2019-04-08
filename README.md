@@ -3,7 +3,7 @@
 The implementation is based on the [W3C Vehicle Information Service Specification](https://www.w3.org/TR/2018/CR-vehicle-information-service-20180213/)
 
 
-The implementation at the moment is in a nacent state and includes only the basic functionalities mentioned in the specification. At the moment, the security related functions have not been touched upon but will be updated shortly. This project uses components from other open source projects namely
+The implementation provides all the major funtionality defined in the above specification and also uses JWT Token for permissions handling with decent amount of uni-tests covering all the basic funtions. This project uses components from other open source projects namely
 
 1. [Simple-WebSocket-Server](https://gitlab.com/eidheim/Simple-WebSocket-Server) which is under MIT license.
 2. [jsoncons](https://github.com/danielaparker/jsoncons) which is under Boost Software license.
@@ -65,13 +65,28 @@ Now enable `BUILD_EXE` and `BUILD_TEST_CLIENT` flags by changing to ON in w3cvis
 
 Now build using the commands in How to build section.
 
-Once the apps are built, copy the server.crt and server.key files to the `w3c-visserver/build` folder. Also copy the  https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.csv and https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.json files into the `w3c-visserver/build` folder.
+Once the apps are built, copy the server.crt and server.key files to the `w3c-visserver/build` folder. Also copy the  https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.json files into the `w3c-visserver/build` folder.
 
 In this case the server and the client are built on the same folder, hence copy the generate Server.pem, Server.key ,CA.key, Client.key and  Client.pem into `w3c-visserver/build` folder.
 
-The w3c-visserver needs authentification Token to allow access to server side resources. You can create a dummy JWT Token from https://jwt.io/. Use the RSA256 algorithm from the drop down and enter valid "iat" and "exp" data and set "iss : kuksa" and generate a JWT. Once the JWT is generated on the left side. Copy the Public key from the Text box on the right side to a file and rename the fiel to jwt.pub.key and copy the file to  `w3c-visserver/build` folder. Also store the JWT token somewhere so that you could pass the Token to the server for authentication.
+#### Permissions
+
+The w3c-visserver needs authentification Token to allow access to server side resources. You can create a dummy JWT Token from https://jwt.io/. Use the RSA256 algorithm from the drop down and enter valid "iat" and "exp" data and set "iss : kuksa" and generate a JWT. Once the JWT is generated on the left side. Copy the Public key from the Text box on the right side to a file and rename the field to jwt.pub.key and copy the file to  `w3c-visserver/build` folder. Also store the JWT token somewhere so that you could pass the Token to the server for authentication.
 
 ![Alt text](./pictures/jwt.png?raw=true "jwt")
+
+Permissions can be granted by modifying the JSON Claims.
+
+1. The JWT Token should contain a "w3c-vss" claim.
+2. Under the "w3c-vss" claim the permissions can be granted using key value pair. The key should be the path in the signal tree and the value should be strings with "r" for READ-ONLY, "w" for WRITE-ONLY and "rw" or "wr" for READ-AND-WRITE permission. See the image above.
+3. The permissions can contain wild-cards. For eg "Signal.OBD.*" : "rw" will grant READ-WRITE access to all the signals under Signal.OBD.
+4. The permissions can be granted to a branch. For eg "Signal.Vehicle" : "rw" will grant READ-WRITE access to all the signals under Signal.Vehicle branch.
+
+### Test Run
+
+This covers only the basic functions like get, set and getmetadata requests. You coulkd skip this and take a look at the unit-test to getter idea about the implementation.
+
+You could also checkout the in-vehicle apps in the [kuksa.apps](https://github.com/eclipse/kuksa.apps) repo which work with the server.
 
 Now the apps are ready for testing. Run w3c-visserver using `./w3c-visserver` command and then in a separate terminal start testclient using `./testclient`.
 
@@ -86,6 +101,29 @@ Enter the vss path and function as set and a dummy integer value.
 
 Enter the same vss path as above and fuction as get. You should receive the previously set value in the JSON response. 
 ![Alt text](./pictures/test3.png?raw=true "test3")
+
+
+
+
+
+### JSON Signing
+
+JSON Signing has been introduced additionally to sign the JSON response for GET and SUBSCRIBE Response. By default this has been disabled. To enable this feature go to visconf.hpp file and uncomment the line `define JSON_SIGNING_ON`. Please note, JSON signing works only with a valid pair of public / private certificate. For testing, you could create example certificates by following the below steps.
+Do not add any passphrase when asked for.
+
+```
+ssh-keygen -t rsa -b 4096 -m PEM -f signing.private.key 
+openssl rsa -in signing.private.key  -pubout -outform PEM -out signing.public.key
+```
+
+Copy the files signing.private.key & signing.public.key to the build directory.
+
+The client also needs to validate the signed JSON using the public certificate when JSON signing is enabled in server.
+
+This could also be easily extended to support JSON signing for the requests as well with very little effort.
+
+
+
 
 
 # Implementation
