@@ -15,39 +15,40 @@
 #define __VSSCOMMANDPROCESSOR_H__
 
 #include <string>
-#include "wschannel.hpp"
-#include "vssdatabase.hpp"
-#include "subscriptionhandler.hpp"
 #include "accesschecker.hpp"
+#include "subscriptionhandler.hpp"
 #include "visconf.hpp"
+#include "vssdatabase.hpp"
+#include "wschannel.hpp"
 using namespace std;
 using namespace jsoncons;
 using namespace jsoncons::jsonpath;
 using jsoncons::json;
 
-
 class vsscommandprocessor {
-
-private:
-   class  vssdatabase* database = NULL;
-   class  subscriptionhandler* subHandler = NULL;
-   class  authenticator* tokenValidator = NULL;
-   class  accesschecker* accessValidator = NULL;
+ private:
+  class vssdatabase* database = NULL;
+  class subscriptionhandler* subHandler = NULL;
+  class authenticator* tokenValidator = NULL;
+  class accesschecker* accessValidator = NULL;
 #ifdef JSON_SIGNING_ON
-   class signing* signer = NULL;
+  class signing* signer = NULL;
 #endif
 
-   string processGet(class wschannel& channel,uint32_t request_id, string path);
-   string processSet(class wschannel& channel,uint32_t request_id, string path, json value);
-   string processSubscribe(class wschannel& channel, uint32_t request_id, string path, uint32_t connectionID);
-   string processUnsubscribe(uint32_t request_id, uint32_t subscribeID);
-   string processGetMetaData(uint32_t request_id, string path); 
-   string processAuthorize (class wschannel& channel,uint32_t request_id, string token);
+  string processGet(class wschannel& channel, uint32_t request_id, string path);
+  string processSet(class wschannel& channel, uint32_t request_id, string path,
+                    json value);
+  string processSubscribe(class wschannel& channel, uint32_t request_id,
+                          string path, uint32_t connectionID);
+  string processUnsubscribe(uint32_t request_id, uint32_t subscribeID);
+  string processGetMetaData(uint32_t request_id, string path);
+  string processAuthorize(class wschannel& channel, uint32_t request_id,
+                          string token);
 
-public:
-   vsscommandprocessor(class vssdatabase* database, class  authenticator* vdator , class subscriptionhandler* subhandler);
-   string processQuery(string req_json , class wschannel& channel);
+ public:
+  vsscommandprocessor(class vssdatabase* database, class authenticator* vdator,
+                      class subscriptionhandler* subhandler);
+  string processQuery(string req_json, class wschannel& channel);
 };
-
 
 #endif

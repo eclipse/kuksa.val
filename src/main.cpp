@@ -12,7 +12,6 @@
  * *****************************************************************************
  */
 
-
 #include "wsserver.hpp"
 
 #define PORT 8090
@@ -21,11 +20,11 @@
  * @brief  Test main.
  * @return
  */
-int main(int argc, char* argv[])
-{
- 
-        wsserver server(PORT, true);
-        server.start();
+int main(int argc, char* argv[]) {
+  wsserver server(PORT, true);
+  server.start();
 
-      while (1) { usleep (1000000); };
+  while (1) {
+    usleep(1000000);
+  };
 }

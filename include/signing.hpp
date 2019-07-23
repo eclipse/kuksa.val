@@ -16,29 +16,28 @@
 
 #include <jwt-cpp/base.h>
 #include <jwt-cpp/jwt.h>
-#include <jsoncons/json.hpp>
 #include <fstream>
 #include <iostream>
+#include <jsoncons/json.hpp>
 
 using namespace std;
 using namespace jsoncons;
 using namespace jwt;
 
 class signing {
+ private:
+  string key = "";
+  string pubkey = "";
+  string algorithm = "RS256";
 
-private:
-    string key = "";
-    string pubkey = "";
-    string algorithm = "RS256";
-
-public:
-   signing();
-   string getKey (string fileName);
-   string getPublicKey (string fileName);
-   string sign(json data);
-   string sign(string data);
+ public:
+  signing();
+  string getKey(string fileName);
+  string getPublicKey(string fileName);
+  string sign(json data);
+  string sign(string data);
 #ifdef UNIT_TEST
-   string decode(string signedData);
+  string decode(string signedData);
 #endif
 };
 

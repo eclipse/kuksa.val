@@ -13,15 +13,15 @@
  */
 #ifndef __VSSDATABASE_HPP__
 #define __VSSDATABASE_HPP__
-#include <string>
-#include <fstream>
-#include <vector>
-#include <list>
 #include <stdint.h>
+#include <fstream>
 #include <jsoncons/json.hpp>
 #include <jsoncons_ext/jsonpath/json_query.hpp>
-#include "subscriptionhandler.hpp"
+#include <list>
+#include <string>
+#include <vector>
 #include "authenticator.hpp"
+#include "subscriptionhandler.hpp"
 #include "wschannel.hpp"
 
 #ifdef UNIT_TEST
@@ -34,11 +34,10 @@ using namespace jsoncons::jsonpath;
 using jsoncons::json;
 
 class vssdatabase {
-
-friend class subscriptionhandler;
-friend class authenticator;
+  friend class subscriptionhandler;
+  friend class authenticator;
 #ifdef UNIT_TEST
-     friend class w3cunittest;
+  friend class w3cunittest;
 #endif
 
  private:
@@ -47,16 +46,18 @@ friend class authenticator;
   json meta_tree;
   class subscriptionhandler* subHandler;
   class accesschecker* accessValidator;
-  string getVSSSpecificPath (string path, bool &isBranch, json& tree);
-  string getPathForMetadata(string path , bool &isBranch);
-  list<string>getPathForGet(string path , bool &isBranch);
-  json getPathForSet(string path,  json value);
+  string getVSSSpecificPath(string path, bool& isBranch, json& tree);
+  string getPathForMetadata(string path, bool& isBranch);
+  list<string> getPathForGet(string path, bool& isBranch);
+  json getPathForSet(string path, json value);
   string getReadablePath(string jsonpath);
+
  public:
-  vssdatabase(class subscriptionhandler* subHandle , class accesschecker* accValidator);
+  vssdatabase(class subscriptionhandler* subHandle,
+              class accesschecker* accValidator);
   void initJsonTree();
   json getMetaData(string path);
-  void setSignal(class wschannel& channel,string path, json value);
-  json getSignal(class wschannel& channel,string path); 
+  void setSignal(class wschannel& channel, string path, json value);
+  json getSignal(class wschannel& channel, string path);
 };
 #endif

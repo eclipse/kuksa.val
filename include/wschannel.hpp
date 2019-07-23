@@ -15,53 +15,32 @@
 #define __WSCHANNEL_H__
 
 #include <stdint.h>
-#include <string>
 #include <jsoncons/json.hpp>
-
+#include <string>
 
 using namespace std;
 using namespace jsoncons;
 using jsoncons::json;
 
 class wschannel {
-
-private:
+ private:
   uint32_t connectionID;
   bool authorized = false;
   string authToken;
   json permissions;
 
+ public:
+  void setConnID(uint32_t conID) { connectionID = conID; }
+  void setAuthorized(bool isauth) { authorized = isauth; }
+  void setAuthToken(string tok) { authToken = tok; }
+  void setPermissions(json perm) { permissions = perm; }
 
-public:
+  uint32_t getConnID() { return connectionID; }
 
-  void setConnID(uint32_t conID) {
-      connectionID = conID;
-  }
-  void setAuthorized(bool isauth) {
-      authorized = isauth;
-  }
-  void setAuthToken(string tok) {
-      authToken = tok;
-  }
-  void setPermissions(json perm) {
-      permissions = perm;
-  }
-  
-  uint32_t getConnID() {
-    return connectionID;
-  }
+  bool isAuthorized() { return authorized; }
 
-  bool isAuthorized() {
-    return authorized;
-  }
+  string getAuthToken() { return authToken; }
 
-  string getAuthToken() {
-   return authToken;
-  }
-
-  json getPermissions() {
-   return permissions;
-  }
-  
+  json getPermissions() { return permissions; }
 };
 #endif

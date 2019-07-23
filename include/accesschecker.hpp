@@ -14,28 +14,24 @@
 #ifndef __ACCESSCHECKER_H__
 #define __ACCESSCHECKER_H__
 
-#include <string>
 #include <jsoncons/json.hpp>
-#include "wschannel.hpp"
+#include <string>
 #include "authenticator.hpp"
+#include "wschannel.hpp"
 
 using namespace std;
 using namespace jsoncons;
 using jsoncons::json;
 
 class accesschecker {
+ private:
+  class authenticator* tokenValidator;
 
-  private:
-    class  authenticator* tokenValidator;
-
-  public:  
-     accesschecker(class  authenticator* vdator);
-     bool checkReadAccess (class wschannel& channel, string path);
-     bool checkWriteAccess (class wschannel& channel, string path);
-     bool checkPathWriteAccess (class wschannel& channel, json paths);  
-
+ public:
+  accesschecker(class authenticator* vdator);
+  bool checkReadAccess(class wschannel& channel, string path);
+  bool checkWriteAccess(class wschannel& channel, string path);
+  bool checkPathWriteAccess(class wschannel& channel, json paths);
 };
-
-
 
 #endif

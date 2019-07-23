@@ -11,13 +11,13 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#include "server_wss.hpp"
-#include "vsscommandprocessor.hpp"
-#include "subscriptionhandler.hpp"
-#include "vssdatabase.hpp"
-#include "authenticator.hpp"
-#include "visconf.hpp"
 #include "accesschecker.hpp"
+#include "authenticator.hpp"
+#include "server_wss.hpp"
+#include "subscriptionhandler.hpp"
+#include "visconf.hpp"
+#include "vsscommandprocessor.hpp"
+#include "vssdatabase.hpp"
 
 using namespace std;
 
@@ -28,26 +28,22 @@ using WssServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
 using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
 
 class wsserver {
-  private:
-    
-    WssServer* secureServer;
-    WsServer*  insecureServer;
-    bool isSecure;
-    
+ private:
+  WssServer* secureServer;
+  WsServer* insecureServer;
+  bool isSecure;
 
-  public:
-    
-    class vsscommandprocessor* cmdProcessor;
-    class subscriptionhandler* subHandler;
-    class authenticator* tokenValidator;
-    class vssdatabase* database;
-    class accesschecker* accessCheck;
+ public:
+  class vsscommandprocessor* cmdProcessor;
+  class subscriptionhandler* subHandler;
+  class authenticator* tokenValidator;
+  class vssdatabase* database;
+  class accesschecker* accessCheck;
 
-    wsserver(int port, bool secure);
-    ~wsserver();
-    void startServer(string endpointName);
-    void sendToConnection(uint32_t connID, string message);
-    void start();
-
+  wsserver(int port, bool secure);
+  ~wsserver();
+  void startServer(string endpointName);
+  void sendToConnection(uint32_t connID, string message);
+  void start();
 };
 #endif

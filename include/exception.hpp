@@ -20,76 +20,49 @@
 using namespace std;
 
 // No path on Tree exception
-class noPathFoundonTree: public exception
-{
-  private:
-    string message; 
+class noPathFoundonTree : public exception {
+ private:
+  string message;
 
-  public:
-    
-    noPathFoundonTree(string path) {
-        message = "Path " + path + " not found on the VSS Tree";
-    }
-
-  virtual const char* what() const throw()
-  {
-    return message.c_str();
+ public:
+  noPathFoundonTree(string path) {
+    message = "Path " + path + " not found on the VSS Tree";
   }
-} ;
+
+  virtual const char* what() const throw() { return message.c_str(); }
+};
 
 // Generic exception
-class genException: public exception
-{
-  private:
-    string message;
+class genException : public exception {
+ private:
+  string message;
 
-  public:
-    
-    genException(string msg) {
-       message = msg;
-    }
+ public:
+  genException(string msg) { message = msg; }
 
-  virtual const char* what() const throw()
-  {
-    return message.c_str();
-  }
-} ;
+  virtual const char* what() const throw() { return message.c_str(); }
+};
 
 // not permitted- no permission
-class noPermissionException: public exception
-{
-  private:
-    string message;
+class noPermissionException : public exception {
+ private:
+  string message;
 
-  public:
-    
-    noPermissionException(string msg) {
-       message = msg;
-    }
+ public:
+  noPermissionException(string msg) { message = msg; }
 
-  virtual const char* what() const throw()
-  {
-    return message.c_str();
-  }
-} ;
+  virtual const char* what() const throw() { return message.c_str(); }
+};
 
 // value out of bound exception
-class outOfBoundException: public exception
-{
-  private:
-    string message;
+class outOfBoundException : public exception {
+ private:
+  string message;
 
-  public:
-    
-    outOfBoundException(string msg) {
-       message = msg;
-    }
+ public:
+  outOfBoundException(string msg) { message = msg; }
 
-  virtual const char* what() const throw()
-  {
-    return message.c_str();
-  }
-} ;
+  virtual const char* what() const throw() { return message.c_str(); }
+};
 
 #endif
-

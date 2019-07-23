@@ -16,24 +16,23 @@
 
 #include <jwt-cpp/jwt.h>
 #include <jsoncons/json.hpp>
-#include "wschannel.hpp"
 #include "vssdatabase.hpp"
+#include "wschannel.hpp"
 
 using namespace std;
 using namespace jsoncons;
 using jsoncons::json;
 
 class authenticator {
+ private:
+  string key = "secret";
+  string algorithm = "HS256";
 
-private:
-    string key = "secret";
-    string algorithm = "HS256";
-
-public:
-   authenticator(string secretkey, string algorithm);
-   int validate (wschannel &channel, class vssdatabase* database, string authToken);
-   bool isStillValid (wschannel &channel);
-   json resolvePermissions(wschannel &channel, class vssdatabase* database);
-
+ public:
+  authenticator(string secretkey, string algorithm);
+  int validate(wschannel &channel, class vssdatabase *database,
+               string authToken);
+  bool isStillValid(wschannel &channel);
+  json resolvePermissions(wschannel &channel, class vssdatabase *database);
 };
 #endif

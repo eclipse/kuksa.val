@@ -12,45 +12,45 @@
  * *****************************************************************************
  */
 
-#include"accesschecker.hpp"
+#include "accesschecker.hpp"
 
 using namespace std;
 
-accesschecker::accesschecker(class  authenticator* vdator) {
-   tokenValidator = vdator;
+accesschecker::accesschecker(class authenticator* vdator) {
+  tokenValidator = vdator;
 }
 
 // check the permissions json in wschannel if path has read access
-bool accesschecker::checkReadAccess(class wschannel& channel , string path) {
-   json permissions = channel.getPermissions();
-   string perm = permissions.get_with_default(path, "");
-  
-   if(perm == "r" || perm == "rw" || perm == "wr") {
-      return true;
-   }
-   return false;
-} 
+bool accesschecker::checkReadAccess(class wschannel& channel, string path) {
+  json permissions = channel.getPermissions();
+  string perm = permissions.get_with_default(path, "");
+
+  if (perm == "r" || perm == "rw" || perm == "wr") {
+    return true;
+  }
+  return false;
+}
 
 // check the permissions json in wschannel if path has write access
-bool accesschecker::checkWriteAccess (class wschannel& channel, string path) {
-   json permissions = channel.getPermissions();
-   string perm = permissions.get_with_default(path, "");
-  
-   if(perm == "w" || perm == "rw" || perm == "wr") {
-      return true;
-   }
-   return false;
+bool accesschecker::checkWriteAccess(class wschannel& channel, string path) {
+  json permissions = channel.getPermissions();
+  string perm = permissions.get_with_default(path, "");
+
+  if (perm == "w" || perm == "rw" || perm == "wr") {
+    return true;
+  }
+  return false;
 }
 
-// Checks if all the paths have write access.If even 1 path in the list does not have write access, this method returns false.
-bool accesschecker::checkPathWriteAccess (class wschannel& channel, json paths) {
-   for( int i=0 ; i< paths.size() ; i++) {
-      json item = paths[i];
-      string jPath = item["path"].as<string>();
-      if(!checkWriteAccess(channel , jPath)) {
-         return false;
-      }
-   }
-   return true;
+// Checks if all the paths have write access.If even 1 path in the list does not
+// have write access, this method returns false.
+bool accesschecker::checkPathWriteAccess(class wschannel& channel, json paths) {
+  for (int i = 0; i < paths.size(); i++) {
+    json item = paths[i];
+    string jPath = item["path"].as<string>();
+    if (!checkWriteAccess(channel, jPath)) {
+      return false;
+    }
+  }
+  return true;
 }
-
