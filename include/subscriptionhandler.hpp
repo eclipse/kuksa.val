@@ -16,13 +16,12 @@
 
 #include <mutex>
 #include <queue>
+#include <unordered_map>
 #include "visconf.hpp"
 #include <string>
 #include <thread>
 
 #include <jsoncons/json.hpp>
-
-using namespace std;
 
 class accesschecker;
 class authenticator;
@@ -30,16 +29,22 @@ class vssdatabase;
 class wschannel;
 class wsserver;
 
+// Subscription ID: Client ID
+typedef std::unordered_map<uint32_t, uint32_t> subscriptions_t;
+
+// Subscription UUID
+typedef std::string uuid_t;
+
 class subscriptionhandler {
  private:
-  uint32_t subscribeHandle[MAX_SIGNALS][MAX_CLIENTS];
-  class wsserver* server;
+  std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
+  wsserver* server;
   authenticator* validator;
   accesschecker* checkAccess;
   std::mutex subMutex;
   std::thread subThread;
   bool threadRun;
-  queue<pair<uint32_t, jsoncons::json>> buffer;
+  std::queue<std::pair<uint32_t, jsoncons::json>> buffer;
 
  public:
   subscriptionhandler(wsserver* wserver,
@@ -48,11 +53,11 @@ class subscriptionhandler {
   ~subscriptionhandler();
 
   uint32_t subscribe(wschannel& channel, vssdatabase* db,
-                     uint32_t channelID, string path);
+                     uint32_t channelID, std::string path);
   int unsubscribe(uint32_t subscribeID);
   int unsubscribeAll(uint32_t connectionID);
-  int update(int signalID, jsoncons::json value);
-  int update(string path, jsoncons::json value);
+  int updateByUUID(std::string signalUUID, jsoncons::json value);
+  int updateByPath(std::string path, jsoncons::json value);
   wsserver* getServer();
   int startThread();
   int stopThread();
