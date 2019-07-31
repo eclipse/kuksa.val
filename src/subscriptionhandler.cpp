@@ -18,6 +18,11 @@ pthread_mutex_t subMutex;
 subscriptionhandler::subscriptionhandler(class wsserver* wserver,
                                          class authenticator* authenticate,
                                          class accesschecker* checkAcc) {
+  for (int i = 0; i < MAX_SIGNALS; i++) {
+    for (int j = 0; j < MAX_CLIENTS; j++) {
+      subscribeHandle[i][j] = 0;
+    }
+  }
   server = wserver;
   validator = authenticate;
   checkAccess = checkAcc;
@@ -154,6 +159,8 @@ void* subThread(void* instance) {
   }
   cout << "SubscribeThread: Subscription handler thread stopped running"
        << endl;
+
+  return NULL;
 }
 
 int subscriptionhandler::startThread() {
@@ -164,8 +171,12 @@ int subscriptionhandler::startThread() {
          << endl;
     return 1;
   }
+  return 0;
 }
 
-int subscriptionhandler::stopThread() { threadRun = false; }
+int subscriptionhandler::stopThread() {
+  threadRun = false;
+  return 0;
+}
 
 bool subscriptionhandler::isThreadRunning() { return threadRun; }

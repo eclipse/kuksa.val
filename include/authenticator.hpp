@@ -33,6 +33,6 @@ class authenticator {
   int validate(wschannel &channel, class vssdatabase *database,
                string authToken);
   bool isStillValid(wschannel &channel);
-  json resolvePermissions(wschannel &channel, class vssdatabase *database);
+  void resolvePermissions(wschannel &channel, class vssdatabase *database);
 };
 #endif

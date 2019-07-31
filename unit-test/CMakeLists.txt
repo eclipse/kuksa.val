@@ -16,7 +16,7 @@ project(w3c-unit-test)
 
 add_definitions(-DUNIT_TEST)
 
-add_compile_options(-std=c++11 -pthread)
+add_compile_options(-std=c++11 -pthread -Wall -Wextra)
 
 add_library(simple-websocket-server INTERFACE)
 

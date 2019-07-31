@@ -135,8 +135,6 @@ string vsscommandprocessor::processSet(class wschannel &channel,
        << endl;
 #endif
 
-  const char *path_c = path.c_str();
-  char *nonconst = strdup(path_c);
   try {
     database->setSignal(channel, path, value);
   } catch (genException &e) {

@@ -195,7 +195,10 @@ void wsserver::sendToConnection(uint32_t connectionID, string message) {
   }
 }
 
-void *startWSServer(void *arg) { wserver->startServer(""); }
+void *startWSServer(void *arg) {
+  wserver->startServer("");
+  return NULL;
+}
 
 void wsserver::start() {
   this->database->initJsonTree();

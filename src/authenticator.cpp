@@ -61,7 +61,9 @@ int validateToken(wschannel& channel, string authToken) {
 int authenticator::validate(wschannel& channel, vssdatabase* db,
                             string authToken) {
   int ttl = validateToken(channel, authToken);
-  if (ttl > 0) resolvePermissions(channel, db);
+  if (ttl > 0) {
+    resolvePermissions(channel, db);
+  }
 
   return ttl;
 }
@@ -84,7 +86,7 @@ bool authenticator::isStillValid(wschannel& channel) {
 // **Do this only once for authenticate request**
 // resolves the permission in the JWT token and store the absolute path to the
 // signals in permissions JSON in wschannel.
-json authenticator::resolvePermissions(wschannel& channel,
+void authenticator::resolvePermissions(wschannel& channel,
                                        vssdatabase* database) {
   string authToken = channel.getAuthToken();
   auto decoded = jwt::decode(authToken);
@@ -109,7 +111,5 @@ json authenticator::resolvePermissions(wschannel& channel,
       }
     }
     channel.setPermissions(permissions);
-  } else {
-    return json::parse("{}");
   }
 }

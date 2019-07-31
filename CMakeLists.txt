@@ -26,7 +26,12 @@ if(UNIT_TEST)
 endif(UNIT_TEST)
 
 add_definitions(-DDEBUG)
-add_compile_options(-std=c++11 -pthread)
+add_compile_options(-std=c++11 -pthread -Wall -Wextra)
+
+#if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+#add_compile_options(-g -fsanitize=address -fno-omit-frame-pointer)
+#add_link_options(-g -fsanitize=address)
+#endif()
 
 
 add_library(simple-websocket-server INTERFACE)
@@ -64,7 +69,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
 
 if(NOT BUILD_EXE)
    add_library(${PROJECT_NAME} ${SRC_FILES})
-else() 
+else()
    add_executable(${PROJECT_NAME} ${SRC_FILES})
 endif(NOT BUILD_EXE)
 target_link_libraries(${PROJECT_NAME}  simple-websocket-server)
@@ -77,9 +82,10 @@ if(UNIT_TEST)
          ${CMAKE_CURRENT_SOURCE_DIR}/src/accesschecker.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/authenticator.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/subscriptionhandler.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/signing.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/wsserver.cpp
        )
-   add_executable(w3c-unit-test ${TEST_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3c-viss-test.cpp)
+   add_executable(w3c-unit-test ${TEST_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp)
    target_include_directories(simple-websocket-server INTERFACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/Simple-WebSocket-Server ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jsoncons ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jwt-cpp)
    target_link_libraries(w3c-unit-test simple-websocket-server)
 endif(UNIT_TEST)
@@ -114,4 +120,3 @@ install( TARGETS ${PROJECT_NAME} DESTINATION /usr/bin/w3c-visserver)
 install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/jwt.pub.key DESTINATION /usr/bin/w3c-visserver)
 install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.pem DESTINATION /usr/bin/w3c-visserver)
 install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.key DESTINATION /usr/bin/w3c-visserver)
-
