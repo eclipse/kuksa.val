@@ -1553,6 +1553,7 @@ BOOST_AUTO_TEST_CASE(json_signing)
    // Pre-check
    BOOST_TEST(response_json == expected);
    
+#ifdef JSON_SIGNING_ON
    // sign the response json
    string signedData = json_signer->sign(response_json);
    
@@ -1564,7 +1565,7 @@ BOOST_AUTO_TEST_CASE(json_signing)
    
    // Assert decodes and the expected json
    BOOST_TEST(decoded_json == expected);
-
+#endif
 }
 
 //----------------------------------------------------Token permissions Tests ------------------------------------------------------------------------
