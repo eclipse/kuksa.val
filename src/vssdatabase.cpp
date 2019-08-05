@@ -18,14 +18,22 @@
 #include "exception.hpp"
 #include "visconf.hpp"
 
+#include <jsoncons_ext/jsonpath/json_query.hpp>
+
+#include "accesschecker.hpp"
+#include "subscriptionhandler.hpp"
+
+using namespace std;
+using namespace jsoncons::jsonpath;
+
 // Constructor
-vssdatabase::vssdatabase(class subscriptionhandler* subHandle,
-                         class accesschecker* accValidator) {
+vssdatabase::vssdatabase(subscriptionhandler* subHandle,
+                         accesschecker* accValidator) {
   subHandler = subHandle;
   accessValidator = accValidator;
-  rwMutex = new pthread_mutex_t();
-  pthread_mutex_init(rwMutex, NULL);
 }
+
+vssdatabase::~vssdatabase() {}
 
 // Initializer
 void vssdatabase::initJsonTree() {
@@ -88,7 +96,7 @@ string vssdatabase::getReadablePath(string jsonpath) {
 // The method returns $['Signal']['children']['OBD']['children']['RPM'] and
 // updates isBranch to false.
 string vssdatabase::getVSSSpecificPath(string path, bool& isBranch,
-                                       json& tree) {
+                                       jsoncons::json& tree) {
   vector<string> tokens = getPathTokens(path);
   int tokLength = tokens.size();
   string format_path = "$";
@@ -98,7 +106,7 @@ string vssdatabase::getVSSSpecificPath(string path, bool& isBranch,
         format_path = format_path + "[" + tokens[i] + "]";
       else
         format_path = format_path + "[\'" + tokens[i] + "\']";
-      json res = json_query(tree, format_path);
+      jsoncons::json res = json_query(tree, format_path);
       string type = "";
       if ((res.is_array() && res.size() > 0) && res[0].has_key("type")) {
         type = res[0]["type"].as<string>();
@@ -136,7 +144,7 @@ string vssdatabase::getVSSSpecificPath(string path, bool& isBranch,
 // metadata request.
 string vssdatabase::getPathForMetadata(string path, bool& isBranch) {
   string format_path = getVSSSpecificPath(path, isBranch, meta_tree);
-  json pathRes = json_query(meta_tree, format_path, result_type::path);
+  jsoncons::json pathRes = json_query(meta_tree, format_path, result_type::path);
   if (pathRes.size() > 0) {
     string jPath = pathRes[0].as<string>();
     return jPath;
@@ -154,15 +162,15 @@ string vssdatabase::getPathForMetadata(string path, bool& isBranch) {
 list<string> vssdatabase::getPathForGet(string path, bool& isBranch) {
   list<string> paths;
   string format_path = getVSSSpecificPath(path, isBranch, data_tree);
-  json pathRes = json_query(data_tree, format_path, result_type::path);
+  jsoncons::json pathRes = json_query(data_tree, format_path, result_type::path);
 
-  for (int i = 0; i < pathRes.size(); i++) {
+  for (size_t i = 0; i < pathRes.size(); i++) {
     string jPath = pathRes[i].as<string>();
-    json resArray = json_query(data_tree, jPath);
+    jsoncons::json resArray = json_query(data_tree, jPath);
     if (resArray.size() == 0) {
       continue;
     }
-    json result = resArray[0];
+    jsoncons::json result = resArray[0];
     if (!result.has_key("id") &&
         (result.has_key("type") && result["type"].as<string>() == "branch")) {
       bool dummy = true;
@@ -198,12 +206,12 @@ vector<string> getVSSTokens(string path) {
 }
 
 // Returns the response JSON for metadata request.
-json vssdatabase::getMetaData(string path) {
+jsoncons::json vssdatabase::getMetaData(string path) {
   string format_path = "$";
   bool isBranch = false;
-  pthread_mutex_lock(rwMutex);
+  rwMutex.lock();
   string jPath = getPathForMetadata(path, isBranch);
-  pthread_mutex_unlock(rwMutex);
+  rwMutex.unlock();
 
   if (jPath == "") {
     return NULL;
@@ -215,19 +223,19 @@ json vssdatabase::getMetaData(string path) {
   vector<string> tokens = getVSSTokens(jPath);
   int tokLength = tokens.size();
 
-  json parentArray[16];
+  jsoncons::json parentArray[16];
   string parentName[16];
 
   int parentCount = 0;
-  json resJson;
+  jsoncons::json resJson;
   for (int i = 0; i < tokLength; i++) {
     format_path = format_path + "." + tokens[i];
     if ((i < tokLength - 1) && (tokens[i] == "children")) {
       continue;
     }
-    pthread_mutex_lock(rwMutex);
-    json resArray = json_query(meta_tree, format_path);
-    pthread_mutex_unlock(rwMutex);
+    rwMutex.lock();
+    jsoncons::json resArray = json_query(meta_tree, format_path);
+    rwMutex.unlock();
 
     if (resArray.is_array() && resArray.size() == 1) {
       resJson = resArray[0];
@@ -250,7 +258,7 @@ json vssdatabase::getMetaData(string path) {
 
     // last element is the requested signal.
     if ((i == tokLength - 1) && (tokens[i] != "children")) {
-      json value;
+      jsoncons::json value;
       value.insert_or_assign(tokens[i], resJson);
       resJson = value;
     }
@@ -260,12 +268,12 @@ json vssdatabase::getMetaData(string path) {
     parentCount++;
   }
 
-  json result = resJson;
+  jsoncons::json result = resJson;
 
   for (int i = parentCount - 2; i >= 0; i--) {
-    json element = parentArray[i];
+    jsoncons::json element = parentArray[i];
     element.insert_or_assign("children", result);
-    json parent;
+    jsoncons::json parent;
     parent.insert_or_assign(parentName[i], element);
     result = parent;
   }
@@ -280,17 +288,17 @@ json vssdatabase::getMetaData(string path) {
 // The function would return = {{"path" : "$.Signal.children.OBD.children.RPM",
 // "value" : 23}, {"path" : "$.Signal.children.OBD.children.Speed", "value" :
 // 10}}
-json vssdatabase::getPathForSet(string path, json values) {
-  json setValues;
+jsoncons::json vssdatabase::getPathForSet(string path, jsoncons::json values) {
+  jsoncons::json setValues;
   if (values.is_array()) {
     std::size_t found = path.find("*");
     if (found == std::string::npos) {
       path = path + ".";
       found = path.length();
     }
-    setValues = json::make_array(values.size());
-    for (int i = 0; i < values.size(); i++) {
-      json value = values[i];
+    setValues = jsoncons::json::make_array(values.size());
+    for (size_t i = 0; i < values.size(); i++) {
+      jsoncons::json value = values[i];
       string readablePath = path;
       string replaceString;
       auto iter = value.object_range();
@@ -308,7 +316,7 @@ json vssdatabase::getPathForSet(string path, json values) {
         throw genException(msg.str());
       }
       readablePath.replace(found, readablePath.length(), replaceString);
-      json pathValue;
+      jsoncons::json pathValue;
       bool isBranch = false;
       string absolutePath =
           getVSSSpecificPath(readablePath, isBranch, data_tree);
@@ -324,8 +332,8 @@ json vssdatabase::getPathForSet(string path, json values) {
       setValues[i] = pathValue;
     }
   } else {
-    setValues = json::make_array(1);
-    json pathValue;
+    setValues = jsoncons::json::make_array(1);
+    jsoncons::json pathValue;
     bool isBranch = false;
     string absolutePath = getVSSSpecificPath(path, isBranch, data_tree);
     if (isBranch) {
@@ -342,7 +350,7 @@ json vssdatabase::getPathForSet(string path, json values) {
 }
 
 // Check the value type and if the value is within the range
-void checkTypeAndBound(string value_type, json val) {
+void checkTypeAndBound(string value_type, jsoncons::json val) {
   bool typeValid = false;
 
   if (value_type == "UInt8") {
@@ -426,8 +434,8 @@ void checkTypeAndBound(string value_type, json val) {
     long double longDoubleVal = val.as<long double>();
     float max = numeric_limits<float>::max();
     float min = numeric_limits<float>::min();
-    if (!((longDoubleVal <= max) && (longDoubleVal >= min) ||
-          (longDoubleVal >= (max * -1)) && (longDoubleVal <= (min * -1)))) {
+    if (!(((longDoubleVal <= max) && (longDoubleVal >= min)) ||
+          ((longDoubleVal >= (max * -1)) && (longDoubleVal <= (min * -1))))) {
       cout << "vssdatabase::setSignal: The value passed " << val.as<double>()
            << "for type " << value_type << " is out of bound." << endl;
       std::stringstream msg;
@@ -440,8 +448,8 @@ void checkTypeAndBound(string value_type, json val) {
     long double longDoubleVal = val.as<long double>();
     double max = numeric_limits<double>::max();
     double min = numeric_limits<double>::min();
-    if (!((longDoubleVal <= max) && (longDoubleVal >= min) ||
-          (longDoubleVal >= (max * -1)) && (longDoubleVal <= (min * -1)))) {
+    if (!(((longDoubleVal <= max) && (longDoubleVal >= min)) ||
+          ((longDoubleVal >= (max * -1)) && (longDoubleVal <= (min * -1))))) {
       cout << "vssdatabase::setSignal: The value passed "
            << val.as<long double>() << "for type " << value_type
            << " is out of bound." << endl;
@@ -466,15 +474,15 @@ void checkTypeAndBound(string value_type, json val) {
 }
 
 // Method for setting values to signals.
-void vssdatabase::setSignal(class wschannel& channel, string path,
-                            json valueJson) {
+void vssdatabase::setSignal(wschannel& channel, string path,
+                            jsoncons::json valueJson) {
   if (path == "") {
     string msg = "Path is empty while setting";
     throw genException(msg);
   }
-  pthread_mutex_lock(rwMutex);
-  json setValues = getPathForSet(path, valueJson);
-  pthread_mutex_unlock(rwMutex);
+  rwMutex.lock();
+  jsoncons::json setValues = getPathForSet(path, valueJson);
+  rwMutex.unlock();
 
   if (setValues.is_array()) {
     // check if all the paths have write access.
@@ -485,18 +493,18 @@ void vssdatabase::setSignal(class wschannel& channel, string path,
       throw noPermissionException(msg.str());
     }
 
-    for (int i = 0; i < setValues.size(); i++) {
-      json item = setValues[i];
+    for (size_t i = 0; i < setValues.size(); i++) {
+      jsoncons::json item = setValues[i];
       string jPath = item["path"].as<string>();
 #ifdef DEBUG
       cout << "vssdatabase::setSignal: path found = " << jPath << endl;
       cout << "value to set asstring = " << item["value"].as<string>() << endl;
 #endif
-      pthread_mutex_lock(rwMutex);
-      json resArray = json_query(data_tree, jPath);
-      pthread_mutex_unlock(rwMutex);
+      rwMutex.lock();
+      jsoncons::json resArray = json_query(data_tree, jPath);
+      rwMutex.unlock();
       if (resArray.is_array() && resArray.size() == 1) {
-        json resJson = resArray[0];
+        jsoncons::json resJson = resArray[0];
         if (resJson.has_key("type")) {
           string value_type = resJson["type"].as<string>();
           json val = item["value"];
@@ -504,9 +512,9 @@ void vssdatabase::setSignal(class wschannel& channel, string path,
 
           resJson.insert_or_assign("value", val);
 
-          pthread_mutex_lock(rwMutex);
+          rwMutex.lock();
           json_replace(data_tree, jPath, resJson);
-          pthread_mutex_unlock(rwMutex);
+          rwMutex.unlock();
 #ifdef DEBUG
           cout << "vssdatabase::setSignal: new value set at path " << jPath
                << endl;
@@ -514,7 +522,7 @@ void vssdatabase::setSignal(class wschannel& channel, string path,
 
           int signalID = resJson["id"].as<int>();
 
-          json value = resJson["value"];
+          jsoncons::json value = resJson["value"];
           subHandler->update(signalID, value);
 
         } else {
@@ -540,7 +548,7 @@ void vssdatabase::setSignal(class wschannel& channel, string path,
 }
 
 // Utility method for setting values to JSON.
-void setJsonValue(json& dest, json& source, string key) {
+void setJsonValue(jsoncons::json& dest, jsoncons::json& source, string key) {
   if (!source.has_key("type")) {
     cout << "vssdatabase::setJsonValue : could not set value! type is not "
             "present in source json!"
@@ -552,15 +560,15 @@ void setJsonValue(json& dest, json& source, string key) {
 }
 
 // Returns response JSON for get request.
-json vssdatabase::getSignal(class wschannel& channel, string path) {
+jsoncons::json vssdatabase::getSignal(class wschannel& channel, string path) {
   bool isBranch = false;
 
-  pthread_mutex_lock(rwMutex);
+  rwMutex.lock();
   list<string> jPaths = getPathForGet(path, isBranch);
-  pthread_mutex_unlock(rwMutex);
+  rwMutex.unlock();
   int pathsFound = jPaths.size();
   if (pathsFound == 0) {
-    json answer;
+    jsoncons::json answer;
     return answer;
   }
 #ifdef DEBUG
@@ -569,7 +577,7 @@ json vssdatabase::getSignal(class wschannel& channel, string path) {
        << "\"" << path << "\"" << endl;
 #endif
   if (isBranch) {
-    json answer;
+    jsoncons::json answer;
 #ifdef DEBUG
     cout << " vssdatabase::getSignal :"
          << "\"" << path << "\""
@@ -578,7 +586,7 @@ json vssdatabase::getSignal(class wschannel& channel, string path) {
     if (pathsFound == 0) {
       throw noPathFoundonTree(path);
     } else {
-      json value;
+      jsoncons::json value;
 
       for (int i = 0; i < pathsFound; i++) {
         string jPath = jPaths.back();
@@ -595,11 +603,11 @@ json vssdatabase::getSignal(class wschannel& channel, string path) {
           jPaths.pop_back();
           continue;
         }
-        pthread_mutex_lock(rwMutex);
-        json resArray = json_query(data_tree, jPath);
-        pthread_mutex_unlock(rwMutex);
+        rwMutex.lock();
+        jsoncons::json resArray = json_query(data_tree, jPath);
+        rwMutex.unlock();
         jPaths.pop_back();
-        json result = resArray[0];
+        jsoncons::json result = resArray[0];
         if (result.has_key("value")) {
           setJsonValue(value, result, getReadablePath(jPath));
         } else {
@@ -617,12 +625,12 @@ json vssdatabase::getSignal(class wschannel& channel, string path) {
       msg << "No read access to  " << getReadablePath(jPath);
       throw noPermissionException(msg.str());
     }
-    pthread_mutex_lock(rwMutex);
-    json resArray = json_query(data_tree, jPath);
-    pthread_mutex_unlock(rwMutex);
-    json answer;
+    rwMutex.lock();
+    jsoncons::json resArray = json_query(data_tree, jPath);
+    rwMutex.unlock();
+    jsoncons::json answer;
     answer["path"] = getReadablePath(jPath);
-    json result = resArray[0];
+    jsoncons::json result = resArray[0];
     if (result.has_key("value")) {
       setJsonValue(answer, result, "value");
       return answer;
@@ -632,11 +640,11 @@ json vssdatabase::getSignal(class wschannel& channel, string path) {
     }
 
   } else if (pathsFound > 1) {
-    json answer;
-    json valueArray = json::array();
+    jsoncons::json answer;
+    jsoncons::json valueArray = jsoncons::json::array();
 
     for (int i = 0; i < pathsFound; i++) {
-      json value;
+      jsoncons::json value;
       string jPath = jPaths.back();
       // Check access here.
       if (!accessValidator->checkReadAccess(channel, jPath)) {
@@ -651,11 +659,11 @@ json vssdatabase::getSignal(class wschannel& channel, string path) {
         jPaths.pop_back();
         continue;
       }
-      pthread_mutex_lock(rwMutex);
-      json resArray = json_query(data_tree, jPath);
-      pthread_mutex_unlock(rwMutex);
+      rwMutex.lock();
+      jsoncons::json resArray = json_query(data_tree, jPath);
+      rwMutex.unlock();
       jPaths.pop_back();
-      json result = resArray[0];
+      jsoncons::json result = resArray[0];
       if (result.has_key("value")) {
         setJsonValue(value, result, getReadablePath(jPath));
       } else {
@@ -666,4 +674,5 @@ json vssdatabase::getSignal(class wschannel& channel, string path) {
     answer["value"] = valueArray;
     return answer;
   }
+  return NULL;
 }

@@ -11,12 +11,27 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#include <limits> 
-#include "w3cunittest.hpp"
-#include "exception.hpp"
 #define BOOST_TEST_MODULE w3c-unit-test
 #include <boost/test/included/unit_test.hpp>
 
+#include <string>
+#include <limits>
+#include "w3cunittest.hpp"
+#include "exception.hpp"
+// #include <jsoncons/json.hpp>
+
+#include "accesschecker.hpp"
+#include "authenticator.hpp"
+#include "signing.hpp"
+#include "subscriptionhandler.hpp"
+#include "vssdatabase.hpp"
+#include "vsscommandprocessor.hpp"
+#include "wsserver.hpp"
+
+using namespace std;
+// using namespace jsoncons;
+// using namespace jsoncons::jsonpath;
+// using jsoncons::json;
 
 /* AUTH_JWT permission token looks like this
 {
@@ -50,24 +65,24 @@ vssdatabase* database;
 signing* json_signer;
 vsscommandprocessor* commandProc;
 
-class w3cunittest unittestObj(false);
+w3cunittest unittestObj(false);
 
 w3cunittest::w3cunittest(bool secure) {
-   webSocket = new wsserver(PORT, secure);
-   authhandler = new authenticator("","");
-   accesshandler = new accesschecker(authhandler);
-   subhandler = new subscriptionhandler(webSocket, authhandler, accesshandler); 
-   database = new vssdatabase(subhandler, accesshandler);
-   commandProc = new vsscommandprocessor(database, authhandler , subhandler);
-   json_signer = new signing();
-   database->initJsonTree();
+  webSocket = new wsserver(PORT, secure);
+  authhandler = new authenticator("","");
+  accesshandler = new accesschecker(authhandler);
+  subhandler = new subscriptionhandler(webSocket, authhandler, accesshandler);
+  database = new vssdatabase(subhandler, accesshandler);
+  commandProc = new vsscommandprocessor(database, authhandler , subhandler);
+  json_signer = new signing();
+  database->initJsonTree();
 }
 
 w3cunittest::~w3cunittest() {
-   delete json_signer;
-   delete database;
-   delete webSocket;
-   delete commandProc;
+   // delete json_signer;
+   // delete database;
+   // delete webSocket;
+   // delete commandProc;
 }
 
 list<string> w3cunittest::test_wrap_getPathForGet(string path , bool &isBranch) {
@@ -76,7 +91,7 @@ list<string> w3cunittest::test_wrap_getPathForGet(string path , bool &isBranch) 
 
 json w3cunittest::test_wrap_getPathForSet(string path,  json value) {
     return database->getPathForSet(path , value);
-} 
+}
 
 //--------Do not change the order of the tests in this file, because some results are dependent on the previous tests and data in the db-------
 //----------------------------------------------------vssdatabase Tests ------------------------------------------------------------------------

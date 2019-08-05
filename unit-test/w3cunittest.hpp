@@ -14,18 +14,22 @@
 #ifndef __W3CUNITTEST_HPP__
 #define __W3CUNITTEST_HPP__
 
-#include <jsoncons/json.hpp>
-#include "vssdatabase.hpp"
-#include "wsserver.hpp"
-#include "subscriptionhandler.hpp"
-#include "authenticator.hpp"
-#include "accesschecker.hpp"
-#include "signing.hpp"
+#include <list>
+#include <string>
 
-using namespace std;
-using namespace jsoncons;
-using namespace jsoncons::jsonpath;
-using jsoncons::json;
+#include <jsoncons/json.hpp>
+
+// #include "vssdatabase.hpp"
+// #include "wsserver.hpp"
+// #include "subscriptionhandler.hpp"
+// #include "authenticator.hpp"
+// #include "accesschecker.hpp"
+// #include "signing.hpp"
+
+// using namespace std;
+// using namespace jsoncons;
+// using namespace jsoncons::jsonpath;
+// using jsoncons::json;
 
 class w3cunittest {
 
@@ -33,8 +37,8 @@ class w3cunittest {
 
     w3cunittest(bool secure);
     ~w3cunittest();
-    list<string> test_wrap_getPathForGet(string path , bool &isBranch);
-    json test_wrap_getPathForSet(string path,  json value);
+    std::list<std::string> test_wrap_getPathForGet(std::string path , bool &isBranch);
+    jsoncons::json test_wrap_getPathForSet(std::string path,  jsoncons::json value);
 };
 
 

@@ -14,29 +14,42 @@
 cmake_minimum_required(VERSION 2.8)
 project(w3c-visserver)
 
-set(UNIT_TEST OFF)
+set(UNIT_TEST OFF CACHE STRING "Build unit tests")
 # Set this variable to ON build an exe
 set(BUILD_EXE ON)
 
 #set this variable to ON to build the testclient
-set(BUILD_TEST_CLIENT ON)
+set(BUILD_TEST_CLIENT ON CACHE STRING "Build test client")
+
+set(ADDRESS_SAN OFF CACHE STRING "Build with AddressSanitizer")
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(UNIT_TEST)
    add_definitions(-DUNIT_TEST)
 endif(UNIT_TEST)
 
 add_definitions(-DDEBUG)
-add_compile_options(-std=c++11 -pthread -Wall -Wextra)
+add_compile_options(-std=c++11 -pthread -Wall -Wextra -Werror)
 
-#if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-#add_compile_options(-g -fsanitize=address -fno-omit-frame-pointer)
-#add_link_options(-g -fsanitize=address)
-#endif()
+if ("${ADDRESS_SAN}" STREQUAL "ON" AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  add_compile_options(-g -fsanitize=address -fno-omit-frame-pointer)
+  add_link_options(-g -fsanitize=address)
+endif()
 
 
 add_library(simple-websocket-server INTERFACE)
 
-target_include_directories(simple-websocket-server INTERFACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/Simple-WebSocket-Server ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/unit-test ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jsoncons ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jwt-cpp)
+target_include_directories(simple-websocket-server
+  SYSTEM INTERFACE # Set 3rd party libs as "system" in order to ignore warnings in them
+  ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs
+  ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/Simple-WebSocket-Server
+  ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jsoncons
+  ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jwt-cpp
+  INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  # ${CMAKE_CURRENT_SOURCE_DIR}/unit-test
+  )
 
 
 find_package(Threads REQUIRED)
@@ -84,9 +97,17 @@ if(UNIT_TEST)
          ${CMAKE_CURRENT_SOURCE_DIR}/src/subscriptionhandler.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/signing.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/wsserver.cpp
+         # ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/vssdatabase_test.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp
        )
-   add_executable(w3c-unit-test ${TEST_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp)
-   target_include_directories(simple-websocket-server INTERFACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/Simple-WebSocket-Server ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jsoncons ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jwt-cpp)
+   add_executable(w3c-unit-test ${TEST_FILES})
+   target_include_directories(simple-websocket-server INTERFACE
+     ${CMAKE_CURRENT_SOURCE_DIR}
+     ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs
+     ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/Simple-WebSocket-Server
+     ${CMAKE_CURRENT_SOURCE_DIR}/include
+     ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jsoncons
+     ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jwt-cpp)
    target_link_libraries(w3c-unit-test simple-websocket-server)
 endif(UNIT_TEST)
 

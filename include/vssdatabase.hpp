@@ -13,25 +13,16 @@
  */
 #ifndef __VSSDATABASE_HPP__
 #define __VSSDATABASE_HPP__
-#include <stdint.h>
-#include <fstream>
-#include <jsoncons/json.hpp>
-#include <jsoncons_ext/jsonpath/json_query.hpp>
-#include <list>
+
 #include <string>
-#include <vector>
-#include "authenticator.hpp"
-#include "subscriptionhandler.hpp"
-#include "wschannel.hpp"
+#include <list>
+#include <mutex>
 
-#ifdef UNIT_TEST
-#include "w3cunittest.hpp"
-#endif
+#include <jsoncons/json.hpp>
 
-using namespace std;
-using namespace jsoncons;
-using namespace jsoncons::jsonpath;
-using jsoncons::json;
+class subscriptionhandler;
+class accesschecker;
+class wschannel;
 
 class vssdatabase {
   friend class subscriptionhandler;
@@ -41,23 +32,24 @@ class vssdatabase {
 #endif
 
  private:
-  pthread_mutex_t* rwMutex;
-  json data_tree;
-  json meta_tree;
-  class subscriptionhandler* subHandler;
-  class accesschecker* accessValidator;
-  string getVSSSpecificPath(string path, bool& isBranch, json& tree);
-  string getPathForMetadata(string path, bool& isBranch);
-  list<string> getPathForGet(string path, bool& isBranch);
-  json getPathForSet(string path, json value);
-  string getReadablePath(string jsonpath);
+  std::mutex rwMutex;
+  jsoncons::json data_tree;
+  jsoncons::json meta_tree;
+  subscriptionhandler* subHandler;
+  accesschecker* accessValidator;
+  std::string getVSSSpecificPath(std::string path, bool& isBranch, jsoncons::json& tree);
+  std::string getPathForMetadata(std::string path, bool& isBranch);
+  std::list<std::string> getPathForGet(std::string path, bool& isBranch);
+  jsoncons::json getPathForSet(std::string path, jsoncons::json value);
+  std::string getReadablePath(std::string jsonpath);
 
  public:
-  vssdatabase(class subscriptionhandler* subHandle,
-              class accesschecker* accValidator);
+  vssdatabase(subscriptionhandler* subHandle,
+              accesschecker* accValidator);
+  ~vssdatabase();
   void initJsonTree();
-  json getMetaData(string path);
-  void setSignal(class wschannel& channel, string path, json value);
-  json getSignal(class wschannel& channel, string path);
+  jsoncons::json getMetaData(std::string path);
+  void setSignal(wschannel& channel, std::string path, jsoncons::json value);
+  jsoncons::json getSignal(wschannel& channel, std::string path);
 };
 #endif

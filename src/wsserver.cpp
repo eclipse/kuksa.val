@@ -13,6 +13,18 @@
  */
 #include "wsserver.hpp"
 
+#include "accesschecker.hpp"
+#include "authenticator.hpp"
+#include "subscriptionhandler.hpp"
+#include "visconf.hpp"
+#include "vsscommandprocessor.hpp"
+#include "vssdatabase.hpp"
+
+using namespace std;
+
+using WssServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
+using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
+
 uint16_t connections[MAX_CLIENTS + 1] = {0};
 wsserver *wserver;
 
@@ -30,6 +42,8 @@ uint32_t generateConnID() {
 
 wsserver::wsserver(int port, bool secure) {
   isSecure = secure;
+  secureServer = nullptr;
+  insecureServer = nullptr;
 
   if (isSecure) {
     secureServer = new WssServer("Server.pem", "Server.key");
@@ -48,7 +62,17 @@ wsserver::wsserver(int port, bool secure) {
 }
 
 wsserver::~wsserver() {
-  // destructor
+  delete cmdProcessor;
+  delete database;
+  delete subHandler;
+  delete accessCheck;
+  delete tokenValidator;
+  if (secureServer) {
+    delete secureServer;
+  }
+  if (insecureServer) {
+    delete insecureServer;
+  }
 }
 
 static void onMessage(shared_ptr<WssServer::Connection> connection,
@@ -80,6 +104,7 @@ static void onMessage(shared_ptr<WsServer::Connection> connection,
 }
 
 void wsserver::startServer(string endpointName) {
+  (void) endpointName;
   if (isSecure) {
     auto &vssEndpoint = secureServer->endpoint["^/vss/?$"];
 
@@ -196,6 +221,7 @@ void wsserver::sendToConnection(uint32_t connectionID, string message) {
 }
 
 void *startWSServer(void *arg) {
+  (void) arg;
   wserver->startServer("");
   return NULL;
 }

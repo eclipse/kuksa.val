@@ -11,39 +11,36 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#include "accesschecker.hpp"
-#include "authenticator.hpp"
-#include "server_wss.hpp"
-#include "subscriptionhandler.hpp"
-#include "visconf.hpp"
-#include "vsscommandprocessor.hpp"
-#include "vssdatabase.hpp"
-
-using namespace std;
 
 #ifndef __WSSERVER_H__
 #define __WSSERVER_H__
 
-using WssServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
-using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
+#include "server_wss.hpp"
+
+class vsscommandprocessor;
+class vsscommandprocessor;
+class subscriptionhandler;
+class authenticator;
+class vssdatabase;
+class accesschecker;
 
 class wsserver {
  private:
-  WssServer* secureServer;
-  WsServer* insecureServer;
+  SimpleWeb::SocketServer<SimpleWeb::WSS> *secureServer;
+  SimpleWeb::SocketServer<SimpleWeb::WS> *insecureServer;
   bool isSecure;
 
  public:
-  class vsscommandprocessor* cmdProcessor;
-  class subscriptionhandler* subHandler;
-  class authenticator* tokenValidator;
-  class vssdatabase* database;
-  class accesschecker* accessCheck;
+  vsscommandprocessor* cmdProcessor;
+  subscriptionhandler* subHandler;
+  authenticator* tokenValidator;
+  vssdatabase* database;
+  accesschecker* accessCheck;
 
   wsserver(int port, bool secure);
   ~wsserver();
-  void startServer(string endpointName);
-  void sendToConnection(uint32_t connID, string message);
+  void startServer(std::string endpointName);
+  void sendToConnection(uint32_t connID, std::string message);
   void start();
 };
 #endif

@@ -25,13 +25,13 @@ using jsoncons::json;
 
 class accesschecker {
  private:
-  class authenticator* tokenValidator;
+  authenticator *tokenValidator;
 
  public:
-  accesschecker(class authenticator* vdator);
-  bool checkReadAccess(class wschannel& channel, string path);
-  bool checkWriteAccess(class wschannel& channel, string path);
-  bool checkPathWriteAccess(class wschannel& channel, json paths);
+  accesschecker(authenticator *vdator);
+  bool checkReadAccess(wschannel &channel, string path);
+  bool checkWriteAccess(wschannel &channel, string path);
+  bool checkPathWriteAccess(wschannel &channel, json paths);
 };
 
 #endif

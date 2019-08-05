@@ -14,6 +14,17 @@
 #include "authenticator.hpp"
 #include <fstream>
 #include <iostream>
+#include <list>
+
+#include <jwt-cpp/jwt.h>
+#include <jsoncons/json.hpp>
+#include "vssdatabase.hpp"
+#include "wschannel.hpp"
+
+using namespace std;
+
+// using jsoncons;
+using jsoncons::json;
 
 authenticator::authenticator(string secretkey, string algo) {
   algorithm = algo;

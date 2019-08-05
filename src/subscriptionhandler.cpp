@@ -13,11 +13,24 @@
  */
 #include "subscriptionhandler.hpp"
 
-pthread_mutex_t subMutex;
+#include <unistd.h> // usleep
 
-subscriptionhandler::subscriptionhandler(class wsserver* wserver,
-                                         class authenticator* authenticate,
-                                         class accesschecker* checkAcc) {
+#include <jsoncons_ext/jsonpath/json_query.hpp>
+
+#include "accesschecker.hpp"
+#include "authenticator.hpp"
+#include "exception.hpp"
+#include "visconf.hpp"
+#include "vssdatabase.hpp"
+#include "wsserver.hpp"
+
+// using namespace jsoncons;
+using namespace jsoncons::jsonpath;
+// using jsoncons::jsoncons::jsoncons::json;
+
+subscriptionhandler::subscriptionhandler(wsserver* wserver,
+                                         authenticator* authenticate,
+                                         accesschecker* checkAcc) {
   for (int i = 0; i < MAX_SIGNALS; i++) {
     for (int j = 0; j < MAX_CLIENTS; j++) {
       subscribeHandle[i][j] = 0;
@@ -26,13 +39,15 @@ subscriptionhandler::subscriptionhandler(class wsserver* wserver,
   server = wserver;
   validator = authenticate;
   checkAccess = checkAcc;
-  pthread_mutex_init(&subMutex, NULL);
-  threadRun = true;
   startThread();
 }
 
-uint32_t subscriptionhandler::subscribe(class wschannel& channel,
-                                        class vssdatabase* db,
+subscriptionhandler::~subscriptionhandler() {
+  stopThread();
+}
+
+uint32_t subscriptionhandler::subscribe(wschannel& channel,
+                                        vssdatabase* db,
                                         uint32_t channelID, string path) {
   // generate subscribe ID "randomly".
   uint32_t subId = rand() % 9999999;
@@ -51,10 +66,10 @@ uint32_t subscriptionhandler::subscribe(class wschannel& channel,
   }
 
   int clientID = channelID / CLIENT_MASK;
-  json resArray = json_query(db->data_tree, jPath);
+  jsoncons::json resArray = jsonpath::json_query(db->data_tree, jPath);
 
   if (resArray.is_array() && resArray.size() == 1) {
-    json result = resArray[0];
+    jsoncons::json result = resArray[0];
     int sigID = result["id"].as<int>();
 #ifdef DEBUG
     if (subscribeHandle[sigID][clientID] != 0) {
@@ -106,41 +121,47 @@ int subscriptionhandler::unsubscribeAll(uint32_t connectionID) {
   return 0;
 }
 
-int subscriptionhandler::update(int signalID, json value) {
+int subscriptionhandler::update(int signalID, jsoncons::json value) {
   for (int i = 0; i < MAX_CLIENTS; i++) {
     uint32_t subID = subscribeHandle[signalID][i];
     if (subID != 0) {
-      pthread_mutex_lock(&subMutex);
-      pair<uint32_t, json> newSub;
+      subMutex.lock();
+      pair<uint32_t, jsoncons::json> newSub;
       newSub = std::make_pair(subID, value);
       buffer.push(newSub);
-      pthread_mutex_unlock(&subMutex);
+      subMutex.unlock();
     }
   }
   return 0;
 }
 
-class wsserver* subscriptionhandler::getServer() {
+wsserver* subscriptionhandler::getServer() {
   return server;
 }
 
-int subscriptionhandler::update(string path, json value) { return 0; }
+int subscriptionhandler::update(string path, json value) {
+  /* TODO: Implement */
+  (void) path;
+  (void) value;
 
-void* subThread(void* instance) {
-  subscriptionhandler* handler = (subscriptionhandler*)instance;
+  return 0;
+}
+
+void* subscriptionhandler::subThreadRunner() {
+  // subscriptionhandler* handler = (subscriptionhandler*)instance;
 #ifdef DEBUG
   cout << "SubscribeThread: Started Subscription Thread!" << endl;
 #endif
-  while (handler->isThreadRunning()) {
-    pthread_mutex_lock(&subMutex);
-    if (handler->buffer.size() > 0) {
-      pair<uint32_t, json> newSub = handler->buffer.front();
-      handler->buffer.pop();
+  while (isThreadRunning()) {
+    subMutex.lock();
+    if (buffer.size() > 0) {
+      pair<uint32_t, jsoncons::json> newSub = buffer.front();
+      buffer.pop();
 
       uint32_t subID = newSub.first;
-      json value = newSub.second;
+      jsoncons::json value = newSub.second;
 
-      json answer;
+      jsoncons::json answer;
       answer["action"] = "subscribe";
       answer["subscriptionId"] = subID;
       answer.insert_or_assign("value", value);
@@ -151,9 +172,9 @@ void* subThread(void* instance) {
       string message = ss.str();
 
       uint32_t connectionID = (subID / CLIENT_MASK) * CLIENT_MASK;
-      handler->getServer()->sendToConnection(connectionID, message);
+      getServer()->sendToConnection(connectionID, message);
     }
-    pthread_mutex_unlock(&subMutex);
+    subMutex.unlock();
     // sleep 10 ms
     usleep(10000);
   }
@@ -164,18 +185,22 @@ void* subThread(void* instance) {
 }
 
 int subscriptionhandler::startThread() {
-  pthread_t subscription_thread;
-  if (pthread_create(&subscription_thread, NULL, &subThread, this)) {
-    cout << "subscriptionhandler::startThread: Error creating subscription "
-            "handler thread"
-         << endl;
-    return 1;
-  }
+  subThread = thread(&subscriptionhandler::subThreadRunner, this);
+  // if (pthread_create(&subscription_thread, NULL, &subThread, this)) {
+  //   cout << "subscriptionhandler::startThread: Error creating subscription "
+  //           "handler thread"
+  //        << endl;
+  //   return 1;
+  // }
+  threadRun = true;
   return 0;
 }
 
 int subscriptionhandler::stopThread() {
+  subMutex.lock();
   threadRun = false;
+  subThread.join();
+  subMutex.unlock();
   return 0;
 }
 

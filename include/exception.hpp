@@ -17,15 +17,13 @@
 #include <exception>
 #include <string>
 
-using namespace std;
-
 // No path on Tree exception
-class noPathFoundonTree : public exception {
+class noPathFoundonTree : public std::exception {
  private:
-  string message;
+  std::string message;
 
  public:
-  noPathFoundonTree(string path) {
+  noPathFoundonTree(std::string path) {
     message = "Path " + path + " not found on the VSS Tree";
   }
 
@@ -33,34 +31,34 @@ class noPathFoundonTree : public exception {
 };
 
 // Generic exception
-class genException : public exception {
+class genException : public std::exception {
  private:
-  string message;
+  std::string message;
 
  public:
-  genException(string msg) { message = msg; }
+  genException(std::string msg) { message = msg; }
 
   virtual const char* what() const throw() { return message.c_str(); }
 };
 
 // not permitted- no permission
-class noPermissionException : public exception {
+class noPermissionException : public std::exception {
  private:
-  string message;
+  std::string message;
 
  public:
-  noPermissionException(string msg) { message = msg; }
+  noPermissionException(std::string msg) { message = msg; }
 
   virtual const char* what() const throw() { return message.c_str(); }
 };
 
 // value out of bound exception
-class outOfBoundException : public exception {
+class outOfBoundException : public std::exception {
  private:
-  string message;
+  std::string message;
 
  public:
-  outOfBoundException(string msg) { message = msg; }
+  outOfBoundException(std::string msg) { message = msg; }
 
   virtual const char* what() const throw() { return message.c_str(); }
 };

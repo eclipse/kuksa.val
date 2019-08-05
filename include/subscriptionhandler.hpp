@@ -14,18 +14,21 @@
 #ifndef __SUBSCRIPTIONHANDLER_H__
 #define __SUBSCRIPTIONHANDLER_H__
 
+#include <mutex>
 #include <queue>
-#include "accesschecker.hpp"
-#include "authenticator.hpp"
-#include "exception.hpp"
 #include "visconf.hpp"
-#include "vssdatabase.hpp"
-#include "wsserver.hpp"
+#include <string>
+#include <thread>
+
+#include <jsoncons/json.hpp>
 
 using namespace std;
-using namespace jsoncons;
-using namespace jsoncons::jsonpath;
-using jsoncons::json;
+
+class accesschecker;
+class authenticator;
+class vssdatabase;
+class wschannel;
+class wsserver;
 
 class subscriptionhandler {
  private:
@@ -33,22 +36,27 @@ class subscriptionhandler {
   class wsserver* server;
   authenticator* validator;
   accesschecker* checkAccess;
+  std::mutex subMutex;
+  std::thread subThread;
   bool threadRun;
+  queue<pair<uint32_t, jsoncons::json>> buffer;
 
  public:
-  queue<pair<uint32_t, json>> buffer;
-  subscriptionhandler(class wsserver* wserver,
-                      class authenticator* authenticate,
-                      class accesschecker* checkAccess);
-  uint32_t subscribe(class wschannel& channel, class vssdatabase* db,
+  subscriptionhandler(wsserver* wserver,
+                      authenticator* authenticate,
+                      accesschecker* checkAccess);
+  ~subscriptionhandler();
+
+  uint32_t subscribe(wschannel& channel, vssdatabase* db,
                      uint32_t channelID, string path);
   int unsubscribe(uint32_t subscribeID);
   int unsubscribeAll(uint32_t connectionID);
-  int update(int signalID, json value);
-  int update(string path, json value);
-  class wsserver* getServer();
+  int update(int signalID, jsoncons::json value);
+  int update(string path, jsoncons::json value);
+  wsserver* getServer();
   int startThread();
   int stopThread();
   bool isThreadRunning();
+  void* subThreadRunner();
 };
 #endif

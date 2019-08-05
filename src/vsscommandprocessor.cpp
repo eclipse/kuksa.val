@@ -13,13 +13,17 @@
  */
 
 #include "vsscommandprocessor.hpp"
+
 #include <stdint.h>
 #include <iostream>
 #include <sstream>
+
 #include "exception.hpp"
 #include "server_ws.hpp"
 #include "visconf.hpp"
 #include "vssdatabase.hpp"
+#include "accesschecker.hpp"
+#include "subscriptionhandler.hpp"
 
 #ifdef JSON_SIGNING_ON
 #include "signing.hpp"
@@ -28,10 +32,10 @@
 using namespace std;
 
 string malFormedRequestResponse(uint32_t request_id, const string action) {
-  json answer;
+  jsoncons::json answer;
   answer["action"] = action;
   answer["requestId"] = request_id;
-  json error;
+  jsoncons::json error;
   error["number"] = 400;
   error["reason"] = "Request malformed";
   error["message"] = "Request malformed";
@@ -45,10 +49,10 @@ string malFormedRequestResponse(uint32_t request_id, const string action) {
 /** A API call requested a non-existant path */
 string pathNotFoundResponse(uint32_t request_id, const string action,
                             const string path) {
-  json answer;
+  jsoncons::json answer;
   answer["action"] = action;
   answer["requestId"] = request_id;
-  json error;
+  jsoncons::json error;
   error["number"] = 404;
   error["reason"] = "Path not found";
   error["message"] = "I can not find " + path + " in my db";
@@ -61,8 +65,8 @@ string pathNotFoundResponse(uint32_t request_id, const string action,
 
 string noAccessResponse(uint32_t request_id, const string action,
                         string message) {
-  json result;
-  json error;
+  jsoncons::json result;
+  jsoncons::json error;
   result["action"] = action;
   result["requestId"] = request_id;
   error["number"] = 403;
@@ -77,10 +81,10 @@ string noAccessResponse(uint32_t request_id, const string action,
 
 string valueOutOfBoundsResponse(uint32_t request_id, const string action,
                                 const string message) {
-  json answer;
+  jsoncons::json answer;
   answer["action"] = action;
   answer["requestId"] = request_id;
-  json error;
+  jsoncons::json error;
   error["number"] = 400;
   error["reason"] = "Value passed is out of bounds";
   error["message"] = message;
@@ -92,8 +96,8 @@ string valueOutOfBoundsResponse(uint32_t request_id, const string action,
 }
 
 vsscommandprocessor::vsscommandprocessor(
-    class vssdatabase *dbase, class authenticator *vdator,
-    class subscriptionhandler *subhandler) {
+    vssdatabase *dbase, authenticator *vdator,
+    subscriptionhandler *subhandler) {
   database = dbase;
   tokenValidator = vdator;
   subHandler = subhandler;
@@ -103,12 +107,16 @@ vsscommandprocessor::vsscommandprocessor(
 #endif
 }
 
-string vsscommandprocessor::processGet(class wschannel &channel,
+vsscommandprocessor::~vsscommandprocessor() {
+  delete accessValidator;
+}
+
+string vsscommandprocessor::processGet(wschannel &channel,
                                        uint32_t request_id, string path) {
 #ifdef DEBUG
   cout << "GET :: path received from client = " << path << endl;
 #endif
-  json res;
+  jsoncons::json res;
   try {
     res = database->getSignal(channel, path);
   } catch (noPermissionException &nopermission) {
@@ -127,9 +135,9 @@ string vsscommandprocessor::processGet(class wschannel &channel,
   }
 }
 
-string vsscommandprocessor::processSet(class wschannel &channel,
+string vsscommandprocessor::processSet(wschannel &channel,
                                        uint32_t request_id, string path,
-                                       json value) {
+                                       jsoncons::json value) {
 #ifdef DEBUG
   cout << "vsscommandprocessor::processSet: path received from client" << path
        << endl;
@@ -139,8 +147,8 @@ string vsscommandprocessor::processSet(class wschannel &channel,
     database->setSignal(channel, path, value);
   } catch (genException &e) {
     cout << e.what() << endl;
-    json root;
-    json error;
+    jsoncons::json root;
+    jsoncons::json error;
 
     root["action"] = "set";
     root["requestId"] = request_id;
@@ -166,7 +174,7 @@ string vsscommandprocessor::processSet(class wschannel &channel,
     return noAccessResponse(request_id, "set", nopermission.what());
   }
 
-  json answer;
+  jsoncons::json answer;
   answer["action"] = "set";
   answer["requestId"] = request_id;
   answer["timestamp"] = time(NULL);
@@ -176,7 +184,7 @@ string vsscommandprocessor::processSet(class wschannel &channel,
   return ss.str();
 }
 
-string vsscommandprocessor::processSubscribe(class wschannel &channel,
+string vsscommandprocessor::processSubscribe(wschannel &channel,
                                              uint32_t request_id, string path,
                                              uint32_t connectionID) {
 #ifdef DEBUG
@@ -201,7 +209,7 @@ string vsscommandprocessor::processSubscribe(class wschannel &channel,
   }
 
   if (subId > 0) {
-    json answer;
+    jsoncons::json answer;
     answer["action"] = "subscribe";
     answer["requestId"] = request_id;
     answer["subscriptionId"] = subId;
@@ -212,8 +220,8 @@ string vsscommandprocessor::processSubscribe(class wschannel &channel,
     return ss.str();
 
   } else {
-    json root;
-    json error;
+    jsoncons::json root;
+    jsoncons::json error;
 
     root["action"] = "subscribe";
     root["requestId"] = request_id;
@@ -235,7 +243,7 @@ string vsscommandprocessor::processUnsubscribe(uint32_t request_id,
                                                uint32_t subscribeID) {
   int res = subHandler->unsubscribe(subscribeID);
   if (res == 0) {
-    json answer;
+    jsoncons::json answer;
     answer["action"] = "unsubscribe";
     answer["requestId"] = request_id;
     answer["subscriptionId"] = subscribeID;
@@ -246,8 +254,8 @@ string vsscommandprocessor::processUnsubscribe(uint32_t request_id,
     return ss.str();
 
   } else {
-    json root;
-    json error;
+    jsoncons::json root;
+    jsoncons::json error;
 
     root["action"] = "unsubscribe";
     root["requestId"] = request_id;
@@ -266,9 +274,9 @@ string vsscommandprocessor::processUnsubscribe(uint32_t request_id,
 
 string vsscommandprocessor::processGetMetaData(uint32_t request_id,
                                                string path) {
-  json st = database->getMetaData(path);
+  jsoncons::json st = database->getMetaData(path);
 
-  json result;
+  jsoncons::json result;
   result["action"] = "getMetadata";
   result["requestId"] = request_id;
   result["metadata"] = st;
@@ -280,14 +288,14 @@ string vsscommandprocessor::processGetMetaData(uint32_t request_id,
   return ss.str();
 }
 
-string vsscommandprocessor::processAuthorize(class wschannel &channel,
+string vsscommandprocessor::processAuthorize(wschannel &channel,
                                              uint32_t request_id,
                                              string token) {
   int ttl = tokenValidator->validate(channel, database, token);
 
   if (ttl == -1) {
-    json result;
-    json error;
+    jsoncons::json result;
+    jsoncons::json error;
     result["action"] = "authorize";
     result["requestId"] = request_id;
     error["number"] = 401;
@@ -302,7 +310,7 @@ string vsscommandprocessor::processAuthorize(class wschannel &channel,
     return ss.str();
 
   } else {
-    json result;
+    jsoncons::json result;
     result["action"] = "authorize";
     result["requestId"] = request_id;
     result["TTL"] = ttl;
@@ -315,10 +323,10 @@ string vsscommandprocessor::processAuthorize(class wschannel &channel,
 }
 
 string vsscommandprocessor::processQuery(string req_json,
-                                         class wschannel &channel) {
-  json root;
+                                         wschannel &channel) {
+  jsoncons::json root;
   string response;
-  root = json::parse(req_json);
+  root = jsoncons::json::parse(req_json);
   string action = root["action"].as<string>();
 
   if (action == "authorize") {
@@ -353,7 +361,7 @@ string vsscommandprocessor::processQuery(string req_json,
       response = signer->sign(response);
 #endif
     } else if (action == "set") {
-      json value = root["value"];
+      jsoncons::json value = root["value"];
 #ifdef DEBUG
       cout << "vsscommandprocessor::processQuery: set query  for " << path
            << " with request id " << request_id << " value "

@@ -21,6 +21,9 @@
  * @return
  */
 int main(int argc, char* argv[]) {
+  (void) argc;
+  (void) argv;
+
   wsserver server(PORT, true);
   server.start();
 
