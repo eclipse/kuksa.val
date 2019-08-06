@@ -101,41 +101,40 @@ string vssdatabase::getVSSSpecificPath(string path, bool& isBranch,
   int tokLength = tokens.size();
   string format_path = "$";
   for (int i = 0; i < tokLength; i++) {
-    try {
-      if (tokens[i] == "*")
-        format_path = format_path + "[" + tokens[i] + "]";
-      else
-        format_path = format_path + "[\'" + tokens[i] + "\']";
-      jsoncons::json res = json_query(tree, format_path);
-      string type = "";
-      if ((res.is_array() && res.size() > 0) && res[0].has_key("type")) {
-        type = res[0]["type"].as<string>();
-      } else if (res.has_key("type")) {
-        type = res["type"].as<string>();
-      }
+    if (tokens[i] == "*") {
+      format_path = format_path + "[" + tokens[i] + "]";
+    } else {
+      format_path = format_path + "[\'" + tokens[i] + "\']";
+    }
 
-      if (type != "" && type == "branch") {
-        if (i < (tokLength - 1)) {
-          format_path = format_path + "[\'children\']";
-        }
-        isBranch = true;
-      } else if (type != "") {
-        isBranch = false;
-        break;
-      } else {
-        isBranch = false;
-        cout << "vssdatabase::getVSSSpecificPath : Path " << format_path
-             << " is invalid or is an empty tag!" << endl;
-        return "";
-      }
-
-    } catch (exception& e) {
-      cout << "vssdatabase::getVSSSpecificPath :Exception "
-           << "\"" << e.what() << "\""
-           << " occured while querying JSON. Check Path!" << endl;
+    if (i < (tokLength - 1)) {
+      format_path = format_path + "[\'children\']";
+    }
+  }
+  try {
+    jsoncons::json res = json_query(tree, format_path);
+    string type = "";
+    if ((res.is_array() && res.size() > 0) && res[0].has_key("type")) {
+      type = res[0]["type"].as<string>();
+    } else if (res.has_key("type")) {
+      type = res["type"].as<string>();
+    }
+    if (type != "" && type == "branch") {
+      isBranch = true;
+    } else if (type != "") {
       isBranch = false;
+    } else {
+      isBranch = false;
+      cout << "vssdatabase::getVSSSpecificPath : Path " << format_path
+           << " is invalid or is an empty tag!" << endl;
       return "";
     }
+  } catch (exception& e) {
+    cout << "vssdatabase::getVSSSpecificPath :Exception "
+         << "\"" << e.what() << "\""
+         << " occured while querying JSON. Check Path!" << endl;
+    isBranch = false;
+    return "";
   }
   return format_path;
 }
