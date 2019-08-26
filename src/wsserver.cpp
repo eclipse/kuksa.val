@@ -40,17 +40,18 @@ uint32_t generateConnID() {
   return retValueValue;
 }
 
-wsserver::wsserver(int port, bool secure) {
-  isSecure = secure;
-  secureServer = nullptr;
-  insecureServer = nullptr;
+wsserver::wsserver(int port, string configFileName, bool secure) {
+  isSecure_ = secure;
+  secureServer_ = nullptr;
+  insecureServer_ = nullptr;
+  configFileName_ = configFileName;
 
-  if (isSecure) {
-    secureServer = new WssServer("Server.pem", "Server.key");
-    secureServer->config.port = port;
+  if (isSecure_) {
+    secureServer_ = new WssServer("Server.pem", "Server.key");
+    secureServer_->config.port = port;
   } else {
-    insecureServer = new WsServer();
-    insecureServer->config.port = port;
+    insecureServer_ = new WsServer();
+    insecureServer_->config.port = port;
   }
 
   tokenValidator = new authenticator("appstacle", "RS256");
@@ -67,11 +68,11 @@ wsserver::~wsserver() {
   delete subHandler;
   delete accessCheck;
   delete tokenValidator;
-  if (secureServer) {
-    delete secureServer;
+  if (secureServer_) {
+    delete secureServer_;
   }
-  if (insecureServer) {
-    delete insecureServer;
+  if (insecureServer_) {
+    delete insecureServer_;
   }
 }
 
@@ -105,8 +106,8 @@ static void onMessage(shared_ptr<WsServer::Connection> connection,
 
 void wsserver::startServer(string endpointName) {
   (void) endpointName;
-  if (isSecure) {
-    auto &vssEndpoint = secureServer->endpoint["^/vss/?$"];
+  if (isSecure_) {
+    auto &vssEndpoint = secureServer_->endpoint["^/vss/?$"];
 
     vssEndpoint.on_message = [](shared_ptr<WssServer::Connection> connection,
                                 shared_ptr<WssServer::Message> message) {
@@ -148,9 +149,9 @@ void wsserver::startServer(string endpointName) {
     };
 
     cout << "started Secure WS server" << endl;
-    secureServer->start();
+    secureServer_->start();
   } else {
-    auto &vssEndpoint = insecureServer->endpoint["^/vss/?$"];
+    auto &vssEndpoint = insecureServer_->endpoint["^/vss/?$"];
 
     vssEndpoint.on_message = [](shared_ptr<WsServer::Connection> connection,
                                 shared_ptr<WsServer::Message> message) {
@@ -194,15 +195,15 @@ void wsserver::startServer(string endpointName) {
     };
 
     cout << "started Insecure WS server" << endl;
-    insecureServer->start();
+    insecureServer_->start();
   }
 }
 
 void wsserver::sendToConnection(uint32_t connectionID, string message) {
-  if (isSecure) {
+  if (isSecure_) {
     auto send_stream = make_shared<WssServer::SendStream>();
     *send_stream << message;
-    for (auto &a_connection : secureServer->get_connections()) {
+    for (auto &a_connection : secureServer_->get_connections()) {
       if (a_connection->channel.getConnID() == connectionID) {
         a_connection->send(send_stream);
         return;
@@ -211,7 +212,7 @@ void wsserver::sendToConnection(uint32_t connectionID, string message) {
   } else {
     auto send_stream = make_shared<WsServer::SendStream>();
     *send_stream << message;
-    for (auto &a_connection : insecureServer->get_connections()) {
+    for (auto &a_connection : insecureServer_->get_connections()) {
       if (a_connection->channel.getConnID() == connectionID) {
         a_connection->send(send_stream);
         return;
@@ -227,7 +228,7 @@ void *startWSServer(void *arg) {
 }
 
 void wsserver::start() {
-  this->database->initJsonTree();
+  this->database->initJsonTree(configFileName_);
   pthread_t startWSServer_thread;
 
   /* create the web socket server thread. */

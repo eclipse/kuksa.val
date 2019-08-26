@@ -61,7 +61,7 @@ set(Boost_USE_STATIC_LIBS ON)
 include_directories(${Boost_INCLUDE_DIRS})
 message(STATUS " boost includes ${Boost_INCLUDE_DIRS} ")
 
-find_package(Boost 1.58.0 COMPONENTS system thread REQUIRED)
+find_package(Boost 1.58.0 COMPONENTS system thread program_options REQUIRED)
 
 target_link_libraries(simple-websocket-server INTERFACE ${Boost_LIBRARIES})
 target_include_directories(simple-websocket-server INTERFACE ${Boost_INCLUDE_DIR})

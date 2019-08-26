@@ -69,14 +69,14 @@ vsscommandprocessor* commandProc;
 w3cunittest unittestObj(false);
 
 w3cunittest::w3cunittest(bool secure) {
-  webSocket = new wsserver(PORT, secure);
+  webSocket = new wsserver(PORT, "vss_rel_2.0.json", secure);
   authhandler = new authenticator("","");
   accesshandler = new accesschecker(authhandler);
   subhandler = new subscriptionhandler(webSocket, authhandler, accesshandler);
   database = new vssdatabase(subhandler, accesshandler);
   commandProc = new vsscommandprocessor(database, authhandler , subhandler);
   json_signer = new signing();
-  database->initJsonTree();
+  database->initJsonTree("vss_rel_2.0.json");
 }
 
 w3cunittest::~w3cunittest() {

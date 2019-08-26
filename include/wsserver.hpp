@@ -26,9 +26,10 @@ class accesschecker;
 
 class wsserver {
  private:
-  SimpleWeb::SocketServer<SimpleWeb::WSS> *secureServer;
-  SimpleWeb::SocketServer<SimpleWeb::WS> *insecureServer;
-  bool isSecure;
+  SimpleWeb::SocketServer<SimpleWeb::WSS> *secureServer_;
+  SimpleWeb::SocketServer<SimpleWeb::WS> *insecureServer_;
+  bool isSecure_;
+  std::string configFileName_;
 
  public:
   vsscommandprocessor* cmdProcessor;
@@ -37,7 +38,7 @@ class wsserver {
   vssdatabase* database;
   accesschecker* accessCheck;
 
-  wsserver(int port, bool secure);
+  wsserver(int port, std::string configFileName, bool secure);
   ~wsserver();
   void startServer(std::string endpointName);
   void sendToConnection(uint32_t connID, std::string message);

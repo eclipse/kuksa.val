@@ -36,9 +36,8 @@ vssdatabase::vssdatabase(subscriptionhandler* subHandle,
 vssdatabase::~vssdatabase() {}
 
 // Initializer
-void vssdatabase::initJsonTree() {
+void vssdatabase::initJsonTree(string fileName) {
   try {
-    string fileName = "vss_rel_2.0.json";
     std::ifstream is(fileName);
     is >> data_tree;
     meta_tree = data_tree;
