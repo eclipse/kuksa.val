@@ -432,26 +432,27 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     float max = numeric_limits<float>::max();
-    float min = numeric_limits<float>::min();
-    if (!(((longDoubleVal <= max) && (longDoubleVal >= min)) ||
-          ((longDoubleVal >= (max * -1)) && (longDoubleVal <= (min * -1))))) {
-      cout << "vssdatabase::setSignal: The value passed " << val.as<double>()
-           << "for type " << value_type << " is out of bound." << endl;
+    float min = numeric_limits<float>::lowest();
+    if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
+      cout << "vssdatabase::setSignal: The value passed "
+           << val.as<double>() << " for type " << value_type
+           << " is out of bound."
+           << endl;
       std::stringstream msg;
-      msg << "The type " << value_type << " with value " << val.as<double>()
-          << " is out of bound";
+      msg << "The type " << value_type << " with value '" << val.as<double>()
+          << "' is out of bound";
       throw outOfBoundException(msg.str());
     }
   } else if (value_type == "Double") {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     double max = numeric_limits<double>::max();
-    double min = numeric_limits<double>::min();
-    if (!(((longDoubleVal <= max) && (longDoubleVal >= min)) ||
-          ((longDoubleVal >= (max * -1)) && (longDoubleVal <= (min * -1))))) {
-      cout << "vssdatabase::setSignal: The value passed "
-           << val.as<long double>() << "for type " << value_type
-           << " is out of bound." << endl;
+    double min = numeric_limits<double>::lowest();
+    if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
+      cout << "vssdatabase::setSignal: The value passed '"
+           << val.as<long double>() << "' for type " << value_type
+           << " is out of bound."
+           << endl;
       std::stringstream msg;
       msg << "The type " << value_type << " with value "
           << val.as<long double>() << " is out of bound";
