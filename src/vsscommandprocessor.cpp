@@ -18,6 +18,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "permmclient.hpp"
 #include "exception.hpp"
 #include "server_ws.hpp"
 #include "visconf.hpp"
@@ -287,6 +288,46 @@ string vsscommandprocessor::processGetMetaData(uint32_t request_id,
 
   return ss.str();
 }
+
+string vsscommandprocessor::processAuthorize1(wschannel &channel,
+                                             uint32_t request_id,
+                                             string client, string clientSecret) {
+
+  
+  // Get Token from permission management daemon.
+  string token = getPermToken(client, clientSecret);
+
+  int ttl = tokenValidator->validate(channel, database, token);
+
+  if (ttl == -1) {
+    jsoncons::json result;
+    jsoncons::json error;
+    result["action"] = "authorize";
+    result["requestId"] = request_id;
+    error["number"] = 401;
+    error["reason"] = "Invalid Token";
+    error["message"] = "Check the JWT token passed";
+
+    result["error"] = error;
+    result["timestamp"] = time(NULL);
+
+    std::stringstream ss;
+    ss << pretty_print(result);
+    return ss.str();
+
+  } else {
+    jsoncons::json result;
+    result["action"] = "authorize";
+    result["requestId"] = request_id;
+    result["TTL"] = ttl;
+    result["timestamp"] = time(NULL);
+
+    std::stringstream ss;
+    ss << pretty_print(result);
+    return ss.str();
+  }
+}
+
 
 string vsscommandprocessor::processAuthorize(wschannel &channel,
                                              uint32_t request_id,
