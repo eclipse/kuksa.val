@@ -128,7 +128,7 @@ This could also be easily extended to support JSON signing for the requests as w
 The server also has d-bus connection, which could be used to feed the server with data from various feeders.
 The W3C Sever exposes the below methods and these methods could be used (as methodcall) to fill the server with data.
 
-<interface name='org.eclipse.kuksa.w3cbackend'>
+    ``<interface name='org.eclipse.kuksa.w3cbackend'>
        <method name='pushUnsignedInt'>
          <arg type='s' name='path' direction='in'/>
          <arg type='t' name='value' direction='in'/>
@@ -149,7 +149,7 @@ The W3C Sever exposes the below methods and these methods could be used (as meth
          <arg type='s' name='path' direction='in'/>
          <arg type='s' name='value' direction='in'/>
        </method>
-     </interface>
+     </interface>``
 
 
 
