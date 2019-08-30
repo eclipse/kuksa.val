@@ -41,6 +41,6 @@ class wsserver {
   ~wsserver();
   void startServer(std::string endpointName);
   void sendToConnection(uint32_t connID, std::string message);
-  void start();
+   vssdatabase* start();
 };
 #endif

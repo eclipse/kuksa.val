@@ -42,6 +42,7 @@ class vssdatabase {
   std::list<std::string> getPathForGet(std::string path, bool& isBranch);
   jsoncons::json getPathForSet(std::string path, jsoncons::json value);
   std::string getReadablePath(std::string jsonpath);
+  void checkSetPermission(wschannel& channel, jsoncons::json valueJson);
 
  public:
   vssdatabase(subscriptionhandler* subHandle,
@@ -50,6 +51,7 @@ class vssdatabase {
   void initJsonTree();
   jsoncons::json getMetaData(std::string path);
   void setSignal(wschannel& channel, std::string path, jsoncons::json value);
+  void setSignal(std::string path, jsoncons::json value);
   jsoncons::json getSignal(wschannel& channel, std::string path);
 };
 #endif

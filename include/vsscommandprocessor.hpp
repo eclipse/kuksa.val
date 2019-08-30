@@ -44,13 +44,13 @@ class vsscommandprocessor {
   std::string processAuthorize(wschannel& channel, uint32_t request_id,
                           std::string token);
   std::string processAuthorize1(wschannel &channel, uint32_t request_id,
-                                std::string client, std::string clientSecret);
+                                 std::string client, std::string clientSecret);
+  
 
  public:
   vsscommandprocessor(vssdatabase* database, authenticator* vdator,
                       subscriptionhandler* subhandler);
   ~vsscommandprocessor();
-
   std::string processQuery(std::string req_json, wschannel& channel);
 };
 

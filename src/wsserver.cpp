@@ -226,7 +226,7 @@ void *startWSServer(void *arg) {
   return NULL;
 }
 
-void wsserver::start() {
+vssdatabase* wsserver::start() {
   this->database->initJsonTree();
   pthread_t startWSServer_thread;
 
@@ -234,4 +234,5 @@ void wsserver::start() {
   if (pthread_create(&startWSServer_thread, NULL, &startWSServer, NULL)) {
     cout << "main: Error creating websocket server run thread" << endl;
   }
+  return this->database;
 }

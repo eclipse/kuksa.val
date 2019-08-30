@@ -72,6 +72,21 @@ find_package(OpenSSL REQUIRED)
 target_link_libraries(simple-websocket-server INTERFACE ${OPENSSL_LIBRARIES})
 target_include_directories(simple-websocket-server INTERFACE ${OPENSSL_INCLUDE_DIR})
 
+#glib, gobject
+FIND_PACKAGE(PkgConfig)
+PKG_CHECK_MODULES(GLIB glib-2.0)
+PKG_CHECK_MODULES(GObject gobject-2.0)
+PKG_CHECK_MODULES(GIO gio-2.0)
+
+# Add to include paths
+include_directories(${GLIB_INCLUDE_DIRS})
+add_definitions(${GLIB_CFLAGS_OTHER})
+
+include_directories(${GObject_INCLUDE_DIR})
+link_directories(${GObject_LIBRARY_DIRS})
+
+include_directories(${GIO_INCLUDE_DIR})
+link_directories(${GIO_LIBRARY_DIRS})
 
 
 message(STATUS " openssl libraries ${OPENSSL_LIBRARIES}")
@@ -86,6 +101,8 @@ else()
    add_executable(${PROJECT_NAME} ${SRC_FILES})
 endif(NOT BUILD_EXE)
 target_link_libraries(${PROJECT_NAME}  simple-websocket-server)
+#add glib libraries
+target_link_libraries(${PROJECT_NAME} -lgobject-2.0 -lglib-2.0 -lgio-2.0)
 
 if(UNIT_TEST)
 

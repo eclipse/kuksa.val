@@ -432,26 +432,27 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     float max = numeric_limits<float>::max();
-    float min = numeric_limits<float>::min();
-    if (!(((longDoubleVal <= max) && (longDoubleVal >= min)) ||
-          ((longDoubleVal >= (max * -1)) && (longDoubleVal <= (min * -1))))) {
-      cout << "vssdatabase::setSignal: The value passed " << val.as<double>()
-           << "for type " << value_type << " is out of bound." << endl;
+    float min = numeric_limits<float>::lowest();
+    if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
+      cout << "vssdatabase::setSignal: The value passed "
+           << val.as<double>() << " for type " << value_type
+           << " is out of bound."
+           << endl;
       std::stringstream msg;
-      msg << "The type " << value_type << " with value " << val.as<double>()
-          << " is out of bound";
+      msg << "The type " << value_type << " with value '" << val.as<double>()
+          << "' is out of bound";
       throw outOfBoundException(msg.str());
     }
   } else if (value_type == "Double") {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     double max = numeric_limits<double>::max();
-    double min = numeric_limits<double>::min();
-    if (!(((longDoubleVal <= max) && (longDoubleVal >= min)) ||
-          ((longDoubleVal >= (max * -1)) && (longDoubleVal <= (min * -1))))) {
-      cout << "vssdatabase::setSignal: The value passed "
-           << val.as<long double>() << "for type " << value_type
-           << " is out of bound." << endl;
+    double min = numeric_limits<double>::lowest();
+    if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
+      cout << "vssdatabase::setSignal: The value passed '"
+           << val.as<long double>() << "' for type " << value_type
+           << " is out of bound."
+           << endl;
       std::stringstream msg;
       msg << "The type " << value_type << " with value "
           << val.as<long double>() << " is out of bound";
@@ -472,6 +473,16 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
   }
 }
 
+void vssdatabase::checkSetPermission(wschannel& channel, jsoncons::json valueJson) {
+    // check if all the paths have write access.
+    bool haveAccess = accessValidator->checkPathWriteAccess(channel, valueJson);
+    if (!haveAccess) {
+       stringstream msg;
+       msg << "Path(s) in set request do not have write access or is invalid";
+       throw noPermissionException(msg.str());
+    }
+}
+
 // Method for setting values to signals.
 void vssdatabase::setSignal(wschannel& channel, string path,
                             jsoncons::json valueJson) {
@@ -484,14 +495,8 @@ void vssdatabase::setSignal(wschannel& channel, string path,
   rwMutex.unlock();
 
   if (setValues.is_array()) {
-    // check if all the paths have write access.
-    bool haveAccess = accessValidator->checkPathWriteAccess(channel, setValues);
-    if (!haveAccess) {
-      stringstream msg;
-      msg << "Path(s) in set request do not have write access or is invalid";
-      throw noPermissionException(msg.str());
-    }
 
+    checkSetPermission(channel, setValues);
     for (size_t i = 0; i < setValues.size(); i++) {
       jsoncons::json item = setValues[i];
       string jPath = item["path"].as<string>();
@@ -545,6 +550,75 @@ void vssdatabase::setSignal(wschannel& channel, string path,
     throw genException(msg);
   }
 }
+
+
+// Method for setting values to signals.
+void vssdatabase::setSignal(string path,
+                            jsoncons::json valueJson) {
+  if (path == "") {
+    string msg = "Path is empty while setting";
+    throw genException(msg);
+  }
+  rwMutex.lock();
+  jsoncons::json setValues = getPathForSet(path, valueJson);
+  rwMutex.unlock();
+
+  if (setValues.is_array()) {
+    for (size_t i = 0; i < setValues.size(); i++) {
+      jsoncons::json item = setValues[i];
+      string jPath = item["path"].as<string>();
+#ifdef DEBUG
+      cout << "vssdatabase::setSignal: path found = " << jPath << endl;
+      cout << "value to set asstring = " << item["value"].as<string>() << endl;
+#endif
+      rwMutex.lock();
+      jsoncons::json resArray = json_query(data_tree, jPath);
+      rwMutex.unlock();
+      if (resArray.is_array() && resArray.size() == 1) {
+        jsoncons::json resJson = resArray[0];
+        if (resJson.has_key("type")) {
+          string value_type = resJson["type"].as<string>();
+          json val = item["value"];
+          checkTypeAndBound(value_type, val);
+
+          resJson.insert_or_assign("value", val);
+
+          rwMutex.lock();
+          json_replace(data_tree, jPath, resJson);
+          rwMutex.unlock();
+#ifdef DEBUG
+          cout << "vssdatabase::setSignal: new value set at path " << jPath
+               << endl;
+#endif
+
+          int signalID = resJson["id"].as<int>();
+
+          jsoncons::json value = resJson["value"];
+          subHandler->update(signalID, value);
+
+        } else {
+          stringstream msg;
+          msg << "Type key not found for " << jPath;
+          throw genException(msg.str());
+        }
+
+      } else if (resArray.is_array()) {
+        cout << "vssdatabase::setSignal : Path " << jPath << " has "
+             << resArray.size() << " signals, the path needs refinement"
+             << endl;
+        stringstream msg;
+        msg << "Path " << jPath << " has " << resArray.size()
+            << " signals, the path needs refinement";
+        throw genException(msg.str());
+      }
+    }
+  } else {
+    string msg = "Exception occured while setting data for " + path;
+    throw genException(msg);
+  }
+}
+
+
 
 // Utility method for setting values to JSON.
 void setJsonValue(jsoncons::json& dest, jsoncons::json& source, string key) {

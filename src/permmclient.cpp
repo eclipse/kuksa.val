@@ -78,9 +78,7 @@ string getPermToken(string clientName, string clientSecret) {
 
 // test main
 /*int main(int argc, char* argv[]) {
-
    string data = getPermToken("client","secret");
    cout << data << endl;
-
    return 0;
 }*/
