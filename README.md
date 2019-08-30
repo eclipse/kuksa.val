@@ -140,7 +140,7 @@ The W3C Sever exposes the below methods and these methods could be used (as meth
        <method name='pushDouble'>
          <arg type='s' name='path' direction='in'/>
          <arg type='d' name='value' direction='in'/>
-       </method>"
+       </method>
        <method name='pushBool'>
          <arg type='s' name='path' direction='in'/>
          <arg type='b' name='value' direction='in'/>
