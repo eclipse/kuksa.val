@@ -71,7 +71,13 @@ string getPermToken(string clientName, string clientSecret) {
 
    string response(response_buf); 
 
+   jsoncons::json respJson = jsoncons::json::parse(response);
    
+   if(respJson.has_key("token")) {
+      response = respJson["token"].as<string>();
+   }else {
+      response = "";
+   }   
 
   return response;
 }

@@ -289,7 +289,8 @@ string vsscommandprocessor::processGetMetaData(uint32_t request_id,
   return ss.str();
 }
 
-string vsscommandprocessor::processAuthorize1(wschannel &channel,
+// Talks to the permission managent daemon and processes the token received.
+string vsscommandprocessor::processAuthorizeWithPermManager(wschannel &channel,
                                              uint32_t request_id,
                                              string client, string clientSecret) {
 
@@ -387,6 +388,15 @@ string vsscommandprocessor::processQuery(string req_json,
         << subscribeID << " with request id " << request_id << endl;
 #endif
     response = processUnsubscribe(request_id, subscribeID);
+  } else if ( action == "kuksa-authorize") {
+    string clientID = root["clientid"].as<string>();
+    string clientSecret = root["secret"].as<string>();
+    uint32_t request_id = root["requestId"].as<int>();
+#ifdef DEBUG
+    cout << "vsscommandprocessor::processQuery: kuksa authorize query with clientID = "
+         << clientID << " with secret " << clientSecret << endl;
+#endif
+    response = processAuthorizeWithPermManager(channel, request_id, clientID, clientSecret);
   } else {
     string path = root["path"].as<string>();
     uint32_t request_id = root["requestId"].as<int>();
