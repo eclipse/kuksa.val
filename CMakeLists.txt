@@ -137,7 +137,32 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/jwt.pub
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
-install( TARGETS ${PROJECT_NAME} DESTINATION /usr/bin/w3c-visserver)
-install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/jwt.pub.key DESTINATION /usr/bin/w3c-visserver)
-install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.pem DESTINATION /usr/bin/w3c-visserver)
-install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.key DESTINATION /usr/bin/w3c-visserver)
+install( TARGETS ${PROJECT_NAME} DESTINATION bin/w3c-visserver)
+install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/jwt.pub.key DESTINATION bin/w3c-visserver)
+install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.pem DESTINATION bin/w3c-visserver)
+install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.key DESTINATION bin/w3c-visserver)
+
+# CPack
+INCLUDE(InstallRequiredSystemLibraries)
+
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "w3c-visserver")
+SET(CPACK_PACKAGE_VENDOR "Robert Bosch GmbH")
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+SET(CPACK_PACKAGE_VERSION_MAJOR "2")
+SET(CPACK_PACKAGE_VERSION_MINOR "0")
+SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+
+SET(CPACK_GENERATOR "DEB;TGZ")
+SET(CPACK_STRIP_FILES "bin/w3c-visserver")
+SET(CPACK_SOURCE_STRIP_FILES "")
+
+SET(CPACK_PACKAGE_EXECUTABLES "w3c-visserver" "W3C VSS server")
+
+# debian
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.14), libgcc1 (>= 1:3.0), libssl1.0.0 (>= 1.0.1), libstdc++6 (>= 5.2)")
+# set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "John Argerus")
+
+INCLUDE(CPack)
