@@ -24,6 +24,7 @@
 #include "vssdatabase.hpp"
 #include "wsserver.hpp"
 
+using namespace std;
 // using namespace jsoncons;
 using namespace jsoncons::jsonpath;
 // using jsoncons::jsoncons::jsoncons::json;
@@ -31,11 +32,6 @@ using namespace jsoncons::jsonpath;
 subscriptionhandler::subscriptionhandler(wsserver* wserver,
                                          authenticator* authenticate,
                                          accesschecker* checkAcc) {
-  for (int i = 0; i < MAX_SIGNALS; i++) {
-    for (int j = 0; j < MAX_CLIENTS; j++) {
-      subscribeHandle[i][j] = 0;
-    }
-  }
   server = wserver;
   validator = authenticate;
   checkAccess = checkAcc;
@@ -70,15 +66,17 @@ uint32_t subscriptionhandler::subscribe(wschannel& channel,
 
   if (resArray.is_array() && resArray.size() == 1) {
     jsoncons::json result = resArray[0];
-    int sigID = result["id"].as<int>();
+    string sigUUID = result["uuid"].as<string>();
+    auto handle = subscribeHandle.find(sigUUID);
 #ifdef DEBUG
-    if (subscribeHandle[sigID][clientID] != 0) {
+    if (handle != subscribeHandle.end()) {
       cout << "subscriptionhandler::subscribe: Updating the previous subscribe "
               "ID with a new one"
            << endl;
     }
 #endif
-    subscribeHandle[sigID][clientID] = subId;
+    subscribeHandle[sigUUID][subId] = clientID;
+
     return subId;
   } else if (resArray.is_array()) {
     cout << resArray.size()
@@ -99,39 +97,43 @@ uint32_t subscriptionhandler::subscribe(wschannel& channel,
 }
 
 int subscriptionhandler::unsubscribe(uint32_t subscribeID) {
-  int clientID = subscribeID / CLIENT_MASK;
-  for (int i = 0; i < MAX_SIGNALS; i++) {
-    if (subscribeHandle[i][clientID] == subscribeID) {
-      subscribeHandle[i][clientID] = 0;
-      return 0;
+  for (auto& uuid : subscribeHandle) {
+    auto subscriptions = &(uuid.second);
+    auto subscription = subscriptions->find(subscribeID);
+    if (subscription != subscriptions->end()) {
+      subscriptions->erase(subscription);
     }
   }
-  return -1;
-}
-
-int subscriptionhandler::unsubscribeAll(uint32_t connectionID) {
-  for (int i = 0; i < MAX_SIGNALS; i++) {
-    subscribeHandle[i][connectionID] = 0;
-  }
-#ifdef DEBUG
-  cout << "subscriptionhandler::unsubscribeAll: Removed all subscriptions for "
-          "client with ID ="
-       << connectionID * CLIENT_MASK << endl;
-#endif
   return 0;
 }
 
-int subscriptionhandler::update(int signalID, jsoncons::json value) {
-  for (int i = 0; i < MAX_CLIENTS; i++) {
-    uint32_t subID = subscribeHandle[signalID][i];
-    if (subID != 0) {
-      subMutex.lock();
-      pair<uint32_t, jsoncons::json> newSub;
-      newSub = std::make_pair(subID, value);
-      buffer.push(newSub);
-      subMutex.unlock();
+int subscriptionhandler::unsubscribeAll(uint32_t connectionID) {
+  for (auto& uuid : subscribeHandle) {
+    auto subscriptions = &(uuid.second);
+    for (auto& subscription : *subscriptions) {
+      if (subscription.second == (connectionID / CLIENT_MASK)) {
+        subscriptions->erase(subscription.first);
+      }
     }
   }
+  return 0;
+}
+
+int subscriptionhandler::updateByUUID(string UUID, jsoncons::json value) {
+  auto handle = subscribeHandle.find(UUID);
+  if (handle == subscribeHandle.end()) {
+    // UUID not found
+    return 0;
+  }
+
+  for (auto subID : handle->second) {
+    subMutex.lock();
+    pair<uint32_t, json> newSub;
+    newSub = std::make_pair(subID.first, value);
+    buffer.push(newSub);
+    subMutex.unlock();
+  }
+
   return 0;
 }
 
@@ -139,7 +141,7 @@ wsserver* subscriptionhandler::getServer() {
   return server;
 }
 
-int subscriptionhandler::update(string path, json value) {
+int subscriptionhandler::updateByPath(string path, json value) {
   /* TODO: Implement */
   (void) path;
   (void) value;
