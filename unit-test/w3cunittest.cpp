@@ -1779,7 +1779,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path, *utf::expect
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to  Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"No read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
                    "requestId":8756
         })");
 
@@ -1830,7 +1830,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to  Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"No read access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
                    "requestId":8756
         })");
 
@@ -2040,7 +2040,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to  Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"No read access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
                    "requestId":8756
         })");
 
@@ -2456,7 +2456,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
   // because only write access in the token.
   json get_expected = json::parse(R"({
     "action": "get",
-    "error":{"message":"No read access to  Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
+    "error":{"message":"No read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
     "requestId": 8756
     })");
 

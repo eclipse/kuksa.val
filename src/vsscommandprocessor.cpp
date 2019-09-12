@@ -31,14 +31,28 @@
 
 using namespace std;
 
-string malFormedRequestResponse(uint32_t request_id, const string action) {
+string malFormedRequestResponse(uint32_t request_id, const string action, string message) {
   jsoncons::json answer;
   answer["action"] = action;
   answer["requestId"] = request_id;
   jsoncons::json error;
   error["number"] = 400;
-  error["reason"] = "Request malformed";
-  error["message"] = "Request malformed";
+  error["reason"] = "Bad Request";
+  error["message"] = message;
+  answer["error"] = error;
+  answer["timestamp"] = time(NULL);
+  stringstream ss;
+  ss << pretty_print(answer);
+  return ss.str();
+}
+
+string malFormedRequestResponse(string message) {
+  jsoncons::json answer;
+  jsoncons::json error;
+
+  error["number"] = 400;
+  error["reason"] = "Bad Request";
+  error["message"] = message;
   answer["error"] = error;
   answer["timestamp"] = time(NULL);
   stringstream ss;
@@ -326,66 +340,75 @@ string vsscommandprocessor::processQuery(string req_json,
                                          wschannel &channel) {
   jsoncons::json root;
   string response;
-  root = jsoncons::json::parse(req_json);
-  string action = root["action"].as<string>();
+  try {
+    root = jsoncons::json::parse(req_json);
+    string action = root["action"].as<string>();
 
-  if (action == "authorize") {
-    string token = root["tokens"].as<string>();
-    uint32_t request_id = root["requestId"].as<int>();
+    if (action == "authorize") {
+      string token = root["tokens"].as<string>();
+      uint32_t request_id = root["requestId"].as<int>();
 #ifdef DEBUG
-    cout << "vsscommandprocessor::processQuery: authorize query with token = "
-         << token << " with request id " << request_id << endl;
+      cout << "vsscommandprocessor::processQuery: authorize query with token = "
+           << token << " with request id " << request_id << endl;
 #endif
-    response = processAuthorize(channel, request_id, token);
-  } else if (action == "unsubscribe") {
-    uint32_t request_id = root["requestId"].as<int>();
-    uint32_t subscribeID = root["subscriptionId"].as<int>();
+      response = processAuthorize(channel, request_id, token);
+    } else if (action == "unsubscribe") {
+      uint32_t request_id = root["requestId"].as<int>();
+      uint32_t subscribeID = root["subscriptionId"].as<int>();
 #ifdef DEBUG
-    cout
-        << "vsscommandprocessor::processQuery: unsubscribe query  for sub ID = "
-        << subscribeID << " with request id " << request_id << endl;
+      cout << "vsscommandprocessor::processQuery: unsubscribe query  for sub "
+              "ID = "
+           << subscribeID << " with request id " << request_id << endl;
 #endif
-    response = processUnsubscribe(request_id, subscribeID);
-  } else {
-    string path = root["path"].as<string>();
-    uint32_t request_id = root["requestId"].as<int>();
-
-    if (action == "get") {
-#ifdef DEBUG
-      cout << "vsscommandprocessor::processQuery: get query  for " << path
-           << " with request id " << request_id << endl;
-#endif
-
-      response = processGet(channel, request_id, path);
-#ifdef JSON_SIGNING_ON
-      response = signer->sign(response);
-#endif
-    } else if (action == "set") {
-      jsoncons::json value = root["value"];
-#ifdef DEBUG
-      cout << "vsscommandprocessor::processQuery: set query  for " << path
-           << " with request id " << request_id << " value "
-           << pretty_print(value) << endl;
-#endif
-      response = processSet(channel, request_id, path, value);
-    } else if (action == "subscribe") {
-#ifdef DEBUG
-      cout << "vsscommandprocessor::processQuery: subscribe query  for " << path
-           << " with request id " << request_id << endl;
-#endif
-      response =
-          processSubscribe(channel, request_id, path, channel.getConnID());
-    } else if (action == "getMetadata") {
-#ifdef DEBUG
-      cout << "vsscommandprocessor::processQuery: metadata query  for " << path
-           << " with request id " << request_id << endl;
-#endif
-      response = processGetMetaData(request_id, path);
+      response = processUnsubscribe(request_id, subscribeID);
     } else {
-      cout << "vsscommandprocessor::processQuery: Unknown action " << action
-           << endl;
+      string path = root["path"].as<string>();
+      uint32_t request_id = root["requestId"].as<int>();
+
+      if (action == "get") {
+#ifdef DEBUG
+        cout << "vsscommandprocessor::processQuery: get query  for " << path
+             << " with request id " << request_id << endl;
+#endif
+
+        response = processGet(channel, request_id, path);
+#ifdef JSON_SIGNING_ON
+        response = signer->sign(response);
+#endif
+      } else if (action == "set") {
+        jsoncons::json value = root["value"];
+#ifdef DEBUG
+        cout << "vsscommandprocessor::processQuery: set query  for " << path
+             << " with request id " << request_id << " value "
+             << pretty_print(value) << endl;
+#endif
+        response = processSet(channel, request_id, path, value);
+      } else if (action == "subscribe") {
+#ifdef DEBUG
+        cout << "vsscommandprocessor::processQuery: subscribe query  for "
+             << path << " with request id " << request_id << endl;
+#endif
+        response =
+            processSubscribe(channel, request_id, path, channel.getConnID());
+      } else if (action == "getMetadata") {
+#ifdef DEBUG
+        cout << "vsscommandprocessor::processQuery: metadata query  for "
+             << path << " with request id " << request_id << endl;
+#endif
+        response = processGetMetaData(request_id, path);
+      } else {
+        cout << "vsscommandprocessor::processQuery: Unknown action " << action
+             << endl;
+      }
     }
+  } catch (jsoncons::json_parse_exception e) {
+    return malFormedRequestResponse(e.what());
+  } catch (jsoncons::key_not_found e) {
+    return malFormedRequestResponse(e.what());
+  } catch (jsoncons::not_an_object e) {
+    return malFormedRequestResponse(e.what());
   }
+
 
   return response;
 }
