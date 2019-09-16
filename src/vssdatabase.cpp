@@ -36,9 +36,8 @@ vssdatabase::vssdatabase(subscriptionhandler* subHandle,
 vssdatabase::~vssdatabase() {}
 
 // Initializer
-void vssdatabase::initJsonTree() {
+void vssdatabase::initJsonTree(string fileName) {
   try {
-    string fileName = "vss_rel_1.0.json";
     std::ifstream is(fileName);
     is >> data_tree;
     meta_tree = data_tree;
@@ -352,7 +351,7 @@ jsoncons::json vssdatabase::getPathForSet(string path, jsoncons::json values) {
 void checkTypeAndBound(string value_type, jsoncons::json val) {
   bool typeValid = false;
 
-  if (value_type == "UInt8") {
+  if (value_type == "uint8") {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     if (!((longDoubleVal <= numeric_limits<uint8_t>::max()) &&
@@ -365,7 +364,7 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
       throw outOfBoundException(msg.str());
     }
 
-  } else if (value_type == "UInt16") {
+  } else if (value_type == "uint16") {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     if (!((longDoubleVal <= numeric_limits<uint16_t>::max()) &&
@@ -378,7 +377,7 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
       throw outOfBoundException(msg.str());
     }
 
-  } else if (value_type == "UInt32") {
+  } else if (value_type == "uint32") {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     if (!((longDoubleVal <= numeric_limits<uint32_t>::max()) &&
@@ -391,7 +390,7 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
       throw outOfBoundException(msg.str());
     }
 
-  } else if (value_type == "Int8") {
+  } else if (value_type == "int8") {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     if (!((longDoubleVal <= numeric_limits<int8_t>::max()) &&
@@ -403,7 +402,7 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
           << " is out of bound";
       throw outOfBoundException(msg.str());
     }
-  } else if (value_type == "Int16") {
+  } else if (value_type == "int16") {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     if (!((longDoubleVal <= numeric_limits<int16_t>::max()) &&
@@ -416,7 +415,7 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
       throw outOfBoundException(msg.str());
     }
 
-  } else if (value_type == "Int32") {
+  } else if (value_type == "int32") {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     if (!((longDoubleVal <= numeric_limits<int32_t>::max()) &&
@@ -428,7 +427,7 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
           << " is out of bound";
       throw outOfBoundException(msg.str());
     }
-  } else if (value_type == "Float") {
+  } else if (value_type == "float") {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     float max = numeric_limits<float>::max();
@@ -443,7 +442,7 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
           << "' is out of bound";
       throw outOfBoundException(msg.str());
     }
-  } else if (value_type == "Double") {
+  } else if (value_type == "double") {
     typeValid = true;
     long double longDoubleVal = val.as<long double>();
     double max = numeric_limits<double>::max();
@@ -459,9 +458,9 @@ void checkTypeAndBound(string value_type, jsoncons::json val) {
       throw outOfBoundException(msg.str());
     }
 
-  } else if (value_type == "Boolean") {
+  } else if (value_type == "boolean") {
     typeValid = true;
-  } else if (value_type == "String") {
+  } else if (value_type == "string") {
     typeValid = true;
   }
 
@@ -509,8 +508,8 @@ void vssdatabase::setSignal(wschannel& channel, string path,
       rwMutex.unlock();
       if (resArray.is_array() && resArray.size() == 1) {
         jsoncons::json resJson = resArray[0];
-        if (resJson.has_key("type")) {
-          string value_type = resJson["type"].as<string>();
+        if (resJson.has_key("datatype")) {
+          string value_type = resJson["datatype"].as<string>();
           json val = item["value"];
           checkTypeAndBound(value_type, val);
 
@@ -524,11 +523,10 @@ void vssdatabase::setSignal(wschannel& channel, string path,
                << endl;
 #endif
 
-          int signalID = resJson["id"].as<int>();
+          string uuid = resJson["uuid"].as<string>();
 
           jsoncons::json value = resJson["value"];
-          subHandler->update(signalID, value);
-
+          subHandler->updateByUUID(uuid, value);
         } else {
           stringstream msg;
           msg << "Type key not found for " << jPath;
@@ -577,7 +575,7 @@ void vssdatabase::setSignal(string path,
       if (resArray.is_array() && resArray.size() == 1) {
         jsoncons::json resJson = resArray[0];
         if (resJson.has_key("type")) {
-          string value_type = resJson["type"].as<string>();
+          string value_type = resJson["datatype"].as<string>();
           json val = item["value"];
           checkTypeAndBound(value_type, val);
 
@@ -591,10 +589,10 @@ void vssdatabase::setSignal(string path,
                << endl;
 #endif
 
-          int signalID = resJson["id"].as<int>();
+          string uuid = resJson["uuid"].as<string>();
 
           jsoncons::json value = resJson["value"];
-          subHandler->update(signalID, value);
+          subHandler->updateByUUID(uuid, value);
 
         } else {
           stringstream msg;

@@ -48,7 +48,7 @@ class vssdatabase {
   vssdatabase(subscriptionhandler* subHandle,
               accesschecker* accValidator);
   ~vssdatabase();
-  void initJsonTree();
+  void initJsonTree(std::string fileName);
   jsoncons::json getMetaData(std::string path);
   void setSignal(wschannel& channel, std::string path, jsoncons::json value);
   void setSignal(std::string path, jsoncons::json value);
