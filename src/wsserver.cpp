@@ -224,6 +224,9 @@ void wsserver::sendToConnection(uint32_t connectionID, string message) {
 void *startWSServer(void *arg) {
   (void) arg;
   wserver->startServer("");
+  while (1) {
+      usleep(1000000);
+  }
   return NULL;
 }
 

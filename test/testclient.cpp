@@ -85,12 +85,25 @@ string getAuthRequest(string token) {
 
 }
 
+string getKuksaAuthRequest(string clientID , string secret) {
+
+  json req;
+   req["requestId"] = 1238;
+   req["action"]= "kuksa-authorize";
+   req["clientid"] = clientID;
+   req["secret"] = secret;
+   stringstream ss; 
+   ss << pretty_print(req);
+   return ss.str();
+
+}
+
 void sendRequest(shared_ptr<WssClient::Connection> connection) {
 
     string path, function;
-    cout << "Enter vss path eg : Signal.Drivetrain.InternalCombustionEngine.RPM " <<endl;
+    cout << "Enter vss path eg : Vehicle.OBD.EngineSpeed " <<endl;
     getline (cin, path);
-    cout << "Enter vis Function eg: authorize, get, set, getmetadata "<< endl;
+    cout << "Enter vis Function eg: authorize, kuksa-authorize, get, set, getmetadata "<< endl;
     getline (cin, function);
     string command;
     if(function == "get") {
@@ -108,6 +121,11 @@ void sendRequest(shared_ptr<WssClient::Connection> connection) {
         cout << "Enter Token "<< endl;
         getline (cin, token);
         command = getAuthRequest(token);
+    } else if (function == "kuksa-authorize") {
+        string clientid, secret;
+        cout << "Enter clientid <SPACE> secret "<< endl;
+        cin >> clientid >> secret;
+        command = getKuksaAuthRequest(clientid, secret);
     }
     
     auto send_stream = make_shared<WssClient::SendStream>();

@@ -247,42 +247,39 @@ int main(int argc, const char *argv[]) {
     auto secure = !variables.count("insecure");
     auto vss_filename = variables["vss"].as<string>();
     wsserver server(port, vss_filename, secure);
-    server.start();
+    database = server.start();
+    
+  
 
-    while (1) {
-      usleep(1000000);
-    };
+    // Start D-Bus backend connection.
+    guint owner_id;
+    GMainLoop *loop;
+
+    introspection_data = g_dbus_node_info_new_for_xml (introspection_xml, NULL);
+    g_assert (introspection_data != NULL);
+  
+
+    owner_id = g_bus_own_name (G_BUS_TYPE_SYSTEM,
+                               "org.eclipse.kuksa.w3cbackend",
+                               G_BUS_NAME_OWNER_FLAGS_NONE,
+                               on_bus_acquired,
+                               on_name_acquired,
+                               on_name_lost,
+                               NULL,
+                               NULL);
+
+
+    loop = g_main_loop_new (NULL, FALSE);
+    g_main_loop_run (loop);
+
+    g_bus_unown_name (owner_id);
+
+    g_dbus_node_info_unref (introspection_data);
+
   } catch (const program_options::error &ex) {
     print_usage(argv[0], desc);
     cerr << ex.what() << std::endl;
     return -1;
   }
-
-  // Start D-Bus backend connection.
-  guint owner_id;
-  GMainLoop *loop;
-
-  introspection_data = g_dbus_node_info_new_for_xml (introspection_xml, NULL);
-  g_assert (introspection_data != NULL);
-  
-
-  owner_id = g_bus_own_name (G_BUS_TYPE_SYSTEM,
-                             "org.eclipse.kuksa.w3cbackend",
-                             G_BUS_NAME_OWNER_FLAGS_NONE,
-                             on_bus_acquired,
-                             on_name_acquired,
-                             on_name_lost,
-                             NULL,
-                             NULL);
-
-
-  loop = g_main_loop_new (NULL, FALSE);
-  g_main_loop_run (loop);
-
-  g_bus_unown_name (owner_id);
-
-  g_dbus_node_info_unref (introspection_data);
-
-
   return 0;
 }
