@@ -303,7 +303,7 @@ string vsscommandprocessor::processAuthorizeWithPermManager(wschannel &channel,
   if (ttl == -1) {
     jsoncons::json result;
     jsoncons::json error;
-    result["action"] = "authorize";
+    result["action"] = "kuksa-authorize";
     result["requestId"] = request_id;
     error["number"] = 401;
     error["reason"] = "Invalid Token";
@@ -318,7 +318,7 @@ string vsscommandprocessor::processAuthorizeWithPermManager(wschannel &channel,
 
   } else {
     jsoncons::json result;
-    result["action"] = "authorize";
+    result["action"] = "kuksa-authorize";
     result["requestId"] = request_id;
     result["TTL"] = ttl;
     result["timestamp"] = time(NULL);

@@ -574,7 +574,8 @@ void vssdatabase::setSignal(string path,
       rwMutex.unlock();
       if (resArray.is_array() && resArray.size() == 1) {
         jsoncons::json resJson = resArray[0];
-        if (resJson.has_key("type")) {
+
+        if (resJson.has_key("datatype")) {
           string value_type = resJson["datatype"].as<string>();
           json val = item["value"];
           checkTypeAndBound(value_type, val);
