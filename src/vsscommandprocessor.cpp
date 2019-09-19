@@ -294,12 +294,38 @@ string vsscommandprocessor::processAuthorizeWithPermManager(wschannel &channel,
                                              uint32_t request_id,
                                              string client, string clientSecret) {
 
-  
+  jsoncons::json response;
   // Get Token from permission management daemon.
-  string token = getPermToken(client, clientSecret);
+  try {
+     response = getPermToken(client, clientSecret);
+  } catch (genException &exp) {
+    cout << exp.what() << endl;
+    jsoncons::json result;
+    jsoncons::json error;
+    result["action"] = "kuksa-authorize";
+    result["requestId"] = request_id;
+    error["number"] = 501;
+    error["reason"] = "No token received from permission management daemon";
+    error["message"] = "Check if the permission managemnt daemon is running";
 
-  int ttl = tokenValidator->validate(channel, database, token);
+    result["error"] = error;
+    result["timestamp"] = time(NULL);
 
+    std::stringstream ss;
+    ss << pretty_print(result);
+    return ss.str();
+  }
+  int ttl = -1;
+  if (response.has_key("token") && response.has_key("pubkey")) {
+     try {
+        tokenValidator->updatePubKey(response["pubkey"].as<string>());
+        ttl = tokenValidator->validate(channel, database, response["token"].as<string>());
+     } catch (exception &e) {
+        cout << e.what() << endl;
+        ttl = -1;
+     }
+  }
+  
   if (ttl == -1) {
     jsoncons::json result;
     jsoncons::json error;
@@ -333,6 +359,7 @@ string vsscommandprocessor::processAuthorizeWithPermManager(wschannel &channel,
 string vsscommandprocessor::processAuthorize(wschannel &channel,
                                              uint32_t request_id,
                                              string token) {
+  tokenValidator->updatePubKey("");
   int ttl = tokenValidator->validate(channel, database, token);
 
   if (ttl == -1) {

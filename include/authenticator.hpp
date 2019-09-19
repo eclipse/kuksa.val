@@ -23,13 +23,16 @@ class vssdatabase;
 
 class authenticator {
  private:
-  string key = "secret";
-  string algorithm = "HS256";
+  string pubkey = "secret";
+  string algorithm = "RS256";
+  int validateToken(wschannel& channel, string authToken);
 
  public:
   authenticator(string secretkey, string algorithm);
   int validate(wschannel &channel, vssdatabase *database,
                string authToken);
+  
+  void updatePubKey(string key);
   bool isStillValid(wschannel &channel);
   void resolvePermissions(wschannel &channel, vssdatabase *database);
 };

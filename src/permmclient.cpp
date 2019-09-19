@@ -27,7 +27,7 @@ using namespace std;
 
 #define SERVER "/home/pratheek/socket/kuksa_w3c_perm_management"
 
-string getPermToken(string clientName, string clientSecret) {
+json getPermToken(string clientName, string clientSecret) {
 
   // Open unix socket connection.
    struct sockaddr_un addr;
@@ -70,16 +70,8 @@ string getPermToken(string clientName, string clientSecret) {
    cout << "Response read from server "<<endl;
 
    string response(response_buf); 
-
    jsoncons::json respJson = jsoncons::json::parse(response);
-   
-   if(respJson.has_key("token")) {
-      response = respJson["token"].as<string>();
-   }else {
-      response = "";
-   }   
-
-  return response;
+   return respJson;
 }
 
 // test main

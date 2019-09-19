@@ -26,12 +26,7 @@ using namespace std;
 // using jsoncons;
 using jsoncons::json;
 
-authenticator::authenticator(string secretkey, string algo) {
-  algorithm = algo;
-  key = secretkey;
-}
-
-string getPublicKey(string fileName) {
+string getPublicKeyFromFile(string fileName) {
   std::ifstream fileStream(fileName);
   std::string key((std::istreambuf_iterator<char>(fileStream)),
                   (std::istreambuf_iterator<char>()));
@@ -39,18 +34,29 @@ string getPublicKey(string fileName) {
   return key;
 }
 
+authenticator::authenticator(string secretkey, string algo) {
+  algorithm = algo;
+  pubkey = secretkey;
+}
+
+
+void authenticator::updatePubKey(string key) {
+   pubkey = key;
+   if(pubkey == "")
+      pubkey = getPublicKeyFromFile("jwt.pub.key");
+}
+
 // utility method to validate token.
-int validateToken(wschannel& channel, string authToken) {
+int authenticator::validateToken(wschannel& channel, string authToken) {
   auto decoded = jwt::decode(authToken);
   json claims;
   for (auto& e : decoded.get_payload_claims()) {
     std::cout << e.first << " = " << e.second.to_json() << std::endl;
     claims[e.first] = e.second.to_json().to_str();
   }
-
-  string rsa_pub_key = getPublicKey("jwt.pub.key");
+  
   auto verifier = jwt::verify().allow_algorithm(
-      jwt::algorithm::rs256(rsa_pub_key, "", "", ""));
+      jwt::algorithm::rs256(pubkey, "", "", ""));
 
   try {
     verifier.verify(decoded);

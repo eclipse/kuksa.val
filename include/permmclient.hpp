@@ -20,7 +20,7 @@
 using namespace std;
 using namespace jsoncons;
 
-string getPermToken(string clientName, string clientSecret);
+json getPermToken(string clientName, string clientSecret);
 
 
 
