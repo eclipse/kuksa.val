@@ -101,20 +101,24 @@ string getKuksaAuthRequest(string clientID , string secret) {
 void sendRequest(shared_ptr<WssClient::Connection> connection) {
 
     string path, function;
-    cout << "Enter vss path eg : Vehicle.OBD.EngineSpeed " <<endl;
-    getline (cin, path);
     cout << "Enter vis Function eg: authorize, kuksa-authorize, get, set, getmetadata "<< endl;
     getline (cin, function);
     string command;
     if(function == "get") {
+       cout << "Enter vss path eg : Vehicle.OBD.EngineSpeed " <<endl;
+       getline (cin, path);
        command = getRequest(path);
     } else if (function == "set") {
        string val;
+       cout << "Enter vss path eg : Vehicle.OBD.EngineSpeed " <<endl;
+       getline (cin, path);
        cout << "Enter an integer value for the path "<< endl;
        getline (cin, val);
        int value = atoi(val.c_str());
        command = setRequest(path, value);
     } else if (function == "getmetadata") {
+        cout << "Enter vss path eg : Vehicle.OBD.EngineSpeed " <<endl;
+        getline (cin, path);
         command = getMetarequest(path);
     } else if (function == "authorize") {
         string token;
@@ -123,8 +127,10 @@ void sendRequest(shared_ptr<WssClient::Connection> connection) {
         command = getAuthRequest(token);
     } else if (function == "kuksa-authorize") {
         string clientid, secret;
-        cout << "Enter clientid <SPACE> secret "<< endl;
-        cin >> clientid >> secret;
+        cout << "Enter clientid "<< endl;
+        getline (cin, clientid);
+        cout << "Enter client secret "<< endl;
+        getline (cin, secret);
         command = getKuksaAuthRequest(clientid, secret);
     }
     
@@ -163,7 +169,5 @@ client.start();
 
 
 int main() {
-
    startWSClient();
-
 }
