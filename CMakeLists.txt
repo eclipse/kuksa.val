@@ -136,11 +136,13 @@ endif(BUILD_TEST_CLIENT)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/jwt.pub.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/unit-test/vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
 install( TARGETS ${PROJECT_NAME} DESTINATION bin/w3c-visserver)
 install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/jwt.pub.key DESTINATION bin/w3c-visserver)
 install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.pem DESTINATION bin/w3c-visserver)
 install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.key DESTINATION bin/w3c-visserver)
+install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/vss_rel_2.0.json DESTINATION bin/w3c-visserver)
 
 # CPack
 INCLUDE(InstallRequiredSystemLibraries)
