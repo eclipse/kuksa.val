@@ -694,7 +694,7 @@ jsoncons::json vssdatabase::getSignal(class wschannel& channel, string path) {
     // check Read access here.
     if (!accessValidator->checkReadAccess(channel, jPath)) {
       stringstream msg;
-      msg << "No read access to  " << getReadablePath(jPath);
+      msg << "No read access to " << getReadablePath(jPath);
       throw noPermissionException(msg.str());
     }
     rwMutex.lock();
