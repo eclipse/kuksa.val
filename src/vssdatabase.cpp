@@ -17,6 +17,7 @@
 #include <stdexcept>
 #include "exception.hpp"
 #include "visconf.hpp"
+#include "ILogger.hpp"
 
 #include <jsoncons_ext/jsonpath/json_query.hpp>
 
@@ -26,9 +27,149 @@
 using namespace std;
 using namespace jsoncons::jsonpath;
 
+namespace {
+    // Check the value type and if the value is within the range
+  void checkTypeAndBound(std::shared_ptr<ILogger> logger, string value_type, jsoncons::json val) {
+    bool typeValid = false;
+
+    if (value_type == "uint8") {
+      typeValid = true;
+      long double longDoubleVal = val.as<long double>();
+      if (!((longDoubleVal <= numeric_limits<uint8_t>::max()) &&
+            (longDoubleVal >= numeric_limits<uint8_t>::min()))) {
+        std::stringstream msg;
+        msg << "The type " << value_type << " with value " << val.as<float>()
+            << " is out of bound";
+        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+
+        throw outOfBoundException(msg.str());
+      }
+
+    } else if (value_type == "uint16") {
+      typeValid = true;
+      long double longDoubleVal = val.as<long double>();
+      if (!((longDoubleVal <= numeric_limits<uint16_t>::max()) &&
+            (longDoubleVal >= numeric_limits<uint16_t>::min()))) {
+        std::stringstream msg;
+        msg << "The type " << value_type << " with value " << val.as<float>()
+            << " is out of bound";
+        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+
+        throw outOfBoundException(msg.str());
+      }
+
+    } else if (value_type == "uint32") {
+      typeValid = true;
+      long double longDoubleVal = val.as<long double>();
+      if (!((longDoubleVal <= numeric_limits<uint32_t>::max()) &&
+            (longDoubleVal >= numeric_limits<uint32_t>::min()))) {
+        std::stringstream msg;
+        msg << "The type " << value_type << " with value " << val.as<float>()
+            << " is out of bound";
+        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+
+        throw outOfBoundException(msg.str());
+      }
+
+    } else if (value_type == "int8") {
+      typeValid = true;
+      long double longDoubleVal = val.as<long double>();
+      if (!((longDoubleVal <= numeric_limits<int8_t>::max()) &&
+            (longDoubleVal >= numeric_limits<int8_t>::min()))) {
+        std::stringstream msg;
+        msg << "The type " << value_type << " with value " << val.as<float>()
+            << " is out of bound";
+        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+
+        throw outOfBoundException(msg.str());
+      }
+    } else if (value_type == "int16") {
+      typeValid = true;
+      long double longDoubleVal = val.as<long double>();
+      if (!((longDoubleVal <= numeric_limits<int16_t>::max()) &&
+            (longDoubleVal >= numeric_limits<int16_t>::min()))) {
+        std::stringstream msg;
+        msg << "The type " << value_type << " with value " << val.as<float>()
+            << " is out of bound";
+        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+
+        throw outOfBoundException(msg.str());
+      }
+
+    } else if (value_type == "int32") {
+      typeValid = true;
+      long double longDoubleVal = val.as<long double>();
+      if (!((longDoubleVal <= numeric_limits<int32_t>::max()) &&
+            (longDoubleVal >= numeric_limits<int32_t>::min()))) {
+        std::stringstream msg;
+        msg << "The type " << value_type << " with value " << val.as<float>()
+            << " is out of bound";
+        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+
+        throw outOfBoundException(msg.str());
+      }
+    } else if (value_type == "float") {
+      typeValid = true;
+      long double longDoubleVal = val.as<long double>();
+      float max = numeric_limits<float>::max();
+      float min = numeric_limits<float>::lowest();
+      if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
+        std::stringstream msg;
+        msg << "The type " << value_type << " with value '" << val.as<double>()
+            << "' is out of bound";
+        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+
+        throw outOfBoundException(msg.str());
+      }
+    } else if (value_type == "double") {
+      typeValid = true;
+      long double longDoubleVal = val.as<long double>();
+      double max = numeric_limits<double>::max();
+      double min = numeric_limits<double>::lowest();
+      if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
+        std::stringstream msg;
+        msg << "The type " << value_type << " with value "
+            << val.as<long double>() << " is out of bound";
+        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+
+        throw outOfBoundException(msg.str());
+      }
+
+    } else if (value_type == "boolean") {
+      typeValid = true;
+    } else if (value_type == "string") {
+      typeValid = true;
+    }
+
+    if (!typeValid) {
+      string msg = "The type " + value_type + " is not supported ";
+      logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg);
+
+      throw genException(msg);
+    }
+  }
+
+
+  // Utility method for setting values to JSON.
+  void setJsonValue(std::shared_ptr<ILogger> logger,
+                    jsoncons::json& dest,
+                    jsoncons::json& source,
+                    string key) {
+    if (!source.has_key("type")) {
+      string msg = "Unknown type for signal found at " + key;
+      logger->Log(LogLevel::ERROR, "vssdatabase::setJsonValue : " + msg);
+
+      throw genException(msg);
+    }
+    dest[key] = source["value"];
+  }
+}
+
 // Constructor
-vssdatabase::vssdatabase(subscriptionhandler* subHandle,
+vssdatabase::vssdatabase(std::shared_ptr<ILogger> loggerUtil,
+                         subscriptionhandler* subHandle,
                          accesschecker* accValidator) {
+  logger = loggerUtil;
   subHandler = subHandle;
   accessValidator = accValidator;
 }
@@ -41,15 +182,14 @@ void vssdatabase::initJsonTree(string fileName) {
     std::ifstream is(fileName);
     is >> data_tree;
     meta_tree = data_tree;
-#ifdef DEBUG
-    cout << "vssdatabase::vssdatabase : VSS tree initialized using JSON file = "
-         << fileName << endl;
-#endif
+
+    logger->Log(LogLevel::VERBOSE, "vssdatabase::vssdatabase : VSS tree initialized using JSON file = "
+                + fileName);
     is.close();
   } catch (exception const& e) {
-    cout << "Exception occured while initializing database/ tree structure. "
-            "Probably the init json file not found!"
-         << e.what() << endl;
+    logger->Log(LogLevel::ERROR,
+                "Exception occured while initializing database/ tree structure. Probably the init json file not found!"
+                + string(e.what()));
     throw e;
   }
 }
@@ -124,14 +264,13 @@ string vssdatabase::getVSSSpecificPath(string path, bool& isBranch,
       isBranch = false;
     } else {
       isBranch = false;
-      cout << "vssdatabase::getVSSSpecificPath : Path " << format_path
-           << " is invalid or is an empty tag!" << endl;
+      logger->Log(LogLevel::ERROR, "vssdatabase::getVSSSpecificPath : Path "
+                  + format_path + " is invalid or is an empty tag!");
       return "";
     }
   } catch (exception& e) {
-    cout << "vssdatabase::getVSSSpecificPath :Exception "
-         << "\"" << e.what() << "\""
-         << " occured while querying JSON. Check Path!" << endl;
+    logger->Log(LogLevel::ERROR, "vssdatabase::getVSSSpecificPath :Exception \""
+         + string(e.what()) + "\" occured while querying JSON. Check Path!");
     isBranch = false;
     return "";
   }
@@ -214,9 +353,7 @@ jsoncons::json vssdatabase::getMetaData(string path) {
   if (jPath == "") {
     return NULL;
   }
-#ifdef DEBUG
-  cout << "vssdatabase::getMetaData: VSS specific path =" << jPath << endl;
-#endif
+  logger->Log(LogLevel::VERBOSE, "vssdatabase::getMetaData: VSS specific path =" + jPath);
 
   vector<string> tokens = getVSSTokens(jPath);
   int tokLength = tokens.size();
@@ -248,9 +385,8 @@ jsoncons::json vssdatabase::getMetaData(string path) {
       }
     } else {
       // handle exception.
-      cout << "vssdatabase::getMetaData : More than 1 Branch/ value found! "
-              "Path requested needs to be more refined"
-           << endl;
+      logger->Log(LogLevel::ERROR, string("vssdatabase::getMetaData : More than 1 Branch/ value found! ")
+                  + string("Path requested needs to be more refined"));
       return NULL;
     }
 
@@ -347,131 +483,6 @@ jsoncons::json vssdatabase::getPathForSet(string path, jsoncons::json values) {
   return setValues;
 }
 
-// Check the value type and if the value is within the range
-void checkTypeAndBound(string value_type, jsoncons::json val) {
-  bool typeValid = false;
-
-  if (value_type == "uint8") {
-    typeValid = true;
-    long double longDoubleVal = val.as<long double>();
-    if (!((longDoubleVal <= numeric_limits<uint8_t>::max()) &&
-          (longDoubleVal >= numeric_limits<uint8_t>::min()))) {
-      cout << "vssdatabase::setSignal: The value passed " << val.as<float>()
-           << "for type " << value_type << " is out of bound." << endl;
-      std::stringstream msg;
-      msg << "The type " << value_type << " with value " << val.as<float>()
-          << " is out of bound";
-      throw outOfBoundException(msg.str());
-    }
-
-  } else if (value_type == "uint16") {
-    typeValid = true;
-    long double longDoubleVal = val.as<long double>();
-    if (!((longDoubleVal <= numeric_limits<uint16_t>::max()) &&
-          (longDoubleVal >= numeric_limits<uint16_t>::min()))) {
-      cout << "vssdatabase::setSignal: The value passed " << val.as<float>()
-           << "for type " << value_type << " is out of bound." << endl;
-      std::stringstream msg;
-      msg << "The type " << value_type << " with value " << val.as<float>()
-          << " is out of bound";
-      throw outOfBoundException(msg.str());
-    }
-
-  } else if (value_type == "uint32") {
-    typeValid = true;
-    long double longDoubleVal = val.as<long double>();
-    if (!((longDoubleVal <= numeric_limits<uint32_t>::max()) &&
-          (longDoubleVal >= numeric_limits<uint32_t>::min()))) {
-      cout << "vssdatabase::setSignal: The value passed " << val.as<float>()
-           << " for type " << value_type << " is out of bound." << endl;
-      std::stringstream msg;
-      msg << "The type " << value_type << " with value " << val.as<float>()
-          << " is out of bound";
-      throw outOfBoundException(msg.str());
-    }
-
-  } else if (value_type == "int8") {
-    typeValid = true;
-    long double longDoubleVal = val.as<long double>();
-    if (!((longDoubleVal <= numeric_limits<int8_t>::max()) &&
-          (longDoubleVal >= numeric_limits<int8_t>::min()))) {
-      cout << "vssdatabase::setSignal: The value passed " << val.as<float>()
-           << "for type " << value_type << " is out of bound." << endl;
-      std::stringstream msg;
-      msg << "The type " << value_type << " with value " << val.as<float>()
-          << " is out of bound";
-      throw outOfBoundException(msg.str());
-    }
-  } else if (value_type == "int16") {
-    typeValid = true;
-    long double longDoubleVal = val.as<long double>();
-    if (!((longDoubleVal <= numeric_limits<int16_t>::max()) &&
-          (longDoubleVal >= numeric_limits<int16_t>::min()))) {
-      cout << "vssdatabase::setSignal: The value passed " << val.as<float>()
-           << "for type " << value_type << " is out of bound." << endl;
-      std::stringstream msg;
-      msg << "The type " << value_type << " with value " << val.as<float>()
-          << " is out of bound";
-      throw outOfBoundException(msg.str());
-    }
-
-  } else if (value_type == "int32") {
-    typeValid = true;
-    long double longDoubleVal = val.as<long double>();
-    if (!((longDoubleVal <= numeric_limits<int32_t>::max()) &&
-          (longDoubleVal >= numeric_limits<int32_t>::min()))) {
-      cout << "vssdatabase::setSignal: The value passed " << val.as<float>()
-           << "for type " << value_type << " is out of bound." << endl;
-      std::stringstream msg;
-      msg << "The type " << value_type << " with value " << val.as<float>()
-          << " is out of bound";
-      throw outOfBoundException(msg.str());
-    }
-  } else if (value_type == "float") {
-    typeValid = true;
-    long double longDoubleVal = val.as<long double>();
-    float max = numeric_limits<float>::max();
-    float min = numeric_limits<float>::lowest();
-    if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
-      cout << "vssdatabase::setSignal: The value passed "
-           << val.as<double>() << " for type " << value_type
-           << " is out of bound."
-           << endl;
-      std::stringstream msg;
-      msg << "The type " << value_type << " with value '" << val.as<double>()
-          << "' is out of bound";
-      throw outOfBoundException(msg.str());
-    }
-  } else if (value_type == "double") {
-    typeValid = true;
-    long double longDoubleVal = val.as<long double>();
-    double max = numeric_limits<double>::max();
-    double min = numeric_limits<double>::lowest();
-    if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
-      cout << "vssdatabase::setSignal: The value passed '"
-           << val.as<long double>() << "' for type " << value_type
-           << " is out of bound."
-           << endl;
-      std::stringstream msg;
-      msg << "The type " << value_type << " with value "
-          << val.as<long double>() << " is out of bound";
-      throw outOfBoundException(msg.str());
-    }
-
-  } else if (value_type == "boolean") {
-    typeValid = true;
-  } else if (value_type == "string") {
-    typeValid = true;
-  }
-
-  if (!typeValid) {
-    cout << "vssdatabase::setSignal: The  type " << value_type
-         << " is either not supported " << endl;
-    string msg = "The type " + value_type + " is not supported ";
-    throw genException(msg);
-  }
-}
-
 void vssdatabase::checkSetPermission(wschannel& channel, jsoncons::json valueJson) {
     // check if all the paths have write access.
     bool haveAccess = accessValidator->checkPathWriteAccess(channel, valueJson);
@@ -511,7 +522,7 @@ void vssdatabase::setSignal(wschannel& channel, string path,
         if (resJson.has_key("datatype")) {
           string value_type = resJson["datatype"].as<string>();
           json val = item["value"];
-          checkTypeAndBound(value_type, val);
+          checkTypeAndBound(logger, value_type, val);
 
           resJson.insert_or_assign("value", val);
 
@@ -548,7 +559,6 @@ void vssdatabase::setSignal(wschannel& channel, string path,
     throw genException(msg);
   }
 }
-
 
 // Method for setting values to signals.
 void vssdatabase::setSignal(string path,
@@ -565,10 +575,10 @@ void vssdatabase::setSignal(string path,
     for (size_t i = 0; i < setValues.size(); i++) {
       jsoncons::json item = setValues[i];
       string jPath = item["path"].as<string>();
-#ifdef DEBUG
-      cout << "vssdatabase::setSignal: path found = " << jPath << endl;
-      cout << "value to set asstring = " << item["value"].as<string>() << endl;
-#endif
+
+      logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: path found = " + jPath
+                  + "value to set asstring = " + item["value"].as<string>());
+
       rwMutex.lock();
       jsoncons::json resArray = json_query(data_tree, jPath);
       rwMutex.unlock();
@@ -578,17 +588,14 @@ void vssdatabase::setSignal(string path,
         if (resJson.has_key("datatype")) {
           string value_type = resJson["datatype"].as<string>();
           json val = item["value"];
-          checkTypeAndBound(value_type, val);
+          checkTypeAndBound(logger, value_type, val);
 
           resJson.insert_or_assign("value", val);
 
           rwMutex.lock();
           json_replace(data_tree, jPath, resJson);
           rwMutex.unlock();
-#ifdef DEBUG
-          cout << "vssdatabase::setSignal: new value set at path " << jPath
-               << endl;
-#endif
+          logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: new value set at path " + jPath);
 
           string uuid = resJson["uuid"].as<string>();
 
@@ -602,22 +609,19 @@ void vssdatabase::setSignal(string path,
         }
 
       } else if (resArray.is_array()) {
-        cout << "vssdatabase::setSignal : Path " << jPath << " has "
-             << resArray.size() << " signals, the path needs refinement"
-             << endl;
         stringstream msg;
-        msg << "Path " << jPath << " has " << resArray.size()
-            << " signals, the path needs refinement";
+        msg << "Path " << jPath << " has " << resArray.size() << " signals, the path needs refinement";
+        logger->Log(LogLevel::WARNING, "vssdatabase::setSignal: " + msg.str());
+
         throw genException(msg.str());
       }
     }
   } else {
-    string msg = "Exception occured while setting data for " + path;
+    string msg = "Exception occurred while setting data for " + path;
+    logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg);
     throw genException(msg);
   }
 }
-
-
 
 // Utility method for setting values to JSON.
 void setJsonValue(jsoncons::json& dest, jsoncons::json& source, string key) {
@@ -643,18 +647,13 @@ jsoncons::json vssdatabase::getSignal(class wschannel& channel, string path) {
     jsoncons::json answer;
     return answer;
   }
-#ifdef DEBUG
-  cout << "vssdatabase::getSignal: " << pathsFound
-       << " signals found under path = "
-       << "\"" << path << "\"" << endl;
-#endif
+
+  logger->Log(LogLevel::VERBOSE, "vssdatabase::getSignal: " + to_string(pathsFound)
+              + " signals found under path = \"" + path + "\"");
   if (isBranch) {
     jsoncons::json answer;
-#ifdef DEBUG
-    cout << " vssdatabase::getSignal :"
-         << "\"" << path << "\""
-         << " is a Branch." << endl;
-#endif
+    logger->Log(LogLevel::VERBOSE, " vssdatabase::getSignal : \"" + path + "\" is a Branch.");
+
     if (pathsFound == 0) {
       throw noPathFoundonTree(path);
     } else {
@@ -681,7 +680,7 @@ jsoncons::json vssdatabase::getSignal(class wschannel& channel, string path) {
         jPaths.pop_back();
         jsoncons::json result = resArray[0];
         if (result.has_key("value")) {
-          setJsonValue(value, result, getReadablePath(jPath));
+          setJsonValue(logger, value, result, getReadablePath(jPath));
         } else {
           value[getReadablePath(jPath)] = "---";
         }
@@ -704,7 +703,7 @@ jsoncons::json vssdatabase::getSignal(class wschannel& channel, string path) {
     answer["path"] = getReadablePath(jPath);
     jsoncons::json result = resArray[0];
     if (result.has_key("value")) {
-      setJsonValue(answer, result, "value");
+      setJsonValue(logger, answer, result, "value");
       return answer;
     } else {
       answer["value"] = "---";
@@ -737,7 +736,7 @@ jsoncons::json vssdatabase::getSignal(class wschannel& channel, string path) {
       jPaths.pop_back();
       jsoncons::json result = resArray[0];
       if (result.has_key("value")) {
-        setJsonValue(value, result, getReadablePath(jPath));
+        setJsonValue(logger, value, result, getReadablePath(jPath));
       } else {
         value[getReadablePath(jPath)] = "---";
       }

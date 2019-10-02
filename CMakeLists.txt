@@ -114,6 +114,7 @@ if(UNIT_TEST)
          ${CMAKE_CURRENT_SOURCE_DIR}/src/subscriptionhandler.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/signing.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/wsserver.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/BasicLogger.cpp
          # ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/vssdatabase_test.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp
        )

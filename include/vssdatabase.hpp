@@ -17,12 +17,14 @@
 #include <string>
 #include <list>
 #include <mutex>
+#include <memory>
 
 #include <jsoncons/json.hpp>
 
 class subscriptionhandler;
 class accesschecker;
 class wschannel;
+class ILogger;
 
 class vssdatabase {
   friend class subscriptionhandler;
@@ -32,6 +34,7 @@ class vssdatabase {
 #endif
 
  private:
+  std::shared_ptr<ILogger> logger;
   std::mutex rwMutex;
   jsoncons::json data_tree;
   jsoncons::json meta_tree;
@@ -45,7 +48,8 @@ class vssdatabase {
   void checkSetPermission(wschannel& channel, jsoncons::json valueJson);
 
  public:
-  vssdatabase(subscriptionhandler* subHandle,
+  vssdatabase(std::shared_ptr<ILogger> loggerUtil,
+              subscriptionhandler* subHandle,
               accesschecker* accValidator);
   ~vssdatabase();
   void initJsonTree(std::string fileName);

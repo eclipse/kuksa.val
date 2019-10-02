@@ -16,6 +16,7 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include <string>
+#include <memory>
 #include <limits>
 #include "w3cunittest.hpp"
 #include "exception.hpp"
@@ -28,6 +29,8 @@
 #include "vssdatabase.hpp"
 #include "vsscommandprocessor.hpp"
 #include "wsserver.hpp"
+#include "ILogger.hpp"
+#include "BasicLogger.hpp"
 
 namespace utf = boost::unit_test;
 using namespace std;
@@ -58,6 +61,7 @@ This has be signed using a local private/pub key pair using RS256 Algorithm (asy
 namespace bt = boost::unit_test;
 #define PORT 8090
 
+std::shared_ptr<ILogger> logger;
 wsserver* webSocket;
 subscriptionhandler* subhandler;
 authenticator* authhandler;
@@ -69,13 +73,14 @@ vsscommandprocessor* commandProc;
 w3cunittest unittestObj(false);
 
 w3cunittest::w3cunittest(bool secure) {
-  webSocket = new wsserver(PORT, "vss_rel_2.0.json", secure);
-  authhandler = new authenticator("","");
+  logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::ALL));
+  webSocket = new wsserver(logger, PORT, "vss_rel_2.0.json", secure);
+  authhandler = new authenticator(logger, "","");
   accesshandler = new accesschecker(authhandler);
-  subhandler = new subscriptionhandler(webSocket, authhandler, accesshandler);
-  database = new vssdatabase(subhandler, accesshandler);
-  commandProc = new vsscommandprocessor(database, authhandler , subhandler);
-  json_signer = new signing();
+  subhandler = new subscriptionhandler(logger, webSocket, authhandler, accesshandler);
+  database = new vssdatabase(logger, subhandler, accesshandler);
+  commandProc = new vsscommandprocessor(logger, database, authhandler , subhandler);
+  json_signer = new signing(logger);
   database->initJsonTree("vss_rel_2.0.json");
 }
 
@@ -106,7 +111,7 @@ BOOST_AUTO_TEST_CASE(path_for_get_without_wildcard_simple)
     list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
     string result = paths.back();
 
-    BOOST_TEST(paths.size() ==  1);
+    BOOST_TEST(paths.size() ==  1u);
     BOOST_TEST(result == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
     BOOST_TEST(isBranch == false);
 
@@ -121,7 +126,7 @@ BOOST_AUTO_TEST_CASE(path_for_get_with_wildcard_simple)
     list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
     string result = paths.back();
 
-    BOOST_TEST(paths.size() ==  1);
+    BOOST_TEST(paths.size() == 1u);
     BOOST_TEST(result == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
     BOOST_TEST(isBranch == false);
 
@@ -134,7 +139,7 @@ BOOST_AUTO_TEST_CASE(path_for_get_with_wildcard_multiple)
     bool isBranch = false;
 
     list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
-    BOOST_TEST(paths.size() ==  2);
+    BOOST_TEST(paths.size() == 2u);
     string result2 = paths.back();
     paths.pop_back();
     string result1 = paths.back();
@@ -153,7 +158,7 @@ BOOST_AUTO_TEST_CASE(test_get_branch)
     list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
     string result = paths.back();
 
-    BOOST_TEST(paths.size() ==  3);
+    BOOST_TEST(paths.size() == 3u);
     BOOST_TEST(isBranch == true);
 
 }
@@ -166,7 +171,7 @@ BOOST_AUTO_TEST_CASE(test_get_branch_with_wildcard)
     list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
     string result = paths.back();
 
-    BOOST_TEST(paths.size() ==  10);
+    BOOST_TEST(paths.size() == 10u);
     BOOST_TEST(isBranch == true);
 
 }
@@ -179,7 +184,7 @@ BOOST_AUTO_TEST_CASE(test_get_random)
 
     list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
 
-    BOOST_TEST(paths.size() ==  0);
+    BOOST_TEST(paths.size() == 0u);
     BOOST_TEST(isBranch == false);
 
 }
@@ -194,7 +199,7 @@ BOOST_AUTO_TEST_CASE(path_for_set_without_wildcard_simple)
 
     json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value);
 
-    BOOST_TEST(paths.size() ==  1);
+    BOOST_TEST(paths.size() == 1u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
 
@@ -215,7 +220,7 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_simple)
 
     json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
 
-    BOOST_TEST(paths.size() ==  2);
+    BOOST_TEST(paths.size() == 2u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
     BOOST_TEST(paths[1]["path"].as_string() == "$['Vehicle']['children']['OBD']['children']['Speed']");
@@ -237,7 +242,7 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_invalid_values)
 
     json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
 
-    BOOST_TEST(paths.size() ==  2);
+    BOOST_TEST(paths.size() == 2u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "");
     BOOST_TEST(paths[1]["path"].as_string() == "");
@@ -258,7 +263,7 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_one_valid_value)
 
     json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
 
-    BOOST_TEST(paths.size() ==  2);
+    BOOST_TEST(paths.size() == 2u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
     BOOST_TEST(paths[1]["path"].as_string() == "");
@@ -279,7 +284,7 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_invalid_path_valid_values)
 
     json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
 
-    BOOST_TEST(paths.size() ==  2);
+    BOOST_TEST(paths.size() == 2u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "");
     BOOST_TEST(paths[1]["path"].as_string() == "");
@@ -316,7 +321,7 @@ BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_valid_values)
 
     json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
 
-    BOOST_TEST(paths.size() ==  2);
+    BOOST_TEST(paths.size() == 2u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['Cabin']['children']['HVAC']['children']['Row2']['children']['Left']['children']['Temperature']");
     BOOST_TEST(paths[1]["path"].as_string() == "$['Vehicle']['children']['Cabin']['children']['HVAC']['children']['Row2']['children']['Right']['children']['Temperature']");
@@ -337,7 +342,7 @@ BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_invalid_values)
 
     json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
 
-    BOOST_TEST(paths.size() ==  2);
+    BOOST_TEST(paths.size() == 2u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "");
     BOOST_TEST(paths[1]["path"].as_string() == "");
@@ -358,7 +363,7 @@ BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_one_invalid_value)
 
     json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
 
-    BOOST_TEST(paths.size() ==  2);
+    BOOST_TEST(paths.size() == 2u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['Cabin']['children']['HVAC']['children']['Row2']['children']['Left']['children']['Temperature']");
     BOOST_TEST(paths[1]["path"].as_string() == "");
@@ -982,7 +987,7 @@ BOOST_AUTO_TEST_CASE(test_set_random)
 
     json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value);
 
-    BOOST_TEST(paths.size() ==  1);
+    BOOST_TEST(paths.size() == 1u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "");
 }
