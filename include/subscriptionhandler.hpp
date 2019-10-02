@@ -20,6 +20,7 @@
 #include "visconf.hpp"
 #include <string>
 #include <thread>
+#include <memory>
 
 #include <jsoncons/json.hpp>
 
@@ -28,6 +29,7 @@ class authenticator;
 class vssdatabase;
 class wschannel;
 class wsserver;
+class ILogger;
 
 // Subscription ID: Client ID
 typedef std::unordered_map<uint32_t, uint32_t> subscriptions_t;
@@ -37,6 +39,7 @@ typedef std::string uuid_t;
 
 class subscriptionhandler {
  private:
+  std::shared_ptr<ILogger> logger;
   std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
   wsserver* server;
   authenticator* validator;
@@ -47,7 +50,8 @@ class subscriptionhandler {
   std::queue<std::pair<uint32_t, jsoncons::json>> buffer;
 
  public:
-  subscriptionhandler(wsserver* wserver,
+  subscriptionhandler(std::shared_ptr<ILogger> loggerUtil,
+                      wsserver* wserver,
                       authenticator* authenticate,
                       accesschecker* checkAccess);
   ~subscriptionhandler();

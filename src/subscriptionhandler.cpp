@@ -14,6 +14,7 @@
 #include "subscriptionhandler.hpp"
 
 #include <unistd.h> // usleep
+#include <string>
 
 #include <jsoncons_ext/jsonpath/json_query.hpp>
 
@@ -23,15 +24,18 @@
 #include "visconf.hpp"
 #include "vssdatabase.hpp"
 #include "wsserver.hpp"
+#include "ILogger.hpp"
 
 using namespace std;
 // using namespace jsoncons;
 using namespace jsoncons::jsonpath;
 // using jsoncons::jsoncons::jsoncons::json;
 
-subscriptionhandler::subscriptionhandler(wsserver* wserver,
+subscriptionhandler::subscriptionhandler(std::shared_ptr<ILogger> loggerUtil,
+                                         wsserver* wserver,
                                          authenticator* authenticate,
                                          accesschecker* checkAcc) {
+  logger = loggerUtil;
   server = wserver;
   validator = authenticate;
   checkAccess = checkAcc;
@@ -68,28 +72,26 @@ uint32_t subscriptionhandler::subscribe(wschannel& channel,
     jsoncons::json result = resArray[0];
     string sigUUID = result["uuid"].as<string>();
     auto handle = subscribeHandle.find(sigUUID);
-#ifdef DEBUG
+
     if (handle != subscribeHandle.end()) {
-      cout << "subscriptionhandler::subscribe: Updating the previous subscribe "
-              "ID with a new one"
-           << endl;
+      logger->Log(LogLevel::VERBOSE, string("subscriptionhandler::subscribe: Updating the previous subscribe ")
+                  + string("ID with a new one"));
     }
-#endif
+
     subscribeHandle[sigUUID][subId] = clientID;
 
     return subId;
   } else if (resArray.is_array()) {
-    cout << resArray.size()
-         << "subscriptionhandler::subscribe :signals found in path" << path
-         << ". Subscribe works for 1 signal at a time" << endl;
+    logger->Log(LogLevel::INFO, "subscriptionhandler::subscribe :signals found in path" + path
+                + "Array size: " + to_string(resArray.size())
+                + ". Subscribe works for 1 signal at a time");
     stringstream msg;
     msg << "signals found in path" << path
         << ". Subscribe works for 1 signal at a time";
     throw noPathFoundonTree(msg.str());
   } else {
-    cout << "subscriptionhandler::subscribe: some error occured while adding "
-            "subscription"
-         << endl;
+    logger->Log(LogLevel::ERROR, string("subscriptionhandler::subscribe: some error occurred while adding ")
+                + string("subscription"));
     stringstream msg;
     msg << "some error occured while adding subscription for path = " << path;
     throw genException(msg.str());
@@ -151,9 +153,9 @@ int subscriptionhandler::updateByPath(string path, json value) {
 
 void* subscriptionhandler::subThreadRunner() {
   // subscriptionhandler* handler = (subscriptionhandler*)instance;
-#ifdef DEBUG
-  cout << "SubscribeThread: Started Subscription Thread!" << endl;
-#endif
+
+  logger->Log(LogLevel::VERBOSE, "SubscribeThread: Started Subscription Thread!");
+
   while (isThreadRunning()) {
     subMutex.lock();
     if (buffer.size() > 0) {
@@ -180,20 +182,20 @@ void* subscriptionhandler::subThreadRunner() {
     // sleep 10 ms
     usleep(10000);
   }
-  cout << "SubscribeThread: Subscription handler thread stopped running"
-       << endl;
+  logger->Log(LogLevel::INFO, "SubscribeThread: Subscription handler thread stopped running");
 
   return NULL;
 }
 
 int subscriptionhandler::startThread() {
   subThread = thread(&subscriptionhandler::subThreadRunner, this);
-  // if (pthread_create(&subscription_thread, NULL, &subThread, this)) {
-  //   cout << "subscriptionhandler::startThread: Error creating subscription "
-  //           "handler thread"
-  //        << endl;
-  //   return 1;
-  // }
+  /*
+  if (pthread_create(&subscription_thread, NULL, &subThread, this)) {
+    logger->Log(LogLevel::ERROR, "subscriptionhandler::startThread: Error creating subscription "
+                + "handler thread");
+    return 1;
+  }
+  */
   threadRun = true;
   return 0;
 }

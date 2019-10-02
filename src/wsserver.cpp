@@ -60,7 +60,7 @@ wsserver::wsserver(std::shared_ptr<ILogger> loggerUtil, int port, string configF
 
   tokenValidator = new authenticator(logger, "appstacle", "RS256");
   accessCheck = new accesschecker(tokenValidator);
-  subHandler = new subscriptionhandler(this, tokenValidator, accessCheck);
+  subHandler = new subscriptionhandler(logger, this, tokenValidator, accessCheck);
   database = new vssdatabase(subHandler, accessCheck);
   cmdProcessor = new vsscommandprocessor(database, tokenValidator, subHandler);
   wserver = this;
