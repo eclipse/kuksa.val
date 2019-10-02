@@ -20,18 +20,23 @@
 #include <iostream>
 #include <jsoncons/json.hpp>
 
+#include <memory>
+
 using namespace std;
 using namespace jsoncons;
 using namespace jwt;
 
+class ILogger;
+
 class signing {
  private:
+  std::shared_ptr<ILogger> logger;
   string key = "";
   string pubkey = "";
   string algorithm = "RS256";
 
  public:
-  signing();
+  signing(std::shared_ptr<ILogger> loggerUtil);
   string getKey(string fileName);
   string getPublicKey(string fileName);
   string sign(json data);

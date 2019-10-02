@@ -14,13 +14,15 @@
 
 #include "signing.hpp"
 
+#include "ILogger.hpp"
+
 #define PRIVATEFILENAME "signing.private.key"
 #define PUBLICFILENAME "signing.public.key"
 
 /**
  Constructor
 */
-signing::signing() {
+signing::signing(std::shared_ptr<ILogger> loggerUtil) : logger(loggerUtil) {
   getKey(PRIVATEFILENAME);
   getPublicKey(PUBLICFILENAME);
 }
@@ -104,7 +106,7 @@ string signing::decode(string signedData) {
   try {
     verify.verify(decoded_token);
   } catch (exception& e) {
-    cout << "Error while verfying JSON signing " << e.what() << endl;
+    logger->Log(LogLevel::ERROR, "Error while verifying JSON signing " + string(e.what()));
     return "";
   }
 
