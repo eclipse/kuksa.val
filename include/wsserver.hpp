@@ -17,7 +17,6 @@
 
 #include "server_wss.hpp"
 
-#include "ILogger.hpp"
 
 class vsscommandprocessor;
 class vsscommandprocessor;
@@ -25,6 +24,7 @@ class subscriptionhandler;
 class authenticator;
 class vssdatabase;
 class accesschecker;
+class ILogger;
 
 class wsserver {
  private:
@@ -41,7 +41,7 @@ class wsserver {
   vssdatabase* database;
   accesschecker* accessCheck;
 
-  wsserver(int port, std::string configFileName, bool secure, std::shared_ptr<ILogger> loggerUtil);
+  wsserver(std::shared_ptr<ILogger> loggerUtil, int port, std::string configFileName, bool secure);
   ~wsserver();
   void startServer(std::string endpointName);
   void sendToConnection(uint32_t connID, std::string message);

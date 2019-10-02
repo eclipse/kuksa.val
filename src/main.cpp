@@ -23,6 +23,9 @@
 #include "vssdatabase.hpp"
 #include "exception.hpp"
 
+#include "BasicLogger.hpp"
+
+
 using namespace std;
 using namespace boost;
 using namespace jsoncons;
@@ -247,10 +250,6 @@ int main(int argc, const char *argv[]) {
     auto port = variables["port"].as<int>();
     auto secure = !variables.count("insecure");
     auto vss_filename = variables["vss"].as<string>();
-    wsserver server(port, vss_filename, secure);
-    database = server.start();
-    
-  
 
     // Start D-Bus backend connection.
     guint owner_id;
@@ -272,10 +271,19 @@ int main(int argc, const char *argv[]) {
 
     loop = g_main_loop_new (NULL, FALSE);
     g_main_loop_run (loop);
-
     g_bus_unown_name (owner_id);
-
     g_dbus_node_info_unref (introspection_data);
+
+    uint8_t logLevelsActive;
+#ifdef DEBUG
+    logLevelsActive = static_cast<uint8_t>(LogLevel::ALL);
+#else
+    logLevelsActive = static_cast<uint8_t>(LogLevel::INFO & LogLevel::WARNING & LogLevel::ERROR);
+#endif
+    std::shared_ptr<ILogger> logger = std::make_shared<BasicLogger>(logLevelsActive);
+
+    wsserver server(logger, port, vss_filename, secure);
+    server.start();
 
   } catch (const program_options::error &ex) {
     print_usage(argv[0], desc);
