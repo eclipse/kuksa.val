@@ -15,6 +15,7 @@
 #define __VSSCOMMANDPROCESSOR_H__
 
 #include <string>
+#include <memory>
 
 #include <jsoncons/json.hpp>
 
@@ -23,9 +24,11 @@ class subscriptionhandler;
 class authenticator;
 class accesschecker;
 class wschannel;
+class ILogger;
 
 class vsscommandprocessor {
  private:
+  std::shared_ptr<ILogger> logger;
   vssdatabase* database = NULL;
   subscriptionhandler* subHandler = NULL;
   authenticator* tokenValidator = NULL;
@@ -48,7 +51,9 @@ class vsscommandprocessor {
   
 
  public:
-  vsscommandprocessor(vssdatabase* database, authenticator* vdator,
+  vsscommandprocessor(std::shared_ptr<ILogger> loggerUtil,
+                      vssdatabase* database,
+                      authenticator* vdator,
                       subscriptionhandler* subhandler);
   ~vsscommandprocessor();
   std::string processQuery(std::string req_json, wschannel& channel);

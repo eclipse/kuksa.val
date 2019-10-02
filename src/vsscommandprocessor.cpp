@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #include "permmclient.hpp"
 #include "exception.hpp"
@@ -25,6 +26,7 @@
 #include "vssdatabase.hpp"
 #include "accesschecker.hpp"
 #include "subscriptionhandler.hpp"
+#include "ILogger.hpp"
 
 #ifdef JSON_SIGNING_ON
 #include "signing.hpp"
@@ -111,8 +113,11 @@ string valueOutOfBoundsResponse(uint32_t request_id, const string action,
 }
 
 vsscommandprocessor::vsscommandprocessor(
-    vssdatabase *dbase, authenticator *vdator,
+    std::shared_ptr<ILogger> loggerUtil,
+    vssdatabase *dbase,
+    authenticator *vdator,
     subscriptionhandler *subhandler) {
+  logger = loggerUtil;
   database = dbase;
   tokenValidator = vdator;
   subHandler = subhandler;
@@ -128,14 +133,12 @@ vsscommandprocessor::~vsscommandprocessor() {
 
 string vsscommandprocessor::processGet(wschannel &channel,
                                        uint32_t request_id, string path) {
-#ifdef DEBUG
-  cout << "GET :: path received from client = " << path << endl;
-#endif
+  logger->Log(LogLevel::VERBOSE, "GET :: path received from client = " + path);
   jsoncons::json res;
   try {
     res = database->getSignal(channel, path);
   } catch (noPermissionException &nopermission) {
-    cout << nopermission.what() << endl;
+    logger->Log(LogLevel::ERROR, string(nopermission.what()));
     return noAccessResponse(request_id, "get", nopermission.what());
   }
   if (!res.has_key("value")) {
@@ -153,15 +156,12 @@ string vsscommandprocessor::processGet(wschannel &channel,
 string vsscommandprocessor::processSet(wschannel &channel,
                                        uint32_t request_id, string path,
                                        jsoncons::json value) {
-#ifdef DEBUG
-  cout << "vsscommandprocessor::processSet: path received from client" << path
-       << endl;
-#endif
+  logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processSet: path received from client" + path);
 
   try {
     database->setSignal(channel, path, value);
   } catch (genException &e) {
-    cout << e.what() << endl;
+    logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json root;
     jsoncons::json error;
 
@@ -179,13 +179,13 @@ string vsscommandprocessor::processSet(wschannel &channel,
     ss << pretty_print(root);
     return ss.str();
   } catch (noPathFoundonTree &e) {
-    cout << e.what() << endl;
+    logger->Log(LogLevel::ERROR, string(e.what()));
     return pathNotFoundResponse(request_id, "set", path);
   } catch (outOfBoundException &outofboundExp) {
-    cout << outofboundExp.what() << endl;
+    logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
     return valueOutOfBoundsResponse(request_id, "set", outofboundExp.what());
   } catch (noPermissionException &nopermission) {
-    cout << nopermission.what() << endl;
+    logger->Log(LogLevel::ERROR, string(nopermission.what()));
     return noAccessResponse(request_id, "set", nopermission.what());
   }
 
@@ -202,24 +202,21 @@ string vsscommandprocessor::processSet(wschannel &channel,
 string vsscommandprocessor::processSubscribe(wschannel &channel,
                                              uint32_t request_id, string path,
                                              uint32_t connectionID) {
-#ifdef DEBUG
-  cout << "vsscommandprocessor::processSubscribe: path received from client "
-          "for subscription"
-       << path << endl;
-#endif
+  logger->Log(LogLevel::VERBOSE, string("vsscommandprocessor::processSubscribe: path received from client ")
+              + string("for subscription"));
 
   uint32_t subId = -1;
   try {
     subId = subHandler->subscribe(channel, database, connectionID, path);
   } catch (noPathFoundonTree &noPathFound) {
-    cout << noPathFound.what() << endl;
+    logger->Log(LogLevel::ERROR, string(noPathFound.what()));
     return pathNotFoundResponse(request_id, "subscribe", path);
   } catch (genException &outofboundExp) {
-    cout << outofboundExp.what() << endl;
+    logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
     return valueOutOfBoundsResponse(request_id, "subscribe",
                                     outofboundExp.what());
   } catch (noPermissionException &nopermission) {
-    cout << nopermission.what() << endl;
+    logger->Log(LogLevel::ERROR, string(nopermission.what()));
     return noAccessResponse(request_id, "subscribe", nopermission.what());
   }
 
@@ -416,19 +413,16 @@ string vsscommandprocessor::processQuery(string req_json,
     if (action == "authorize") {
       string token = root["tokens"].as<string>();
       uint32_t request_id = root["requestId"].as<int>();
-#ifdef DEBUG
-      cout << "vsscommandprocessor::processQuery: authorize query with token = "
-           << token << " with request id " << request_id << endl;
-#endif
+      logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: authorize query with token = "
+           + token + " with request id " + to_string(request_id));
+
       response = processAuthorize(channel, request_id, token);
     } else if (action == "unsubscribe") {
       uint32_t request_id = root["requestId"].as<int>();
       uint32_t subscribeID = root["subscriptionId"].as<int>();
-#ifdef DEBUG
-      cout << "vsscommandprocessor::processQuery: unsubscribe query  for sub "
-              "ID = "
-           << subscribeID << " with request id " << request_id << endl;
-#endif
+      logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: unsubscribe query  for sub ID = "
+              + to_string(subscribeID) + " with request id " + to_string(request_id));
+
       response = processUnsubscribe(request_id, subscribeID);
     } else if ( action == "kuksa-authorize") {
       string clientID = root["clientid"].as<string>();
@@ -444,10 +438,8 @@ string vsscommandprocessor::processQuery(string req_json,
       uint32_t request_id = root["requestId"].as<int>();
 
       if (action == "get") {
-#ifdef DEBUG
-        cout << "vsscommandprocessor::processQuery: get query  for " << path
-             << " with request id " << request_id << endl;
-#endif
+        logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: get query  for " + path
+                    + " with request id " + to_string(request_id));
 
         response = processGet(channel, request_id, path);
 #ifdef JSON_SIGNING_ON
@@ -455,28 +447,21 @@ string vsscommandprocessor::processQuery(string req_json,
 #endif
       } else if (action == "set") {
         jsoncons::json value = root["value"];
-#ifdef DEBUG
-        cout << "vsscommandprocessor::processQuery: set query  for " << path
-             << " with request id " << request_id << " value "
-             << pretty_print(value) << endl;
-#endif
+
+        logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: set query  for " + path
+             + " with request id " + to_string(request_id) + " value " + value.as_string());
         response = processSet(channel, request_id, path, value);
       } else if (action == "subscribe") {
-#ifdef DEBUG
-        cout << "vsscommandprocessor::processQuery: subscribe query  for "
-             << path << " with request id " << request_id << endl;
-#endif
+        logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: subscribe query  for "
+             + path + " with request id " + to_string(request_id));
         response =
             processSubscribe(channel, request_id, path, channel.getConnID());
       } else if (action == "getMetadata") {
-#ifdef DEBUG
-        cout << "vsscommandprocessor::processQuery: metadata query  for "
-             << path << " with request id " << request_id << endl;
-#endif
+        logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: metadata query  for "
+             + path + " with request id " + to_string(request_id));
         response = processGetMetaData(request_id, path);
       } else {
-        cout << "vsscommandprocessor::processQuery: Unknown action " << action
-             << endl;
+        logger->Log(LogLevel::INFO, "vsscommandprocessor::processQuery: Unknown action " + action);
       }
     }
   } catch (jsoncons::json_parse_exception e) {
