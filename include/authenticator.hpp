@@ -14,21 +14,25 @@
 #ifndef __AUTHENTICATOR_H__
 #define __AUTHENTICATOR_H__
 
+#include <memory>
 #include <string>
 
 using namespace std;
 
 class wschannel;
 class vssdatabase;
+class ILogger;
 
 class authenticator {
  private:
   string pubkey = "secret";
   string algorithm = "RS256";
+  std::shared_ptr<ILogger> logger;
+
   int validateToken(wschannel& channel, string authToken);
 
  public:
-  authenticator(string secretkey, string algorithm);
+  authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algorithm);
   int validate(wschannel &channel, vssdatabase *database,
                string authToken);
   

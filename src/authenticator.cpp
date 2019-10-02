@@ -12,9 +12,11 @@
  * *****************************************************************************
  */
 #include "authenticator.hpp"
+#include "ILogger.hpp"
 #include <fstream>
 #include <iostream>
 #include <list>
+#include <string>
 
 #include <jwt-cpp/jwt.h>
 #include <jsoncons/json.hpp>
@@ -26,17 +28,14 @@ using namespace std;
 // using jsoncons;
 using jsoncons::json;
 
-string getPublicKeyFromFile(string fileName) {
-  std::ifstream fileStream(fileName);
-  std::string key((std::istreambuf_iterator<char>(fileStream)),
-                  (std::istreambuf_iterator<char>()));
+namespace {
+  string getPublicKeyFromFile(string fileName) {
+    std::ifstream fileStream(fileName);
+    std::string key((std::istreambuf_iterator<char>(fileStream)),
+                    (std::istreambuf_iterator<char>()));
 
-  return key;
-}
-
-authenticator::authenticator(string secretkey, string algo) {
-  algorithm = algo;
-  pubkey = secretkey;
+    return key;
+  }
 }
 
 
@@ -50,6 +49,7 @@ void authenticator::updatePubKey(string key) {
 int authenticator::validateToken(wschannel& channel, string authToken) {
   auto decoded = jwt::decode(authToken);
   json claims;
+  (void) channel;
   for (auto& e : decoded.get_payload_claims()) {
     std::cout << e.first << " = " << e.second.to_json() << std::endl;
     claims[e.first] = e.second.to_json().to_str();
@@ -57,13 +57,11 @@ int authenticator::validateToken(wschannel& channel, string authToken) {
   
   auto verifier = jwt::verify().allow_algorithm(
       jwt::algorithm::rs256(pubkey, "", "", ""));
-
   try {
     verifier.verify(decoded);
   } catch (const std::runtime_error& e) {
-    cout << "authenticator::validate: " << e.what()
-         << " Exception occured while authentication. Token is not valid!"
-         << endl;
+    logger->Log(LogLevel::ERROR, "authenticator::validate: " + string(e.what())
+         + " Exception occured while authentication. Token is not valid!");
     return -1;
   }
 
@@ -71,6 +69,12 @@ int authenticator::validateToken(wschannel& channel, string authToken) {
   channel.setAuthorized(true);
   channel.setAuthToken(authToken);
   return ttl;
+}
+
+authenticator::authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algo) {
+  logger = loggerUtil;
+  algorithm = algo;
+  pubkey = secretkey;
 }
 
 // validates the token against expiry date/time. should be extended to check
@@ -109,7 +113,7 @@ void authenticator::resolvePermissions(wschannel& channel,
   auto decoded = jwt::decode(authToken);
   json claims;
   for (auto& e : decoded.get_payload_claims()) {
-    std::cout << e.first << " = " << e.second.to_json() << std::endl;
+    logger->Log(LogLevel::INFO, string(e.first) + " = " + e.second.to_json().to_str());
     stringstream value;
     value << e.second.to_json();
     claims[e.first] = json::parse(value.str());

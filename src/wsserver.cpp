@@ -58,7 +58,7 @@ wsserver::wsserver(std::shared_ptr<ILogger> loggerUtil, int port, string configF
     insecureServer_->config.port = port;
   }
 
-  tokenValidator = new authenticator("appstacle", "RS256");
+  tokenValidator = new authenticator(logger, "appstacle", "RS256");
   accessCheck = new accesschecker(tokenValidator);
   subHandler = new subscriptionhandler(this, tokenValidator, accessCheck);
   database = new vssdatabase(subHandler, accessCheck);
