@@ -16,6 +16,7 @@
 #define __WSSERVER_H__
 
 #include "server_wss.hpp"
+#include "IWsServer.hpp"
 
 
 class VssCommandProcessor;
@@ -26,7 +27,7 @@ class VssDatabase;
 class AccessChecker;
 class ILogger;
 
-class WsServer {
+class WsServer : public IWsServer {
  private:
   SimpleWeb::SocketServer<SimpleWeb::WSS> *secureServer_;
   SimpleWeb::SocketServer<SimpleWeb::WS> *insecureServer_;
@@ -43,8 +44,8 @@ class WsServer {
 
   WsServer(std::shared_ptr<ILogger> loggerUtil, int port, std::string configFileName, bool secure);
   ~WsServer();
-  void startServer(std::string endpointName);
-  void sendToConnection(uint32_t connID, std::string message);
+  void startServer(const std::string &endpointName);
+  void sendToConnection(uint32_t connID, const std::string &message);
   void start();
 };
 #endif

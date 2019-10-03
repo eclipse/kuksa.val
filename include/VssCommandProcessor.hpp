@@ -19,6 +19,8 @@
 
 #include <jsoncons/json.hpp>
 
+#include "IVssCommandProcessor.hpp"
+
 class VssDatabase;
 class SubscriptionHandler;
 class Authenticator;
@@ -26,7 +28,7 @@ class AccessChecker;
 class WsChannel;
 class ILogger;
 
-class VssCommandProcessor {
+class VssCommandProcessor : public IVssCommandProcessor {
  private:
   std::shared_ptr<ILogger> logger;
   VssDatabase* database = NULL;
@@ -57,7 +59,7 @@ class VssCommandProcessor {
                       SubscriptionHandler* subhandler);
   ~VssCommandProcessor();
 
-  std::string processQuery(std::string req_json, WsChannel& channel);
+  std::string processQuery(const std::string &req_json, WsChannel& channel);
 };
 
 #endif

@@ -33,6 +33,7 @@ class Authenticator {
 
  public:
   Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algorithm);
+
   int validate(WsChannel &channel, VssDatabase *database,
                string authToken);
 

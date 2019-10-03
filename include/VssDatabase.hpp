@@ -21,12 +21,14 @@
 
 #include <jsoncons/json.hpp>
 
+#include "IVssDatabase.hpp"
+
 class SubscriptionHandler;
 class AccessChecker;
 class WsChannel;
 class ILogger;
 
-class VssDatabase {
+class VssDatabase : public IVssDatabase {
   friend class SubscriptionHandler;
   friend class Authenticator;
 #ifdef UNIT_TEST
@@ -52,11 +54,12 @@ class VssDatabase {
               SubscriptionHandler* subHandle,
               AccessChecker* accValidator);
   ~VssDatabase();
-  void initJsonTree(std::string fileName);
-  jsoncons::json getMetaData(std::string path);
-  void setSignal(WsChannel& channel, std::string path, jsoncons::json value);
-  void setSignal(std::string path, jsoncons::json value);
-  jsoncons::json getSignal(WsChannel& channel, std::string path);
+
+  void initJsonTree(const std::string &fileName);
+  jsoncons::json getMetaData(const std::string &path);
+  void setSignal(WsChannel& channel, const std::string &path, jsoncons::json value);
+  void setSignal(const std::string &path, jsoncons::json value);
+  jsoncons::json getSignal(WsChannel& channel, const std::string &path);
 
 };
 #endif

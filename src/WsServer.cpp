@@ -114,7 +114,7 @@ static void onMessage(std::weak_ptr<ILogger> wLogger,
   connection->send(send_stream);
 }
 
-void WsServer::startServer(string endpointName) {
+void WsServer::startServer(const string &endpointName) {
   (void) endpointName;
 
   auto wLogger = std::weak_ptr<ILogger>(logger);
@@ -233,7 +233,7 @@ void WsServer::startServer(string endpointName) {
   }
 }
 
-void WsServer::sendToConnection(uint32_t connectionID, string message) {
+void WsServer::sendToConnection(uint32_t connectionID, const string &message) {
   if (isSecure_) {
     auto send_stream = make_shared<SecuredServer::SendStream>();
     *send_stream << message;

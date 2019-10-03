@@ -30,7 +30,7 @@ SigningHandler::SigningHandler(std::shared_ptr<ILogger> loggerUtil) : logger(log
 /**
  Get the private key for SigningHandler.
 */
-string SigningHandler::getKey(string fileName) {
+string SigningHandler::getKey(const string &fileName) {
   std::ifstream fileStream(fileName);
   std::string privatekey((std::istreambuf_iterator<char>(fileStream)),
                          (std::istreambuf_iterator<char>()));
@@ -41,7 +41,7 @@ string SigningHandler::getKey(string fileName) {
 /**
  Get the public key for SigningHandler.
 */
-string SigningHandler::getPublicKey(string fileName) {
+string SigningHandler::getPublicKey(const string &fileName) {
   std::ifstream fileStream(fileName);
   std::string privatekey((std::istreambuf_iterator<char>(fileStream)),
                          (std::istreambuf_iterator<char>()));
@@ -52,7 +52,7 @@ string SigningHandler::getPublicKey(string fileName) {
 /**
  Signs the JSON and returns a string token
 */
-string SigningHandler::sign(json data) {
+string SigningHandler::sign(const json &data) {
   auto algo = jwt::algorithm::rs256(pubkey, key, "", "");
   auto encode = [](const std::string& data) {
     auto base = base::encode<alphabet::base64url>(data);
@@ -76,7 +76,7 @@ string SigningHandler::sign(json data) {
 /**
  Signs the JSON and returns a string token
 */
-string SigningHandler::sign(string data) {
+string SigningHandler::sign(const string &data) {
   auto algo = jwt::algorithm::rs256(pubkey, key, "", "");
   auto encode = [](const std::string& data) {
     auto base = base::encode<alphabet::base64url>(data);

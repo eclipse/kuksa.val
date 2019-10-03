@@ -29,7 +29,7 @@
 using namespace std;
 // using namespace jsoncons;
 using namespace jsoncons::jsonpath;
-// using jsoncons::jsoncons::jsoncons::json;
+using jsoncons::json;
 
 SubscriptionHandler::SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
                                          WsServer* wserver,
@@ -48,7 +48,7 @@ SubscriptionHandler::~SubscriptionHandler() {
 
 uint32_t SubscriptionHandler::subscribe(WsChannel& channel,
                                         VssDatabase* db,
-                                        uint32_t channelID, string path) {
+                                        uint32_t channelID, const string &path) {
   // generate subscribe ID "randomly".
   uint32_t subId = rand() % 9999999;
   // embed connection ID into subID.
@@ -121,8 +121,9 @@ int SubscriptionHandler::unsubscribeAll(uint32_t connectionID) {
   return 0;
 }
 
-int SubscriptionHandler::updateByUUID(string UUID, jsoncons::json value) {
-  auto handle = subscribeHandle.find(UUID);
+int SubscriptionHandler::updateByUUID(const string &signalUUID,
+                                      const jsoncons::json &value) {
+  auto handle = subscribeHandle.find(signalUUID);
   if (handle == subscribeHandle.end()) {
     // UUID not found
     return 0;
@@ -143,7 +144,7 @@ WsServer* SubscriptionHandler::getServer() {
   return server;
 }
 
-int SubscriptionHandler::updateByPath(string path, json value) {
+int SubscriptionHandler::updateByPath(const string &path, const json &value) {
   /* TODO: Implement */
   (void) path;
   (void) value;
@@ -208,4 +209,4 @@ int SubscriptionHandler::stopThread() {
   return 0;
 }
 
-bool SubscriptionHandler::isThreadRunning() { return threadRun; }
+bool SubscriptionHandler::isThreadRunning() const { return threadRun; }

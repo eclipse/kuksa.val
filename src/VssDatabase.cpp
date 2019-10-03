@@ -26,6 +26,7 @@
 
 using namespace std;
 using namespace jsoncons::jsonpath;
+using jsoncons::json;
 
 namespace {
     // Check the value type and if the value is within the range
@@ -177,7 +178,7 @@ VssDatabase::VssDatabase(std::shared_ptr<ILogger> loggerUtil,
 VssDatabase::~VssDatabase() {}
 
 // Initializer
-void VssDatabase::initJsonTree(string fileName) {
+void VssDatabase::initJsonTree(const string &fileName) {
   try {
     std::ifstream is(fileName);
     is >> data_tree;
@@ -343,7 +344,7 @@ vector<string> getVSSTokens(string path) {
 }
 
 // Returns the response JSON for metadata request.
-jsoncons::json VssDatabase::getMetaData(string path) {
+jsoncons::json VssDatabase::getMetaData(const std::string &path) {
   string format_path = "$";
   bool isBranch = false;
   rwMutex.lock();
@@ -494,7 +495,8 @@ void VssDatabase::checkSetPermission(WsChannel& channel, jsoncons::json valueJso
 }
 
 // Method for setting values to signals.
-void VssDatabase::setSignal(WsChannel& channel, string path,
+void VssDatabase::setSignal(WsChannel& channel,
+                            const string &path,
                             jsoncons::json valueJson) {
   if (path == "") {
     string msg = "Path is empty while setting";
@@ -558,7 +560,7 @@ void VssDatabase::setSignal(WsChannel& channel, string path,
 }
 
 // Method for setting values to signals.
-void VssDatabase::setSignal(string path,
+void VssDatabase::setSignal(const string &path,
                             jsoncons::json valueJson) {
   if (path == "") {
     string msg = "Path is empty while setting";
@@ -621,7 +623,7 @@ void VssDatabase::setSignal(string path,
 }
 
 // Returns response JSON for get request.
-jsoncons::json VssDatabase::getSignal(class WsChannel& channel, string path) {
+jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &path) {
   bool isBranch = false;
 
   rwMutex.lock();

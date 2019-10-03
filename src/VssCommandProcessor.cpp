@@ -401,7 +401,7 @@ string VssCommandProcessor::processAuthorize(WsChannel &channel,
   }
 }
 
-string VssCommandProcessor::processQuery(string req_json,
+string VssCommandProcessor::processQuery(const string &req_json,
                                          WsChannel &channel) {
   jsoncons::json root;
   string response;

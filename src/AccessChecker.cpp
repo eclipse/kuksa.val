@@ -14,14 +14,20 @@
 
 #include "AccessChecker.hpp"
 
+#include <jsoncons/json.hpp>
+#include <string>
+#include "WsChannel.hpp"
+
 using namespace std;
+using namespace jsoncons;
+//using jsoncons::json;
 
 AccessChecker::AccessChecker(Authenticator *vdator) {
   tokenValidator = vdator;
 }
 
 // check the permissions json in WsChannel if path has read access
-bool AccessChecker::checkReadAccess(WsChannel &channel, string path) {
+bool AccessChecker::checkReadAccess(WsChannel &channel, const string &path) {
   json permissions = channel.getPermissions();
   string perm = permissions.get_with_default(path, "");
 
@@ -32,7 +38,7 @@ bool AccessChecker::checkReadAccess(WsChannel &channel, string path) {
 }
 
 // check the permissions json in WsChannel if path has write access
-bool AccessChecker::checkWriteAccess(WsChannel &channel, string path) {
+bool AccessChecker::checkWriteAccess(WsChannel &channel, const string &path) {
   json permissions = channel.getPermissions();
   string perm = permissions.get_with_default(path, "");
 
@@ -44,7 +50,7 @@ bool AccessChecker::checkWriteAccess(WsChannel &channel, string path) {
 
 // Checks if all the paths have write access.If even 1 path in the list does not
 // have write access, this method returns false.
-bool AccessChecker::checkPathWriteAccess(WsChannel &channel, json paths) {
+bool AccessChecker::checkPathWriteAccess(WsChannel &channel, const json &paths) {
   for (size_t i = 0; i < paths.size(); i++) {
     json item = paths[i];
     string jPath = item["path"].as<string>();

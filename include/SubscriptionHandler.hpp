@@ -17,12 +17,14 @@
 #include <mutex>
 #include <queue>
 #include <unordered_map>
-#include "visconf.hpp"
 #include <string>
 #include <thread>
 #include <memory>
 
 #include <jsoncons/json.hpp>
+
+#include "visconf.hpp"
+#include "ISubscriptionHandler.hpp"
 
 class AccessChecker;
 class Authenticator;
@@ -37,7 +39,7 @@ typedef std::unordered_map<uint32_t, uint32_t> subscriptions_t;
 // Subscription UUID
 typedef std::string uuid_t;
 
-class SubscriptionHandler {
+class SubscriptionHandler : public ISubscriptionHandler {
  private:
   std::shared_ptr<ILogger> logger;
   std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
@@ -57,15 +59,15 @@ class SubscriptionHandler {
   ~SubscriptionHandler();
 
   uint32_t subscribe(WsChannel& channel, VssDatabase* db,
-                     uint32_t channelID, std::string path);
+                     uint32_t channelID, const std::string &path);
   int unsubscribe(uint32_t subscribeID);
   int unsubscribeAll(uint32_t connectionID);
-  int updateByUUID(std::string signalUUID, jsoncons::json value);
-  int updateByPath(std::string path, jsoncons::json value);
+  int updateByUUID(const std::string &signalUUID, const jsoncons::json &value);
+  int updateByPath(const std::string &path, const jsoncons::json &value);
   WsServer* getServer();
   int startThread();
   int stopThread();
-  bool isThreadRunning();
+  bool isThreadRunning() const;
   void* subThreadRunner();
 };
 #endif
