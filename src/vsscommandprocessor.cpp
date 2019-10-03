@@ -24,7 +24,7 @@
 #include "server_ws.hpp"
 #include "visconf.hpp"
 #include "vssdatabase.hpp"
-#include "accesschecker.hpp"
+#include "AccessChecker.hpp"
 #include "subscriptionhandler.hpp"
 #include "ILogger.hpp"
 
@@ -121,7 +121,7 @@ vsscommandprocessor::vsscommandprocessor(
   database = dbase;
   tokenValidator = vdator;
   subHandler = subhandler;
-  accessValidator = new accesschecker(tokenValidator);
+  accessValidator = new AccessChecker(tokenValidator);
 #ifdef JSON_SIGNING_ON
   signer = new signing();
 #endif

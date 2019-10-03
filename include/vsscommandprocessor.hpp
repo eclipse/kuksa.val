@@ -22,7 +22,7 @@
 class vssdatabase;
 class subscriptionhandler;
 class Authenticator;
-class accesschecker;
+class AccessChecker;
 class wschannel;
 class ILogger;
 
@@ -32,7 +32,7 @@ class vsscommandprocessor {
   vssdatabase* database = NULL;
   subscriptionhandler* subHandler = NULL;
   Authenticator* tokenValidator = NULL;
-  accesschecker* accessValidator = NULL;
+  AccessChecker* accessValidator = NULL;
 #ifdef JSON_SIGNING_ON
   signing* signer = NULL;
 #endif

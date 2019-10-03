@@ -18,7 +18,7 @@
 
 #include <jsoncons_ext/jsonpath/json_query.hpp>
 
-#include "accesschecker.hpp"
+#include "AccessChecker.hpp"
 #include "Authenticator.hpp"
 #include "exception.hpp"
 #include "visconf.hpp"
@@ -34,7 +34,7 @@ using namespace jsoncons::jsonpath;
 subscriptionhandler::subscriptionhandler(std::shared_ptr<ILogger> loggerUtil,
                                          WsServer* wserver,
                                          Authenticator* authenticate,
-                                         accesschecker* checkAcc) {
+                                         AccessChecker* checkAcc) {
   logger = loggerUtil;
   server = wserver;
   validator = authenticate;

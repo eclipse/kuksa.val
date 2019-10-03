@@ -21,7 +21,7 @@
 
 #include <jsoncons_ext/jsonpath/json_query.hpp>
 
-#include "accesschecker.hpp"
+#include "AccessChecker.hpp"
 #include "subscriptionhandler.hpp"
 
 using namespace std;
@@ -168,7 +168,7 @@ namespace {
 // Constructor
 vssdatabase::vssdatabase(std::shared_ptr<ILogger> loggerUtil,
                          subscriptionhandler* subHandle,
-                         accesschecker* accValidator) {
+                         AccessChecker* accValidator) {
   logger = loggerUtil;
   subHandler = subHandle;
   accessValidator = accValidator;

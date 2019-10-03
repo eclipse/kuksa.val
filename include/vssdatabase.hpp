@@ -22,7 +22,7 @@
 #include <jsoncons/json.hpp>
 
 class subscriptionhandler;
-class accesschecker;
+class AccessChecker;
 class wschannel;
 class ILogger;
 
@@ -39,7 +39,7 @@ class vssdatabase {
   jsoncons::json data_tree;
   jsoncons::json meta_tree;
   subscriptionhandler* subHandler;
-  accesschecker* accessValidator;
+  AccessChecker* accessValidator;
   std::string getVSSSpecificPath(std::string path, bool& isBranch, jsoncons::json& tree);
   std::string getPathForMetadata(std::string path, bool& isBranch);
   std::list<std::string> getPathForGet(std::string path, bool& isBranch);
@@ -50,7 +50,7 @@ class vssdatabase {
  public:
   vssdatabase(std::shared_ptr<ILogger> loggerUtil,
               subscriptionhandler* subHandle,
-              accesschecker* accValidator);
+              AccessChecker* accValidator);
   ~vssdatabase();
   void initJsonTree(std::string fileName);
   jsoncons::json getMetaData(std::string path);

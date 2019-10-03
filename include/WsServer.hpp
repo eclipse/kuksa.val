@@ -23,7 +23,7 @@ class vsscommandprocessor;
 class subscriptionhandler;
 class Authenticator;
 class vssdatabase;
-class accesschecker;
+class AccessChecker;
 class ILogger;
 
 class WsServer {
@@ -39,7 +39,7 @@ class WsServer {
   subscriptionhandler* subHandler;
   Authenticator* tokenValidator;
   vssdatabase* database;
-  accesschecker* accessCheck;
+  AccessChecker* accessCheck;
 
   WsServer(std::shared_ptr<ILogger> loggerUtil, int port, std::string configFileName, bool secure);
   ~WsServer();

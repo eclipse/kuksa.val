@@ -23,12 +23,12 @@ using namespace std;
 using namespace jsoncons;
 using jsoncons::json;
 
-class accesschecker {
+class AccessChecker {
  private:
   Authenticator *tokenValidator;
 
  public:
-  accesschecker(Authenticator *vdator);
+  AccessChecker(Authenticator *vdator);
   bool checkReadAccess(wschannel &channel, string path);
   bool checkWriteAccess(wschannel &channel, string path);
   bool checkPathWriteAccess(wschannel &channel, json paths);

@@ -22,7 +22,7 @@
 #include "exception.hpp"
 // #include <jsoncons/json.hpp>
 
-#include "accesschecker.hpp"
+#include "AccessChecker.hpp"
 #include "Authenticator.hpp"
 #include "signing.hpp"
 #include "subscriptionhandler.hpp"
@@ -65,7 +65,7 @@ std::shared_ptr<ILogger> logger;
 WsServer* webSocket;
 subscriptionhandler* subhandler;
 Authenticator* authhandler;
-accesschecker* accesshandler;
+AccessChecker* accesshandler;
 vssdatabase* database;
 signing* json_signer;
 vsscommandprocessor* commandProc;
@@ -76,7 +76,7 @@ w3cunittest::w3cunittest(bool secure) {
   logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::ALL));
   webSocket = new WsServer(logger, PORT, "vss_rel_2.0.json", secure);
   authhandler = new Authenticator(logger, "","");
-  accesshandler = new accesschecker(authhandler);
+  accesshandler = new AccessChecker(authhandler);
   subhandler = new subscriptionhandler(logger, webSocket, authhandler, accesshandler);
   database = new vssdatabase(logger, subhandler, accesshandler);
   commandProc = new vsscommandprocessor(logger, database, authhandler , subhandler);

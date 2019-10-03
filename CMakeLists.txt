@@ -109,7 +109,7 @@ if(UNIT_TEST)
    set(TEST_FILES
          ${CMAKE_CURRENT_SOURCE_DIR}/src/vssdatabase.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/vsscommandprocessor.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/accesschecker.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/AccessChecker.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/Authenticator.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/subscriptionhandler.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/signing.cpp

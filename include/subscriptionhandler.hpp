@@ -24,7 +24,7 @@
 
 #include <jsoncons/json.hpp>
 
-class accesschecker;
+class AccessChecker;
 class Authenticator;
 class vssdatabase;
 class wschannel;
@@ -43,7 +43,7 @@ class subscriptionhandler {
   std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
   WsServer* server;
   Authenticator* validator;
-  accesschecker* checkAccess;
+  AccessChecker* checkAccess;
   std::mutex subMutex;
   std::thread subThread;
   bool threadRun;
@@ -53,7 +53,7 @@ class subscriptionhandler {
   subscriptionhandler(std::shared_ptr<ILogger> loggerUtil,
                       WsServer* wserver,
                       Authenticator* authenticate,
-                      accesschecker* checkAccess);
+                      AccessChecker* checkAccess);
   ~subscriptionhandler();
 
   uint32_t subscribe(wschannel& channel, vssdatabase* db,

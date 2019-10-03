@@ -23,7 +23,7 @@
 // #include "WsServer.hpp"
 // #include "subscriptionhandler.hpp"
 // #include "Authenticator.hpp"
-// #include "accesschecker.hpp"
+// #include "AccessChecker.hpp"
 // #include "signing.hpp"
 
 // using namespace std;
