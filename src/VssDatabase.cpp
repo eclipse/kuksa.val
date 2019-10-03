@@ -11,18 +11,18 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#include "VssDatabase.hpp"
+
+#include <jsoncons_ext/jsonpath/json_query.hpp>
 #include <limits>
 #include <regex>
 #include <stdexcept>
+
 #include "exception.hpp"
 #include "visconf.hpp"
 #include "ILogger.hpp"
-
-#include <jsoncons_ext/jsonpath/json_query.hpp>
-
-#include "AccessChecker.hpp"
-#include "SubscriptionHandler.hpp"
+#include "IAccessChecker.hpp"
+#include "ISubscriptionHandler.hpp"
+#include "VssDatabase.hpp"
 
 using namespace std;
 using namespace jsoncons::jsonpath;
@@ -168,8 +168,8 @@ namespace {
 
 // Constructor
 VssDatabase::VssDatabase(std::shared_ptr<ILogger> loggerUtil,
-                         SubscriptionHandler* subHandle,
-                         AccessChecker* accValidator) {
+                         std::shared_ptr<ISubscriptionHandler> subHandle,
+                         std::shared_ptr<IAccessChecker> accValidator) {
   logger = loggerUtil;
   subHandler = subHandle;
   accessValidator = accValidator;
@@ -235,7 +235,7 @@ string VssDatabase::getReadablePath(string jsonpath) {
 // Eg: path = Signal.OBD.RPM
 // The method returns $['Signal']['children']['OBD']['children']['RPM'] and
 // updates isBranch to false.
-string VssDatabase::getVSSSpecificPath(string path, bool& isBranch,
+string VssDatabase::getVSSSpecificPath(const string &path, bool& isBranch,
                                        jsoncons::json& tree) {
   vector<string> tokens = getPathTokens(path);
   int tokLength = tokens.size();
@@ -297,7 +297,7 @@ string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
 // For eg : path = Signal.*.RPM
 // The method would return a list containing 1 signal path =
 // $['Signal']['children']['OBD']['children']['RPM']
-list<string> VssDatabase::getPathForGet(string path, bool& isBranch) {
+list<string> VssDatabase::getPathForGet(const string &path, bool& isBranch) {
   list<string> paths;
   string format_path = getVSSSpecificPath(path, isBranch, data_tree);
   jsoncons::json pathRes = json_query(data_tree, format_path, result_type::path);
@@ -423,18 +423,20 @@ jsoncons::json VssDatabase::getMetaData(const std::string &path) {
 // The function would return = {{"path" : "$.Signal.children.OBD.children.RPM",
 // "value" : 23}, {"path" : "$.Signal.children.OBD.children.Speed", "value" :
 // 10}}
-jsoncons::json VssDatabase::getPathForSet(string path, jsoncons::json values) {
+jsoncons::json VssDatabase::getPathForSet(const string &path, jsoncons::json values) {
   jsoncons::json setValues;
+  string updatedPath = path;
+
   if (values.is_array()) {
-    std::size_t found = path.find("*");
+    std::size_t found = updatedPath.find("*");
     if (found == std::string::npos) {
-      path = path + ".";
-      found = path.length();
+      updatedPath = updatedPath + ".";
+      found = updatedPath.length();
     }
     setValues = jsoncons::json::make_array(values.size());
     for (size_t i = 0; i < values.size(); i++) {
       jsoncons::json value = values[i];
-      string readablePath = path;
+      string readablePath = updatedPath;
       string replaceString;
       auto iter = value.object_range();
 
@@ -446,7 +448,7 @@ jsoncons::json VssDatabase::getPathForSet(string path, jsoncons::json values) {
         }
       } else {
         stringstream msg;
-        msg << "More than 1 signal found while setting for path = " << path
+        msg << "More than 1 signal found while setting for path = " << updatedPath
             << " with values " << pretty_print(values);
         throw genException(msg.str());
       }
@@ -457,7 +459,7 @@ jsoncons::json VssDatabase::getPathForSet(string path, jsoncons::json values) {
           getVSSSpecificPath(readablePath, isBranch, data_tree);
       if (isBranch) {
         stringstream msg;
-        msg << "Path = " << path << " with values " << pretty_print(values)
+        msg << "Path = " << updatedPath << " with values " << pretty_print(values)
             << " points to a branch. Needs to point to a signal";
         throw genException(msg.str());
       }
@@ -470,10 +472,10 @@ jsoncons::json VssDatabase::getPathForSet(string path, jsoncons::json values) {
     setValues = jsoncons::json::make_array(1);
     jsoncons::json pathValue;
     bool isBranch = false;
-    string absolutePath = getVSSSpecificPath(path, isBranch, data_tree);
+    string absolutePath = getVSSSpecificPath(updatedPath, isBranch, data_tree);
     if (isBranch) {
       stringstream msg;
-      msg << "Path = " << path << " with values " << pretty_print(values)
+      msg << "Path = " << updatedPath << " with values " << pretty_print(values)
           << " points to a branch. Needs to point to a signal";
       throw genException(msg.str());
     }

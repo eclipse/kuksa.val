@@ -16,13 +16,15 @@
 
 #include <jsoncons/json.hpp>
 #include <string>
+
+#include "IAuthenticator.hpp"
 #include "WsChannel.hpp"
 
 using namespace std;
 using namespace jsoncons;
 //using jsoncons::json;
 
-AccessChecker::AccessChecker(Authenticator *vdator) {
+AccessChecker::AccessChecker(std::shared_ptr<IAuthenticator> vdator) {
   tokenValidator = vdator;
 }
 

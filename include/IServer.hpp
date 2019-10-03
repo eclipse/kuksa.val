@@ -18,9 +18,9 @@
 #include <string>
 
 
-class IWsServer {
+class IServer {
   public:
-    virtual ~IWsServer() {}
+    virtual ~IServer() {}
 
     virtual void startServer(const std::string &endpointName) = 0;
     virtual void sendToConnection(uint32_t connID, const std::string &message) = 0;

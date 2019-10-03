@@ -14,14 +14,11 @@
 #include "WsServer.hpp"
 
 #include "ILogger.hpp"
-#include "AccessChecker.hpp"
-#include "Authenticator.hpp"
-#include "SubscriptionHandler.hpp"
+#include "IVssCommandProcessor.hpp"
 #include "visconf.hpp"
-#include "VssCommandProcessor.hpp"
-#include "VssDatabase.hpp"
 
 #include <string>
+#include <memory>
 
 using namespace std;
 
@@ -29,7 +26,7 @@ using SecuredServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
 using SimpleServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
 
 uint16_t connections[MAX_CLIENTS + 1] = {0};
-WsServer *wserver;
+WsServer *wserver = NULL;
 
 uint32_t generateConnID() {
   uint32_t retValueValue = 0;
@@ -43,12 +40,26 @@ uint32_t generateConnID() {
   return retValueValue;
 }
 
-WsServer::WsServer(std::shared_ptr<ILogger> loggerUtil, int port, string configFileName, bool secure) {
-  logger = loggerUtil;
-  isSecure_ = secure;
+WsServer::WsServer()
+{
+  isSecure_ = false;
   secureServer_ = nullptr;
   insecureServer_ = nullptr;
-  configFileName_ = configFileName;
+  isInitialized_ = false;
+
+  wserver = this;
+}
+
+bool WsServer::Initialize(std::shared_ptr<ILogger> loggerUtil,
+                          std::shared_ptr<IVssCommandProcessor> processor,
+                          bool secure,
+                          int port)
+{
+  logger = loggerUtil;
+  cmdProcessor = processor;
+  isSecure_ = secure;
+
+  // TODO: pass server instance as dependency
 
   if (isSecure_) {
     secureServer_ = new SecuredServer("Server.pem", "Server.key");
@@ -57,21 +68,14 @@ WsServer::WsServer(std::shared_ptr<ILogger> loggerUtil, int port, string configF
     insecureServer_ = new SimpleServer();
     insecureServer_->config.port = port;
   }
+  isInitialized_ = true;
 
-  tokenValidator = new Authenticator(logger, "appstacle", "RS256");
-  accessCheck = new AccessChecker(tokenValidator);
-  subHandler = new SubscriptionHandler(logger, this, tokenValidator, accessCheck);
-  database = new VssDatabase(logger, subHandler, accessCheck);
-  cmdProcessor = new VssCommandProcessor(logger, database, tokenValidator, subHandler);
-  wserver = this;
+  return isInitialized_;
 }
 
 WsServer::~WsServer() {
-  delete cmdProcessor;
-  delete database;
-  delete subHandler;
-  delete accessCheck;
-  delete tokenValidator;
+  cmdProcessor.reset();
+
   if (secureServer_) {
     delete secureServer_;
   }
@@ -265,7 +269,6 @@ void *startWSServer(void *arg) {
 }
 
 void WsServer::start() {
-  this->database->initJsonTree(configFileName_);
   pthread_t startWSServer_thread;
 
   /* create the web socket server thread. */

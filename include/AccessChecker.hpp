@@ -15,15 +15,16 @@
 #define __ACCESSCHECKER_H__
 
 #include "IAccessChecker.hpp"
-#include "Authenticator.hpp"
+
+class IAuthenticator;
 
 
 class AccessChecker : public IAccessChecker {
  private:
-  Authenticator *tokenValidator;
+  std::shared_ptr<IAuthenticator> tokenValidator;
 
  public:
-  AccessChecker(Authenticator *vdator);
+  AccessChecker(std::shared_ptr<IAuthenticator> vdator);
   bool checkReadAccess(WsChannel &channel, const std::string &path);
   bool checkWriteAccess(WsChannel &channel, const std::string &path);
   bool checkPathWriteAccess(WsChannel &channel, const jsoncons::json &paths);

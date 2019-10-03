@@ -50,7 +50,7 @@ int Authenticator::validateToken(WsChannel& channel, string authToken) {
   json claims;
   (void) channel;
   for (auto& e : decoded.get_payload_claims()) {
-    logger->Log(LogLevel::INFO, e.first + " = " + e.second.as_string());
+    logger->Log(LogLevel::INFO, e.first + " = " + e.second.to_json().to_str());
     claims[e.first] = e.second.to_json().to_str();
   }
   
@@ -78,7 +78,7 @@ Authenticator::Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretk
 
 // validates the token against expiry date/time. should be extended to check
 // some other claims.
-int Authenticator::validate(WsChannel& channel, VssDatabase* db,
+int Authenticator::validate(WsChannel& channel, std::shared_ptr<IVssDatabase> db,
                             string authToken) {
   int ttl = validateToken(channel, authToken);
   if (ttl > 0) {
@@ -107,7 +107,7 @@ bool Authenticator::isStillValid(WsChannel& channel) {
 // resolves the permission in the JWT token and store the absolute path to the
 // signals in permissions JSON in WsChannel.
 void Authenticator::resolvePermissions(WsChannel& channel,
-                                       VssDatabase* database) {
+                                       std::shared_ptr<IVssDatabase> database) {
   string authToken = channel.getAuthToken();
   auto decoded = jwt::decode(authToken);
   json claims;

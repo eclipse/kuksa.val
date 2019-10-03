@@ -32,9 +32,9 @@ using namespace jsoncons::jsonpath;
 using jsoncons::json;
 
 SubscriptionHandler::SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
-                                         WsServer* wserver,
-                                         Authenticator* authenticate,
-                                         AccessChecker* checkAcc) {
+                                         std::shared_ptr<IServer> wserver,
+                                         std::shared_ptr<IAuthenticator> authenticate,
+                                         std::shared_ptr<IAccessChecker> checkAcc) {
   logger = loggerUtil;
   server = wserver;
   validator = authenticate;
@@ -47,8 +47,9 @@ SubscriptionHandler::~SubscriptionHandler() {
 }
 
 uint32_t SubscriptionHandler::subscribe(WsChannel& channel,
-                                        VssDatabase* db,
-                                        uint32_t channelID, const string &path) {
+                                        std::shared_ptr<IVssDatabase> db,
+                                        uint32_t channelID,
+                                        const string &path) {
   // generate subscribe ID "randomly".
   uint32_t subId = rand() % 9999999;
   // embed connection ID into subID.
@@ -140,7 +141,7 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID,
   return 0;
 }
 
-WsServer* SubscriptionHandler::getServer() {
+std::shared_ptr<IServer> SubscriptionHandler::getServer() {
   return server;
 }
 

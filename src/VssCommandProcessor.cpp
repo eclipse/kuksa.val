@@ -27,6 +27,9 @@
 #include "AccessChecker.hpp"
 #include "SubscriptionHandler.hpp"
 #include "ILogger.hpp"
+#include "IVssDatabase.hpp"
+#include "IAuthenticator.hpp"
+#include "ISubscriptionHandler.hpp"
 
 #ifdef JSON_SIGNING_ON
 #include "SigningHandler.hpp"
@@ -114,21 +117,26 @@ string valueOutOfBoundsResponse(uint32_t request_id, const string action,
 
 VssCommandProcessor::VssCommandProcessor(
     std::shared_ptr<ILogger> loggerUtil,
-    VssDatabase *dbase,
-    Authenticator *vdator,
-    SubscriptionHandler *subhandler) {
+    std::shared_ptr<IVssDatabase> dbase,
+    std::shared_ptr<IAuthenticator> vdator,
+    std::shared_ptr<ISubscriptionHandler> subhandler) {
   logger = loggerUtil;
   database = dbase;
   tokenValidator = vdator;
   subHandler = subhandler;
-  accessValidator = new AccessChecker(tokenValidator);
+  // TODO: add accessValidator as dependency
+  accessValidator = std::make_shared<AccessChecker>(tokenValidator);
 #ifdef JSON_SIGNING_ON
-  signer = new SigningHandler();
+  // TODO: add signer as dependency
+  signer = std::make_shared<SigningHandler>();
 #endif
 }
 
 VssCommandProcessor::~VssCommandProcessor() {
-  delete accessValidator;
+  accessValidator.reset();
+#ifdef JSON_SIGNING_ON
+  signer.reset();
+#endif
 }
 
 string VssCommandProcessor::processGet(WsChannel &channel,

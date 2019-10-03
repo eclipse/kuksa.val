@@ -21,22 +21,23 @@
 
 #include "IVssCommandProcessor.hpp"
 
-class VssDatabase;
-class SubscriptionHandler;
-class Authenticator;
-class AccessChecker;
-class WsChannel;
+class IVssDatabase;
+class ISubscriptionHandler;
+class IAuthenticator;
+class IAccessChecker;
 class ILogger;
+class WsChannel;
+
 
 class VssCommandProcessor : public IVssCommandProcessor {
  private:
   std::shared_ptr<ILogger> logger;
-  VssDatabase* database = NULL;
-  SubscriptionHandler* subHandler = NULL;
-  Authenticator* tokenValidator = NULL;
-  AccessChecker* accessValidator = NULL;
+  std::shared_ptr<IVssDatabase> database;
+  std::shared_ptr<ISubscriptionHandler> subHandler;
+  std::shared_ptr<IAuthenticator> tokenValidator;
+  std::shared_ptr<IAccessChecker> accessValidator;
 #ifdef JSON_SIGNING_ON
-  SigningHandler* signer = NULL;
+  std::shared_ptr<SigningHandler> signer;
 #endif
 
   std::string processGet(WsChannel& channel, uint32_t request_id, std::string path);
@@ -54,9 +55,9 @@ class VssCommandProcessor : public IVssCommandProcessor {
 
  public:
   VssCommandProcessor(std::shared_ptr<ILogger> loggerUtil,
-                      VssDatabase* database,
-                      Authenticator* vdator,
-                      SubscriptionHandler* subhandler);
+                      std::shared_ptr<IVssDatabase> database,
+                      std::shared_ptr<IAuthenticator> vdator,
+                      std::shared_ptr<ISubscriptionHandler> subhandler);
   ~VssCommandProcessor();
 
   std::string processQuery(const std::string &req_json, WsChannel& channel);

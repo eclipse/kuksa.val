@@ -17,13 +17,15 @@
 #include <memory>
 #include <string>
 
+#include "IAuthenticator.hpp"
+
 using namespace std;
 
 class WsChannel;
-class VssDatabase;
+class IVssDatabase;
 class ILogger;
 
-class Authenticator {
+class Authenticator : public IAuthenticator {
  private:
   string pubkey = "secret";
   string algorithm = "RS256";
@@ -34,11 +36,12 @@ class Authenticator {
  public:
   Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algorithm);
 
-  int validate(WsChannel &channel, VssDatabase *database,
+  int validate(WsChannel &channel,
+               std::shared_ptr<IVssDatabase> dn,
                string authToken);
 
   void updatePubKey(string key);
   bool isStillValid(WsChannel &channel);
-  void resolvePermissions(WsChannel &channel, VssDatabase *database);
+  void resolvePermissions(WsChannel &channel, std::shared_ptr<IVssDatabase> database);
 };
 #endif

@@ -25,6 +25,13 @@
 #include "exception.hpp"
 
 #include "BasicLogger.hpp"
+#include "Authenticator.hpp"
+#include "AccessChecker.hpp"
+#include "SubscriptionHandler.hpp"
+#include "VssCommandProcessor.hpp"
+#include "VssDatabase.hpp"
+
+#include "WsServer.hpp"
 
 
 using namespace std;
@@ -281,11 +288,30 @@ int main(int argc, const char *argv[]) {
 #else
     logLevelsActive = static_cast<uint8_t>(LogLevel::INFO & LogLevel::WARNING & LogLevel::ERROR);
 #endif
-    std::shared_ptr<ILogger> logger = std::make_shared<BasicLogger>(logLevelsActive);
+    auto server = std::make_shared<WsServer>();
+    auto logger = std::make_shared<BasicLogger>(logLevelsActive);
+    auto tokenValidator = std::make_shared<Authenticator>(logger, "appstacle", "RS256");
+    auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
+    auto subHandler = std::make_shared<SubscriptionHandler>(logger, server, tokenValidator, accessCheck);
+    auto database = std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
+    auto cmdProcessor = std::make_shared<VssCommandProcessor>(logger, database, tokenValidator, subHandler);
 
-    WsServer server(logger, port, vss_filename, secure);
-    server.start();
+    if (server->Initialize(logger,
+                           cmdProcessor,
+                           secure,
+                           port))
+    {
+      database->initJsonTree(vss_filename);
+      server->start();
 
+      while (1) {
+        usleep(1000000);
+      };
+    }
+    else
+    {
+      cerr << "Failed to initialize server" << std::endl;
+    }
   } catch (const program_options::error &ex) {
     print_usage(argv[0], desc);
     cerr << ex.what() << std::endl;

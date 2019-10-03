@@ -30,6 +30,13 @@ class IVssDatabase {
                            const std::string &path,
                            jsoncons::json value) = 0;
     virtual jsoncons::json getSignal(WsChannel& channel, const std::string &path) = 0;
+
+    // TODO: temporary added while components are refactored
+    jsoncons::json data_tree;
+    jsoncons::json meta_tree;
+    virtual std::list<std::string> getPathForGet(const std::string &path, bool& isBranch) = 0;
+    virtual std::string getVSSSpecificPath(const std::string &path, bool& isBranch, jsoncons::json& tree) = 0;
+    virtual jsoncons::json getPathForSet(const std::string &path, jsoncons::json value) = 0;
 };
 
 #endif

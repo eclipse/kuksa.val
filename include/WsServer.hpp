@@ -15,34 +15,32 @@
 #ifndef __WSSERVER_H__
 #define __WSSERVER_H__
 
+#include <memory>
+
 #include "server_wss.hpp"
-#include "IWsServer.hpp"
+
+#include "IServer.hpp"
 
 
-class VssCommandProcessor;
-class VssCommandProcessor;
-class SubscriptionHandler;
-class Authenticator;
-class VssDatabase;
-class AccessChecker;
+class IVssCommandProcessor;
 class ILogger;
 
-class WsServer : public IWsServer {
+class WsServer : public IServer {
  private:
   SimpleWeb::SocketServer<SimpleWeb::WSS> *secureServer_;
   SimpleWeb::SocketServer<SimpleWeb::WS> *insecureServer_;
   std::shared_ptr<ILogger> logger;
   bool isSecure_;
-  std::string configFileName_;
+  bool isInitialized_;
 
  public:
-  VssCommandProcessor* cmdProcessor;
-  SubscriptionHandler* subHandler;
-  Authenticator* tokenValidator;
-  VssDatabase* database;
-  AccessChecker* accessCheck;
+  std::shared_ptr<IVssCommandProcessor> cmdProcessor;
 
-  WsServer(std::shared_ptr<ILogger> loggerUtil, int port, std::string configFileName, bool secure);
+  WsServer();
+  bool Initialize(std::shared_ptr<ILogger> loggerUtil,
+                  std::shared_ptr<IVssCommandProcessor> processor,
+                  bool secure,
+                  int port);
   ~WsServer();
   void startServer(const std::string &endpointName);
   void sendToConnection(uint32_t connID, const std::string &message);

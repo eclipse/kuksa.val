@@ -23,14 +23,12 @@
 
 #include "IVssDatabase.hpp"
 
-class SubscriptionHandler;
-class AccessChecker;
 class WsChannel;
+class IAccessChecker;
+class ISubscriptionHandler;
 class ILogger;
 
 class VssDatabase : public IVssDatabase {
-  friend class SubscriptionHandler;
-  friend class Authenticator;
 #ifdef UNIT_TEST
   friend class w3cunittest;
 #endif
@@ -38,21 +36,17 @@ class VssDatabase : public IVssDatabase {
  private:
   std::shared_ptr<ILogger> logger;
   std::mutex rwMutex;
-  jsoncons::json data_tree;
-  jsoncons::json meta_tree;
-  SubscriptionHandler* subHandler;
-  AccessChecker* accessValidator;
-  std::string getVSSSpecificPath(std::string path, bool& isBranch, jsoncons::json& tree);
+
+  std::shared_ptr<ISubscriptionHandler> subHandler;
+  std::shared_ptr<IAccessChecker> accessValidator;
   std::string getPathForMetadata(std::string path, bool& isBranch);
-  std::list<std::string> getPathForGet(std::string path, bool& isBranch);
-  jsoncons::json getPathForSet(std::string path, jsoncons::json value);
   std::string getReadablePath(std::string jsonpath);
   void checkSetPermission(WsChannel& channel, jsoncons::json valueJson);
 
  public:
   VssDatabase(std::shared_ptr<ILogger> loggerUtil,
-              SubscriptionHandler* subHandle,
-              AccessChecker* accValidator);
+              std::shared_ptr<ISubscriptionHandler> subHandle,
+              std::shared_ptr<IAccessChecker> accValidator);
   ~VssDatabase();
 
   void initJsonTree(const std::string &fileName);
@@ -61,5 +55,9 @@ class VssDatabase : public IVssDatabase {
   void setSignal(const std::string &path, jsoncons::json value);
   jsoncons::json getSignal(WsChannel& channel, const std::string &path);
 
+  std::list<std::string> getPathForGet(const std::string &path, bool& isBranch);
+  std::string getVSSSpecificPath(const std::string &path, bool& isBranch,
+                                 jsoncons::json& tree);
+  jsoncons::json getPathForSet(const std::string &path, jsoncons::json value);
 };
 #endif

@@ -25,6 +25,9 @@
 
 #include "visconf.hpp"
 #include "ISubscriptionHandler.hpp"
+#include "IAuthenticator.hpp"
+#include "IAccessChecker.hpp"
+#include "IServer.hpp"
 
 class AccessChecker;
 class Authenticator;
@@ -43,9 +46,9 @@ class SubscriptionHandler : public ISubscriptionHandler {
  private:
   std::shared_ptr<ILogger> logger;
   std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
-  WsServer* server;
-  Authenticator* validator;
-  AccessChecker* checkAccess;
+  std::shared_ptr<IServer> server;
+  std::shared_ptr<IAuthenticator> validator;
+  std::shared_ptr<IAccessChecker> checkAccess;
   std::mutex subMutex;
   std::thread subThread;
   bool threadRun;
@@ -53,18 +56,20 @@ class SubscriptionHandler : public ISubscriptionHandler {
 
  public:
   SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
-                      WsServer* wserver,
-                      Authenticator* authenticate,
-                      AccessChecker* checkAccess);
+                      std::shared_ptr<IServer> wserver,
+                      std::shared_ptr<IAuthenticator> authenticate,
+                      std::shared_ptr<IAccessChecker> checkAccess);
   ~SubscriptionHandler();
 
-  uint32_t subscribe(WsChannel& channel, VssDatabase* db,
-                     uint32_t channelID, const std::string &path);
+  uint32_t subscribe(WsChannel& channel,
+                     std::shared_ptr<IVssDatabase> db,
+                     uint32_t channelID,
+                     const std::string &path);
   int unsubscribe(uint32_t subscribeID);
   int unsubscribeAll(uint32_t connectionID);
   int updateByUUID(const std::string &signalUUID, const jsoncons::json &value);
   int updateByPath(const std::string &path, const jsoncons::json &value);
-  WsServer* getServer();
+  std::shared_ptr<IServer> getServer();
   int startThread();
   int stopThread();
   bool isThreadRunning() const;

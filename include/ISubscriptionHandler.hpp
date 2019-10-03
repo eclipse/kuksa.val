@@ -15,26 +15,28 @@
 #define __ISUBSCRIPTIONHANDLER_H__
 
 #include <string>
+#include <memory>
 #include <jsoncons/json.hpp>
 
 class VssDatabase;
 class WsChannel;
 class WsServer;
-class ILogger;
+class IVssDatabase;
+class IServer;
 
 class ISubscriptionHandler {
   public:
     virtual ~ISubscriptionHandler() {}
 
     virtual uint32_t subscribe(WsChannel& channel,
-                               VssDatabase* db,
+                               std::shared_ptr<IVssDatabase> db,
                                uint32_t channelID,
                                const std::string &path) = 0;
     virtual int unsubscribe(uint32_t subscribeID) = 0;
     virtual int unsubscribeAll(uint32_t connectionID) = 0;
     virtual int updateByUUID(const std::string &signalUUID, const jsoncons::json &value) = 0;
     virtual int updateByPath(const std::string &path, const jsoncons::json &value) = 0;
-    virtual WsServer* getServer() = 0;
+    virtual std::shared_ptr<IServer> getServer() = 0;
     virtual int startThread() = 0;
     virtual int stopThread() = 0;
     virtual bool isThreadRunning() const = 0;

@@ -20,7 +20,7 @@
 using namespace std;
 
 class WsChannel;
-class VssDatabase;
+class IVssDatabase;
 class ILogger;
 
 class IAuthenticator {
@@ -28,10 +28,11 @@ public:
   virtual ~IAuthenticator() {}
 
   virtual int validate(WsChannel &channel,
-                       VssDatabase *database,
+                       std::shared_ptr<IVssDatabase> database,
                        string authToken) = 0;
+  virtual void updatePubKey(string key) = 0;
   virtual bool isStillValid(WsChannel &channel) = 0;
-  virtual void resolvePermissions(WsChannel &channel, VssDatabase *database) = 0;
+  virtual void resolvePermissions(WsChannel &channel, std::shared_ptr<IVssDatabase> database) = 0;
 };
 
 #endif
