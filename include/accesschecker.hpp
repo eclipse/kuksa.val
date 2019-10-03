@@ -16,7 +16,7 @@
 
 #include <jsoncons/json.hpp>
 #include <string>
-#include "authenticator.hpp"
+#include "Authenticator.hpp"
 #include "wschannel.hpp"
 
 using namespace std;
@@ -25,10 +25,10 @@ using jsoncons::json;
 
 class accesschecker {
  private:
-  authenticator *tokenValidator;
+  Authenticator *tokenValidator;
 
  public:
-  accesschecker(authenticator *vdator);
+  accesschecker(Authenticator *vdator);
   bool checkReadAccess(wschannel &channel, string path);
   bool checkWriteAccess(wschannel &channel, string path);
   bool checkPathWriteAccess(wschannel &channel, json paths);

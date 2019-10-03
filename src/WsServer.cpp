@@ -15,7 +15,7 @@
 
 #include "ILogger.hpp"
 #include "accesschecker.hpp"
-#include "authenticator.hpp"
+#include "Authenticator.hpp"
 #include "subscriptionhandler.hpp"
 #include "visconf.hpp"
 #include "vsscommandprocessor.hpp"
@@ -58,7 +58,7 @@ WsServer::WsServer(std::shared_ptr<ILogger> loggerUtil, int port, string configF
     insecureServer_->config.port = port;
   }
 
-  tokenValidator = new authenticator(logger, "appstacle", "RS256");
+  tokenValidator = new Authenticator(logger, "appstacle", "RS256");
   accessCheck = new accesschecker(tokenValidator);
   subHandler = new subscriptionhandler(logger, this, tokenValidator, accessCheck);
   database = new vssdatabase(logger, subHandler, accessCheck);

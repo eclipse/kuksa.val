@@ -11,7 +11,7 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#include "authenticator.hpp"
+#include "Authenticator.hpp"
 #include "ILogger.hpp"
 #include <fstream>
 #include <iostream>
@@ -39,14 +39,14 @@ namespace {
 }
 
 
-void authenticator::updatePubKey(string key) {
+void Authenticator::updatePubKey(string key) {
    pubkey = key;
    if(pubkey == "")
       pubkey = getPublicKeyFromFile("jwt.pub.key");
 }
 
 // utility method to validate token.
-int authenticator::validateToken(wschannel& channel, string authToken) {
+int Authenticator::validateToken(wschannel& channel, string authToken) {
   auto decoded = jwt::decode(authToken);
   json claims;
   (void) channel;
@@ -60,7 +60,7 @@ int authenticator::validateToken(wschannel& channel, string authToken) {
   try {
     verifier.verify(decoded);
   } catch (const std::runtime_error& e) {
-    logger->Log(LogLevel::ERROR, "authenticator::validate: " + string(e.what())
+    logger->Log(LogLevel::ERROR, "Authenticator::validate: " + string(e.what())
          + " Exception occured while authentication. Token is not valid!");
     return -1;
   }
@@ -71,7 +71,7 @@ int authenticator::validateToken(wschannel& channel, string authToken) {
   return ttl;
 }
 
-authenticator::authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algo) {
+Authenticator::Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algo) {
   logger = loggerUtil;
   algorithm = algo;
   pubkey = secretkey;
@@ -79,7 +79,7 @@ authenticator::authenticator(std::shared_ptr<ILogger> loggerUtil, string secretk
 
 // validates the token against expiry date/time. should be extended to check
 // some other claims.
-int authenticator::validate(wschannel& channel, vssdatabase* db,
+int Authenticator::validate(wschannel& channel, vssdatabase* db,
                             string authToken) {
   int ttl = validateToken(channel, authToken);
   if (ttl > 0) {
@@ -92,7 +92,7 @@ int authenticator::validate(wschannel& channel, vssdatabase* db,
 // Checks if the token is still valid for the requests from the channel(client).
 // Internally check this before publishing messages for previously subscribed
 // signals.
-bool authenticator::isStillValid(wschannel& channel) {
+bool Authenticator::isStillValid(wschannel& channel) {
   string token = channel.getAuthToken();
   int ret = validateToken(channel, token);
 
@@ -107,7 +107,7 @@ bool authenticator::isStillValid(wschannel& channel) {
 // **Do this only once for authenticate request**
 // resolves the permission in the JWT token and store the absolute path to the
 // signals in permissions JSON in wschannel.
-void authenticator::resolvePermissions(wschannel& channel,
+void Authenticator::resolvePermissions(wschannel& channel,
                                        vssdatabase* database) {
   string authToken = channel.getAuthToken();
   auto decoded = jwt::decode(authToken);

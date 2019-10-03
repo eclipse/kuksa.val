@@ -21,7 +21,7 @@
 
 class vssdatabase;
 class subscriptionhandler;
-class authenticator;
+class Authenticator;
 class accesschecker;
 class wschannel;
 class ILogger;
@@ -31,7 +31,7 @@ class vsscommandprocessor {
   std::shared_ptr<ILogger> logger;
   vssdatabase* database = NULL;
   subscriptionhandler* subHandler = NULL;
-  authenticator* tokenValidator = NULL;
+  Authenticator* tokenValidator = NULL;
   accesschecker* accessValidator = NULL;
 #ifdef JSON_SIGNING_ON
   signing* signer = NULL;
@@ -53,7 +53,7 @@ class vsscommandprocessor {
  public:
   vsscommandprocessor(std::shared_ptr<ILogger> loggerUtil,
                       vssdatabase* database,
-                      authenticator* vdator,
+                      Authenticator* vdator,
                       subscriptionhandler* subhandler);
   ~vsscommandprocessor();
   std::string processQuery(std::string req_json, wschannel& channel);

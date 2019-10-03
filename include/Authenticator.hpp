@@ -23,7 +23,7 @@ class wschannel;
 class vssdatabase;
 class ILogger;
 
-class authenticator {
+class Authenticator {
  private:
   string pubkey = "secret";
   string algorithm = "RS256";
@@ -32,7 +32,7 @@ class authenticator {
   int validateToken(wschannel& channel, string authToken);
 
  public:
-  authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algorithm);
+  Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algorithm);
   int validate(wschannel &channel, vssdatabase *database,
                string authToken);
   

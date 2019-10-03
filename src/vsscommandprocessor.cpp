@@ -115,7 +115,7 @@ string valueOutOfBoundsResponse(uint32_t request_id, const string action,
 vsscommandprocessor::vsscommandprocessor(
     std::shared_ptr<ILogger> loggerUtil,
     vssdatabase *dbase,
-    authenticator *vdator,
+    Authenticator *vdator,
     subscriptionhandler *subhandler) {
   logger = loggerUtil;
   database = dbase;

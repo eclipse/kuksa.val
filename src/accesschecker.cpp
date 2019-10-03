@@ -16,7 +16,7 @@
 
 using namespace std;
 
-accesschecker::accesschecker(authenticator *vdator) {
+accesschecker::accesschecker(Authenticator *vdator) {
   tokenValidator = vdator;
 }
 

@@ -25,7 +25,7 @@
 #include <jsoncons/json.hpp>
 
 class accesschecker;
-class authenticator;
+class Authenticator;
 class vssdatabase;
 class wschannel;
 class WsServer;
@@ -42,7 +42,7 @@ class subscriptionhandler {
   std::shared_ptr<ILogger> logger;
   std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
   WsServer* server;
-  authenticator* validator;
+  Authenticator* validator;
   accesschecker* checkAccess;
   std::mutex subMutex;
   std::thread subThread;
@@ -52,7 +52,7 @@ class subscriptionhandler {
  public:
   subscriptionhandler(std::shared_ptr<ILogger> loggerUtil,
                       WsServer* wserver,
-                      authenticator* authenticate,
+                      Authenticator* authenticate,
                       accesschecker* checkAccess);
   ~subscriptionhandler();
 

@@ -28,7 +28,7 @@ class ILogger;
 
 class vssdatabase {
   friend class subscriptionhandler;
-  friend class authenticator;
+  friend class Authenticator;
 #ifdef UNIT_TEST
   friend class w3cunittest;
 #endif

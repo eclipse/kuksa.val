@@ -21,7 +21,7 @@
 class vsscommandprocessor;
 class vsscommandprocessor;
 class subscriptionhandler;
-class authenticator;
+class Authenticator;
 class vssdatabase;
 class accesschecker;
 class ILogger;
@@ -37,7 +37,7 @@ class WsServer {
  public:
   vsscommandprocessor* cmdProcessor;
   subscriptionhandler* subHandler;
-  authenticator* tokenValidator;
+  Authenticator* tokenValidator;
   vssdatabase* database;
   accesschecker* accessCheck;
 

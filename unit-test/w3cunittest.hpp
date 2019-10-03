@@ -22,7 +22,7 @@
 // #include "vssdatabase.hpp"
 // #include "WsServer.hpp"
 // #include "subscriptionhandler.hpp"
-// #include "authenticator.hpp"
+// #include "Authenticator.hpp"
 // #include "accesschecker.hpp"
 // #include "signing.hpp"
 
