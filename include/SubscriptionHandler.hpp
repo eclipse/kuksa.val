@@ -27,7 +27,7 @@
 class AccessChecker;
 class Authenticator;
 class VssDatabase;
-class wschannel;
+class WsChannel;
 class WsServer;
 class ILogger;
 
@@ -56,7 +56,7 @@ class SubscriptionHandler {
                       AccessChecker* checkAccess);
   ~SubscriptionHandler();
 
-  uint32_t subscribe(wschannel& channel, VssDatabase* db,
+  uint32_t subscribe(WsChannel& channel, VssDatabase* db,
                      uint32_t channelID, std::string path);
   int unsubscribe(uint32_t subscribeID);
   int unsubscribeAll(uint32_t connectionID);

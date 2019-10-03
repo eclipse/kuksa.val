@@ -46,7 +46,7 @@ SubscriptionHandler::~SubscriptionHandler() {
   stopThread();
 }
 
-uint32_t SubscriptionHandler::subscribe(wschannel& channel,
+uint32_t SubscriptionHandler::subscribe(WsChannel& channel,
                                         VssDatabase* db,
                                         uint32_t channelID, string path) {
   // generate subscribe ID "randomly".

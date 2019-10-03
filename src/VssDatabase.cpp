@@ -483,7 +483,7 @@ jsoncons::json VssDatabase::getPathForSet(string path, jsoncons::json values) {
   return setValues;
 }
 
-void VssDatabase::checkSetPermission(wschannel& channel, jsoncons::json valueJson) {
+void VssDatabase::checkSetPermission(WsChannel& channel, jsoncons::json valueJson) {
     // check if all the paths have write access.
     bool haveAccess = accessValidator->checkPathWriteAccess(channel, valueJson);
     if (!haveAccess) {
@@ -494,7 +494,7 @@ void VssDatabase::checkSetPermission(wschannel& channel, jsoncons::json valueJso
 }
 
 // Method for setting values to signals.
-void VssDatabase::setSignal(wschannel& channel, string path,
+void VssDatabase::setSignal(WsChannel& channel, string path,
                             jsoncons::json valueJson) {
   if (path == "") {
     string msg = "Path is empty while setting";
@@ -621,7 +621,7 @@ void VssDatabase::setSignal(string path,
 }
 
 // Returns response JSON for get request.
-jsoncons::json VssDatabase::getSignal(class wschannel& channel, string path) {
+jsoncons::json VssDatabase::getSignal(class WsChannel& channel, string path) {
   bool isBranch = false;
 
   rwMutex.lock();

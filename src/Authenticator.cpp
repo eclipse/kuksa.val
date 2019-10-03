@@ -21,7 +21,7 @@
 #include <jwt-cpp/jwt.h>
 #include <jsoncons/json.hpp>
 #include "VssDatabase.hpp"
-#include "wschannel.hpp"
+#include "WsChannel.hpp"
 
 using namespace std;
 
@@ -38,7 +38,6 @@ namespace {
   }
 }
 
-
 void Authenticator::updatePubKey(string key) {
    pubkey = key;
    if(pubkey == "")
@@ -46,7 +45,7 @@ void Authenticator::updatePubKey(string key) {
 }
 
 // utility method to validate token.
-int Authenticator::validateToken(wschannel& channel, string authToken) {
+int Authenticator::validateToken(WsChannel& channel, string authToken) {
   auto decoded = jwt::decode(authToken);
   json claims;
   (void) channel;
@@ -79,7 +78,7 @@ Authenticator::Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretk
 
 // validates the token against expiry date/time. should be extended to check
 // some other claims.
-int Authenticator::validate(wschannel& channel, VssDatabase* db,
+int Authenticator::validate(WsChannel& channel, VssDatabase* db,
                             string authToken) {
   int ttl = validateToken(channel, authToken);
   if (ttl > 0) {
@@ -92,7 +91,7 @@ int Authenticator::validate(wschannel& channel, VssDatabase* db,
 // Checks if the token is still valid for the requests from the channel(client).
 // Internally check this before publishing messages for previously subscribed
 // signals.
-bool Authenticator::isStillValid(wschannel& channel) {
+bool Authenticator::isStillValid(WsChannel& channel) {
   string token = channel.getAuthToken();
   int ret = validateToken(channel, token);
 
@@ -106,8 +105,8 @@ bool Authenticator::isStillValid(wschannel& channel) {
 
 // **Do this only once for authenticate request**
 // resolves the permission in the JWT token and store the absolute path to the
-// signals in permissions JSON in wschannel.
-void Authenticator::resolvePermissions(wschannel& channel,
+// signals in permissions JSON in WsChannel.
+void Authenticator::resolvePermissions(WsChannel& channel,
                                        VssDatabase* database) {
   string authToken = channel.getAuthToken();
   auto decoded = jwt::decode(authToken);

@@ -23,7 +23,7 @@
 
 class SubscriptionHandler;
 class AccessChecker;
-class wschannel;
+class WsChannel;
 class ILogger;
 
 class VssDatabase {
@@ -45,7 +45,7 @@ class VssDatabase {
   std::list<std::string> getPathForGet(std::string path, bool& isBranch);
   jsoncons::json getPathForSet(std::string path, jsoncons::json value);
   std::string getReadablePath(std::string jsonpath);
-  void checkSetPermission(wschannel& channel, jsoncons::json valueJson);
+  void checkSetPermission(WsChannel& channel, jsoncons::json valueJson);
 
  public:
   VssDatabase(std::shared_ptr<ILogger> loggerUtil,
@@ -54,8 +54,9 @@ class VssDatabase {
   ~VssDatabase();
   void initJsonTree(std::string fileName);
   jsoncons::json getMetaData(std::string path);
-  void setSignal(wschannel& channel, std::string path, jsoncons::json value);
+  void setSignal(WsChannel& channel, std::string path, jsoncons::json value);
   void setSignal(std::string path, jsoncons::json value);
-  jsoncons::json getSignal(wschannel& channel, std::string path);
+  jsoncons::json getSignal(WsChannel& channel, std::string path);
+
 };
 #endif

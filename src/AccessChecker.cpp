@@ -20,8 +20,8 @@ AccessChecker::AccessChecker(Authenticator *vdator) {
   tokenValidator = vdator;
 }
 
-// check the permissions json in wschannel if path has read access
-bool AccessChecker::checkReadAccess(wschannel &channel, string path) {
+// check the permissions json in WsChannel if path has read access
+bool AccessChecker::checkReadAccess(WsChannel &channel, string path) {
   json permissions = channel.getPermissions();
   string perm = permissions.get_with_default(path, "");
 
@@ -31,8 +31,8 @@ bool AccessChecker::checkReadAccess(wschannel &channel, string path) {
   return false;
 }
 
-// check the permissions json in wschannel if path has write access
-bool AccessChecker::checkWriteAccess(wschannel &channel, string path) {
+// check the permissions json in WsChannel if path has write access
+bool AccessChecker::checkWriteAccess(WsChannel &channel, string path) {
   json permissions = channel.getPermissions();
   string perm = permissions.get_with_default(path, "");
 
@@ -44,7 +44,7 @@ bool AccessChecker::checkWriteAccess(wschannel &channel, string path) {
 
 // Checks if all the paths have write access.If even 1 path in the list does not
 // have write access, this method returns false.
-bool AccessChecker::checkPathWriteAccess(wschannel &channel, json paths) {
+bool AccessChecker::checkPathWriteAccess(WsChannel &channel, json paths) {
   for (size_t i = 0; i < paths.size(); i++) {
     json item = paths[i];
     string jPath = item["path"].as<string>();

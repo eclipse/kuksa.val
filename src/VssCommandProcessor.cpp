@@ -131,7 +131,7 @@ VssCommandProcessor::~VssCommandProcessor() {
   delete accessValidator;
 }
 
-string VssCommandProcessor::processGet(wschannel &channel,
+string VssCommandProcessor::processGet(WsChannel &channel,
                                        uint32_t request_id, string path) {
   logger->Log(LogLevel::VERBOSE, "GET :: path received from client = " + path);
   jsoncons::json res;
@@ -153,7 +153,7 @@ string VssCommandProcessor::processGet(wschannel &channel,
   }
 }
 
-string VssCommandProcessor::processSet(wschannel &channel,
+string VssCommandProcessor::processSet(WsChannel &channel,
                                        uint32_t request_id, string path,
                                        jsoncons::json value) {
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processSet: path received from client" + path);
@@ -199,7 +199,7 @@ string VssCommandProcessor::processSet(wschannel &channel,
   return ss.str();
 }
 
-string VssCommandProcessor::processSubscribe(wschannel &channel,
+string VssCommandProcessor::processSubscribe(WsChannel &channel,
                                              uint32_t request_id, string path,
                                              uint32_t connectionID) {
   logger->Log(LogLevel::VERBOSE, string("VssCommandProcessor::processSubscribe: path received from client ")
@@ -300,8 +300,8 @@ string VssCommandProcessor::processGetMetaData(uint32_t request_id,
   return ss.str();
 }
 
-// Talks to the permission managent daemon and processes the token received.
-string VssCommandProcessor::processAuthorizeWithPermManager(wschannel &channel,
+// Talks to the permission management daemon and processes the token received.
+string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
                                                             uint32_t request_id,
                                                             string client, string clientSecret) {
 
@@ -366,7 +366,7 @@ string VssCommandProcessor::processAuthorizeWithPermManager(wschannel &channel,
   }
 }
 
-string VssCommandProcessor::processAuthorize(wschannel &channel,
+string VssCommandProcessor::processAuthorize(WsChannel &channel,
                                              uint32_t request_id,
                                              string token) {
   tokenValidator->updatePubKey("");
@@ -402,7 +402,7 @@ string VssCommandProcessor::processAuthorize(wschannel &channel,
 }
 
 string VssCommandProcessor::processQuery(string req_json,
-                                         wschannel &channel) {
+                                         WsChannel &channel) {
   jsoncons::json root;
   string response;
   try {

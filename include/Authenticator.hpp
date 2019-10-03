@@ -19,7 +19,7 @@
 
 using namespace std;
 
-class wschannel;
+class WsChannel;
 class VssDatabase;
 class ILogger;
 
@@ -29,15 +29,15 @@ class Authenticator {
   string algorithm = "RS256";
   std::shared_ptr<ILogger> logger;
 
-  int validateToken(wschannel& channel, string authToken);
+  int validateToken(WsChannel& channel, string authToken);
 
  public:
   Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algorithm);
-  int validate(wschannel &channel, VssDatabase *database,
+  int validate(WsChannel &channel, VssDatabase *database,
                string authToken);
-  
+
   void updatePubKey(string key);
-  bool isStillValid(wschannel &channel);
-  void resolvePermissions(wschannel &channel, VssDatabase *database);
+  bool isStillValid(WsChannel &channel);
+  void resolvePermissions(WsChannel &channel, VssDatabase *database);
 };
 #endif

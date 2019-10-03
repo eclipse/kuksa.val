@@ -23,7 +23,7 @@ class VssDatabase;
 class SubscriptionHandler;
 class Authenticator;
 class AccessChecker;
-class wschannel;
+class WsChannel;
 class ILogger;
 
 class VssCommandProcessor {
@@ -37,16 +37,16 @@ class VssCommandProcessor {
   SigningHandler* signer = NULL;
 #endif
 
-  std::string processGet(wschannel& channel, uint32_t request_id, std::string path);
-  std::string processSet(wschannel& channel, uint32_t request_id, std::string path,
+  std::string processGet(WsChannel& channel, uint32_t request_id, std::string path);
+  std::string processSet(WsChannel& channel, uint32_t request_id, std::string path,
                          jsoncons::json value);
-  std::string processSubscribe(wschannel& channel, uint32_t request_id,
+  std::string processSubscribe(WsChannel& channel, uint32_t request_id,
                           std::string path, uint32_t connectionID);
   std::string processUnsubscribe(uint32_t request_id, uint32_t subscribeID);
   std::string processGetMetaData(uint32_t request_id, std::string path);
-  std::string processAuthorize(wschannel& channel, uint32_t request_id,
+  std::string processAuthorize(WsChannel& channel, uint32_t request_id,
                           std::string token);
-  std::string processAuthorizeWithPermManager(wschannel &channel, uint32_t request_id,
+  std::string processAuthorizeWithPermManager(WsChannel &channel, uint32_t request_id,
                                  std::string client, std::string clientSecret);
   
 
@@ -57,7 +57,7 @@ class VssCommandProcessor {
                       SubscriptionHandler* subhandler);
   ~VssCommandProcessor();
 
-  std::string processQuery(std::string req_json, wschannel& channel);
+  std::string processQuery(std::string req_json, WsChannel& channel);
 };
 
 #endif

@@ -22,7 +22,7 @@ using namespace std;
 using namespace jsoncons;
 using jsoncons::json;
 
-class wschannel {
+class WsChannel {
  private:
   uint32_t connectionID;
   bool authorized = false;
