@@ -23,7 +23,7 @@
 #include "exception.hpp"
 #include "visconf.hpp"
 #include "vssdatabase.hpp"
-#include "wsserver.hpp"
+#include "WsServer.hpp"
 #include "ILogger.hpp"
 
 using namespace std;
@@ -32,7 +32,7 @@ using namespace jsoncons::jsonpath;
 // using jsoncons::jsoncons::jsoncons::json;
 
 subscriptionhandler::subscriptionhandler(std::shared_ptr<ILogger> loggerUtil,
-                                         wsserver* wserver,
+                                         WsServer* wserver,
                                          authenticator* authenticate,
                                          accesschecker* checkAcc) {
   logger = loggerUtil;
@@ -139,7 +139,7 @@ int subscriptionhandler::updateByUUID(string UUID, jsoncons::json value) {
   return 0;
 }
 
-wsserver* subscriptionhandler::getServer() {
+WsServer* subscriptionhandler::getServer() {
   return server;
 }
 

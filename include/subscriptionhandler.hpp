@@ -28,7 +28,7 @@ class accesschecker;
 class authenticator;
 class vssdatabase;
 class wschannel;
-class wsserver;
+class WsServer;
 class ILogger;
 
 // Subscription ID: Client ID
@@ -41,7 +41,7 @@ class subscriptionhandler {
  private:
   std::shared_ptr<ILogger> logger;
   std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
-  wsserver* server;
+  WsServer* server;
   authenticator* validator;
   accesschecker* checkAccess;
   std::mutex subMutex;
@@ -51,7 +51,7 @@ class subscriptionhandler {
 
  public:
   subscriptionhandler(std::shared_ptr<ILogger> loggerUtil,
-                      wsserver* wserver,
+                      WsServer* wserver,
                       authenticator* authenticate,
                       accesschecker* checkAccess);
   ~subscriptionhandler();
@@ -62,7 +62,7 @@ class subscriptionhandler {
   int unsubscribeAll(uint32_t connectionID);
   int updateByUUID(std::string signalUUID, jsoncons::json value);
   int updateByPath(std::string path, jsoncons::json value);
-  wsserver* getServer();
+  WsServer* getServer();
   int startThread();
   int stopThread();
   bool isThreadRunning();

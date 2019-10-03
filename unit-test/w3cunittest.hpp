@@ -20,7 +20,7 @@
 #include <jsoncons/json.hpp>
 
 // #include "vssdatabase.hpp"
-// #include "wsserver.hpp"
+// #include "WsServer.hpp"
 // #include "subscriptionhandler.hpp"
 // #include "authenticator.hpp"
 // #include "accesschecker.hpp"

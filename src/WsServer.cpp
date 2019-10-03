@@ -11,7 +11,7 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#include "wsserver.hpp"
+#include "WsServer.hpp"
 
 #include "ILogger.hpp"
 #include "accesschecker.hpp"
@@ -25,11 +25,11 @@
 
 using namespace std;
 
-using WssServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
-using WsServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
+using SecuredServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
+using SimpleServer = SimpleWeb::SocketServer<SimpleWeb::WS>;
 
 uint16_t connections[MAX_CLIENTS + 1] = {0};
-wsserver *wserver;
+WsServer *wserver;
 
 uint32_t generateConnID() {
   uint32_t retValueValue = 0;
@@ -43,7 +43,7 @@ uint32_t generateConnID() {
   return retValueValue;
 }
 
-wsserver::wsserver(std::shared_ptr<ILogger> loggerUtil, int port, string configFileName, bool secure) {
+WsServer::WsServer(std::shared_ptr<ILogger> loggerUtil, int port, string configFileName, bool secure) {
   logger = loggerUtil;
   isSecure_ = secure;
   secureServer_ = nullptr;
@@ -51,10 +51,10 @@ wsserver::wsserver(std::shared_ptr<ILogger> loggerUtil, int port, string configF
   configFileName_ = configFileName;
 
   if (isSecure_) {
-    secureServer_ = new WssServer("Server.pem", "Server.key");
+    secureServer_ = new SecuredServer("Server.pem", "Server.key");
     secureServer_->config.port = port;
   } else {
-    insecureServer_ = new WsServer();
+    insecureServer_ = new SimpleServer();
     insecureServer_->config.port = port;
   }
 
@@ -66,7 +66,7 @@ wsserver::wsserver(std::shared_ptr<ILogger> loggerUtil, int port, string configF
   wserver = this;
 }
 
-wsserver::~wsserver() {
+WsServer::~WsServer() {
   delete cmdProcessor;
   delete database;
   delete subHandler;
@@ -81,7 +81,7 @@ wsserver::~wsserver() {
 }
 
 static void onMessage(std::weak_ptr<ILogger> wLogger,
-                      shared_ptr<WssServer::Connection> connection,
+                      shared_ptr<SecuredServer::Connection> connection,
                       string message) {
   auto logger = wLogger.lock();
   if (logger) {
@@ -92,13 +92,13 @@ static void onMessage(std::weak_ptr<ILogger> wLogger,
   string response =
       wserver->cmdProcessor->processQuery(message, connection->channel);
 
-  auto send_stream = make_shared<WssServer::SendStream>();
+  auto send_stream = make_shared<SecuredServer::SendStream>();
   *send_stream << response;
   connection->send(send_stream);
 }
 
 static void onMessage(std::weak_ptr<ILogger> wLogger,
-                      shared_ptr<WsServer::Connection> connection,
+                      shared_ptr<SimpleServer::Connection> connection,
                       string message) {
   auto logger = wLogger.lock();
   if (logger) {
@@ -109,12 +109,12 @@ static void onMessage(std::weak_ptr<ILogger> wLogger,
   string response =
       wserver->cmdProcessor->processQuery(message, connection->channel);
 
-  auto send_stream = make_shared<WsServer::SendStream>();
+  auto send_stream = make_shared<SimpleServer::SendStream>();
   *send_stream << response;
   connection->send(send_stream);
 }
 
-void wsserver::startServer(string endpointName) {
+void WsServer::startServer(string endpointName) {
   (void) endpointName;
 
   auto wLogger = std::weak_ptr<ILogger>(logger);
@@ -122,19 +122,19 @@ void wsserver::startServer(string endpointName) {
   if (isSecure_) {
     auto &vssEndpoint = secureServer_->endpoint["^/vss/?$"];
 
-    vssEndpoint.on_message = [wLogger](shared_ptr<WssServer::Connection> connection,
-                                shared_ptr<WssServer::Message> message) {
+    vssEndpoint.on_message = [wLogger](shared_ptr<SecuredServer::Connection> connection,
+                                shared_ptr<SecuredServer::Message> message) {
       auto message_str = message->string();
       onMessage(wLogger, connection, message_str);
 
     };
 
-    vssEndpoint.on_open = [wLogger](shared_ptr<WssServer::Connection> connection) {
+    vssEndpoint.on_open = [wLogger](shared_ptr<SecuredServer::Connection> connection) {
       connection->channel.setConnID(generateConnID());
 
       auto logger = wLogger.lock();
       if (logger) {
-        logger->Log(LogLevel::INFO, std::string("wsserver: Opened connection "
+        logger->Log(LogLevel::INFO, std::string("WsServer: Opened connection "
           + connection->remote_endpoint_address()
           + "conn ID "
           + to_string(connection->channel.getConnID())));
@@ -142,7 +142,7 @@ void wsserver::startServer(string endpointName) {
     };
 
     // See RFC 6455 7.4.1. for status codes
-    vssEndpoint.on_close = [wLogger](shared_ptr<WssServer::Connection> connection,
+    vssEndpoint.on_close = [wLogger](shared_ptr<SecuredServer::Connection> connection,
                               int status, const string & /*reason*/) {
       uint32_t clientID = connection->channel.getConnID() / CLIENT_MASK;
       connections[clientID] = 0;
@@ -150,7 +150,7 @@ void wsserver::startServer(string endpointName) {
 
       auto logger = wLogger.lock();
       if (logger) {
-        logger->Log(LogLevel::INFO, "wsserver: Closed connection "
+        logger->Log(LogLevel::INFO, "WsServer: Closed connection "
           + connection->remote_endpoint_address()
           + " with status code "
           + to_string(status));
@@ -160,14 +160,14 @@ void wsserver::startServer(string endpointName) {
     // See
     // http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/reference.html,
     // Error Codes for error code meanings
-    vssEndpoint.on_error = [wLogger](shared_ptr<WssServer::Connection> connection,
+    vssEndpoint.on_error = [wLogger](shared_ptr<SecuredServer::Connection> connection,
                                      const SimpleWeb::error_code &ec) {
       uint32_t clientID = connection->channel.getConnID() / CLIENT_MASK;
       connections[clientID] = 0;
       // removeAllSubscriptions(clientID);
       auto logger = wLogger.lock();
       if (logger) {
-        logger->Log(LogLevel::ERROR, "wsserver: Connection "
+        logger->Log(LogLevel::ERROR, "WsServer: Connection "
           + connection->remote_endpoint_address() + " with con ID "
           + to_string(connection->channel.getConnID()) + ". "
           + "Error: " + to_string(ec.value()) + ", error message: " + ec.message());
@@ -179,33 +179,33 @@ void wsserver::startServer(string endpointName) {
   } else {
     auto &vssEndpoint = insecureServer_->endpoint["^/vss/?$"];
 
-    vssEndpoint.on_message = [wLogger](shared_ptr<WsServer::Connection> connection,
-                                       shared_ptr<WsServer::Message> message) {
+    vssEndpoint.on_message = [wLogger](shared_ptr<SimpleServer::Connection> connection,
+                                       shared_ptr<SimpleServer::Message> message) {
       auto message_str = message->string();
       onMessage(wLogger, connection, message_str);
 
     };
 
-    vssEndpoint.on_open = [wLogger](shared_ptr<WsServer::Connection> connection) {
+    vssEndpoint.on_open = [wLogger](shared_ptr<SimpleServer::Connection> connection) {
       connection->channel.setConnID(generateConnID());
 
       auto logger = wLogger.lock();
       if (logger) {
-        logger->Log(LogLevel::VERBOSE, "wsserver: Opened connection "
+        logger->Log(LogLevel::VERBOSE, "WsServer: Opened connection "
            + connection->remote_endpoint_address() + "conn ID "
            + to_string(connection->channel.getConnID()));
       }
     };
 
     // See RFC 6455 7.4.1. for status codes
-    vssEndpoint.on_close = [wLogger](shared_ptr<WsServer::Connection> connection,
+    vssEndpoint.on_close = [wLogger](shared_ptr<SimpleServer::Connection> connection,
                                      int status, const string & /*reason*/) {
       uint32_t clientID = connection->channel.getConnID() / CLIENT_MASK;
       connections[clientID] = 0;
       // removeAllSubscriptions(clientID);
       auto logger = wLogger.lock();
       if (logger) {
-        logger->Log(LogLevel::INFO, "wsserver: Closed connection "
+        logger->Log(LogLevel::INFO, "WsServer: Closed connection "
            + connection->remote_endpoint_address() + " with status code "
            + to_string(status));
       }
@@ -214,14 +214,14 @@ void wsserver::startServer(string endpointName) {
     // See
     // http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/reference.html,
     // Error Codes for error code meanings
-    vssEndpoint.on_error = [wLogger](shared_ptr<WsServer::Connection> connection,
+    vssEndpoint.on_error = [wLogger](shared_ptr<SimpleServer::Connection> connection,
                                      const SimpleWeb::error_code &ec) {
       uint32_t clientID = connection->channel.getConnID() / CLIENT_MASK;
       connections[clientID] = 0;
       // removeAllSubscriptions(clientID);
       auto logger = wLogger.lock();
       if (logger) {
-        logger->Log(LogLevel::ERROR, "wsserver: Connection "
+        logger->Log(LogLevel::ERROR, "WsServer: Connection "
            + connection->remote_endpoint_address() + " with con ID "
            + to_string(connection->channel.getConnID()) + ". "
            + "Error: " + to_string(ec.value()) + ", error message: " + ec.message());
@@ -233,9 +233,9 @@ void wsserver::startServer(string endpointName) {
   }
 }
 
-void wsserver::sendToConnection(uint32_t connectionID, string message) {
+void WsServer::sendToConnection(uint32_t connectionID, string message) {
   if (isSecure_) {
-    auto send_stream = make_shared<WssServer::SendStream>();
+    auto send_stream = make_shared<SecuredServer::SendStream>();
     *send_stream << message;
     for (auto &a_connection : secureServer_->get_connections()) {
       if (a_connection->channel.getConnID() == connectionID) {
@@ -244,7 +244,7 @@ void wsserver::sendToConnection(uint32_t connectionID, string message) {
       }
     }
   } else {
-    auto send_stream = make_shared<WsServer::SendStream>();
+    auto send_stream = make_shared<SimpleServer::SendStream>();
     *send_stream << message;
     for (auto &a_connection : insecureServer_->get_connections()) {
       if (a_connection->channel.getConnID() == connectionID) {
@@ -264,7 +264,7 @@ void *startWSServer(void *arg) {
   return NULL;
 }
 
-vssdatabase* wsserver::start() {
+void WsServer::start() {
   this->database->initJsonTree(configFileName_);
   pthread_t startWSServer_thread;
 
@@ -272,5 +272,4 @@ vssdatabase* wsserver::start() {
   if (pthread_create(&startWSServer_thread, NULL, &startWSServer, NULL)) {
     logger->Log(LogLevel::ERROR, "main: Error creating websocket server run thread");
   }
-  return this->database;
 }

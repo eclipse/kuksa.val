@@ -28,7 +28,7 @@
 #include "subscriptionhandler.hpp"
 #include "vssdatabase.hpp"
 #include "vsscommandprocessor.hpp"
-#include "wsserver.hpp"
+#include "WsServer.hpp"
 #include "ILogger.hpp"
 #include "BasicLogger.hpp"
 
@@ -62,7 +62,7 @@ namespace bt = boost::unit_test;
 #define PORT 8090
 
 std::shared_ptr<ILogger> logger;
-wsserver* webSocket;
+WsServer* webSocket;
 subscriptionhandler* subhandler;
 authenticator* authhandler;
 accesschecker* accesshandler;
@@ -74,7 +74,7 @@ w3cunittest unittestObj(false);
 
 w3cunittest::w3cunittest(bool secure) {
   logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::ALL));
-  webSocket = new wsserver(logger, PORT, "vss_rel_2.0.json", secure);
+  webSocket = new WsServer(logger, PORT, "vss_rel_2.0.json", secure);
   authhandler = new authenticator(logger, "","");
   accesshandler = new accesschecker(authhandler);
   subhandler = new subscriptionhandler(logger, webSocket, authhandler, accesshandler);

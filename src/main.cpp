@@ -15,11 +15,12 @@
 #include <gio/gio.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 #include <boost/program_options.hpp>
 #include <jsoncons/json.hpp>
 #include <jsoncons_ext/jsonpath/json_query.hpp>
 
-#include "wsserver.hpp"
+#include "WsServer.hpp"
 #include "vssdatabase.hpp"
 #include "exception.hpp"
 
@@ -282,7 +283,7 @@ int main(int argc, const char *argv[]) {
 #endif
     std::shared_ptr<ILogger> logger = std::make_shared<BasicLogger>(logLevelsActive);
 
-    wsserver server(logger, port, vss_filename, secure);
+    WsServer server(logger, port, vss_filename, secure);
     server.start();
 
   } catch (const program_options::error &ex) {

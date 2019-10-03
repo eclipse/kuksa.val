@@ -26,7 +26,7 @@ class vssdatabase;
 class accesschecker;
 class ILogger;
 
-class wsserver {
+class WsServer {
  private:
   SimpleWeb::SocketServer<SimpleWeb::WSS> *secureServer_;
   SimpleWeb::SocketServer<SimpleWeb::WS> *insecureServer_;
@@ -41,10 +41,10 @@ class wsserver {
   vssdatabase* database;
   accesschecker* accessCheck;
 
-  wsserver(std::shared_ptr<ILogger> loggerUtil, int port, std::string configFileName, bool secure);
-  ~wsserver();
+  WsServer(std::shared_ptr<ILogger> loggerUtil, int port, std::string configFileName, bool secure);
+  ~WsServer();
   void startServer(std::string endpointName);
   void sendToConnection(uint32_t connID, std::string message);
-   vssdatabase* start();
+  void start();
 };
 #endif
