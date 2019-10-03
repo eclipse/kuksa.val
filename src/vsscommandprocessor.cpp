@@ -25,7 +25,7 @@
 #include "visconf.hpp"
 #include "vssdatabase.hpp"
 #include "AccessChecker.hpp"
-#include "subscriptionhandler.hpp"
+#include "SubscriptionHandler.hpp"
 #include "ILogger.hpp"
 
 #ifdef JSON_SIGNING_ON
@@ -116,7 +116,7 @@ vsscommandprocessor::vsscommandprocessor(
     std::shared_ptr<ILogger> loggerUtil,
     vssdatabase *dbase,
     Authenticator *vdator,
-    subscriptionhandler *subhandler) {
+    SubscriptionHandler *subhandler) {
   logger = loggerUtil;
   database = dbase;
   tokenValidator = vdator;

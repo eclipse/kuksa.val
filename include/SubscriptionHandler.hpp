@@ -37,7 +37,7 @@ typedef std::unordered_map<uint32_t, uint32_t> subscriptions_t;
 // Subscription UUID
 typedef std::string uuid_t;
 
-class subscriptionhandler {
+class SubscriptionHandler {
  private:
   std::shared_ptr<ILogger> logger;
   std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
@@ -50,11 +50,11 @@ class subscriptionhandler {
   std::queue<std::pair<uint32_t, jsoncons::json>> buffer;
 
  public:
-  subscriptionhandler(std::shared_ptr<ILogger> loggerUtil,
+  SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
                       WsServer* wserver,
                       Authenticator* authenticate,
                       AccessChecker* checkAccess);
-  ~subscriptionhandler();
+  ~SubscriptionHandler();
 
   uint32_t subscribe(wschannel& channel, vssdatabase* db,
                      uint32_t channelID, std::string path);

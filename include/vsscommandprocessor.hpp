@@ -20,7 +20,7 @@
 #include <jsoncons/json.hpp>
 
 class vssdatabase;
-class subscriptionhandler;
+class SubscriptionHandler;
 class Authenticator;
 class AccessChecker;
 class wschannel;
@@ -30,7 +30,7 @@ class vsscommandprocessor {
  private:
   std::shared_ptr<ILogger> logger;
   vssdatabase* database = NULL;
-  subscriptionhandler* subHandler = NULL;
+  SubscriptionHandler* subHandler = NULL;
   Authenticator* tokenValidator = NULL;
   AccessChecker* accessValidator = NULL;
 #ifdef JSON_SIGNING_ON
@@ -54,7 +54,7 @@ class vsscommandprocessor {
   vsscommandprocessor(std::shared_ptr<ILogger> loggerUtil,
                       vssdatabase* database,
                       Authenticator* vdator,
-                      subscriptionhandler* subhandler);
+                      SubscriptionHandler* subhandler);
   ~vsscommandprocessor();
   std::string processQuery(std::string req_json, wschannel& channel);
 };

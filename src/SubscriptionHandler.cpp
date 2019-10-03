@@ -11,7 +11,7 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#include "subscriptionhandler.hpp"
+#include "SubscriptionHandler.hpp"
 
 #include <unistd.h> // usleep
 #include <string>
@@ -31,7 +31,7 @@ using namespace std;
 using namespace jsoncons::jsonpath;
 // using jsoncons::jsoncons::jsoncons::json;
 
-subscriptionhandler::subscriptionhandler(std::shared_ptr<ILogger> loggerUtil,
+SubscriptionHandler::SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
                                          WsServer* wserver,
                                          Authenticator* authenticate,
                                          AccessChecker* checkAcc) {
@@ -42,11 +42,11 @@ subscriptionhandler::subscriptionhandler(std::shared_ptr<ILogger> loggerUtil,
   startThread();
 }
 
-subscriptionhandler::~subscriptionhandler() {
+SubscriptionHandler::~SubscriptionHandler() {
   stopThread();
 }
 
-uint32_t subscriptionhandler::subscribe(wschannel& channel,
+uint32_t SubscriptionHandler::subscribe(wschannel& channel,
                                         vssdatabase* db,
                                         uint32_t channelID, string path) {
   // generate subscribe ID "randomly".
@@ -74,7 +74,7 @@ uint32_t subscriptionhandler::subscribe(wschannel& channel,
     auto handle = subscribeHandle.find(sigUUID);
 
     if (handle != subscribeHandle.end()) {
-      logger->Log(LogLevel::VERBOSE, string("subscriptionhandler::subscribe: Updating the previous subscribe ")
+      logger->Log(LogLevel::VERBOSE, string("SubscriptionHandler::subscribe: Updating the previous subscribe ")
                   + string("ID with a new one"));
     }
 
@@ -82,7 +82,7 @@ uint32_t subscriptionhandler::subscribe(wschannel& channel,
 
     return subId;
   } else if (resArray.is_array()) {
-    logger->Log(LogLevel::INFO, "subscriptionhandler::subscribe :signals found in path" + path
+    logger->Log(LogLevel::INFO, "SubscriptionHandler::subscribe :signals found in path" + path
                 + "Array size: " + to_string(resArray.size())
                 + ". Subscribe works for 1 signal at a time");
     stringstream msg;
@@ -90,7 +90,7 @@ uint32_t subscriptionhandler::subscribe(wschannel& channel,
         << ". Subscribe works for 1 signal at a time";
     throw noPathFoundonTree(msg.str());
   } else {
-    logger->Log(LogLevel::ERROR, string("subscriptionhandler::subscribe: some error occurred while adding ")
+    logger->Log(LogLevel::ERROR, string("SubscriptionHandler::subscribe: some error occurred while adding ")
                 + string("subscription"));
     stringstream msg;
     msg << "some error occured while adding subscription for path = " << path;
@@ -98,7 +98,7 @@ uint32_t subscriptionhandler::subscribe(wschannel& channel,
   }
 }
 
-int subscriptionhandler::unsubscribe(uint32_t subscribeID) {
+int SubscriptionHandler::unsubscribe(uint32_t subscribeID) {
   for (auto& uuid : subscribeHandle) {
     auto subscriptions = &(uuid.second);
     auto subscription = subscriptions->find(subscribeID);
@@ -109,7 +109,7 @@ int subscriptionhandler::unsubscribe(uint32_t subscribeID) {
   return 0;
 }
 
-int subscriptionhandler::unsubscribeAll(uint32_t connectionID) {
+int SubscriptionHandler::unsubscribeAll(uint32_t connectionID) {
   for (auto& uuid : subscribeHandle) {
     auto subscriptions = &(uuid.second);
     for (auto& subscription : *subscriptions) {
@@ -121,7 +121,7 @@ int subscriptionhandler::unsubscribeAll(uint32_t connectionID) {
   return 0;
 }
 
-int subscriptionhandler::updateByUUID(string UUID, jsoncons::json value) {
+int SubscriptionHandler::updateByUUID(string UUID, jsoncons::json value) {
   auto handle = subscribeHandle.find(UUID);
   if (handle == subscribeHandle.end()) {
     // UUID not found
@@ -139,11 +139,11 @@ int subscriptionhandler::updateByUUID(string UUID, jsoncons::json value) {
   return 0;
 }
 
-WsServer* subscriptionhandler::getServer() {
+WsServer* SubscriptionHandler::getServer() {
   return server;
 }
 
-int subscriptionhandler::updateByPath(string path, json value) {
+int SubscriptionHandler::updateByPath(string path, json value) {
   /* TODO: Implement */
   (void) path;
   (void) value;
@@ -151,8 +151,8 @@ int subscriptionhandler::updateByPath(string path, json value) {
   return 0;
 }
 
-void* subscriptionhandler::subThreadRunner() {
-  // subscriptionhandler* handler = (subscriptionhandler*)instance;
+void* SubscriptionHandler::subThreadRunner() {
+  // SubscriptionHandler* handler = (SubscriptionHandler*)instance;
 
   logger->Log(LogLevel::VERBOSE, "SubscribeThread: Started Subscription Thread!");
 
@@ -187,11 +187,11 @@ void* subscriptionhandler::subThreadRunner() {
   return NULL;
 }
 
-int subscriptionhandler::startThread() {
-  subThread = thread(&subscriptionhandler::subThreadRunner, this);
+int SubscriptionHandler::startThread() {
+  subThread = thread(&SubscriptionHandler::subThreadRunner, this);
   /*
   if (pthread_create(&subscription_thread, NULL, &subThread, this)) {
-    logger->Log(LogLevel::ERROR, "subscriptionhandler::startThread: Error creating subscription "
+    logger->Log(LogLevel::ERROR, "SubscriptionHandler::startThread: Error creating subscription "
                 + "handler thread");
     return 1;
   }
@@ -200,7 +200,7 @@ int subscriptionhandler::startThread() {
   return 0;
 }
 
-int subscriptionhandler::stopThread() {
+int SubscriptionHandler::stopThread() {
   subMutex.lock();
   threadRun = false;
   subThread.join();
@@ -208,4 +208,4 @@ int subscriptionhandler::stopThread() {
   return 0;
 }
 
-bool subscriptionhandler::isThreadRunning() { return threadRun; }
+bool SubscriptionHandler::isThreadRunning() { return threadRun; }

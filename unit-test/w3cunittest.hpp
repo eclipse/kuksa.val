@@ -21,7 +21,7 @@
 
 // #include "vssdatabase.hpp"
 // #include "WsServer.hpp"
-// #include "subscriptionhandler.hpp"
+// #include "SubscriptionHandler.hpp"
 // #include "Authenticator.hpp"
 // #include "AccessChecker.hpp"
 // #include "signing.hpp"

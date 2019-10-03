@@ -25,7 +25,7 @@
 #include "AccessChecker.hpp"
 #include "Authenticator.hpp"
 #include "signing.hpp"
-#include "subscriptionhandler.hpp"
+#include "SubscriptionHandler.hpp"
 #include "vssdatabase.hpp"
 #include "vsscommandprocessor.hpp"
 #include "WsServer.hpp"
@@ -63,7 +63,7 @@ namespace bt = boost::unit_test;
 
 std::shared_ptr<ILogger> logger;
 WsServer* webSocket;
-subscriptionhandler* subhandler;
+SubscriptionHandler* subhandler;
 Authenticator* authhandler;
 AccessChecker* accesshandler;
 vssdatabase* database;
@@ -77,7 +77,7 @@ w3cunittest::w3cunittest(bool secure) {
   webSocket = new WsServer(logger, PORT, "vss_rel_2.0.json", secure);
   authhandler = new Authenticator(logger, "","");
   accesshandler = new AccessChecker(authhandler);
-  subhandler = new subscriptionhandler(logger, webSocket, authhandler, accesshandler);
+  subhandler = new SubscriptionHandler(logger, webSocket, authhandler, accesshandler);
   database = new vssdatabase(logger, subhandler, accesshandler);
   commandProc = new vsscommandprocessor(logger, database, authhandler , subhandler);
   json_signer = new signing(logger);
