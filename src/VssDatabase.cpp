@@ -11,7 +11,7 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#include "vssdatabase.hpp"
+#include "VssDatabase.hpp"
 #include <limits>
 #include <regex>
 #include <stdexcept>
@@ -40,7 +40,7 @@ namespace {
         std::stringstream msg;
         msg << "The type " << value_type << " with value " << val.as<float>()
             << " is out of bound";
-        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
 
         throw outOfBoundException(msg.str());
       }
@@ -53,7 +53,7 @@ namespace {
         std::stringstream msg;
         msg << "The type " << value_type << " with value " << val.as<float>()
             << " is out of bound";
-        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
 
         throw outOfBoundException(msg.str());
       }
@@ -66,7 +66,7 @@ namespace {
         std::stringstream msg;
         msg << "The type " << value_type << " with value " << val.as<float>()
             << " is out of bound";
-        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
 
         throw outOfBoundException(msg.str());
       }
@@ -79,7 +79,7 @@ namespace {
         std::stringstream msg;
         msg << "The type " << value_type << " with value " << val.as<float>()
             << " is out of bound";
-        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
 
         throw outOfBoundException(msg.str());
       }
@@ -91,7 +91,7 @@ namespace {
         std::stringstream msg;
         msg << "The type " << value_type << " with value " << val.as<float>()
             << " is out of bound";
-        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
 
         throw outOfBoundException(msg.str());
       }
@@ -104,7 +104,7 @@ namespace {
         std::stringstream msg;
         msg << "The type " << value_type << " with value " << val.as<float>()
             << " is out of bound";
-        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
 
         throw outOfBoundException(msg.str());
       }
@@ -117,7 +117,7 @@ namespace {
         std::stringstream msg;
         msg << "The type " << value_type << " with value '" << val.as<double>()
             << "' is out of bound";
-        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
 
         throw outOfBoundException(msg.str());
       }
@@ -130,7 +130,7 @@ namespace {
         std::stringstream msg;
         msg << "The type " << value_type << " with value "
             << val.as<long double>() << " is out of bound";
-        logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg.str());
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
 
         throw outOfBoundException(msg.str());
       }
@@ -143,7 +143,7 @@ namespace {
 
     if (!typeValid) {
       string msg = "The type " + value_type + " is not supported ";
-      logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg);
+      logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg);
 
       throw genException(msg);
     }
@@ -157,7 +157,7 @@ namespace {
                     string key) {
     if (!source.has_key("type")) {
       string msg = "Unknown type for signal found at " + key;
-      logger->Log(LogLevel::ERROR, "vssdatabase::setJsonValue : " + msg);
+      logger->Log(LogLevel::ERROR, "VssDatabase::setJsonValue : " + msg);
 
       throw genException(msg);
     }
@@ -166,7 +166,7 @@ namespace {
 }
 
 // Constructor
-vssdatabase::vssdatabase(std::shared_ptr<ILogger> loggerUtil,
+VssDatabase::VssDatabase(std::shared_ptr<ILogger> loggerUtil,
                          SubscriptionHandler* subHandle,
                          AccessChecker* accValidator) {
   logger = loggerUtil;
@@ -174,16 +174,16 @@ vssdatabase::vssdatabase(std::shared_ptr<ILogger> loggerUtil,
   accessValidator = accValidator;
 }
 
-vssdatabase::~vssdatabase() {}
+VssDatabase::~VssDatabase() {}
 
 // Initializer
-void vssdatabase::initJsonTree(string fileName) {
+void VssDatabase::initJsonTree(string fileName) {
   try {
     std::ifstream is(fileName);
     is >> data_tree;
     meta_tree = data_tree;
 
-    logger->Log(LogLevel::VERBOSE, "vssdatabase::vssdatabase : VSS tree initialized using JSON file = "
+    logger->Log(LogLevel::VERBOSE, "VssDatabase::VssDatabase : VSS tree initialized using JSON file = "
                 + fileName);
     is.close();
   } catch (exception const& e) {
@@ -211,7 +211,7 @@ vector<string> getPathTokens(string path) {
 // readable path.
 // Eg: jsonpath = $['Signal']['children']['OBD']['children']['RPM']
 // The method returns Signal.OBD.RPM
-string vssdatabase::getReadablePath(string jsonpath) {
+string VssDatabase::getReadablePath(string jsonpath) {
   stringstream ss;
   // regex to remove special characters from JSONPath and make it VSS
   // compatible.
@@ -234,7 +234,7 @@ string vssdatabase::getReadablePath(string jsonpath) {
 // Eg: path = Signal.OBD.RPM
 // The method returns $['Signal']['children']['OBD']['children']['RPM'] and
 // updates isBranch to false.
-string vssdatabase::getVSSSpecificPath(string path, bool& isBranch,
+string VssDatabase::getVSSSpecificPath(string path, bool& isBranch,
                                        jsoncons::json& tree) {
   vector<string> tokens = getPathTokens(path);
   int tokLength = tokens.size();
@@ -264,12 +264,12 @@ string vssdatabase::getVSSSpecificPath(string path, bool& isBranch,
       isBranch = false;
     } else {
       isBranch = false;
-      logger->Log(LogLevel::ERROR, "vssdatabase::getVSSSpecificPath : Path "
+      logger->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath : Path "
                   + format_path + " is invalid or is an empty tag!");
       return "";
     }
   } catch (exception& e) {
-    logger->Log(LogLevel::ERROR, "vssdatabase::getVSSSpecificPath :Exception \""
+    logger->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath :Exception \""
          + string(e.what()) + "\" occured while querying JSON. Check Path!");
     isBranch = false;
     return "";
@@ -279,7 +279,7 @@ string vssdatabase::getVSSSpecificPath(string path, bool& isBranch,
 
 // Returns the absolute path but does not resolve wild card. Used only for
 // metadata request.
-string vssdatabase::getPathForMetadata(string path, bool& isBranch) {
+string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
   string format_path = getVSSSpecificPath(path, isBranch, meta_tree);
   jsoncons::json pathRes = json_query(meta_tree, format_path, result_type::path);
   if (pathRes.size() > 0) {
@@ -296,7 +296,7 @@ string vssdatabase::getPathForMetadata(string path, bool& isBranch) {
 // For eg : path = Signal.*.RPM
 // The method would return a list containing 1 signal path =
 // $['Signal']['children']['OBD']['children']['RPM']
-list<string> vssdatabase::getPathForGet(string path, bool& isBranch) {
+list<string> VssDatabase::getPathForGet(string path, bool& isBranch) {
   list<string> paths;
   string format_path = getVSSSpecificPath(path, isBranch, data_tree);
   jsoncons::json pathRes = json_query(data_tree, format_path, result_type::path);
@@ -343,7 +343,7 @@ vector<string> getVSSTokens(string path) {
 }
 
 // Returns the response JSON for metadata request.
-jsoncons::json vssdatabase::getMetaData(string path) {
+jsoncons::json VssDatabase::getMetaData(string path) {
   string format_path = "$";
   bool isBranch = false;
   rwMutex.lock();
@@ -353,7 +353,7 @@ jsoncons::json vssdatabase::getMetaData(string path) {
   if (jPath == "") {
     return NULL;
   }
-  logger->Log(LogLevel::VERBOSE, "vssdatabase::getMetaData: VSS specific path =" + jPath);
+  logger->Log(LogLevel::VERBOSE, "VssDatabase::getMetaData: VSS specific path =" + jPath);
 
   vector<string> tokens = getVSSTokens(jPath);
   int tokLength = tokens.size();
@@ -385,7 +385,7 @@ jsoncons::json vssdatabase::getMetaData(string path) {
       }
     } else {
       // handle exception.
-      logger->Log(LogLevel::ERROR, string("vssdatabase::getMetaData : More than 1 Branch/ value found! ")
+      logger->Log(LogLevel::ERROR, string("VssDatabase::getMetaData : More than 1 Branch/ value found! ")
                   + string("Path requested needs to be more refined"));
       return NULL;
     }
@@ -422,7 +422,7 @@ jsoncons::json vssdatabase::getMetaData(string path) {
 // The function would return = {{"path" : "$.Signal.children.OBD.children.RPM",
 // "value" : 23}, {"path" : "$.Signal.children.OBD.children.Speed", "value" :
 // 10}}
-jsoncons::json vssdatabase::getPathForSet(string path, jsoncons::json values) {
+jsoncons::json VssDatabase::getPathForSet(string path, jsoncons::json values) {
   jsoncons::json setValues;
   if (values.is_array()) {
     std::size_t found = path.find("*");
@@ -483,7 +483,7 @@ jsoncons::json vssdatabase::getPathForSet(string path, jsoncons::json values) {
   return setValues;
 }
 
-void vssdatabase::checkSetPermission(wschannel& channel, jsoncons::json valueJson) {
+void VssDatabase::checkSetPermission(wschannel& channel, jsoncons::json valueJson) {
     // check if all the paths have write access.
     bool haveAccess = accessValidator->checkPathWriteAccess(channel, valueJson);
     if (!haveAccess) {
@@ -494,7 +494,7 @@ void vssdatabase::checkSetPermission(wschannel& channel, jsoncons::json valueJso
 }
 
 // Method for setting values to signals.
-void vssdatabase::setSignal(wschannel& channel, string path,
+void VssDatabase::setSignal(wschannel& channel, string path,
                             jsoncons::json valueJson) {
   if (path == "") {
     string msg = "Path is empty while setting";
@@ -558,7 +558,7 @@ void vssdatabase::setSignal(wschannel& channel, string path,
 }
 
 // Method for setting values to signals.
-void vssdatabase::setSignal(string path,
+void VssDatabase::setSignal(string path,
                             jsoncons::json valueJson) {
   if (path == "") {
     string msg = "Path is empty while setting";
@@ -573,7 +573,7 @@ void vssdatabase::setSignal(string path,
       jsoncons::json item = setValues[i];
       string jPath = item["path"].as<string>();
 
-      logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: path found = " + jPath
+      logger->Log(LogLevel::VERBOSE, "VssDatabase::setSignal: path found = " + jPath
                   + "value to set asstring = " + item["value"].as<string>());
 
       rwMutex.lock();
@@ -592,7 +592,7 @@ void vssdatabase::setSignal(string path,
           rwMutex.lock();
           json_replace(data_tree, jPath, resJson);
           rwMutex.unlock();
-          logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: new value set at path " + jPath);
+          logger->Log(LogLevel::VERBOSE, "VssDatabase::setSignal: new value set at path " + jPath);
 
           string uuid = resJson["uuid"].as<string>();
 
@@ -608,20 +608,20 @@ void vssdatabase::setSignal(string path,
       } else if (resArray.is_array()) {
         stringstream msg;
         msg << "Path " << jPath << " has " << resArray.size() << " signals, the path needs refinement";
-        logger->Log(LogLevel::WARNING, "vssdatabase::setSignal: " + msg.str());
+        logger->Log(LogLevel::WARNING, "VssDatabase::setSignal: " + msg.str());
 
         throw genException(msg.str());
       }
     }
   } else {
     string msg = "Exception occurred while setting data for " + path;
-    logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg);
+    logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg);
     throw genException(msg);
   }
 }
 
 // Returns response JSON for get request.
-jsoncons::json vssdatabase::getSignal(class wschannel& channel, string path) {
+jsoncons::json VssDatabase::getSignal(class wschannel& channel, string path) {
   bool isBranch = false;
 
   rwMutex.lock();
@@ -633,11 +633,11 @@ jsoncons::json vssdatabase::getSignal(class wschannel& channel, string path) {
     return answer;
   }
 
-  logger->Log(LogLevel::VERBOSE, "vssdatabase::getSignal: " + to_string(pathsFound)
+  logger->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + to_string(pathsFound)
               + " signals found under path = \"" + path + "\"");
   if (isBranch) {
     jsoncons::json answer;
-    logger->Log(LogLevel::VERBOSE, " vssdatabase::getSignal : \"" + path + "\" is a Branch.");
+    logger->Log(LogLevel::VERBOSE, " VssDatabase::getSignal : \"" + path + "\" is a Branch.");
 
     if (pathsFound == 0) {
       throw noPathFoundonTree(path);

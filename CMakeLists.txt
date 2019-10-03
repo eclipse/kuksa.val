@@ -14,7 +14,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(w3c-visserver)
 
-set(UNIT_TEST OFF CACHE STRING "Build unit tests")
+set(UNIT_TEST ON CACHE STRING "Build unit tests")
 # Set this variable to ON build an exe
 set(BUILD_EXE ON)
 
@@ -107,7 +107,7 @@ target_link_libraries(${PROJECT_NAME} -lgobject-2.0 -lglib-2.0 -lgio-2.0)
 if(UNIT_TEST)
 
    set(TEST_FILES
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/vssdatabase.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/VssDatabase.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/vsscommandprocessor.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/AccessChecker.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/Authenticator.cpp
@@ -115,7 +115,8 @@ if(UNIT_TEST)
          ${CMAKE_CURRENT_SOURCE_DIR}/src/signing.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/WsServer.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/BasicLogger.cpp
-         # ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/vssdatabase_test.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/permmclient.cpp
+         # ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssDatabase_test.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp
        )
    add_executable(w3c-unit-test ${TEST_FILES})

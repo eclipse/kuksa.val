@@ -21,7 +21,7 @@
 #include <jsoncons_ext/jsonpath/json_query.hpp>
 
 #include "WsServer.hpp"
-#include "vssdatabase.hpp"
+#include "VssDatabase.hpp"
 #include "exception.hpp"
 
 #include "BasicLogger.hpp"
@@ -37,7 +37,7 @@ using jsoncons::json;
 // Websocket port
 #define PORT 8090
 
-vssdatabase* database = NULL;
+VssDatabase* database = NULL;
 
 static GDBusNodeInfo *introspection_data = NULL;
 

@@ -26,7 +26,7 @@
 #include "Authenticator.hpp"
 #include "signing.hpp"
 #include "SubscriptionHandler.hpp"
-#include "vssdatabase.hpp"
+#include "VssDatabase.hpp"
 #include "vsscommandprocessor.hpp"
 #include "WsServer.hpp"
 #include "ILogger.hpp"
@@ -66,7 +66,7 @@ WsServer* webSocket;
 SubscriptionHandler* subhandler;
 Authenticator* authhandler;
 AccessChecker* accesshandler;
-vssdatabase* database;
+VssDatabase* database;
 signing* json_signer;
 vsscommandprocessor* commandProc;
 
@@ -78,7 +78,7 @@ w3cunittest::w3cunittest(bool secure) {
   authhandler = new Authenticator(logger, "","");
   accesshandler = new AccessChecker(authhandler);
   subhandler = new SubscriptionHandler(logger, webSocket, authhandler, accesshandler);
-  database = new vssdatabase(logger, subhandler, accesshandler);
+  database = new VssDatabase(logger, subhandler, accesshandler);
   commandProc = new vsscommandprocessor(logger, database, authhandler , subhandler);
   json_signer = new signing(logger);
   database->initJsonTree("vss_rel_2.0.json");
@@ -100,7 +100,7 @@ json w3cunittest::test_wrap_getPathForSet(string path,  json value) {
 }
 
 //--------Do not change the order of the tests in this file, because some results are dependent on the previous tests and data in the db-------
-//----------------------------------------------------vssdatabase Tests ------------------------------------------------------------------------
+//----------------------------------------------------VssDatabase Tests ------------------------------------------------------------------------
 
 // Get method tests
 BOOST_AUTO_TEST_CASE(path_for_get_without_wildcard_simple)

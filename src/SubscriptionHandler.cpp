@@ -22,7 +22,7 @@
 #include "Authenticator.hpp"
 #include "exception.hpp"
 #include "visconf.hpp"
-#include "vssdatabase.hpp"
+#include "VssDatabase.hpp"
 #include "WsServer.hpp"
 #include "ILogger.hpp"
 
@@ -47,7 +47,7 @@ SubscriptionHandler::~SubscriptionHandler() {
 }
 
 uint32_t SubscriptionHandler::subscribe(wschannel& channel,
-                                        vssdatabase* db,
+                                        VssDatabase* db,
                                         uint32_t channelID, string path) {
   // generate subscribe ID "randomly".
   uint32_t subId = rand() % 9999999;

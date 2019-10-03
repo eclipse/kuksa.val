@@ -20,7 +20,7 @@
 
 #include <jwt-cpp/jwt.h>
 #include <jsoncons/json.hpp>
-#include "vssdatabase.hpp"
+#include "VssDatabase.hpp"
 #include "wschannel.hpp"
 
 using namespace std;
@@ -79,7 +79,7 @@ Authenticator::Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretk
 
 // validates the token against expiry date/time. should be extended to check
 // some other claims.
-int Authenticator::validate(wschannel& channel, vssdatabase* db,
+int Authenticator::validate(wschannel& channel, VssDatabase* db,
                             string authToken) {
   int ttl = validateToken(channel, authToken);
   if (ttl > 0) {
@@ -108,7 +108,7 @@ bool Authenticator::isStillValid(wschannel& channel) {
 // resolves the permission in the JWT token and store the absolute path to the
 // signals in permissions JSON in wschannel.
 void Authenticator::resolvePermissions(wschannel& channel,
-                                       vssdatabase* database) {
+                                       VssDatabase* database) {
   string authToken = channel.getAuthToken();
   auto decoded = jwt::decode(authToken);
   json claims;

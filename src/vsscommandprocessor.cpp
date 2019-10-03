@@ -23,7 +23,7 @@
 #include "exception.hpp"
 #include "server_ws.hpp"
 #include "visconf.hpp"
-#include "vssdatabase.hpp"
+#include "VssDatabase.hpp"
 #include "AccessChecker.hpp"
 #include "SubscriptionHandler.hpp"
 #include "ILogger.hpp"
@@ -114,7 +114,7 @@ string valueOutOfBoundsResponse(uint32_t request_id, const string action,
 
 vsscommandprocessor::vsscommandprocessor(
     std::shared_ptr<ILogger> loggerUtil,
-    vssdatabase *dbase,
+    VssDatabase *dbase,
     Authenticator *vdator,
     SubscriptionHandler *subhandler) {
   logger = loggerUtil;

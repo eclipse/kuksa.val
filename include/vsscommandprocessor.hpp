@@ -19,7 +19,7 @@
 
 #include <jsoncons/json.hpp>
 
-class vssdatabase;
+class VssDatabase;
 class SubscriptionHandler;
 class Authenticator;
 class AccessChecker;
@@ -29,7 +29,7 @@ class ILogger;
 class vsscommandprocessor {
  private:
   std::shared_ptr<ILogger> logger;
-  vssdatabase* database = NULL;
+  VssDatabase* database = NULL;
   SubscriptionHandler* subHandler = NULL;
   Authenticator* tokenValidator = NULL;
   AccessChecker* accessValidator = NULL;
@@ -52,7 +52,7 @@ class vsscommandprocessor {
 
  public:
   vsscommandprocessor(std::shared_ptr<ILogger> loggerUtil,
-                      vssdatabase* database,
+                      VssDatabase* database,
                       Authenticator* vdator,
                       SubscriptionHandler* subhandler);
   ~vsscommandprocessor();

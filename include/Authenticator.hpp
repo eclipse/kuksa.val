@@ -20,7 +20,7 @@
 using namespace std;
 
 class wschannel;
-class vssdatabase;
+class VssDatabase;
 class ILogger;
 
 class Authenticator {
@@ -33,11 +33,11 @@ class Authenticator {
 
  public:
   Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algorithm);
-  int validate(wschannel &channel, vssdatabase *database,
+  int validate(wschannel &channel, VssDatabase *database,
                string authToken);
   
   void updatePubKey(string key);
   bool isStillValid(wschannel &channel);
-  void resolvePermissions(wschannel &channel, vssdatabase *database);
+  void resolvePermissions(wschannel &channel, VssDatabase *database);
 };
 #endif

@@ -26,7 +26,7 @@ class AccessChecker;
 class wschannel;
 class ILogger;
 
-class vssdatabase {
+class VssDatabase {
   friend class SubscriptionHandler;
   friend class Authenticator;
 #ifdef UNIT_TEST
@@ -48,10 +48,10 @@ class vssdatabase {
   void checkSetPermission(wschannel& channel, jsoncons::json valueJson);
 
  public:
-  vssdatabase(std::shared_ptr<ILogger> loggerUtil,
+  VssDatabase(std::shared_ptr<ILogger> loggerUtil,
               SubscriptionHandler* subHandle,
               AccessChecker* accValidator);
-  ~vssdatabase();
+  ~VssDatabase();
   void initJsonTree(std::string fileName);
   jsoncons::json getMetaData(std::string path);
   void setSignal(wschannel& channel, std::string path, jsoncons::json value);
