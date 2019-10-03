@@ -18,8 +18,8 @@
 #include "server_wss.hpp"
 
 
-class vsscommandprocessor;
-class vsscommandprocessor;
+class VssCommandProcessor;
+class VssCommandProcessor;
 class SubscriptionHandler;
 class Authenticator;
 class VssDatabase;
@@ -35,7 +35,7 @@ class WsServer {
   std::string configFileName_;
 
  public:
-  vsscommandprocessor* cmdProcessor;
+  VssCommandProcessor* cmdProcessor;
   SubscriptionHandler* subHandler;
   Authenticator* tokenValidator;
   VssDatabase* database;

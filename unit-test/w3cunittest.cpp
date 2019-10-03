@@ -27,7 +27,7 @@
 #include "signing.hpp"
 #include "SubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
-#include "vsscommandprocessor.hpp"
+#include "VssCommandProcessor.hpp"
 #include "WsServer.hpp"
 #include "ILogger.hpp"
 #include "BasicLogger.hpp"
@@ -68,7 +68,7 @@ Authenticator* authhandler;
 AccessChecker* accesshandler;
 VssDatabase* database;
 signing* json_signer;
-vsscommandprocessor* commandProc;
+VssCommandProcessor* commandProc;
 
 w3cunittest unittestObj(false);
 
@@ -79,7 +79,7 @@ w3cunittest::w3cunittest(bool secure) {
   accesshandler = new AccessChecker(authhandler);
   subhandler = new SubscriptionHandler(logger, webSocket, authhandler, accesshandler);
   database = new VssDatabase(logger, subhandler, accesshandler);
-  commandProc = new vsscommandprocessor(logger, database, authhandler , subhandler);
+  commandProc = new VssCommandProcessor(logger, database, authhandler , subhandler);
   json_signer = new signing(logger);
   database->initJsonTree("vss_rel_2.0.json");
 }
@@ -1165,7 +1165,7 @@ BOOST_AUTO_TEST_CASE(test_metadata_branch_with_wildcard)
 }
 
 
-//----------------------------------------------------vsscommandprocessor Tests ------------------------------------------------------------------------
+//----------------------------------------------------VssCommandProcessor Tests ------------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 {

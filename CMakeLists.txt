@@ -108,7 +108,7 @@ if(UNIT_TEST)
 
    set(TEST_FILES
          ${CMAKE_CURRENT_SOURCE_DIR}/src/VssDatabase.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/vsscommandprocessor.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/VssCommandProcessor.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/AccessChecker.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/Authenticator.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/SubscriptionHandler.cpp

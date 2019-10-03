@@ -18,7 +18,7 @@
 #include "Authenticator.hpp"
 #include "SubscriptionHandler.hpp"
 #include "visconf.hpp"
-#include "vsscommandprocessor.hpp"
+#include "VssCommandProcessor.hpp"
 #include "VssDatabase.hpp"
 
 #include <string>
@@ -62,7 +62,7 @@ WsServer::WsServer(std::shared_ptr<ILogger> loggerUtil, int port, string configF
   accessCheck = new AccessChecker(tokenValidator);
   subHandler = new SubscriptionHandler(logger, this, tokenValidator, accessCheck);
   database = new VssDatabase(logger, subHandler, accessCheck);
-  cmdProcessor = new vsscommandprocessor(logger, database, tokenValidator, subHandler);
+  cmdProcessor = new VssCommandProcessor(logger, database, tokenValidator, subHandler);
   wserver = this;
 }
 

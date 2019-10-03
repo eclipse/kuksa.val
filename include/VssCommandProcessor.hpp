@@ -26,7 +26,7 @@ class AccessChecker;
 class wschannel;
 class ILogger;
 
-class vsscommandprocessor {
+class VssCommandProcessor {
  private:
   std::shared_ptr<ILogger> logger;
   VssDatabase* database = NULL;
@@ -51,11 +51,12 @@ class vsscommandprocessor {
   
 
  public:
-  vsscommandprocessor(std::shared_ptr<ILogger> loggerUtil,
+  VssCommandProcessor(std::shared_ptr<ILogger> loggerUtil,
                       VssDatabase* database,
                       Authenticator* vdator,
                       SubscriptionHandler* subhandler);
-  ~vsscommandprocessor();
+  ~VssCommandProcessor();
+
   std::string processQuery(std::string req_json, wschannel& channel);
 };
 
