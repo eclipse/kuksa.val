@@ -34,7 +34,7 @@ class VssCommandProcessor {
   Authenticator* tokenValidator = NULL;
   AccessChecker* accessValidator = NULL;
 #ifdef JSON_SIGNING_ON
-  signing* signer = NULL;
+  SigningHandler* signer = NULL;
 #endif
 
   std::string processGet(wschannel& channel, uint32_t request_id, std::string path);

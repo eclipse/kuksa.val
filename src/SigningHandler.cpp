@@ -12,25 +12,25 @@
  * *****************************************************************************
  */
 
-#include "signing.hpp"
+#include "SigningHandler.hpp"
 
 #include "ILogger.hpp"
 
-#define PRIVATEFILENAME "signing.private.key"
-#define PUBLICFILENAME "signing.public.key"
+#define PRIVATEFILENAME "SigningHandler.private.key"
+#define PUBLICFILENAME "SigningHandler.public.key"
 
 /**
  Constructor
 */
-signing::signing(std::shared_ptr<ILogger> loggerUtil) : logger(loggerUtil) {
+SigningHandler::SigningHandler(std::shared_ptr<ILogger> loggerUtil) : logger(loggerUtil) {
   getKey(PRIVATEFILENAME);
   getPublicKey(PUBLICFILENAME);
 }
 
 /**
- Get the private key for signing.
+ Get the private key for SigningHandler.
 */
-string signing::getKey(string fileName) {
+string SigningHandler::getKey(string fileName) {
   std::ifstream fileStream(fileName);
   std::string privatekey((std::istreambuf_iterator<char>(fileStream)),
                          (std::istreambuf_iterator<char>()));
@@ -39,9 +39,9 @@ string signing::getKey(string fileName) {
 }
 
 /**
- Get the public key for signing.
+ Get the public key for SigningHandler.
 */
-string signing::getPublicKey(string fileName) {
+string SigningHandler::getPublicKey(string fileName) {
   std::ifstream fileStream(fileName);
   std::string privatekey((std::istreambuf_iterator<char>(fileStream)),
                          (std::istreambuf_iterator<char>()));
@@ -52,7 +52,7 @@ string signing::getPublicKey(string fileName) {
 /**
  Signs the JSON and returns a string token
 */
-string signing::sign(json data) {
+string SigningHandler::sign(json data) {
   auto algo = jwt::algorithm::rs256(pubkey, key, "", "");
   auto encode = [](const std::string& data) {
     auto base = base::encode<alphabet::base64url>(data);
@@ -76,7 +76,7 @@ string signing::sign(json data) {
 /**
  Signs the JSON and returns a string token
 */
-string signing::sign(string data) {
+string SigningHandler::sign(string data) {
   auto algo = jwt::algorithm::rs256(pubkey, key, "", "");
   auto encode = [](const std::string& data) {
     auto base = base::encode<alphabet::base64url>(data);
@@ -98,7 +98,7 @@ string signing::sign(string data) {
 }
 
 #ifdef UNIT_TEST
-string signing::decode(string signedData) {
+string SigningHandler::decode(string signedData) {
   auto verify =
       jwt::verify().allow_algorithm(jwt::algorithm::rs256(pubkey, "", "", ""));
 
@@ -106,7 +106,7 @@ string signing::decode(string signedData) {
   try {
     verify.verify(decoded_token);
   } catch (exception& e) {
-    logger->Log(LogLevel::ERROR, "Error while verifying JSON signing " + string(e.what()));
+    logger->Log(LogLevel::ERROR, "Error while verifying JSON SigningHandler " + string(e.what()));
     return "";
   }
 

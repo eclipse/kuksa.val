@@ -28,7 +28,7 @@ using namespace jwt;
 
 class ILogger;
 
-class signing {
+class SigningHandler {
  private:
   std::shared_ptr<ILogger> logger;
   string key = "";
@@ -36,7 +36,7 @@ class signing {
   string algorithm = "RS256";
 
  public:
-  signing(std::shared_ptr<ILogger> loggerUtil);
+  SigningHandler(std::shared_ptr<ILogger> loggerUtil);
   string getKey(string fileName);
   string getPublicKey(string fileName);
   string sign(json data);

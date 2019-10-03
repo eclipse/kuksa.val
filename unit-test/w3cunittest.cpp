@@ -24,7 +24,7 @@
 
 #include "AccessChecker.hpp"
 #include "Authenticator.hpp"
-#include "signing.hpp"
+#include "SigningHandler.hpp"
 #include "SubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
 #include "VssCommandProcessor.hpp"
@@ -67,7 +67,7 @@ SubscriptionHandler* subhandler;
 Authenticator* authhandler;
 AccessChecker* accesshandler;
 VssDatabase* database;
-signing* json_signer;
+SigningHandler* json_signer;
 VssCommandProcessor* commandProc;
 
 w3cunittest unittestObj(false);
@@ -80,7 +80,7 @@ w3cunittest::w3cunittest(bool secure) {
   subhandler = new SubscriptionHandler(logger, webSocket, authhandler, accesshandler);
   database = new VssDatabase(logger, subhandler, accesshandler);
   commandProc = new VssCommandProcessor(logger, database, authhandler , subhandler);
-  json_signer = new signing(logger);
+  json_signer = new SigningHandler(logger);
   database->initJsonTree("vss_rel_2.0.json");
 }
 
@@ -1530,9 +1530,9 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value, *utf::expect
    BOOST_TEST(response_response_getvalid_json == expected_getvalid);
 }
 
-//----------------------------------------------------json signing Tests ------------------------------------------------------------------------
+//----------------------------------------------------json SigningHandler Tests ------------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(json_signing)
+BOOST_AUTO_TEST_CASE(json_SigningHandler)
 {
 
    wschannel channel;

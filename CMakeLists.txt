@@ -112,7 +112,7 @@ if(UNIT_TEST)
          ${CMAKE_CURRENT_SOURCE_DIR}/src/AccessChecker.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/Authenticator.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/SubscriptionHandler.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/signing.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/SigningHandler.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/WsServer.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/BasicLogger.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/permmclient.cpp

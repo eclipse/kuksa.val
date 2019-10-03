@@ -29,7 +29,7 @@
 #include "ILogger.hpp"
 
 #ifdef JSON_SIGNING_ON
-#include "signing.hpp"
+#include "SigningHandler.hpp"
 #endif
 
 using namespace std;
@@ -123,7 +123,7 @@ VssCommandProcessor::VssCommandProcessor(
   subHandler = subhandler;
   accessValidator = new AccessChecker(tokenValidator);
 #ifdef JSON_SIGNING_ON
-  signer = new signing();
+  signer = new SigningHandler();
 #endif
 }
 
