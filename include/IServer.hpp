@@ -16,14 +16,26 @@
 #define __IWSSERVER_H__
 
 #include <string>
+#include <memory>
 
+class IVssCommandProcessor;
+
+/**
+ * \class ObserverType
+ * \brief Server traffic types which can be observed
+ */
+enum class ObserverType {
+  WEBSOCKET = 0x01, //!< Receive Web-Socket traffic data
+  HTTP      = 0x02, //!< Receive HTTP traffic data
+  ALL       = 0x03  //!< Receive all traffic
+};
 
 class IServer {
   public:
     virtual ~IServer() {}
 
-    virtual void startServer(const std::string &endpointName) = 0;
-    virtual void sendToConnection(uint32_t connID, const std::string &message) = 0;
-    virtual void start() = 0;
+    virtual void AddListener(ObserverType, std::shared_ptr<IVssCommandProcessor>) = 0;
+    virtual void RemoveListener(ObserverType, std::shared_ptr<IVssCommandProcessor>) = 0;
+    virtual void SendToConnection(uint64_t connID, const std::string &message) = 0;
 };
 #endif

@@ -208,14 +208,13 @@ string VssCommandProcessor::processSet(WsChannel &channel,
 }
 
 string VssCommandProcessor::processSubscribe(WsChannel &channel,
-                                             uint32_t request_id, string path,
-                                             uint32_t connectionID) {
+                                             uint32_t request_id, string path) {
   logger->Log(LogLevel::VERBOSE, string("VssCommandProcessor::processSubscribe: path received from client ")
               + string("for subscription"));
 
   uint32_t subId = -1;
   try {
-    subId = subHandler->subscribe(channel, database, connectionID, path);
+    subId = subHandler->subscribe(channel, database, path);
   } catch (noPathFoundonTree &noPathFound) {
     logger->Log(LogLevel::ERROR, string(noPathFound.what()));
     return pathNotFoundResponse(request_id, "subscribe", path);
@@ -462,7 +461,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
         logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: subscribe query  for "
              + path + " with request id " + to_string(request_id));
         response =
-            processSubscribe(channel, request_id, path, channel.getConnID());
+            processSubscribe(channel, request_id, path);
       } else if (action == "getMetadata") {
         logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: metadata query  for "
              + path + " with request id " + to_string(request_id));

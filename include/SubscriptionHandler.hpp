@@ -37,7 +37,7 @@ class WsServer;
 class ILogger;
 
 // Subscription ID: Client ID
-typedef std::unordered_map<uint32_t, uint32_t> subscriptions_t;
+typedef std::unordered_map<uint32_t, uint64_t> subscriptions_t;
 
 // Subscription UUID
 typedef std::string uuid_t;
@@ -61,9 +61,8 @@ class SubscriptionHandler : public ISubscriptionHandler {
                       std::shared_ptr<IAccessChecker> checkAccess);
   ~SubscriptionHandler();
 
-  uint32_t subscribe(WsChannel& channel,
+  uint64_t subscribe(WsChannel& channel,
                      std::shared_ptr<IVssDatabase> db,
-                     uint32_t channelID,
                      const std::string &path);
   int unsubscribe(uint32_t subscribeID);
   int unsubscribeAll(uint32_t connectionID);

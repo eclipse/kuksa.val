@@ -43,7 +43,12 @@ class WsServer : public IServer {
                   int port);
   ~WsServer();
   void startServer(const std::string &endpointName);
-  void sendToConnection(uint32_t connID, const std::string &message);
-  void start();
+  bool start();
+
+  // IServer
+
+  void AddListener(ObserverType, std::shared_ptr<IVssCommandProcessor>);
+  void RemoveListener(ObserverType, std::shared_ptr<IVssCommandProcessor>);
+  void SendToConnection(uint64_t connID, const std::string &message);
 };
 #endif

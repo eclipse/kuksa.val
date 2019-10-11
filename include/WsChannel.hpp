@@ -23,24 +23,32 @@ using namespace jsoncons;
 using jsoncons::json;
 
 class WsChannel {
+ public:
+  enum class Type {
+    WEBSOCKET_PLAIN,
+    WEBSOCKET_SSL,
+    HTTP_PLAIN,
+    HTTP_SSL
+  };
  private:
-  uint32_t connectionID;
+  uint64_t connectionID;
   bool authorized = false;
   string authToken;
   json permissions;
+  Type typeOfConnection;
 
  public:
-  void setConnID(uint32_t conID) { connectionID = conID; }
+
+  void setConnID(uint64_t conID) { connectionID = conID; }
   void setAuthorized(bool isauth) { authorized = isauth; }
   void setAuthToken(string tok) { authToken = tok; }
   void setPermissions(json perm) { permissions = perm; }
+  void setType(Type type) { typeOfConnection = type; }
 
-  uint32_t getConnID() { return connectionID; }
-
+  uint64_t getConnID() { return connectionID; }
   bool isAuthorized() { return authorized; }
-
   string getAuthToken() { return authToken; }
-
   json getPermissions() { return permissions; }
+  Type getType() { return typeOfConnection; }
 };
 #endif

@@ -237,7 +237,7 @@ void WsServer::startServer(const string &endpointName) {
   }
 }
 
-void WsServer::sendToConnection(uint32_t connectionID, const string &message) {
+void WsServer::SendToConnection(uint64_t connectionID, const string &message) {
   if (isSecure_) {
     auto send_stream = make_shared<SecuredServer::SendStream>();
     *send_stream << message;
@@ -268,11 +268,21 @@ void *startWSServer(void *arg) {
   return NULL;
 }
 
-void WsServer::start() {
+bool WsServer::start() {
   pthread_t startWSServer_thread;
 
   /* create the web socket server thread. */
   if (pthread_create(&startWSServer_thread, NULL, &startWSServer, NULL)) {
     logger->Log(LogLevel::ERROR, "main: Error creating websocket server run thread");
   }
+
+  return true;
+}
+
+void WsServer::AddListener(ObserverType, std::shared_ptr<IVssCommandProcessor>)
+{
+}
+
+void WsServer::RemoveListener(ObserverType, std::shared_ptr<IVssCommandProcessor>)
+{
 }

@@ -28,9 +28,8 @@ class ISubscriptionHandler {
   public:
     virtual ~ISubscriptionHandler() {}
 
-    virtual uint32_t subscribe(WsChannel& channel,
+    virtual uint64_t subscribe(WsChannel& channel,
                                std::shared_ptr<IVssDatabase> db,
-                               uint32_t channelID,
                                const std::string &path) = 0;
     virtual int unsubscribe(uint32_t subscribeID) = 0;
     virtual int unsubscribeAll(uint32_t connectionID) = 0;

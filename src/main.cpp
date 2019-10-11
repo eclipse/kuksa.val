@@ -32,6 +32,7 @@
 #include "VssDatabase.hpp"
 
 #include "WsServer.hpp"
+#include "WebSockHttpFlexServer.hpp"
 
 
 using namespace std;
@@ -237,6 +238,7 @@ int main(int argc, const char *argv[]) {
     ("help,h", "Help screen")
     ("vss", program_options::value<string>(), "vss_rel*.json file")
     ("insecure", "Run insecure")
+    ("wss-server", "Run old WSS server handler")
     ("port", program_options::value<int>()->default_value(8090), "Port")
     ("address", program_options::value<string>()->default_value("localhost"), "Address");
 
@@ -258,6 +260,7 @@ int main(int argc, const char *argv[]) {
     auto port = variables["port"].as<int>();
     auto secure = !variables.count("insecure");
     auto vss_filename = variables["vss"].as<string>();
+    auto useNewServer = !variables.count("wss-server");
 
     // Start D-Bus backend connection.
     guint owner_id;
@@ -288,30 +291,45 @@ int main(int argc, const char *argv[]) {
 #else
     logLevelsActive = static_cast<uint8_t>(LogLevel::INFO & LogLevel::WARNING & LogLevel::ERROR);
 #endif
-    auto server = std::make_shared<WsServer>();
+
     auto logger = std::make_shared<BasicLogger>(logLevelsActive);
+    // TODO: refactor out old server when we can remove it
+    auto oldServer = std::make_shared<WsServer>();
+    auto newServer = std::make_shared<WebSockHttpFlexServer>(logger);
+
+    std::shared_ptr<IServer> server;
+    if (!useNewServer) {
+      server = std::static_pointer_cast<IServer>(oldServer);
+    }
+    else {
+      server = std::static_pointer_cast<IServer>(newServer);
+    }
+
     auto tokenValidator = std::make_shared<Authenticator>(logger, "appstacle", "RS256");
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
     auto subHandler = std::make_shared<SubscriptionHandler>(logger, server, tokenValidator, accessCheck);
     auto database = std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(logger, database, tokenValidator, subHandler);
 
-    if (server->Initialize(logger,
-                           cmdProcessor,
-                           secure,
-                           port))
-    {
-      database->initJsonTree(vss_filename);
-      server->start();
+    database->initJsonTree(vss_filename);
 
-      while (1) {
-        usleep(1000000);
-      };
+    if (!useNewServer)
+    {
+      oldServer->Initialize(logger, cmdProcessor, secure, port);
+      oldServer->start();
     }
     else
     {
-      cerr << "Failed to initialize server" << std::endl;
+
+      newServer->AddListener(ObserverType::WEBSOCKET, cmdProcessor);
+      newServer->Initialize(variables["address"].as<string>(), port, !secure);
+      newServer->Start();
     }
+
+    while (1) {
+      usleep(1000000);
+    }
+
   } catch (const program_options::error &ex) {
     print_usage(argv[0], desc);
     cerr << ex.what() << std::endl;
