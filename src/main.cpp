@@ -24,6 +24,7 @@
 #include "VssDatabase.hpp"
 #include "exception.hpp"
 
+#include "RestV1ApiHandler.hpp"
 #include "BasicLogger.hpp"
 #include "Authenticator.hpp"
 #include "AccessChecker.hpp"
@@ -293,9 +294,18 @@ int main(int argc, const char *argv[]) {
 #endif
 
     auto logger = std::make_shared<BasicLogger>(logLevelsActive);
+
+    // define doc root path for server..
+    // for now also add 'v1' to designate version 1 of REST API as default
+    // in future, we can add/update REST API with new versions but also support older
+    // by having API versioning through URIs
+    std::string docRoot{"/vss/api/v1/"};
+
     // TODO: refactor out old server when we can remove it
     auto oldServer = std::make_shared<WsServer>();
-    auto newServer = std::make_shared<WebSockHttpFlexServer>(logger);
+
+    auto rest2JsonConverter = std::make_shared<RestV1ApiHandler>(logger, docRoot);
+    auto newServer = std::make_shared<WebSockHttpFlexServer>(logger, std::move(rest2JsonConverter));
 
     std::shared_ptr<IServer> server;
     if (!useNewServer) {
@@ -321,8 +331,8 @@ int main(int argc, const char *argv[]) {
     else
     {
 
-      newServer->AddListener(ObserverType::WEBSOCKET, cmdProcessor);
-      newServer->Initialize(variables["address"].as<string>(), port, !secure);
+      newServer->AddListener(ObserverType::ALL, cmdProcessor);
+      newServer->Initialize(variables["address"].as<string>(), port, std::move(docRoot), !secure);
       newServer->Start();
     }
 

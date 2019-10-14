@@ -34,6 +34,8 @@
 #include "ssl_stream.hpp"
 
 #include "WebSockHttpFlexServer.hpp"
+
+#include "IRestHandler.hpp"
 #include "IVssCommandProcessor.hpp"
 #include "WsChannel.hpp"
 #include "ILogger.hpp"
@@ -195,6 +197,7 @@ namespace {
   bool allowInsecureConns = false;
 
   std::shared_ptr<ILogger> logger;
+  std::shared_ptr<IRestHandler> rest2json;
 
 
   /**** Boost.Beast implementation below ****/
@@ -216,6 +219,7 @@ namespace {
     connHandler.RemoveClient(fromType);
   }
 
+#if 0
   // Return a reasonable mime type based on the extension of a file.
   boost::beast::string_view
   mimeType(boost::beast::string_view path)
@@ -386,7 +390,7 @@ namespace {
       res.keep_alive(req.keep_alive());
       return send(std::move(res));
   }
-
+#endif
   //------------------------------------------------------------------------------
 
   //------------------------------------------------------------------------------
@@ -1062,8 +1066,20 @@ namespace {
         }
 
         // Otherwise handle pure HTTP connection
-        // TODO: call to appropriate REST API handler later (implemented as IVssCommandProcessor)
-        defaultHttpRequestHandler(doc_root_, std::move(req_), queue_);
+        std::string jsonRequest;
+
+        // if we got correct JSON request back, send it to handler
+        if (rest2json->GetJson(std::string(req_.method_string()),
+                               std::string(req_.target()),
+                               jsonRequest))
+        {
+          requestHandler_(jsonRequest, channel);
+        }
+        else
+        {
+          // write jsonRequest back as error response
+          //queue_(bad_request(jsonRequest));
+        }
 
         // If we aren't at the queue limit, try to pipeline another request
         if(! queue_.is_full())
@@ -1075,7 +1091,7 @@ namespace {
       {
         // Happens when the timer closes the socket
         if(ec == boost::asio::error::operation_aborted)
-          return;
+          return;// provide error JSON
 
         if(ec) {
           fail<>(&derived(), ec, "write");
@@ -1487,9 +1503,12 @@ namespace {
 } // end namespace
 
 
-WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil)
- : logger_(loggerUtil) {
+WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil,
+                                             std::shared_ptr<IRestHandler> rest2jsonUtil)
+ : logger_(loggerUtil),
+   rest2json_(rest2jsonUtil) {
   logger = logger_;
+  rest2json = rest2json_;
 }
 
 WebSockHttpFlexServer::~WebSockHttpFlexServer() {
@@ -1500,10 +1519,10 @@ WebSockHttpFlexServer::~WebSockHttpFlexServer() {
     thread.join();
   }
 }
-void WebSockHttpFlexServer::Initialize(std::string host, int port, bool allowInsecure) {
+void WebSockHttpFlexServer::Initialize(std::string host, int port, std::string && docRoot, bool allowInsecure) {
     logger_->Log(LogLevel::INFO, "Initializing Boost.Beast web-socket and http server");
 
-    std::string const doc_root = "vss";
+    docRoot_ = docRoot;
 
     allowInsecureConns = allowInsecure;
 
@@ -1528,7 +1547,7 @@ void WebSockHttpFlexServer::Initialize(std::string host, int port, bool allowIns
       *ioc,
       ctx,
       resolvedHost->endpoint(),
-      std::move(doc_root),
+      std::move(docRoot_),
       std::bind(&WebSockHttpFlexServer::HandleRequest,
                 this,
                 std::placeholders::_1,

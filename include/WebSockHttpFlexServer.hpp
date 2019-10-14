@@ -22,6 +22,7 @@
 #include <memory>
 
 class WsChannel;
+class IRestHandler;
 class ILogger;
 
 /**
@@ -35,9 +36,11 @@ class WebSockHttpFlexServer : public IServer {
     std::vector<std::pair<ObserverType,std::shared_ptr<IVssCommandProcessor>>> listeners_;
     std::mutex mutex_;
     std::shared_ptr<ILogger> logger_;
+    std::shared_ptr<IRestHandler> rest2json_;
 
     const uint8_t NumOfThreads = 1;
     bool isInitialized = false;
+    std::string docRoot_;
 
     /**
      * @brief Load server SSL certificates
@@ -53,16 +56,18 @@ class WebSockHttpFlexServer : public IServer {
      */
     std::string HandleRequest(const std::string &req_json, WsChannel &channel);
   public:
-    explicit WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil);
+    WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil,
+                          std::shared_ptr<IRestHandler> rest2jsonUtil);
     ~WebSockHttpFlexServer();
 
     /**
      * @brief Initialize Boost.Beast server
      * @param host Hostname for server connection
      * @param port Port where to wait for server connections
+     * @param docRoot URL path that is handled
      * @param allowInsecure If true, plain connections are allowed, otherwise SSL is mandatory
      */
-    void Initialize(std::string host, int port, bool allowInsecure = false);
+    void Initialize(std::string host, int port, std::string && docRoot, bool allowInsecure = false);
     /**
      * @brief Start server
      *        Server needs to be initialized before is started

@@ -20,10 +20,23 @@
 
 class WsChannel;
 
+/**
+ * @class IVssCommandProcessor
+ * @brief Interface class for handling input JSON requests and providing response
+ *
+ * @note  Any class implementing this interface shall handle JSON requests as defined by
+ *        https://www.w3.org/TR/vehicle-information-service/#message-structure
+ */
 class IVssCommandProcessor {
   public:
     virtual ~IVssCommandProcessor() {}
 
+    /**
+     * @brief Process JSON request and provide response JSON string
+     * @param req_json JSON formated request
+     * @param channel Active channel information on which \a req_json was received
+     * @return JSON formated response string
+     */
     virtual std::string processQuery(const std::string &req_json,
                                      WsChannel& channel) = 0;
 };
