@@ -85,7 +85,7 @@ class RestV1ApiHandler : public IRestHandler {
 
     bool GetJson(std::string&& restMethod,
                  std::string&& restTarget,
-                 std::string& jsonRequest);
+                 std::string& resultJson);
 };
 
 #endif

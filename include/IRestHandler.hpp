@@ -11,8 +11,8 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#ifndef __IREST2JSONCONVERTER_H__
-#define __IREST2JSONCONVERTER_H__
+#ifndef __IRESTHANDLER_H__
+#define __IRESTHANDLER_H__
 
 #include <string>
 
@@ -31,7 +31,8 @@ class IRestHandler {
      * @brief Get JSON request string based on input REST API request
      * @param restMethod REST request method string (get/set/...)
      * @param restTarget REST request URI
-     * @param jsonRequest Output JSON request string for both valid and invalid REST requests
+     * @param resultJson Output JSON string for both valid and invalid REST requests. If invalid REST
+     *        request, parameter shall contain JSON describing error
      * @return true if REST request correct and JSON request generated
      *         false otherwise indicating error in REST request. \a jsonRequest shall be updated
      *         with JSON response providing error details
@@ -41,7 +42,7 @@ class IRestHandler {
      */
     virtual bool GetJson(std::string&& restMethod,
                          std::string&& restTarget,
-                         std::string& jsonRequest) = 0;
+                         std::string& resultJson) = 0;
 };
 
 

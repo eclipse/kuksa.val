@@ -36,7 +36,7 @@ class WebSockHttpFlexServer : public IServer {
     std::vector<std::pair<ObserverType,std::shared_ptr<IVssCommandProcessor>>> listeners_;
     std::mutex mutex_;
     std::shared_ptr<ILogger> logger_;
-    std::shared_ptr<IRestHandler> rest2json_;
+    std::shared_ptr<IRestHandler> restHandler_;
 
     const uint8_t NumOfThreads = 1;
     bool isInitialized = false;

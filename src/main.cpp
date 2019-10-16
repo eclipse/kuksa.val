@@ -15,6 +15,9 @@
 #include <gio/gio.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream>
+#include <string>
+#include <ctime>
 
 #include <boost/program_options.hpp>
 #include <jsoncons/json.hpp>
@@ -258,6 +261,10 @@ int main(int argc, const char *argv[]) {
       print_usage(argv[0], desc);
       return -1;
     }
+
+    // initialize pseudo random number generator
+    std::srand(std::time(nullptr));
+
     auto port = variables["port"].as<int>();
     auto secure = !variables.count("insecure");
     auto vss_filename = variables["vss"].as<string>();
