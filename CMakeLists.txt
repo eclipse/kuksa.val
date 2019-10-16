@@ -116,6 +116,7 @@ if(UNIT_TEST)
          ${CMAKE_CURRENT_SOURCE_DIR}/src/WsServer.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/BasicLogger.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/permmclient.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/JsonResponses.cpp
          # ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssDatabase_test.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp
        )

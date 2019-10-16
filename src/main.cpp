@@ -34,8 +34,6 @@
 #include "SubscriptionHandler.hpp"
 #include "VssCommandProcessor.hpp"
 #include "VssDatabase.hpp"
-
-#include "WsServer.hpp"
 #include "WebSockHttpFlexServer.hpp"
 
 
