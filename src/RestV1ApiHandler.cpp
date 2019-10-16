@@ -18,6 +18,7 @@
 #include <boost/algorithm/string.hpp>
 #include <regex>
 
+#include "JsonResponses.hpp"
 #include "ILogger.hpp"
 
 
@@ -45,12 +46,6 @@ RestV1ApiHandler::RestV1ApiHandler(std::shared_ptr<ILogger> loggerUtil, std::str
 RestV1ApiHandler::~RestV1ApiHandler() {
 }
 
-bool RestV1ApiHandler::verifySignalResource(std::string& restTarget, jsoncons::json& res) {
-  (void) restTarget;
-  (void) res;
-  return false;
-}
-
 bool RestV1ApiHandler::verifyPathAndStrip(std::string& restTarget, std::string& path) {
   size_t pos = restTarget.find(path);
 
@@ -61,20 +56,6 @@ bool RestV1ApiHandler::verifyPathAndStrip(std::string& restTarget, std::string& 
     return true;
   }
 
-  return false;
-}
-
-bool RestV1ApiHandler::handleGet(std::string && restTarget, std::string& jsonRequest) {
-  (void) jsonRequest;
-  (void) restTarget;
-
-return false;
-}
-
-bool RestV1ApiHandler::handleSet(std::string && restTarget, std::string& jsonRequest) {
-  logger_->Log(LogLevel::VERBOSE, "handleGet()");
-  (void)restTarget;
-  (void) jsonRequest;
   return false;
 }
 
@@ -132,19 +113,19 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                      }
                      else {
                        logger_->Log(LogLevel::ERROR, "1");
-                       // provide error JSON
+                       // TODO: provide error JSON
                        ret = false;
                      }
                    }
                    else {
                      logger_->Log(LogLevel::ERROR, "2");
-                     // provide error JSON
+                     // TODO: provide error JSON
                      ret = false;
                    }
                  }
                  else {
                    logger_->Log(LogLevel::ERROR, "3");
-                   // provide error JSON
+                   // TODO: provide error JSON
                    ret = false;
                  }
                }
@@ -152,7 +133,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
              else {
                logger_->Log(LogLevel::ERROR, "4");
                // not supporting retrieving of all signals by default
-               // provide error JSON
+               // TODO: provide error JSON
                ret = false;
              }
 
@@ -163,23 +144,23 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
 
            }
            else if (sm.str(1) == "metadata") {
-
+             // TODO:
            }
          }
          else {
-           // provide error JSON
+           // TODO: provide error JSON
            ret = false;
          }
        }
        else
        {
-         // provide error JSON
+         // TODO: provide error JSON
        }
     }
   }
   else
   {
-    // provide error JSON
+    // TODO: provide error JSON
   }
 
   std::stringstream ss;

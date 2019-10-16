@@ -199,6 +199,10 @@ namespace {
   std::shared_ptr<ILogger> logger;
   std::shared_ptr<IRestHandler> rest2json;
 
+  const unsigned DEFAULT_TIMEOUT_VALUE   = 60u;   // in seconds
+  const unsigned WEBSOCKET_TIMEOUT_VALUE = DEFAULT_TIMEOUT_VALUE;
+  const unsigned HTTP_TIMEOUT_VALUE      = DEFAULT_TIMEOUT_VALUE;
+
 
   /**** Boost.Beast implementation below ****/
 
@@ -446,7 +450,7 @@ namespace {
                   std::placeholders::_2));
 
           // Set the timer
-          timer_.expires_after(std::chrono::seconds(15));
+          timer_.expires_after(std::chrono::seconds(WEBSOCKET_TIMEOUT_VALUE));
 
           // Accept the websocket handshake
           derived().ws().async_accept(
@@ -495,7 +499,7 @@ namespace {
             ping_state_ = 1;
 
             // Set the timer
-            timer_.expires_after(std::chrono::seconds(15));
+            timer_.expires_after(std::chrono::seconds(WEBSOCKET_TIMEOUT_VALUE));
 
             // Now send the ping
             derived().ws().async_ping({},
@@ -535,7 +539,7 @@ namespace {
         ping_state_ = 0;
 
         // Set the timer
-        timer_.expires_after(std::chrono::seconds(15));
+        timer_.expires_after(std::chrono::seconds(WEBSOCKET_TIMEOUT_VALUE));
       }
 
       // Called after a ping is sent.
@@ -715,7 +719,7 @@ namespace {
         close_ = true;
 
         // Set the timer
-        timer_.expires_after(std::chrono::seconds(15));
+        timer_.expires_after(std::chrono::seconds(WEBSOCKET_TIMEOUT_VALUE));
 
         // Close the WebSocket Connection
         ws_.async_close(
@@ -793,7 +797,7 @@ namespace {
         eof_ = true;
 
         // Set the timer
-        timer_.expires_after(std::chrono::seconds(15));
+        timer_.expires_after(std::chrono::seconds(WEBSOCKET_TIMEOUT_VALUE));
 
         // Perform the SSL shutdown
         ws_.next_layer().async_shutdown(
@@ -1000,7 +1004,7 @@ namespace {
       doRead()
       {
         // Set the timer
-        timer_.expires_after(std::chrono::seconds(15));
+        timer_.expires_after(std::chrono::seconds(HTTP_TIMEOUT_VALUE));
 
         // Make the request empty before reading,
         // otherwise the operation behavior is undefined.
@@ -1244,7 +1248,7 @@ namespace {
         //onTimer({});
 
         // Set the timer
-        timer_.expires_after(std::chrono::seconds(15));
+        timer_.expires_after(std::chrono::seconds(HTTP_TIMEOUT_VALUE));
 
         // Perform the SSL handshake
         // Note, this is the buffered version of the handshake.
@@ -1283,7 +1287,7 @@ namespace {
         eof_ = true;
 
         // Set the timer
-        timer_.expires_after(std::chrono::seconds(15));
+        timer_.expires_after(std::chrono::seconds(HTTP_TIMEOUT_VALUE));
 
         // Perform the SSL shutdown
         stream_.async_shutdown(
@@ -1320,7 +1324,7 @@ namespace {
         timer_.expires_at(
             (std::chrono::steady_clock::time_point::max)());
         onTimer({});
-        doEof();
+        //doEof();
       }
   };
 

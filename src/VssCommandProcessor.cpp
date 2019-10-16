@@ -22,6 +22,8 @@
 #include "permmclient.hpp"
 #include "exception.hpp"
 #include "server_ws.hpp"
+
+#include "JsonResponses.hpp"
 #include "visconf.hpp"
 #include "VssDatabase.hpp"
 #include "AccessChecker.hpp"
@@ -36,84 +38,6 @@
 #endif
 
 using namespace std;
-
-string malFormedRequestResponse(uint32_t request_id, const string action, string message) {
-  jsoncons::json answer;
-  answer["action"] = action;
-  answer["requestId"] = request_id;
-  jsoncons::json error;
-  error["number"] = 400;
-  error["reason"] = "Bad Request";
-  error["message"] = message;
-  answer["error"] = error;
-  answer["timestamp"] = time(NULL);
-  stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
-}
-
-string malFormedRequestResponse(string message) {
-  jsoncons::json answer;
-  jsoncons::json error;
-
-  error["number"] = 400;
-  error["reason"] = "Bad Request";
-  error["message"] = message;
-  answer["error"] = error;
-  answer["timestamp"] = time(NULL);
-  stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
-}
-
-/** A API call requested a non-existant path */
-string pathNotFoundResponse(uint32_t request_id, const string action,
-                            const string path) {
-  jsoncons::json answer;
-  answer["action"] = action;
-  answer["requestId"] = request_id;
-  jsoncons::json error;
-  error["number"] = 404;
-  error["reason"] = "Path not found";
-  error["message"] = "I can not find " + path + " in my db";
-  answer["error"] = error;
-  answer["timestamp"] = time(NULL);
-  stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
-}
-
-string noAccessResponse(uint32_t request_id, const string action,
-                        string message) {
-  jsoncons::json result;
-  jsoncons::json error;
-  result["action"] = action;
-  result["requestId"] = request_id;
-  error["number"] = 403;
-  error["reason"] = "Forbidden";
-  error["message"] = message;
-  result["error"] = error;
-  result["timestamp"] = time(NULL);
-  std::stringstream ss;
-  ss << pretty_print(result);
-  return ss.str();
-}
-
-string valueOutOfBoundsResponse(uint32_t request_id, const string action,
-                                const string message) {
-  jsoncons::json answer;
-  answer["action"] = action;
-  answer["requestId"] = request_id;
-  jsoncons::json error;
-  error["number"] = 400;
-  error["reason"] = "Value passed is out of bounds";
-  error["message"] = message;
-  answer["error"] = error;
-  answer["timestamp"] = time(NULL);
-  stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
-}
 
 VssCommandProcessor::VssCommandProcessor(
     std::shared_ptr<ILogger> loggerUtil,
@@ -147,10 +71,10 @@ string VssCommandProcessor::processGet(WsChannel &channel,
     res = database->getSignal(channel, path);
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return noAccessResponse(request_id, "get", nopermission.what());
+    return JsonResponses::noAccess(request_id, "get", nopermission.what());
   }
   if (!res.has_key("value")) {
-    return pathNotFoundResponse(request_id, "get", path);
+    return JsonResponses::pathNotFound(request_id, "get", path);
   } else {
     res["action"] = "get";
     res["requestId"] = request_id;
@@ -188,13 +112,13 @@ string VssCommandProcessor::processSet(WsChannel &channel,
     return ss.str();
   } catch (noPathFoundonTree &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
-    return pathNotFoundResponse(request_id, "set", path);
+    return JsonResponses::pathNotFound(request_id, "set", path);
   } catch (outOfBoundException &outofboundExp) {
     logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
-    return valueOutOfBoundsResponse(request_id, "set", outofboundExp.what());
+    return JsonResponses::valueOutOfBounds(request_id, "set", outofboundExp.what());
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return noAccessResponse(request_id, "set", nopermission.what());
+    return JsonResponses::noAccess(request_id, "set", nopermission.what());
   }
 
   jsoncons::json answer;
@@ -217,14 +141,14 @@ string VssCommandProcessor::processSubscribe(WsChannel &channel,
     subId = subHandler->subscribe(channel, database, path);
   } catch (noPathFoundonTree &noPathFound) {
     logger->Log(LogLevel::ERROR, string(noPathFound.what()));
-    return pathNotFoundResponse(request_id, "subscribe", path);
+    return JsonResponses::pathNotFound(request_id, "subscribe", path);
   } catch (genException &outofboundExp) {
     logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
-    return valueOutOfBoundsResponse(request_id, "subscribe",
+    return JsonResponses::valueOutOfBounds(request_id, "subscribe",
                                     outofboundExp.what());
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return noAccessResponse(request_id, "subscribe", nopermission.what());
+    return JsonResponses::noAccess(request_id, "subscribe", nopermission.what());
   }
 
   if (subId > 0) {
@@ -471,11 +395,11 @@ string VssCommandProcessor::processQuery(const string &req_json,
       }
     }
   } catch (jsoncons::json_parse_exception e) {
-    return malFormedRequestResponse(e.what());
+    return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::key_not_found e) {
-    return malFormedRequestResponse(e.what());
+    return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::not_an_object e) {
-    return malFormedRequestResponse(e.what());
+    return JsonResponses::malFormedRequest(e.what());
   }
 
 
