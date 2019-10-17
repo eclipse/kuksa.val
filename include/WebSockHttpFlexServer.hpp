@@ -38,16 +38,23 @@ class WebSockHttpFlexServer : public IServer {
     std::shared_ptr<ILogger> logger_;
     std::shared_ptr<IRestHandler> restHandler_;
 
-    const uint8_t NumOfThreads = 1;
     bool isInitialized = false;
     std::string docRoot_;
 
+    const uint8_t NumOfThreads = 1;
+
+    /// Default name for server certificate file
+    static const std::string serverCertFilename_;
+    /// Default name for server key file
+    static const std::string serverKeyFilename_;
+
     /**
      * @brief Load server SSL certificates
+     * @param certPath Directory path where 'Server.pem' and 'Server.key' are located
      * @param ctx ssl context to which certificates will be added
      * @note 'Server.pem' and 'Server.key' needs to be located with executable
      */
-    void LoadCertData(boost::asio::ssl::context& ctx);
+    void LoadCertData(std::string & certPath, boost::asio::ssl::context& ctx);
     /**
      * @brief Handle incoming data requests
      * @param req_json Request message from connection
@@ -65,9 +72,14 @@ class WebSockHttpFlexServer : public IServer {
      * @param host Hostname for server connection
      * @param port Port where to wait for server connections
      * @param docRoot URL path that is handled
+     * @param certPath Directory path where 'Server.pem' and 'Server.key' are located
      * @param allowInsecure If true, plain connections are allowed, otherwise SSL is mandatory
      */
-    void Initialize(std::string host, int port, std::string && docRoot, bool allowInsecure = false);
+    void Initialize(std::string host,
+                    int port,
+                    std::string && docRoot,
+                    std::string certPath,
+                    bool allowInsecure = false);
     /**
      * @brief Start server
      *        Server needs to be initialized before is started

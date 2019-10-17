@@ -18,6 +18,7 @@
 #include <iostream>
 #include <string>
 #include <ctime>
+#include <exception>
 
 #include <boost/program_options.hpp>
 #include <jsoncons/json.hpp>
@@ -229,39 +230,88 @@ on_name_lost (GDBusConnection *connection,
 
 
 static void print_usage(const char *prog_name,
-                        program_options::options_description desc) {
+                        program_options::options_description& desc) {
   cerr << "Usage: " << prog_name << " OPTIONS" << endl;
   cerr << desc << std::endl;
 }
 
 int main(int argc, const char *argv[]) {
+  string configFile;
+  vector<string> logLevels{"NONE"};
+  uint8_t logLevelsActive = static_cast<uint8_t>(LogLevel::NONE);
+
   program_options::options_description desc{"Options"};
   desc.add_options()
     ("help,h", "Help screen")
+    ("config-file,cfg", program_options::value<string>(&configFile),
+        "Configuration file path for program parameters. "
+        "Can be provided instead of command line options")
     ("vss", program_options::value<string>(), "vss_rel*.json file")
+    ("cert-path", program_options::value<string>(),
+        "Path to directory where 'Server.pem' and 'Server.key' are located")
     ("insecure", "Run insecure")
     ("wss-server", "Run old WSS server handler")
+    ("address", program_options::value<string>()->default_value("localhost"), "Address")
     ("port", program_options::value<int>()->default_value(8090), "Port")
-    ("address", program_options::value<string>()->default_value("localhost"), "Address");
+    ("log-level", program_options::value<vector<string>>(&logLevels)->composing(),
+        "Log level event type to be enabled. "
+        "To enable different log levels, provide this option multiple times with required log levels. \n"
+        "Supported log levels: NONE, VERBOSE, INFO, WARNING, ERROR, ALL");
 
   try {
     program_options::variables_map variables;
     program_options::store(parse_command_line(argc, argv, desc), variables);
     program_options::notify(variables);
+    // if config file passed, get configuration from it
+    if (configFile.size()) {
+      cout << configFile << std::endl;
+      std::ifstream ifs(configFile.c_str());
+      if(!ifs)
+      {
+        std::cerr << "Could not open config file: " << configFile << std::endl;
+        return -1;
+      }
+      program_options::store(parse_config_file(ifs, desc), variables);
+    }
+    program_options::notify(variables);
+
+    // verify parameters
 
     if (!variables.count("vss")) {
       print_usage(argv[0], desc);
-      cerr << "vss file (--vss) must be specified" << std::endl;
+      cerr << "the option '--vss' is required but missing" << std::endl;
       return -1;
     }
-
+    if (!variables.count("cert-path")) {
+      cerr << "the option '--cert-path' is required but missing" << std::endl;
+      print_usage(argv[0], desc);
+      return -1;
+    }
     if (variables.count("help")) {
       print_usage(argv[0], desc);
       return -1;
     }
 
-    // initialize pseudo random number generator
-    std::srand(std::time(nullptr));
+    for (auto const& token : logLevels) {
+      if (token == "NONE")
+        logLevelsActive |= static_cast<uint8_t>(LogLevel::NONE);
+      else if (token == "VERBOSE")
+        logLevelsActive |= static_cast<uint8_t>(LogLevel::VERBOSE);
+      else if (token == "INFO")
+        logLevelsActive |= static_cast<uint8_t>(LogLevel::INFO);
+      else if (token == "WARNING")
+        logLevelsActive |= static_cast<uint8_t>(LogLevel::WARNING);
+      else if (token == "ERROR")
+        logLevelsActive |= static_cast<uint8_t>(LogLevel::ERROR);
+      else if (token == "ALL")
+        logLevelsActive |= static_cast<uint8_t>(LogLevel::ALL);
+      else {
+        cerr << "Invalid input parameter for LogLevel" << std::endl;
+        return -1;
+      }
+    }
+
+    // initialize server
 
     auto port = variables["port"].as<int>();
     auto secure = !variables.count("insecure");
@@ -297,6 +347,8 @@ int main(int argc, const char *argv[]) {
 #else
     logLevelsActive = static_cast<uint8_t>(LogLevel::INFO & LogLevel::WARNING & LogLevel::ERROR);
 #endif
+    // initialize pseudo random number generator
+    std::srand(std::time(nullptr));
 
     auto logger = std::make_shared<BasicLogger>(logLevelsActive);
 
@@ -328,16 +380,17 @@ int main(int argc, const char *argv[]) {
 
     database->initJsonTree(vss_filename);
 
-    if (!useNewServer)
-    {
+    if (!useNewServer) {
       oldServer->Initialize(logger, cmdProcessor, secure, port);
       oldServer->start();
     }
-    else
-    {
-
+    else {
       newServer->AddListener(ObserverType::ALL, cmdProcessor);
-      newServer->Initialize(variables["address"].as<string>(), port, std::move(docRoot), !secure);
+      newServer->Initialize(variables["address"].as<string>(),
+                            port,
+                            std::move(docRoot),
+                            variables["cert-path"].as<string>(),
+                            !secure);
       newServer->Start();
     }
 
@@ -349,6 +402,9 @@ int main(int argc, const char *argv[]) {
     print_usage(argv[0], desc);
     cerr << ex.what() << std::endl;
     return -1;
+  } catch (const std::runtime_error &ex) {
+    cerr << ex.what() << std::endl;
+        return -1;
   }
   return 0;
 }

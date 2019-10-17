@@ -1353,6 +1353,10 @@ namespace {
 } // end namespace
 
 
+const std::string WebSockHttpFlexServer::serverCertFilename_ = "Server.pem";
+const std::string WebSockHttpFlexServer::serverKeyFilename_  = "Server.key";
+
+
 WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil,
                                              std::shared_ptr<IRestHandler> restHandlerUtil)
  : logger_(loggerUtil),
@@ -1369,7 +1373,11 @@ WebSockHttpFlexServer::~WebSockHttpFlexServer() {
     thread.join();
   }
 }
-void WebSockHttpFlexServer::Initialize(std::string host, int port, std::string && docRoot, bool allowInsecure) {
+void WebSockHttpFlexServer::Initialize(std::string host,
+                                       int port,
+                                       std::string && docRoot,
+                                       std::string certPath,
+                                       bool allowInsecure) {
     logger_->Log(LogLevel::INFO, "Initializing Boost.Beast web-socket and http server");
 
     docRoot_ = docRoot;
@@ -1384,7 +1392,7 @@ void WebSockHttpFlexServer::Initialize(std::string host, int port, std::string &
     boost::asio::ip::tcp::resolver::iterator resolvedHost = resolver.resolve(query);
 
     // load required certificates for SSL connections
-    LoadCertData(ctx);
+    LoadCertData(certPath, ctx);
 
     // handling function redirecting requests to registered listeners
     RequestHandler reqHndl = std::bind(&WebSockHttpFlexServer::HandleRequest,
@@ -1451,15 +1459,26 @@ void WebSockHttpFlexServer::RemoveListener(ObserverType type,
   logger_->Log(LogLevel::WARNING, "Could not find listener to remove. Ignoring...");
 }
 
-void WebSockHttpFlexServer::LoadCertData(boost::asio::ssl::context& ctx) {
+void WebSockHttpFlexServer::LoadCertData(std::string & certPath, boost::asio::ssl::context& ctx) {
   std::string cert;
   std::string key;
   std::string line;
+  bool isValid = false;
+
+  std::string delimiter = "/";
+
+  // if path not passed with '/' at the end, no update needed
+  // otherwise we need to provide path delimiter
+  if (certPath[certPath.size() - 1] == '/')
+  {
+    delimiter = "";
+  }
 
   // read certificate
   {
-    std::ifstream inputFile ("Server.pem");
-    if (inputFile.is_open())
+    std::ifstream inputFile (certPath + delimiter + serverCertFilename_);
+    isValid = inputFile.good();
+    if (isValid && inputFile.is_open())
     {
       while (getline(inputFile, line) )
       {
@@ -1468,11 +1487,15 @@ void WebSockHttpFlexServer::LoadCertData(boost::asio::ssl::context& ctx) {
       }
       inputFile.close();
     }
+    else {
+      throw std::runtime_error("Could not load server certificate");
+    }
   }
   // read key
   {
-    std::ifstream inputFile ("Server.key");
-    if (inputFile.is_open())
+    std::ifstream inputFile (certPath + delimiter + serverKeyFilename_);
+    isValid = inputFile.good();
+    if (isValid && inputFile.is_open())
     {
       while (getline(inputFile, line) )
       {
@@ -1480,6 +1503,9 @@ void WebSockHttpFlexServer::LoadCertData(boost::asio::ssl::context& ctx) {
         key.append("\n");
       }
       inputFile.close();
+    }
+    else {
+      throw std::runtime_error("Could not load server key");
     }
   }
 
