@@ -60,8 +60,8 @@ namespace {
  * @brief Helper class to handle connection between \ref WsChannel and actual sessions
  */
   class ConnectionHandler {
-      // Allow access to connection information from this file implementation details
-      friend class ::WebSockHttpFlexServer;
+    // Allow access to connection information from this file implementation details
+    friend class ::WebSockHttpFlexServer;
 
     private:
       std::mutex mPlainWebSock_;
@@ -78,9 +78,9 @@ namespace {
       std::unordered_map<const SslHttpSession *,
                          std::shared_ptr<WsChannel>> connSslHttp_;
 
-
     public:
       ConnectionHandler() = default;
+      ~ConnectionHandler() = default;
 
       /**
        * @brief Add new client for plain Web-Socket session
@@ -185,7 +185,6 @@ namespace {
 
   /**** Local variables ****/
 
-
   // Boost.Beast helper state variables
   ConnectionHandler                        connHandler;
   std::shared_ptr<BeastListener>           connListener;
@@ -215,26 +214,20 @@ namespace {
 
   /// Report a failure and remove client from active connections that are tracked
   template <typename T>
-  void
-  fail(const T* fromType, boost::system::error_code ec, char const* what)
-  {
+  void fail(const T* fromType, boost::system::error_code ec, char const* what) {
     fail(ec, what);
     logger->Log(LogLevel::ERROR, "Connection error detected, remove client from active connections");
     connHandler.RemoveClient(fromType);
   }
 
   //------------------------------------------------------------------------------
-  // Echoes back all received WebSocket messages.
   // This uses the Curiously Recurring Template Pattern so that
   // the same code works with both SSL streams and regular sockets.
   template<class Derived>
-  class WebSocketSession
-  {
+  class WebSocketSession {
       // Access the derived class, this is part of
       // the Curiously Recurring Template Pattern idiom.
-      Derived&
-      derived()
-      {
+      Derived& derived() {
         return static_cast<Derived&>(*this);
       }
 
@@ -250,21 +243,17 @@ namespace {
       WsChannel channel;
     public:
       // Construct the session
-      explicit
-      WebSocketSession(boost::asio::io_context& ioc,
+      explicit WebSocketSession(boost::asio::io_context& ioc,
                         RequestHandler requestHandler)
-      : strand_(ioc.get_executor())
-      , timer_(ioc,
-          (std::chrono::steady_clock::time_point::max)())
-      , requestHandler_(requestHandler)
-      {
+        : strand_(ioc.get_executor())
+        , timer_(ioc,
+            (std::chrono::steady_clock::time_point::max)())
+        , requestHandler_(requestHandler) {
       }
 
       // Start the asynchronous operation
       template<class Body, class Allocator>
-      void
-      doAccept(http::request<Body, http::basic_fields<Allocator>> req)
-      {
+      void doAccept(http::request<Body, http::basic_fields<Allocator>> req) {
           // Set the control callback. This will be called
           // on every incoming ping, pong, and close frame.
           derived().ws().control_callback(
@@ -288,9 +277,7 @@ namespace {
                       std::placeholders::_1)));
       }
 
-      void
-      onAccept(boost::system::error_code ec)
-      {
+      void onAccept(boost::system::error_code ec) {
         // Happens when the timer closes the socket
         if(ec == boost::asio::error::operation_aborted)
           return;
@@ -305,21 +292,17 @@ namespace {
       }
 
       // Called when the timer expires.
-      void
-      onTimer(boost::system::error_code ec)
-      {
+      void onTimer(boost::system::error_code ec) {
         if(ec && ec != boost::asio::error::operation_aborted) {
           fail<>(&derived(), ec, "timer");
           return;
         }
 
         // See if the timer really expired since the deadline may have moved.
-        if(timer_.expiry() <= std::chrono::steady_clock::now())
-        {
+        if(timer_.expiry() <= std::chrono::steady_clock::now()) {
           // If this is the first time the timer expired,
           // send a ping to see if the other end is there.
-          if(derived().ws().is_open() && ping_state_ == 0)
-          {
+          if(derived().ws().is_open() && ping_state_ == 0) {
             // Note that we are sending a ping
             ping_state_ = 1;
 
@@ -335,8 +318,7 @@ namespace {
                         derived().shared_from_this(),
                         std::placeholders::_1)));
           }
-          else
-          {
+          else {
             // The timer expired while trying to handshake,
             // or we sent a ping and it never completed or
             // we never got back a control frame, so close.
@@ -357,9 +339,7 @@ namespace {
       }
 
       // Called to indicate activity from the remote peer
-      void
-      activity()
-      {
+      void activity() {
         // Note that the connection is alive
         ping_state_ = 0;
 
@@ -368,9 +348,7 @@ namespace {
       }
 
       // Called after a ping is sent.
-      void
-      onPing(boost::system::error_code ec)
-      {
+      void onPing(boost::system::error_code ec) {
         // Happens when the timer closes the socket
         if(ec == boost::asio::error::operation_aborted)
           return;
@@ -381,12 +359,10 @@ namespace {
         }
 
         // Note that the ping was sent.
-        if(ping_state_ == 1)
-        {
+        if(ping_state_ == 1) {
           ping_state_ = 2;
         }
-        else
-        {
+        else {
           // ping_state_ could have been set to 0
           // if an incoming control frame was received
           // at exactly the same time we sent a ping.
@@ -394,20 +370,16 @@ namespace {
         }
       }
 
-      void
-      on_control_callback(
+      void on_control_callback(
           websocket::frame_type kind,
-          boost::beast::string_view payload)
-      {
+          boost::beast::string_view payload) {
         boost::ignore_unused(kind, payload);
 
         // Note that there is activity
         activity();
       }
 
-      void
-      doRead()
-      {
+      void doRead() {
         // Read a message into our buffer
         derived().ws().async_read(
             bufferRead_,
@@ -420,11 +392,7 @@ namespace {
                     std::placeholders::_2)));
       }
 
-      void
-      onRead(
-          boost::system::error_code ec,
-          std::size_t bytesTransferred)
-      {
+      void onRead(boost::system::error_code ec, std::size_t bytesTransferred) {
         boost::ignore_unused(bytesTransferred);
 
         // Happens when the timer closes the socket
@@ -453,8 +421,7 @@ namespace {
         doRead();
       }
 
-      void
-      write(const std::string &message) {
+      void write(const std::string &message) {
         // TODO: add queuing as async_write should be called one at a time
         boost::asio::buffer_copy(bufferWrite_.prepare(message.size()), boost::asio::buffer(message));
         bufferWrite_.commit(message.size()); // commit copied data for write
@@ -471,11 +438,7 @@ namespace {
                     std::placeholders::_2)));
       }
 
-      void
-      onWrite(
-          boost::system::error_code ec,
-          std::size_t bytesTransferred)
-      {
+      void onWrite(boost::system::error_code ec, std::size_t bytesTransferred) {
         boost::ignore_unused(bytesTransferred);
 
         // Happens when the timer closes the socket
@@ -489,42 +452,30 @@ namespace {
 
         // Clear the buffer
         bufferWrite_.consume(bytesTransferred);
-
-        // Do another read
-        //doRead();
       }
   };
 
   // Handles a plain WebSocket connection
-  class PlainWebsocketSession
-      : public WebSocketSession<PlainWebsocketSession>
-  , public std::enable_shared_from_this<PlainWebsocketSession>
-  {
+  class PlainWebsocketSession : public WebSocketSession<PlainWebsocketSession>,
+                                public std::enable_shared_from_this<PlainWebsocketSession> {
       websocket::stream<tcp::socket> ws_;
       bool close_ = false;
 
     public:
       // Create the session
-      explicit
-      PlainWebsocketSession(tcp::socket socket, RequestHandler requestHandler)
-      : WebSocketSession<PlainWebsocketSession>(
-          socket.get_executor().context(), requestHandler)
-          , ws_(std::move(socket))
-          {
-          }
+      explicit PlainWebsocketSession(tcp::socket socket, RequestHandler requestHandler)
+      : WebSocketSession<PlainWebsocketSession>(socket.get_executor().context(), requestHandler),
+        ws_(std::move(socket)) {
+      }
 
       // Called by the base class
-      websocket::stream<tcp::socket>&
-      ws()
-      {
+      websocket::stream<tcp::socket>& ws() {
         return ws_;
       }
 
       // Start the asynchronous operation
       template<class Body, class Allocator>
-      void
-      run(http::request<Body, http::basic_fields<Allocator>> req)
-      {
+      void run(http::request<Body, http::basic_fields<Allocator>> req) {
           channel = connHandler.AddClient(this);
 
           // Run the timer. The timer is operated
@@ -535,9 +486,7 @@ namespace {
           doAccept(std::move(req));
       }
 
-      void
-      doTimeout()
-      {
+      void doTimeout() {
         // This is so the close can have a timeout
         if(close_)
           return;
@@ -557,9 +506,7 @@ namespace {
                     std::placeholders::_1)));
       }
 
-      void
-      on_close(boost::system::error_code ec)
-      {
+      void on_close(boost::system::error_code ec) {
         // Happens when close times out
         if(ec == boost::asio::error::operation_aborted)
           return;
@@ -574,10 +521,8 @@ namespace {
   };
 
   // Handles an SSL WebSocket connection
-  class SslWebsocketSession
-      : public WebSocketSession<SslWebsocketSession>
-  , public std::enable_shared_from_this<SslWebsocketSession>
-  {
+  class SslWebsocketSession : public WebSocketSession<SslWebsocketSession>,
+                              public std::enable_shared_from_this<SslWebsocketSession> {
       websocket::stream<ssl_stream<tcp::socket>> ws_;
       boost::asio::strand<
       boost::asio::io_context::executor_type> strand_;
@@ -585,14 +530,12 @@ namespace {
 
     public:
       // Create the http_session
-      explicit
-      SslWebsocketSession(ssl_stream<tcp::socket> stream, RequestHandler requestHandler)
-      : WebSocketSession<SslWebsocketSession>(
+      explicit SslWebsocketSession(ssl_stream<tcp::socket> stream, RequestHandler requestHandler)
+        : WebSocketSession<SslWebsocketSession>(
           stream.get_executor().context(), requestHandler)
           , ws_(std::move(stream))
-          , strand_(ws_.get_executor())
-          {
-          }
+          , strand_(ws_.get_executor()) {
+      }
 
       // Called by the base class
       websocket::stream<ssl_stream<tcp::socket>>&
@@ -603,9 +546,7 @@ namespace {
 
       // Start the asynchronous operation
       template<class Body, class Allocator>
-      void
-      run(http::request<Body, http::basic_fields<Allocator>> req)
-      {
+      void run(http::request<Body, http::basic_fields<Allocator>> req) {
           channel = connHandler.AddClient(this);
 
           // Run the timer. The timer is operated
@@ -616,9 +557,7 @@ namespace {
           doAccept(std::move(req));
       }
 
-      void
-      doEof()
-      {
+      void doEof() {
         eof_ = true;
 
         // Set the timer
@@ -634,9 +573,7 @@ namespace {
                     std::placeholders::_1)));
       }
 
-      void
-      onShutdown(boost::system::error_code ec)
-      {
+      void onShutdown(boost::system::error_code ec) {
         // Happens when the shutdown times out
         if(ec == boost::asio::error::operation_aborted)
           return;
@@ -650,9 +587,7 @@ namespace {
         // At this point the connection is closed gracefully
       }
 
-      void
-      doTimeout()
-      {
+      void doTimeout() {
         // If this is true it means we timed out performing the shutdown
         if(eof_)
           return;
@@ -666,25 +601,19 @@ namespace {
   };
 
   template<class Body, class Allocator>
-  void
-  makeWebsocketSession(
-      tcp::socket socket,
-      http::request<Body, http::basic_fields<Allocator>> req,
-      RequestHandler requestHandler)
-  {
-      std::make_shared<PlainWebsocketSession>(
-          std::move(socket), requestHandler)->run(std::move(req));
+  void makeWebsocketSession(tcp::socket socket,
+                            http::request<Body, http::basic_fields<Allocator>> req,
+                            RequestHandler requestHandler) {
+    std::make_shared<PlainWebsocketSession>(
+        std::move(socket), requestHandler)->run(std::move(req));
   }
 
   template<class Body, class Allocator>
-  void
-  makeWebsocketSession(
-      ssl_stream<tcp::socket> stream,
-      http::request<Body, http::basic_fields<Allocator>> req,
-      RequestHandler requestHandler)
-  {
-      std::make_shared<SslWebsocketSession>(
-          std::move(stream), requestHandler)->run(std::move(req));
+  void makeWebsocketSession(ssl_stream<tcp::socket> stream,
+                            http::request<Body, http::basic_fields<Allocator>> req,
+                            RequestHandler requestHandler) {
+    std::make_shared<SslWebsocketSession>(
+        std::move(stream), requestHandler)->run(std::move(req));
   }
 
   //------------------------------------------------------------------------------
@@ -693,28 +622,22 @@ namespace {
   // This uses the Curiously Recurring Template Pattern so that
   // the same code works with both SSL streams and regular sockets.
   template<class Derived>
-  class HttpSession
-  {
+  class HttpSession {
       // Access the derived class, this is part of
       // the Curiously Recurring Template Pattern idiom.
-      Derived&
-      derived()
-      {
+      Derived& derived() {
         return static_cast<Derived&>(*this);
       }
 
       // This queue is used for HTTP pipelining.
-      class queue
-      {
-          enum
-          {
+      class queue {
+          enum {
             // Maximum number of responses we will queue
             limit = 8
           };
 
           // The type-erased, saved work item
-          struct work
-          {
+          struct work {
               virtual ~work() = default;
               virtual void operator()() = 0;
           };
@@ -723,26 +646,19 @@ namespace {
           std::vector<std::unique_ptr<work>> items_;
 
         public:
-          explicit
-          queue(HttpSession& self)
-          : self_(self)
-          {
+          explicit queue(HttpSession& self) : self_(self) {
             static_assert(limit > 0, "queue limit must be positive");
             items_.reserve(limit);
           }
 
           // Returns `true` if we have reached the queue limit
-          bool
-          is_full() const
-          {
+          bool is_full() const {
             return items_.size() >= limit;
           }
 
           // Called when a message finishes sending
           // Returns `true` if the caller should initiate a read
-          bool
-          onWrite()
-          {
+          bool onWrite() {
             BOOST_ASSERT(! items_.empty());
             auto const was_full = is_full();
             items_.erase(items_.begin());
@@ -753,12 +669,9 @@ namespace {
 
           // Called by the HTTP handler to send a response.
           template<bool isRequest, class Body, class Fields>
-          void
-          operator()(http::message<isRequest, Body, Fields>&& msg)
-          {
+          void operator()(http::message<isRequest, Body, Fields>&& msg) {
               // This holds a work item
-              struct work_impl : work
-              {
+              struct work_impl : work {
                 HttpSession& self_;
                 http::message<isRequest, Body, Fields> msg_;
 
@@ -766,13 +679,11 @@ namespace {
                     HttpSession& self,
                     http::message<isRequest, Body, Fields>&& msg)
                 : self_(self)
-                , msg_(std::move(msg))
-                {
+                , msg_(std::move(msg)) {
                 }
 
                 void
-                operator()()
-                {
+                operator()() {
                   http::async_write(
                       self_.derived().stream(),
                       msg_,
@@ -810,24 +721,20 @@ namespace {
 
     public:
       // Construct the session
-      HttpSession(
-          boost::asio::io_context& ioc,
-          boost::beast::flat_buffer buffer,
-          std::string const& doc_root,
-          RequestHandler requestHandler)
-    : doc_root_(doc_root)
-    , queue_(*this)
-    , timer_(ioc,
-        (std::chrono::steady_clock::time_point::max)())
-    , strand_(ioc.get_executor())
-    , bufferRead_(std::move(buffer))
-    , requestHandler_(requestHandler)
-    {
-    }
+      HttpSession(boost::asio::io_context& ioc,
+                  boost::beast::flat_buffer buffer,
+                  std::string const& doc_root,
+                  RequestHandler requestHandler)
+        : doc_root_(doc_root)
+        , queue_(*this)
+        , timer_(ioc,
+            (std::chrono::steady_clock::time_point::max)())
+        , strand_(ioc.get_executor())
+        , bufferRead_(std::move(buffer))
+        , requestHandler_(requestHandler) {
+      }
 
-      void
-      doRead()
-      {
+      void doRead() {
         // Set the timer
         timer_.expires_after(std::chrono::seconds(HTTP_TIMEOUT_VALUE));
 
@@ -849,9 +756,7 @@ namespace {
       }
 
       // Called when the timer expires.
-      void
-      onTimer(boost::system::error_code ec)
-      {
+      void onTimer(boost::system::error_code ec) {
         if(ec && ec != boost::asio::error::operation_aborted) {
           fail<>(&derived(), ec, "timer");
           return;
@@ -871,9 +776,7 @@ namespace {
                     std::placeholders::_1)));
       }
 
-      void
-      onRead(boost::system::error_code ec)
-      {
+      void onRead(boost::system::error_code ec) {
         // Happens when the timer closes the socket
         if(ec == boost::asio::error::operation_aborted)
           return;
@@ -886,8 +789,7 @@ namespace {
           fail(ec, "read");
 
         // See if it is a WebSocket Upgrade
-        if(websocket::is_upgrade(req_))
-        {
+        if(websocket::is_upgrade(req_)) {
           // Transfer the stream to a new WebSocket session
           return makeWebsocketSession(
               derived().release_stream(),
@@ -900,8 +802,7 @@ namespace {
         // if we got correct JSON request back, send it to handler
         if (restHandler->GetJson(std::string(req_.method_string()),
                                std::string(req_.target()),
-                               jsonRequest))
-        {
+                               jsonRequest)) {
           auto response = requestHandler_(jsonRequest, channel);
           // Respond to GET request
           http::response<http::string_body> res{
@@ -914,8 +815,7 @@ namespace {
           res.keep_alive(req_.keep_alive());
           queue_(std::move(res));
         }
-        else
-        {
+        else {
           // write jsonRequest back as error response
           auto const bad_request =
                     [=](std::string why)
@@ -936,9 +836,7 @@ namespace {
           doRead();
       }
 
-      void
-      onWrite(boost::system::error_code ec, bool close)
-      {
+      void onWrite(boost::system::error_code ec, bool close) {
         // Happens when the timer closes the socket
         if(ec == boost::asio::error::operation_aborted)
           return;// provide error JSON
@@ -948,16 +846,14 @@ namespace {
           return;
         }
 
-        if(close)
-        {
+        if(close) {
           // This means we should close the connection, usually because
           // the response indicated the "Connection: close" semantic.
           return derived().doEof();
         }
 
         // Inform the queue that a write completed
-        if(queue_.onWrite())
-        {
+        if(queue_.onWrite()) {
           // Read another request
           doRead();
         }
@@ -965,49 +861,39 @@ namespace {
   };
 
   // Handles a plain HTTP connection
-  class PlainHttpSession
-      : public HttpSession<PlainHttpSession>
-  , public std::enable_shared_from_this<PlainHttpSession>
-  {
+  class PlainHttpSession : public HttpSession<PlainHttpSession>,
+                           public std::enable_shared_from_this<PlainHttpSession> {
       tcp::socket socket_;
       boost::asio::strand<
       boost::asio::io_context::executor_type> strand_;
 
     public:
       // Create the http_session
-      PlainHttpSession(
-          tcp::socket socket,
-          boost::beast::flat_buffer buffer,
-          std::string const& doc_root,
-          RequestHandler requestHandler)
-    : HttpSession<PlainHttpSession>(
-        socket.get_executor().context(),
-        std::move(buffer),
-        doc_root,
-        requestHandler)
-        , socket_(std::move(socket))
-        , strand_(socket_.get_executor())
-        {
-        }
+      PlainHttpSession(tcp::socket socket,
+                       boost::beast::flat_buffer buffer,
+                       std::string const& doc_root,
+                       RequestHandler requestHandler)
+        : HttpSession<PlainHttpSession>(
+            socket.get_executor().context(),
+            std::move(buffer),
+            doc_root,
+            requestHandler)
+            , socket_(std::move(socket))
+            , strand_(socket_.get_executor()) {
+      }
 
       // Called by the base class
-      tcp::socket&
-      stream()
-      {
+      tcp::socket& stream() {
         return socket_;
       }
 
       // Called by the base class
-      tcp::socket
-      release_stream()
-      {
+      tcp::socket release_stream() {
         return std::move(socket_);
       }
 
       // Start the asynchronous operation
-      void
-      run()
-      {
+      void run() {
         channel = connHandler.AddClient(this);
 
         // Run the timer. The timer is operated
@@ -1017,9 +903,7 @@ namespace {
         doRead();
       }
 
-      void
-      doEof()
-      {
+      void doEof() {
         // Send a TCP shutdown
         boost::system::error_code ec;
         socket_.shutdown(tcp::socket::shutdown_send, ec);
@@ -1027,9 +911,7 @@ namespace {
         // At this point the connection is closed gracefully
       }
 
-      void
-      doTimeout()
-      {
+      void doTimeout() {
         // Closing the socket cancels all outstanding operations. They
         // will complete with boost::asio::error::operation_aborted
         boost::system::error_code ec;
@@ -1039,10 +921,8 @@ namespace {
   };
 
   // Handles an SSL HTTP connection
-  class SslHttpSession
-      : public HttpSession<SslHttpSession>
-  , public std::enable_shared_from_this<SslHttpSession>
-  {
+  class SslHttpSession : public HttpSession<SslHttpSession>,
+                         public std::enable_shared_from_this<SslHttpSession> {
       ssl_stream<tcp::socket> stream_;
       boost::asio::strand<
       boost::asio::io_context::executor_type> strand_;
@@ -1050,40 +930,32 @@ namespace {
 
     public:
       // Create the http_session
-      SslHttpSession(
-          tcp::socket socket,
-          ssl::context& ctx,
-          boost::beast::flat_buffer buffer,
-          std::string const& doc_root,
-          RequestHandler requestHandler)
-    : HttpSession<SslHttpSession>(
-        socket.get_executor().context(),
-        std::move(buffer),
-        doc_root,
-        requestHandler)
-        , stream_(std::move(socket), ctx)
-        , strand_(stream_.get_executor())
-        {
-        }
+      SslHttpSession(tcp::socket socket,
+                     ssl::context& ctx,
+                     boost::beast::flat_buffer buffer,
+                     std::string const& doc_root,
+                     RequestHandler requestHandler)
+        : HttpSession<SslHttpSession>(
+            socket.get_executor().context(),
+            std::move(buffer),
+            doc_root,
+            requestHandler)
+            , stream_(std::move(socket), ctx)
+            , strand_(stream_.get_executor()) {
+      }
 
       // Called by the base class
-      ssl_stream<tcp::socket>&
-      stream()
-      {
+      ssl_stream<tcp::socket>& stream() {
         return stream_;
       }
 
       // Called by the base class
-      ssl_stream<tcp::socket>
-      release_stream()
-      {
+      ssl_stream<tcp::socket> release_stream() {
         return std::move(stream_);
       }
 
       // Start the asynchronous operation
-      void
-      run()
-      {
+      void run() {
         channel = connHandler.AddClient(this);
 
         // Run the timer. The timer is operated
@@ -1109,11 +981,8 @@ namespace {
                     std::placeholders::_1,
                     std::placeholders::_2)));
       }
-      void
-      onHandshake(
-          boost::system::error_code ec,
-          std::size_t bytes_used)
-      {
+      void onHandshake(boost::system::error_code ec,
+                       std::size_t bytes_used) {
         // Happens when the handshake times out
         if(ec == boost::asio::error::operation_aborted)
           return;
@@ -1127,9 +996,7 @@ namespace {
         doRead();
       }
 
-      void
-      doEof()
-      {
+      void doEof() {
         eof_ = true;
 
         // Set the timer
@@ -1145,9 +1012,7 @@ namespace {
                     std::placeholders::_1)));
       }
 
-      void
-      onShutdown(boost::system::error_code ec)
-      {
+      void onShutdown(boost::system::error_code ec) {
         // Happens when the shutdown times out
         if(ec == boost::asio::error::operation_aborted)
           return;
@@ -1159,9 +1024,7 @@ namespace {
         // At this point the connection is closed gracefully
       }
 
-      void
-      doTimeout()
-      {
+      void doTimeout() {
         // If this is true it means we timed out performing the shutdown
         if(eof_)
           return;
@@ -1176,8 +1039,7 @@ namespace {
 
   //------------------------------------------------------------------------------
   // Detects SSL handshakes
-  class DetectSession : public std::enable_shared_from_this<DetectSession>
-  {
+  class DetectSession : public std::enable_shared_from_this<DetectSession> {
       tcp::socket socket_;
       ssl::context& ctx_;
       boost::asio::strand<
@@ -1187,24 +1049,19 @@ namespace {
       RequestHandler requestHandler_;
 
     public:
-      explicit
-      DetectSession(
-          tcp::socket socket,
-          ssl::context& ctx,
-          std::string const& doc_root,
-          RequestHandler requestHandler)
-      : socket_(std::move(socket))
-      , ctx_(ctx)
-      , strand_(socket_.get_executor())
-      , doc_root_(doc_root)
-      , requestHandler_(requestHandler)
-      {
+      explicit DetectSession(tcp::socket socket,
+                             ssl::context& ctx,
+                             std::string const& doc_root,
+                             RequestHandler requestHandler)
+        : socket_(std::move(socket))
+        , ctx_(ctx)
+        , strand_(socket_.get_executor())
+        , doc_root_(doc_root)
+        , requestHandler_(requestHandler) {
       }
 
       // Launch the detector
-      void
-      run()
-      {
+      void run() {
         async_detect_ssl(
             socket_,
             buffer_,
@@ -1217,9 +1074,7 @@ namespace {
                     std::placeholders::_2)));
       }
 
-      void
-      onDetect(boost::system::error_code ec, boost::tribool result)
-      {
+      void onDetect(boost::system::error_code ec, boost::tribool result) {
         if(ec)
           return fail(ec, "detect");
 
@@ -1252,8 +1107,7 @@ namespace {
   };
 
   // Accepts incoming connections and launches the sessions
-  class BeastListener : public std::enable_shared_from_this<BeastListener>
-  {
+  class BeastListener : public std::enable_shared_from_this<BeastListener> {
       ssl::context& ctx_;
       tcp::acceptor acceptor_;
       tcp::socket socket_;
@@ -1261,18 +1115,16 @@ namespace {
       RequestHandler requestHandler_;
 
     public:
-      BeastListener(
-          boost::asio::io_context& ioc,
-          ssl::context& ctx,
-          tcp::endpoint endpoint,
-          std::string const& doc_root,
-          RequestHandler requestHandler)
-    : ctx_(ctx)
-    , acceptor_(ioc)
-    , socket_(ioc)
-    , doc_root_(doc_root)
-    , requestHandler_(requestHandler)
-    {
+      BeastListener(boost::asio::io_context& ioc,
+                    ssl::context& ctx,
+                    tcp::endpoint endpoint,
+                    std::string const& doc_root,
+                    RequestHandler requestHandler)
+        : ctx_(ctx)
+        , acceptor_(ioc)
+        , socket_(ioc)
+        , doc_root_(doc_root)
+        , requestHandler_(requestHandler) {
         boost::system::error_code ec;
 
         // Open the acceptor
@@ -1307,20 +1159,16 @@ namespace {
           fail(ec, "listen");
           return;
         }
-    }
+      }
 
       // Start accepting incoming connections
-      void
-      run()
-      {
+      void run() {
         if(! acceptor_.is_open())
           return;
         doAccept();
       }
 
-      void
-      doAccept()
-      {
+      void doAccept() {
         acceptor_.async_accept(
             socket_,
             std::bind(
@@ -1329,9 +1177,7 @@ namespace {
                 std::placeholders::_1));
       }
 
-      void
-      onAccept(boost::system::error_code ec)
-      {
+      void onAccept(boost::system::error_code ec) {
         if(ec)
         {
           fail(ec, "accept");
