@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Tester for REST API support for W3C-VISServer-API</title>
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="jsonview.css">
+  <!-- Linking to helper utilities -->
+  <link href="https://fonts.googleapis.com/css?family=Dosis:400,700" rel="stylesheet">
+  <!-- helper for visualizing JSON in HTML -->
+  <script src="jsonview.js"></script>
+  <!-- helper for JWT token handling -->
+  <!-- Including CryptoJS required libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script>
+</head>
+
+<body>
+  <div id="container">
+    <div id="main-content-tab">
+      <div class="row">
+        <div class="col-logo">
+          <img src="../../../logos/kuksa.png" alt="Eclipse KUKSA">
+        </div>
+        <div class="col-title">
+          <p>W3C Vehicle Information Specification test client for REST and Web-Socket interfaces</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div id="auth-token">
+          Current authorization token:<br>
+          <textarea id="auth-token-string" name="auth-token-string"></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-app">
+          <div class="col-form">
+            Input resource request to fetch for the W3C VIS Server below:
+            <form id="request-setup">
+              <input id="resource-path" type="text"><br>
+              <input id="make-get-request" type="submit" value="Run GET">
+              <input id="make-set-request" type="submit" value="Run SET">
+            </form>
+          </div>
+          <div id="log" class="col-log">
+
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div id="json-raw-output" class="col-json-raw-output"></div>
+        <div id="json-table" class="col-json-table"/></div>
+      </div>
+    </div>
+
+    <div id="config-content-tab">
+      <div id="server-params">
+        <form>
+         <fieldset autocomplete="on">
+           <legend>Server parameters:</legend>
+           Address:<input id="server-address" type="text"><br>
+           Port: <input id="server-port" type="number"><br>
+           Doc root: <input id="server-doc-root" type="text"><br>
+         </fieldset>
+        </form>
+      </div>
+      <br>
+      <div id="client-token-certs">
+        <form id="input-client-certs">
+         <fieldset autocomplete="on">
+           <legend>Client token and certificates configuration</legend>
+           Client token content:
+           <textarea id="client-token" name="client-token" rows="12" cols="64" form="input-client-certs">
+           </textarea><br>
+           Client PEM certificate content:
+           <textarea name="client-pem-cert" rows="21" cols="64" form="input-client-certs">
+           </textarea><br>
+           Client key certificate content:
+           <textarea id="client-key-cert" name="client-key-cert" rows="27" cols="64" form="input-client-certs">
+           </textarea>
+         </fieldset>
+        </form>
+      </div>
+    </div>
+
+  </div>
+  <div class="clear"/>
+  <!-- load our JS code only when all other loaded -->
+  <script src="rest-client.js"></script>
+</body>
+</html>

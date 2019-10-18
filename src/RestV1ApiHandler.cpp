@@ -100,6 +100,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
 
              if (restTarget.size() && verifyPathAndStrip(restTarget, delimiter)) {
                while (restTarget.size()) {
+                 // we only accept clean printable characters
                  const std::regex regexValidWord("^([A-Za-z]+)");
 
                  if (std::regex_search(restTarget, sm, regexValidWord)) {

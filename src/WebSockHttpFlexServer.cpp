@@ -810,7 +810,10 @@ namespace {
             std::make_tuple(response),
             std::make_tuple(http::status::ok, req_.version())};
           res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-          res.set(http::field::content_type, "text/json");
+          res.set(http::field::content_type, "application/json");
+          // allow cross-domain calls with setting below header
+          // TODO: evaluate this header for production level SW
+          res.set(http::field::access_control_allow_origin, "*");
           res.content_length(response.size());
           res.keep_alive(req_.keep_alive());
           queue_(std::move(res));
@@ -822,7 +825,7 @@ namespace {
                     {
                   http::response<http::string_body> res{http::status::bad_request, req_.version()};
                   res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-                  res.set(http::field::content_type, "text/json");
+                  res.set(http::field::content_type, "application/json");
                   res.keep_alive(req_.keep_alive());
                   res.body() = why;
                   res.prepare_payload();
