@@ -51,22 +51,9 @@ class RestV1ApiHandler : public IRestHandler {
     };
 
   private:
-    /**
-     * @brief Handle HTTP GET request
-     * @param restTarget input HTTP target string
-     * @param jsonRequest output JSON string
-     * @return true if REST request valid and valid request JSON returned
-     *          \c false otherwise and error response JSON returned
-     */
-    bool handleGet(std::string && restTarget, std::string& jsonRequest);
-    /**
-     * @brief Handle HTTP SET request
-     * @param restTarget input HTTP target string
-     * @param jsonRequest output JSON string
-     * @return true if REST request valid and valid request JSON returned
-     *          \c false otherwise and error response JSON returned
-     */
-    bool handleSet(std::string && restTarget, std::string& jsonRequest);
+    bool GetSignalPath(uint32_t requestId,
+                       jsoncons::json& json,
+                       std::string&& restTarget);
     /**
      * @brief Verify that HTTP target begins with correct root path and remove it if found
      * @param restTarget HTTP target path

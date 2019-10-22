@@ -59,10 +59,80 @@ bool RestV1ApiHandler::verifyPathAndStrip(std::string& restTarget, std::string& 
   return false;
 }
 
+bool RestV1ApiHandler::GetSignalPath(uint32_t requestId,
+                                     jsoncons::json& json,
+                                     std::string&& restTarget) {
+  std::string signalPath;
+  std::string foundStr;
+  std::string delimiter("/");
+  std::smatch sm;
+  bool ret = true;
+
+  if (restTarget.size() && verifyPathAndStrip(restTarget, delimiter)) {
+    while (restTarget.size()) {
+      // we only accept clean printable characters
+      const std::regex regexValidWord("^([A-Za-z]+)");
+
+      if (std::regex_search(restTarget, sm, regexValidWord)) {
+        foundStr = sm.str(1);
+        signalPath += foundStr;
+        if (verifyPathAndStrip(restTarget, foundStr)) {
+          if ((restTarget.size() == 0)) {
+            break;
+          }
+          else if (verifyPathAndStrip(restTarget, delimiter)) {
+            signalPath += '.';
+          }
+          else {
+            JsonResponses::malFormedRequest(
+                requestId,
+                json["action"].as_string(),
+                "Signal path delimiter not valid",
+                json);
+            ret = false;
+          }
+        }
+        else {
+           JsonResponses::malFormedRequest(
+              requestId,
+              json["action"].as_string(),
+              "Signal path not valid",
+              json);
+          ret = false;
+        }
+      }
+      else {
+        JsonResponses::malFormedRequest(
+            requestId,
+            json["action"].as_string(),
+            "Signal path URI not valid",
+            json);
+        ret = false;
+      }
+    }
+  }
+  else {
+    // not supporting retrieving of all signals by default
+    JsonResponses::malFormedRequest(
+        requestId,
+        json["action"].as_string(),
+        "Signals cannot be retrieved in bulk request for now, only through single signal requests",
+        json);
+    ret = false;
+  }
+
+  // update signal path if all is OK
+  if (ret) {
+    json["path"] = signalPath;
+  }
+
+  return ret;
+}
+
 // Basic implementation of REST API handling
 // For now governed by KISS principle, but in future, it should be re-factored
 // to handle independently different methods and resources for easier maintenance..
-// possibly by providing hooks for each resource and API version
+// possibly by providing hooks for each resource and|or API version, etc...
 bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                                std::string&& restTarget,
                                std::string& jsonRequest) {
@@ -80,10 +150,9 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
   std::regex_match (restMethod, sm, regSupportedHttpActions);
   // if supported methods found, parse further
   if (sm.size()) {
-    std::string foundStr = sm.str(1);
-    boost::algorithm::to_lower(foundStr);
+    std::string httpMethod = sm.str(1);
+    boost::algorithm::to_lower(httpMethod);
 
-    json["action"] = foundStr;
 
     if (verifyPathAndStrip(restTarget, docRoot_)) {
        const std::regex regResources(regexResources_, std::regex_constants::icase);
@@ -91,89 +160,76 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
        // get requested resource type
        std::regex_search(restTarget, sm, regResources);
        if (sm.size()) {
-         foundStr = sm.str(1);
+         std::string foundStr = sm.str(1);
 
          if (verifyPathAndStrip(restTarget, foundStr)) {
+           // //////
+           // signals handler
            if (foundStr == "signals") {
-             std::string signalPath;
-             std::string delimiter("/");
+             if (httpMethod == "get") {
+               ret = GetSignalPath(requestId, json, std::move(restTarget));
 
-             if (restTarget.size() && verifyPathAndStrip(restTarget, delimiter)) {
-               while (restTarget.size()) {
-                 // we only accept clean printable characters
-                 const std::regex regexValidWord("^([A-Za-z]+)");
-
-                 if (std::regex_search(restTarget, sm, regexValidWord)) {
-                   foundStr = sm.str(1);
-                   signalPath += foundStr;
-                   if (verifyPathAndStrip(restTarget, foundStr)) {
-                     if ((restTarget.size() == 0)) {
-                       break;
-                     }
-                     else if (verifyPathAndStrip(restTarget, delimiter)) {
-                       signalPath += '.';
-                     }
-                     else {
-                       jsonRequest = JsonResponses::malFormedRequest(
-                           requestId,
-                           json["action"].as_string(),
-                           "Signal path delimiter not valid");
-                       ret = false;
-                     }
-                   }
-                   else {
-                     jsonRequest = JsonResponses::malFormedRequest(
-                         requestId,
-                         json["action"].as_string(),
-                         "Signal path not valid");
-                     ret = false;
-                   }
-                 }
-                 else {
-                   jsonRequest = JsonResponses::malFormedRequest(
-                       requestId,
-                       json["action"].as_string(),
-                       "Signal path URI not valid");
-                   ret = false;
-                 }
-               }
+               json["action"] = "get";
              }
              else {
-               // not supporting retrieving of all signals by default
-               jsonRequest = JsonResponses::malFormedRequest(
+               // TODO: handle signal SET
+               JsonResponses::malFormedRequest(
                    requestId,
                    json["action"].as_string(),
-                   "Signals cannot be retrieved in bulk request, only through single signal requests");
-               ret = false;
-             }
-
-             // update signal path if all is OK
-             if (ret) {
-               json["path"] = signalPath;
+                   "SET method not yet supported for 'signals' resource",
+                   json);
              }
            }
-           else if (sm.str(1) == "metadata") {
-             // TODO: add support for metadata
-             jsonRequest = JsonResponses::noAccess(
-                 requestId,
-                 json["action"].as_string(),
-                 "Access to metadata not yet supported");
+           // //////
+           // metadata handler
+           else if (foundStr == "metadata") {
+             if (httpMethod == "get") {
+               ret = GetSignalPath(requestId, json, std::move(restTarget));
+
+               json["action"] = "getMetadata";
+             }
+             else {
+               // TODO: handle signal SET
+               JsonResponses::malFormedRequest(
+                   requestId,
+                   json["action"].as_string(),
+                   "SET method not  supported for 'metadata' resource",
+                   json);
+             }
+           }
+           // //////
+           // authorize handler
+           else if (foundStr == "authorize") {
+             if (httpMethod == "set") {
+               json["action"] = "authorize";
+             }
+             else {
+               // GET not supported for authorize resource
+               JsonResponses::malFormedRequest(
+                   requestId,
+                   json["action"].as_string(),
+                   "GET method not supported for 'authorize' resource",
+                   json);
+               ret = false;
+             }
            }
          }
          else {
-           jsonRequest = JsonResponses::malFormedRequest(
+            JsonResponses::malFormedRequest(
                requestId,
                json["action"].as_string(),
-               "Signal path URI not valid");
+               "Signal path URI not valid",
+               json);
            ret = false;
          }
        }
        else
        {
-         jsonRequest = JsonResponses::malFormedRequest(
+         JsonResponses::malFormedRequest(
              requestId,
              json["action"].as_string(),
-             "Requested resource do not exist");
+             "Requested resource do not exist",
+             json);
          ret = false;
        }
     }
@@ -181,10 +237,11 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
   else
   {
     // TODO: evaluate what and how we should support HTTP methods (put, patch, ...)
-    jsonRequest = JsonResponses::malFormedRequest(
+    JsonResponses::malFormedRequest(
         requestId,
         json["action"].as_string(),
-        "Requested HTTP method is not supported");
+        "Requested HTTP method is not supported",
+        json);
     ret = false;
   }
 

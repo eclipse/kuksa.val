@@ -14,33 +14,42 @@
 #include "JsonResponses.hpp"
 
 namespace JsonResponses {
-  std::string malFormedRequest(uint32_t request_id,
-                               const std::string action,
-                               std::string message) {
-    jsoncons::json answer;
-    answer["action"] = action;
-    answer["requestId"] = request_id;
+  void malFormedRequest(uint32_t request_id,
+                        const std::string action,
+                        std::string message,
+                        jsoncons::json& jsonResponse) {
+    jsonResponse["action"] = action;
+    jsonResponse["requestId"] = request_id;
     jsoncons::json error;
     error["number"] = 400;
     error["reason"] = "Bad Request";
     error["message"] = message;
-    answer["error"] = error;
-    answer["timestamp"] = time(NULL);
+    jsonResponse["error"] = error;
+    jsonResponse["timestamp"] = time(NULL);
+  }
+  std::string malFormedRequest(uint32_t request_id,
+                               const std::string action,
+                               std::string message) {
+    jsoncons::json answer;
+    malFormedRequest(request_id, action, message, answer);
 
     std::stringstream ss;
     ss << pretty_print(answer);
     return ss.str();
   }
 
-  std::string malFormedRequest(std::string message) {
-    jsoncons::json answer;
+  void malFormedRequest(std::string message, jsoncons::json& jsonResponse) {
     jsoncons::json error;
 
     error["number"] = 400;
     error["reason"] = "Bad Request";
     error["message"] = message;
-    answer["error"] = error;
-    answer["timestamp"] = time(NULL);
+    jsonResponse["error"] = error;
+    jsonResponse["timestamp"] = time(NULL);
+  }
+  std::string malFormedRequest(std::string message) {
+    jsoncons::json answer;
+    malFormedRequest(message, answer);
 
     std::stringstream ss;
     ss << pretty_print(answer);
@@ -48,54 +57,72 @@ namespace JsonResponses {
   }
 
   /** A API call requested a non-existant path */
-  std::string pathNotFound(uint32_t request_id,
-                           const std::string action,
-                           const std::string path) {
-    jsoncons::json answer;
-    answer["action"] = action;
-    answer["requestId"] = request_id;
+  void pathNotFound(uint32_t request_id,
+                    const std::string action,
+                    const std::string path,
+                    jsoncons::json& jsonResponse) {
+    jsonResponse["action"] = action;
+    jsonResponse["requestId"] = request_id;
     jsoncons::json error;
     error["number"] = 404;
     error["reason"] = "Path not found";
     error["message"] = "I can not find " + path + " in my db";
-    answer["error"] = error;
-    answer["timestamp"] = time(NULL);
+    jsonResponse["error"] = error;
+    jsonResponse["timestamp"] = time(NULL);
+  }
+  std::string pathNotFound(uint32_t request_id,
+                           const std::string action,
+                           const std::string path) {
+    jsoncons::json answer;
+    pathNotFound(request_id, action, path, answer);
 
     std::stringstream ss;
     ss << pretty_print(answer);
     return ss.str();
   }
 
-  std::string noAccess(uint32_t request_id,
-                       const std::string action,
-                       std::string message) {
-    jsoncons::json result;
+  void noAccess(uint32_t request_id,
+                const std::string action,
+                std::string message,
+                jsoncons::json& jsonResponse) {
     jsoncons::json error;
-    result["action"] = action;
-    result["requestId"] = request_id;
+    jsonResponse["action"] = action;
+    jsonResponse["requestId"] = request_id;
     error["number"] = 403;
     error["reason"] = "Forbidden";
     error["message"] = message;
-    result["error"] = error;
-    result["timestamp"] = time(NULL);
+    jsonResponse["error"] = error;
+    jsonResponse["timestamp"] = time(NULL);
+  }
+  std::string noAccess(uint32_t request_id,
+                       const std::string action,
+                       std::string message) {
+    jsoncons::json answer;
+    noAccess(request_id, action, message, answer);
 
     std::stringstream ss;
-    ss << pretty_print(result);
+    ss << pretty_print(answer);
     return ss.str();
   }
 
-  std::string valueOutOfBounds(uint32_t request_id,
-                               const std::string action,
-                               const std::string message) {
-    jsoncons::json answer;
-    answer["action"] = action;
-    answer["requestId"] = request_id;
+  void valueOutOfBounds(uint32_t request_id,
+                        const std::string action,
+                        const std::string message,
+                        jsoncons::json& jsonResponse) {
+    jsonResponse["action"] = action;
+    jsonResponse["requestId"] = request_id;
     jsoncons::json error;
     error["number"] = 400;
     error["reason"] = "Value passed is out of bounds";
     error["message"] = message;
-    answer["error"] = error;
-    answer["timestamp"] = time(NULL);
+    jsonResponse["error"] = error;
+    jsonResponse["timestamp"] = time(NULL);
+  }
+  std::string valueOutOfBounds(uint32_t request_id,
+                               const std::string action,
+                               const std::string message) {
+    jsoncons::json answer;
+    valueOutOfBounds(request_id, action, message, answer);
 
     std::stringstream ss;
     ss << pretty_print(answer);
