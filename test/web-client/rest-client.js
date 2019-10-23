@@ -17,7 +17,7 @@ document.getElementById('server-doc-root').value = "vss/api/v1";
 
 // setup event handlers
 document.getElementById('make-get-request').onclick = function req() {return makeRestRequest('GET');};
-document.getElementById('make-set-request').onclick = function req() {return makeRestRequest('SET');};
+document.getElementById('make-post-request').onclick = function req() {return makeRestRequest("POST");};
 
 
 document.getElementById('client-token').addEventListener('paste', onTokenUpdate);
@@ -48,19 +48,23 @@ function getBase64url(source) {
 }
 
 function getEncodedToken() {
-  var stringifiedHeader = CryptoJS.enc.Utf8.parse(JSON.stringify(jwtHeader));
-  var encodedHeader = getBase64url(stringifiedHeader);
-
   var data = document.getElementById("client-token").value;
-  var encodedData = getBase64url(CryptoJS.enc.Utf8.parse(data));
+  var sHead = JSON.stringify(jwtHeader);
+  var head = KJUR.jws.JWS.readSafeJSONString(sHead);
+  var sPayload = data;//newline_toDos(document.form1.jwspayload1.value);
+  var sPemPrvKey = document.getElementById("client-key-cert").value;
 
-  var signatureInput = encodedHeader + "." + encodedData;
-  var secret = document.getElementById("client-key-cert").value;
-  var signature = CryptoJS.SHA256(signatureInput, secret);
-  signature = getBase64url(signature);
+  var jws = new KJUR.jws.JWS();
+  var sResult = null;
+  try {
+    prv = KEYUTIL.getKey(sPemPrvKey);
 
-  // update on-screen token for user
-  document.getElementById("auth-token-string").value = signatureInput + "." + signature;
+    sResult = KJUR.jws.JWS.sign(head.alg, sHead, sPayload, prv);
+    document.getElementById("auth-token-string").value = sResult;
+  }
+  catch (ex) {
+    alert("Error: " + ex);
+  }
 
   return false;
 }
@@ -77,8 +81,8 @@ function makeRestRequest(type) {
     requestObj.open(type, requestUrl, true);
 
     // callback handler when positive response received
-    requestObj.onload = function () {
-      if (this.readyState == 4 && this.status == 200) {
+    requestObj.onreadystatechange = function () {
+      if (this.readyState == XMLHttpRequest.DONE && this.status == 200) {
         document.getElementById('json-raw-output').innerHTML = this.responseText;
         let target = '#json-raw-output';
         jsonView.format(this.responseText, target);

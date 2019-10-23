@@ -9,13 +9,12 @@
 
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="jsonview.css">
-  <!-- Linking to helper utilities -->
+  <!-- Linking to helper utilitie s-->
   <link href="https://fonts.googleapis.com/css?family=Dosis:400,700" rel="stylesheet">
   <!-- helper for visualizing JSON in HTML -->
   <script src="jsonview.js"></script>
   <!-- helper for JWT token handling -->
-  <!-- Including CryptoJS required libraries -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/8.0.12/jsrsasign-all-min.js"></script>
 </head>
 
 <body>
@@ -44,7 +43,7 @@
             <form id="request-setup">
               <input id="resource-path" type="text"><br>
               <input id="make-get-request" type="submit" value="Run GET">
-              <input id="make-set-request" type="submit" value="Run SET">
+              <input id="make-post-request" type="submit" value="Run POST">
             </form>
           </div>
           <div id="log" class="col-log">

@@ -118,6 +118,8 @@ textarea {
 }
 #auth-token textarea{
   width: 96%;
+  height: 70px;
+  font-size: 9px;
   resize: none;
   /*user-select: none;*/
   -webkit-border-radius: 6px;
@@ -131,6 +133,6 @@ textarea {
   width: 96%;
 }
 
-#make-get-request #make-set-request {
+#make-get-request #make-post-request {
   width: 100px;
 }

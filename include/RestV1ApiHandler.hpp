@@ -39,6 +39,7 @@ class RestV1ApiHandler : public IRestHandler {
     //const std::unordered_map<std::string, std::function> resourceHandlers_;
     std::string regexResources_;
     std::string regexHttpMethods_;
+    std::string regexToken_;
 
   public:
     /**
@@ -47,6 +48,7 @@ class RestV1ApiHandler : public IRestHandler {
     enum class Resources {
       Signals,     //!< Signals
       Metadata,    //!< Metadata
+      Authorize,   //!< Authorize
       Count
     };
 

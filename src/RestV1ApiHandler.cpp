@@ -28,10 +28,12 @@ RestV1ApiHandler::RestV1ApiHandler(std::shared_ptr<ILogger> loggerUtil, std::str
     docRoot_(docRoot) {
 
   // Supported HTTP methods
-  regexHttpMethods_ = "^(GET|SET)";
+  regexHttpMethods_ = "^(GET|POST)";
 
   // Resource strings for REST API hooks. Order must match order in RestV1ApiHandler::Resources enum
-  resourceHandleNames_ = std::vector<std::string>{std::string{"signals"}, std::string{"metadata"}};
+  resourceHandleNames_ = std::vector<std::string>{std::string{"signals"},
+                                                  std::string{"metadata"},
+                                                  std::string{"authorize"}};
   // verify that sizes match
   assert(resourceHandleNames_.size() == static_cast<size_t>(Resources::Count));
 
@@ -41,6 +43,9 @@ RestV1ApiHandler::RestV1ApiHandler(std::shared_ptr<ILogger> loggerUtil, std::str
     regexResources_ += resourceHandleNames_[i] + std::string("|");
   }
   regexResources_ += resourceHandleNames_[resourceHandleNames_.size() - 1u] + std::string(")");
+
+  // base64 url allowed characters
+  regexToken_ = std::string("[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+");
 }
 
 RestV1ApiHandler::~RestV1ApiHandler() {
@@ -153,7 +158,6 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
     std::string httpMethod = sm.str(1);
     boost::algorithm::to_lower(httpMethod);
 
-
     if (verifyPathAndStrip(restTarget, docRoot_)) {
        const std::regex regResources(regexResources_, std::regex_constants::icase);
 
@@ -172,11 +176,11 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                json["action"] = "get";
              }
              else {
-               // TODO: handle signal SET
+               // TODO: handle signal POST
                JsonResponses::malFormedRequest(
                    requestId,
                    json["action"].as_string(),
-                   "SET method not yet supported for 'signals' resource",
+                   "POST method not yet supported for 'signals' resource",
                    json);
              }
            }
@@ -189,19 +193,43 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                json["action"] = "getMetadata";
              }
              else {
-               // TODO: handle signal SET
+               // TODO: handle signal POST
                JsonResponses::malFormedRequest(
                    requestId,
                    json["action"].as_string(),
-                   "SET method not  supported for 'metadata' resource",
+                   "POST method not supported for 'metadata' resource",
                    json);
              }
            }
            // //////
            // authorize handler
            else if (foundStr == "authorize") {
-             if (httpMethod == "set") {
-               json["action"] = "authorize";
+             if (httpMethod == "post") {
+               std::string tokenParam("?token=");
+               if (verifyPathAndStrip(restTarget, tokenParam)) {
+                 const std::regex regToken(regexToken_);
+                 std::regex_search(restTarget, sm, regToken);
+
+                 sleep(1);
+                 if (sm.size()) {
+                   json["action"] = "authorize";
+                   json["tokens"] = sm.str(0);
+                 }
+                 else {
+                   JsonResponses::malFormedRequest(
+                       requestId,
+                       json["action"].as_string(),
+                       "Token for 'authorize' not valid",
+                       json);
+                 }
+               }
+               else {
+                 JsonResponses::malFormedRequest(
+                     requestId,
+                     json["action"].as_string(),
+                     "Parameters for 'authorize' not valid",
+                     json);
+               }
              }
              else {
                // GET not supported for authorize resource
@@ -212,6 +240,14 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                    json);
                ret = false;
              }
+           }
+           else {
+             JsonResponses::malFormedRequest(
+                 requestId,
+                 json["action"].as_string(),
+                 "Requested resource do not exist",
+                 json);
+             ret = false;
            }
          }
          else {
