@@ -22,13 +22,13 @@ html {
 }
 
 #main-content-tab {
-  margin-right: -300px;
+  margin-right: -360px;
   width: 100%;
   float: left;
 }
 
 #config-content-tab {
-  width: 300px;
+  width: 350px;
   float: left;
 }
 
@@ -37,7 +37,7 @@ html {
 }
 
 .row {
-  margin-right: 320px;
+  margin-right: 370px;
 }
 
 .row::after {
@@ -80,6 +80,57 @@ html {
   width: 100%;
 }
 
+#logging {
+  margin-left: 30px;
+}
+
+#log {
+  width: 46%;
+  border: 1px solid;
+  border-color: #1e9b8a;
+  border-radius: 6px;
+  padding: 0;
+}
+
+#log ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+#log ul li {
+  border-radius: 6px;
+}
+
+.li-request {
+  background-color: #d6f9ff;
+}
+
+.li-response-ok {
+  background-color: #d8ffd6;
+}
+
+.li-response-nok {
+  background-color: #ffd6d6;
+}
+
+.liType {
+  width: auto;
+}
+
+.liResource {
+  width: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+#json-table {
+  width: 47%;
+  border: 1px solid;
+  border-color: #1e9b8a;
+  border-radius: 6px;
+}
+
 fieldset {
   border: 1px solid;
   border-color: #1e9b8a;
@@ -105,7 +156,7 @@ input:[type=number]focus {
 
 textarea {
   font-family: monospace;
-  font-size: 7px;
+  font-size: 8px;
   -webkit-border-radius: 6px;
   -moz-border-radius: 6px;
   border-radius: 6px;
