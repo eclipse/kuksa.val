@@ -25,9 +25,7 @@
 #include <jsoncons_ext/jsonpath/json_query.hpp>
 
 #include "WsServer.hpp"
-#include "VssDatabase.hpp"
 #include "exception.hpp"
-
 #include "RestV1ApiHandler.hpp"
 #include "BasicLogger.hpp"
 #include "Authenticator.hpp"
@@ -48,7 +46,7 @@ using jsoncons::json;
 // Websocket port
 #define PORT 8090
 
-VssDatabase* database = NULL;
+static VssDatabase* gDatabase = NULL;
 
 static GDBusNodeInfo *introspection_data = NULL;
 
@@ -100,7 +98,7 @@ handle_method_call (GDBusConnection       *connection,
   json jsonVal;
   const gchar *vss_path;
    
-   if (database == NULL) {
+   if (gDatabase == NULL) {
       g_dbus_method_invocation_return_error (invocation,
                                                  G_IO_ERROR,
                                                  G_IO_ERROR_FAILED_HANDLED,
@@ -158,7 +156,7 @@ handle_method_call (GDBusConnection       *connection,
       // set the data in the db.
       try {
         string pathStr(vss_path);
-        database->setSignal(pathStr, jsonVal);
+        gDatabase->setSignal(pathStr, jsonVal);
       } catch (genException &e) {
         g_dbus_method_invocation_return_error (invocation,
                                                  G_IO_ERROR,
@@ -247,10 +245,10 @@ int main(int argc, const char *argv[]) {
         "Configuration file path for program parameters. "
         "Can be provided instead of command line options")
     ("vss", program_options::value<string>(), "vss_rel*.json file")
-    ("cert-path", program_options::value<string>(),
+    ("cert-path", program_options::value<string>()->default_value("."),
         "Path to directory where 'Server.pem' and 'Server.key' are located")
-    ("insecure", "Run insecure")
-    ("wss-server", "Run old WSS server handler")
+    ("insecure", "Accept plain (no-SSL) connections")
+    ("wss-server", "Run old WSS server handler instead of Boost.Beast. Note: No REST API support")
     ("address", program_options::value<string>()->default_value("localhost"), "Address")
     ("port", program_options::value<int>()->default_value(8090), "Port")
     ("log-level", program_options::value<vector<string>>(&logLevels)->composing(),
@@ -341,12 +339,7 @@ int main(int argc, const char *argv[]) {
     g_bus_unown_name (owner_id);
     g_dbus_node_info_unref (introspection_data);
 
-    uint8_t logLevelsActive;
-#ifdef DEBUG
-    logLevelsActive = static_cast<uint8_t>(LogLevel::ALL);
-#else
-    logLevelsActive = static_cast<uint8_t>(LogLevel::INFO & LogLevel::WARNING & LogLevel::ERROR);
-#endif
+
     // initialize pseudo random number generator
     std::srand(std::time(nullptr));
 
@@ -378,6 +371,7 @@ int main(int argc, const char *argv[]) {
     auto database = std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(logger, database, tokenValidator, subHandler);
 
+    gDatabase = database.get();
     database->initJsonTree(vss_filename);
 
     if (!useNewServer) {

@@ -72,6 +72,8 @@
         <form>
          <fieldset autocomplete="on">
            <legend>Server parameters:</legend>
+           <input type="radio" name="HTTPType" value="HTTP">HTTP<br>
+           <input type="radio" name="HTTPType" value="HTTPS">HTTPS<br>
            Address:<input id="server-address" type="text" title="Address of VIS server"><br>
            Port: <input id="server-port" type="number" title="VIS server port to connect to"><br>
            Doc root: <input id="server-doc-root" type="text" title="VIS server default root URL to which resource requests will be made (appended)"><br>

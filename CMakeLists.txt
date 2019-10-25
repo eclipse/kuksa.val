@@ -29,7 +29,6 @@ if(UNIT_TEST)
    add_definitions(-DUNIT_TEST)
 endif(UNIT_TEST)
 
-add_definitions(-DDEBUG)
 add_compile_options(-std=c++11 -pthread -Wall -Wextra -Werror)
 
 if ("${ADDRESS_SAN}" STREQUAL "ON" AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")

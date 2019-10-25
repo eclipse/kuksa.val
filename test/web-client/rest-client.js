@@ -142,13 +142,14 @@ function makeHttpRequest(type, requestUrl, resourcePath) {
 }
 
 function makeAuthRequest(type) {
+  let server_type    = document.querySelector('input[name="HTTPType"]:checked').value;
   let server_address = document.getElementById('server-address').value;
   let server_port    = document.getElementById('server-port').value;
   let doc_root       = document.getElementById('server-doc-root').value;
   let resource       = document.getElementById('auth-token-string').value;
 
   if (server_address != "" && server_port != "") {
-    requestUrl = 'http://' + server_address + ':' + server_port + '/' + doc_root + '/';
+    requestUrl = server_type + '://' + server_address + ':' + server_port + '/' + doc_root + '/';
     makeHttpRequest(type, requestUrl, 'authorize?token=' + resource);
   }
   // prevent reloading of page
@@ -156,13 +157,14 @@ function makeAuthRequest(type) {
 }
 
 function makeRestRequest(type) {
+  let server_type    = document.querySelector('input[name="HTTPType"]:checked').value;
   let server_address = document.getElementById('server-address').value;
   let server_port    = document.getElementById('server-port').value;
   let doc_root       = document.getElementById('server-doc-root').value;
   let resource       = document.getElementById('resource-path').value;
 
   if (server_address != "" && server_port != "") {
-    requestUrl = 'http://' + server_address + ':' + server_port + '/' + doc_root + '/';
+    requestUrl = server_type + '://' + server_address + ':' + server_port + '/' + doc_root + '/';
     makeHttpRequest(type, requestUrl, resource);
   }
   // prevent reloadig of page
