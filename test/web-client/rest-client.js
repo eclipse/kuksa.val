@@ -17,9 +17,9 @@ document.getElementById('server-doc-root').value = "vss/api/v1";
 
 // setup event handlers
 document.getElementById('make-get-request').onclick = function req() {return makeRestRequest('GET');};
+document.getElementById('make-put-request').onclick = function req() {return makeRestRequest("PUT");};
 document.getElementById('make-post-request').onclick = function req() {return makeRestRequest("POST");};
 document.getElementById('make-auth-request').onclick = function req() {return makeAuthRequest("POST");};
-
 
 document.getElementById('client-token').addEventListener('paste', onTokenUpdate);
 document.getElementById('client-token').addEventListener('keyup', onTokenUpdate);

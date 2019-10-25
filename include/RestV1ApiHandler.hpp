@@ -55,7 +55,7 @@ class RestV1ApiHandler : public IRestHandler {
   private:
     bool GetSignalPath(uint32_t requestId,
                        jsoncons::json& json,
-                       std::string&& restTarget);
+                       std::string& restTarget);
     /**
      * @brief Verify that HTTP target begins with correct root path and remove it if found
      * @param restTarget HTTP target path

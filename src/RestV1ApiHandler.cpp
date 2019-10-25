@@ -66,14 +66,16 @@ bool RestV1ApiHandler::verifyPathAndStrip(std::string& restTarget, std::string& 
 
 bool RestV1ApiHandler::GetSignalPath(uint32_t requestId,
                                      jsoncons::json& json,
-                                     std::string&& restTarget) {
+                                     std::string& restTarget) {
   std::string signalPath;
   std::string foundStr;
-  std::string delimiter("/");
+  std::string restDelimiter("/");
+  std::string defaultDelimiter(".");
+  std::string queryDelimiter("?");
   std::smatch sm;
   bool ret = true;
 
-  if (restTarget.size() && verifyPathAndStrip(restTarget, delimiter)) {
+  if (restTarget.size() && verifyPathAndStrip(restTarget, restDelimiter)) {
     while (restTarget.size()) {
       // we only accept clean printable characters
       const std::regex regexValidWord("^([A-Za-z]+)");
@@ -85,8 +87,17 @@ bool RestV1ApiHandler::GetSignalPath(uint32_t requestId,
           if ((restTarget.size() == 0)) {
             break;
           }
-          else if (verifyPathAndStrip(restTarget, delimiter)) {
-            signalPath += '.';
+          // we support both '/' and '.' as branch/signal delimiters
+          else if (verifyPathAndStrip(restTarget, restDelimiter)) {
+            signalPath += defaultDelimiter;
+          }
+          // we support both '/' and '.' as branch/signal delimiters
+          else if (verifyPathAndStrip(restTarget, defaultDelimiter)) {
+            signalPath += defaultDelimiter;
+          }
+          // if we got to query start '?' char, end extraction if signal path
+          else if (restTarget[0] == '?') {
+            break;
           }
           else {
             JsonResponses::malFormedRequest(
@@ -171,9 +182,40 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
            // signals handler
            if (foundStr == "signals") {
              if (httpMethod == "get") {
-               ret = GetSignalPath(requestId, json, std::move(restTarget));
+               if (GetSignalPath(requestId, json, restTarget)) {
+                 json["action"] = "get";
+               }
+               else {
+                 JsonResponses::malFormedRequest(
+                     requestId,
+                     json["action"].as_string(),
+                     "Invalid path",
+                     json);
+               }
+             }
+             else if (httpMethod == "put") {
+               if (GetSignalPath(requestId, json, restTarget)) {
+                 json["action"] = "set";
+                 std::string queryStr("?value=");
 
-               json["action"] = "get";
+                 if (verifyPathAndStrip(restTarget, queryStr)) {
+                   json["value"] = restTarget;
+                 }
+                 else {
+                   JsonResponses::malFormedRequest(
+                       requestId,
+                       json["action"].as_string(),
+                       "Invalid query parameter",
+                       json);
+                 }
+               }
+               else {
+                 JsonResponses::malFormedRequest(
+                    requestId,
+                    json["action"].as_string(),
+                    "Invalid path",
+                    json);
+               }
              }
              else {
                // TODO: handle signal POST
@@ -188,7 +230,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
            // metadata handler
            else if (foundStr == "metadata") {
              if (httpMethod == "get") {
-               ret = GetSignalPath(requestId, json, std::move(restTarget));
+               ret = GetSignalPath(requestId, json, restTarget);
 
                json["action"] = "getMetadata";
              }
