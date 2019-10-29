@@ -28,7 +28,7 @@ RestV1ApiHandler::RestV1ApiHandler(std::shared_ptr<ILogger> loggerUtil, std::str
     docRoot_(docRoot) {
 
   // Supported HTTP methods
-  regexHttpMethods_ = "^(GET|POST)";
+  regexHttpMethods_ = "^(GET|POST|PUT|OPTIONS)";
 
   // Resource strings for REST API hooks. Order must match order in RestV1ApiHandler::Resources enum
   resourceHandleNames_ = std::vector<std::string>{std::string{"signals"},
@@ -180,8 +180,16 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
          if (verifyPathAndStrip(restTarget, foundStr)) {
            // //////
            // signals handler
-           if (foundStr == "signals") {
-             if (httpMethod == "get") {
+           if (foundStr.compare("signals") == 0) {
+             // handler CORS pre-flight requests from browsers
+             if (httpMethod.compare("options") == 0) {
+               json["action"] = "options";
+               json["methods"] = "PUT, GET, OPTIONS";
+               json["headers"] = "X-PINGOTHER, Content-Type";
+               json["max-age"] = "86400";
+               json["origin"] = "*";
+             }
+             else if (httpMethod.compare("get") == 0) {
                if (GetSignalPath(requestId, json, restTarget)) {
                  json["action"] = "get";
                }
@@ -191,9 +199,10 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                      json["action"].as_string(),
                      "Invalid path",
                      json);
+                 ret = false;
                }
              }
-             else if (httpMethod == "put") {
+             else if (httpMethod.compare("put") == 0) {
                if (GetSignalPath(requestId, json, restTarget)) {
                  json["action"] = "set";
                  std::string queryStr("?value=");
@@ -215,6 +224,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                     json["action"].as_string(),
                     "Invalid path",
                     json);
+                 ret = false;
                }
              }
              else {
@@ -222,14 +232,23 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                JsonResponses::malFormedRequest(
                    requestId,
                    json["action"].as_string(),
-                   "POST method not yet supported for 'signals' resource",
+                   "HTTP method not yet supported for 'signals' resource",
                    json);
+               ret = false;
              }
            }
            // //////
            // metadata handler
-           else if (foundStr == "metadata") {
-             if (httpMethod == "get") {
+           else if (foundStr.compare("metadata") == 0) {
+             // handler CORS pre-flight requests from browsers
+             if (httpMethod.compare("options") == 0) {
+               json["action"] = "options";
+               json["methods"] = "GET, OPTIONS";
+               json["headers"] = "X-PINGOTHER, Content-Type";
+               json["max-age"] = "86400";
+               json["origin"] = "*";
+             }
+             else if (httpMethod.compare("get") == 0) {
                ret = GetSignalPath(requestId, json, restTarget);
 
                json["action"] = "getMetadata";
@@ -241,12 +260,21 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                    json["action"].as_string(),
                    "POST method not supported for 'metadata' resource",
                    json);
+               ret = false;
              }
            }
            // //////
            // authorize handler
            else if (foundStr == "authorize") {
-             if (httpMethod == "post") {
+             // handler CORS pre-flight requests from browsers
+             if (httpMethod.compare("options") == 0) {
+               json["action"] = "options";
+               json["methods"] = "POST, OPTIONS";
+               json["headers"] = "X-PINGOTHER, Content-Type";
+               json["max-age"] = "86400";
+               json["origin"] = "*";
+             }
+             else if (httpMethod == "post") {
                std::string tokenParam("?token=");
                if (verifyPathAndStrip(restTarget, tokenParam)) {
                  const std::regex regToken(regexToken_);
@@ -263,6 +291,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                        json["action"].as_string(),
                        "Token for 'authorize' not valid",
                        json);
+                   ret = false;
                  }
                }
                else {
@@ -271,6 +300,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                      json["action"].as_string(),
                      "Parameters for 'authorize' not valid",
                      json);
+                 ret = false;
                }
              }
              else {

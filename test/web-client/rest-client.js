@@ -16,7 +16,7 @@ document.getElementById('server-port').value = 8090;
 document.getElementById('server-doc-root').value = "vss/api/v1";
 
 // setup event handlers
-document.getElementById('make-get-request').onclick = function req() {return makeRestRequest('GET');};
+document.getElementById('make-get-request').onclick = function req() {return makeRestRequest("GET");};
 document.getElementById('make-put-request').onclick = function req() {return makeRestRequest("PUT");};
 document.getElementById('make-post-request').onclick = function req() {return makeRestRequest("POST");};
 document.getElementById('make-auth-request').onclick = function req() {return makeAuthRequest("POST");};
@@ -124,7 +124,6 @@ function makeHttpRequest(type, requestUrl, resourcePath) {
   requestObj = new XMLHttpRequest();
   var completeUrl = requestUrl + resourcePath;
   requestObj.open(type, completeUrl, true);
-
   addReqToLog(type, resourcePath);
 
   // callback handler when positive response received

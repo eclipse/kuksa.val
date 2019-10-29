@@ -48,7 +48,7 @@ using namespace std;
   "w3c-vss": {
     "Signal.OBD.*": "rw",
     "Signal.Chassis.Axle.*": "rw",
-    "Signal.Drivetrain.*": "rw",
+    "Vehicle.Drivetrain.*": "rw",
     "Signal.Cabin.Infotainment.*": "rw"
   }
 }
