@@ -51,7 +51,7 @@ int authenticator::validateToken(wschannel& channel, string authToken) {
   json claims;
   (void) channel;
   for (auto& e : decoded.get_payload_claims()) {
-    std::cout << e.first << " = " << e.second.to_json() << std::endl;
+    logger->Log(LogLevel::INFO, e.first + " = " + e.second.as_string());
     claims[e.first] = e.second.to_json().to_str();
   }
   

@@ -511,8 +511,8 @@ void vssdatabase::setSignal(wschannel& channel, string path,
       jsoncons::json item = setValues[i];
       string jPath = item["path"].as<string>();
 #ifdef DEBUG
-      cout << "vssdatabase::setSignal: path found = " << jPath << endl;
-      cout << "value to set asstring = " << item["value"].as<string>() << endl;
+      logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: path found = " + jPath);
+      logger->Log(LogLevel::VERBOSE, "value to set asstring = " + item["value"].as<string>());
 #endif
       rwMutex.lock();
       jsoncons::json resArray = json_query(data_tree, jPath);
@@ -530,8 +530,7 @@ void vssdatabase::setSignal(wschannel& channel, string path,
           json_replace(data_tree, jPath, resJson);
           rwMutex.unlock();
 #ifdef DEBUG
-          cout << "vssdatabase::setSignal: new value set at path " << jPath
-               << endl;
+          logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: new value set at path " + jPath);
 #endif
 
           string uuid = resJson["uuid"].as<string>();
@@ -545,12 +544,10 @@ void vssdatabase::setSignal(wschannel& channel, string path,
         }
 
       } else if (resArray.is_array()) {
-        cout << "vssdatabase::setSignal : Path " << jPath << " has "
-             << resArray.size() << " signals, the path needs refinement"
-             << endl;
         stringstream msg;
         msg << "Path " << jPath << " has " << resArray.size()
             << " signals, the path needs refinement";
+        logger->Log(LogLevel::INFO, "vssdatabase::setSignal : " + msg.str());
         throw genException(msg.str());
       }
     }
@@ -621,18 +618,6 @@ void vssdatabase::setSignal(string path,
     logger->Log(LogLevel::ERROR, "vssdatabase::setSignal: " + msg);
     throw genException(msg);
   }
-}
-
-// Utility method for setting values to JSON.
-void setJsonValue(jsoncons::json& dest, jsoncons::json& source, string key) {
-  if (!source.has_key("type")) {
-    cout << "vssdatabase::setJsonValue : could not set value! type is not "
-            "present in source json!"
-         << endl;
-    string msg = "Unknown type for signal found at " + key;
-    throw genException(msg);
-  }
-  dest[key] = source["value"];
 }
 
 // Returns response JSON for get request.

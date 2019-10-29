@@ -308,9 +308,9 @@ string vsscommandprocessor::processAuthorizeWithPermManager(wschannel &channel,
   jsoncons::json response;
   // Get Token from permission management daemon.
   try {
-     response = getPermToken(client, clientSecret);
+     response = getPermToken(logger, client, clientSecret);
   } catch (genException &exp) {
-    cout << exp.what() << endl;
+    logger->Log(LogLevel::ERROR, exp.what());
     jsoncons::json result;
     jsoncons::json error;
     result["action"] = "kuksa-authorize";
@@ -332,7 +332,7 @@ string vsscommandprocessor::processAuthorizeWithPermManager(wschannel &channel,
         tokenValidator->updatePubKey(response["pubkey"].as<string>());
         ttl = tokenValidator->validate(channel, database, response["token"].as<string>());
      } catch (exception &e) {
-        cout << e.what() << endl;
+        logger->Log(LogLevel::ERROR, e.what());
         ttl = -1;
      }
   }
@@ -429,8 +429,8 @@ string vsscommandprocessor::processQuery(string req_json,
       string clientSecret = root["secret"].as<string>();
       uint32_t request_id = root["requestId"].as<int>();
 #ifdef DEBUG
-      cout << "vsscommandprocessor::processQuery: kuksa authorize query with clientID = "
-           << clientID << " with secret " << clientSecret << endl;
+      logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: kuksa authorize query with clientID = "
+           + clientID + " with secret " + clientSecret);
 #endif
       response = processAuthorizeWithPermManager(channel, request_id, clientID, clientSecret);
     } else {

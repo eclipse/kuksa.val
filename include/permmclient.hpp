@@ -16,11 +16,14 @@
 #define __PERMMCLIENT_H__
 
 #include <jsoncons/json.hpp>
+#include <memory>
 
 using namespace std;
 using namespace jsoncons;
 
-json getPermToken(string clientName, string clientSecret);
+class ILogger;
+
+json getPermToken(std::shared_ptr<ILogger> logger, string clientName, string clientSecret);
 
 
 

@@ -22,12 +22,13 @@
 
 #include "exception.hpp"
 #include "permmclient.hpp"
+#include "ILogger.hpp"
 
 using namespace std;
 
 #define SERVER "/home/pratheek/socket/kuksa_w3c_perm_management"
 
-json getPermToken(string clientName, string clientSecret) {
+json getPermToken(std::shared_ptr<ILogger> logger, string clientName, string clientSecret) {
 
   // Open unix socket connection.
    struct sockaddr_un addr;
@@ -35,7 +36,7 @@ json getPermToken(string clientName, string clientSecret) {
    
    if ( (fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
       throw genException("Unable to create a unix socket");
-      //cout <<"Unable to create a unix socket"<<endl;
+      //logger->Log(LogLevel::ERROR, "Unable to create a unix socket");
    }
 
    memset(&addr, 0, sizeof(addr));
@@ -45,7 +46,7 @@ json getPermToken(string clientName, string clientSecret) {
 
    if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
       throw genException("Unable to connect to server");
-      //cout <<"Unable to connect to server"<<endl;
+      //logger->Log(LogLevel::ERROR, "Unable to connect to server");
    }
 
    
@@ -59,15 +60,15 @@ json getPermToken(string clientName, string clientSecret) {
    int length = request.length();
    // Send and wait for response from the permmanagent daemon.
    if(write(fd, request.c_str(), length) != length) {
-      cout << "Request not sent completely" <<endl;
+     logger->Log(LogLevel::ERROR, "Request not sent completely");
    } else {
-      cout << "Request sent " <<endl;
+     logger->Log(LogLevel::INFO, "Request sent ");
    }
    
    char response_buf[1024 * 10] = {0};
    read(fd, response_buf, sizeof(response_buf));
 
-   cout << "Response read from server "<<endl;
+   logger->Log(LogLevel::INFO, "Response read from server ");
 
    string response(response_buf); 
    jsoncons::json respJson = jsoncons::json::parse(response);
