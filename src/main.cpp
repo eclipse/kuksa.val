@@ -248,6 +248,7 @@ int main(int argc, const char *argv[]) {
     ("cert-path", program_options::value<string>()->default_value("."),
         "Path to directory where 'Server.pem' and 'Server.key' are located")
     ("insecure", "Accept plain (no-SSL) connections")
+    ("use-keycloak", "Use KeyCloak for permission management")
     ("wss-server", "Run old WSS server handler instead of Boost.Beast. Note: No REST API support")
     ("address", program_options::value<string>()->default_value("localhost"), "Address")
     ("port", program_options::value<int>()->default_value(8090), "Port")
@@ -316,29 +317,28 @@ int main(int argc, const char *argv[]) {
     auto vss_filename = variables["vss"].as<string>();
     auto useNewServer = !variables.count("wss-server");
 
-    // Start D-Bus backend connection.
-    guint owner_id;
-    GMainLoop *loop;
+    if (variables.count("use-keycloak")) {
+      // Start D-Bus backend connection.
+      guint owner_id;
+      GMainLoop *loop;
 
-    introspection_data = g_dbus_node_info_new_for_xml (introspection_xml, NULL);
-    g_assert (introspection_data != NULL);
+      introspection_data = g_dbus_node_info_new_for_xml (introspection_xml, NULL);
+      g_assert (introspection_data != NULL);
+
+      owner_id = g_bus_own_name (G_BUS_TYPE_SYSTEM,
+                                 "org.eclipse.kuksa.w3cbackend",
+                                 G_BUS_NAME_OWNER_FLAGS_NONE,
+                                 on_bus_acquired,
+                                 on_name_acquired,
+                                 on_name_lost,
+                                 NULL,
+                                 NULL);
   
-
-    owner_id = g_bus_own_name (G_BUS_TYPE_SYSTEM,
-                               "org.eclipse.kuksa.w3cbackend",
-                               G_BUS_NAME_OWNER_FLAGS_NONE,
-                               on_bus_acquired,
-                               on_name_acquired,
-                               on_name_lost,
-                               NULL,
-                               NULL);
-
-
-    loop = g_main_loop_new (NULL, FALSE);
-    g_main_loop_run (loop);
-    g_bus_unown_name (owner_id);
-    g_dbus_node_info_unref (introspection_data);
-
+      loop = g_main_loop_new (NULL, FALSE);
+      g_main_loop_run (loop);
+      g_bus_unown_name (owner_id);
+      g_dbus_node_info_unref (introspection_data);
+    }
 
     // initialize pseudo random number generator
     std::srand(std::time(nullptr));

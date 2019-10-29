@@ -190,6 +190,35 @@ Permissions can be granted by modifying the JSON Claims.
 3. The permissions can contain wild-cards. For eg "Signal.OBD.\*" : "rw" will grant READ-WRITE access to all the signals under Signal.OBD.
 4. The permissions can be granted to a branch. For eg "Signal.Vehicle" : "rw" will grant READ-WRITE access to all the signals under Signal.Vehicle branch.
 
+## D-BUS Backend Connection
+
+The server also has d-bus connection, which could be used to feed the server with data from various feeders.
+The W3C Sever exposes the below methods and these methods could be used (as methodcall) to fill the server with data.
+  ```
+  <interface name='org.eclipse.kuksa.w3cbackend'>
+     <method name='pushUnsignedInt'>
+       <arg type='s' name='path' direction='in'/>
+       <arg type='t' name='value' direction='in'/>
+     </method>
+     <method name='pushInt'>
+       <arg type='s' name='path' direction='in'/>
+       <arg type='x' name='value' direction='in'/>
+     </method>
+     <method name='pushDouble'>
+       <arg type='s' name='path' direction='in'/>
+       <arg type='d' name='value' direction='in'/>
+     </method>
+     <method name='pushBool'>
+       <arg type='s' name='path' direction='in'/>
+       <arg type='b' name='value' direction='in'/>
+     </method>
+     <method name='pushString'>
+       <arg type='s' name='path' direction='in'/>
+       <arg type='s' name='value' direction='in'/>
+     </method>
+   </interface>
+   ```
+
 ## Running on AGL on Raspberry Pi 3
 
 * Create an AGL image using the instructions in `agl-kuksa` project.
