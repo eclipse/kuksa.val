@@ -168,6 +168,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
   if (sm.size()) {
     std::string httpMethod = sm.str(1);
     boost::algorithm::to_lower(httpMethod);
+    json["action"] = httpMethod;
 
     if (verifyPathAndStrip(restTarget, docRoot_)) {
        const std::regex regResources(regexResources_, std::regex_constants::icase);
@@ -314,7 +315,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
              }
            }
            else {
-             JsonResponses::malFormedRequest(
+             JsonResponses::pathNotFound(
                  requestId,
                  json["action"].as_string(),
                  "Requested resource do not exist",
@@ -333,7 +334,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
        }
        else
        {
-         JsonResponses::malFormedRequest(
+         JsonResponses::pathNotFound(
              requestId,
              json["action"].as_string(),
              "Requested resource do not exist",

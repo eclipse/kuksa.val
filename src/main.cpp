@@ -96,7 +96,7 @@ handle_method_call (GDBusConnection       *connection,
   (void) sender;
   
   json jsonVal;
-  const gchar *vss_path;
+  const gchar *vss_path = NULL;
    
    if (gDatabase == NULL) {
       g_dbus_method_invocation_return_error (invocation,
@@ -176,15 +176,7 @@ static const GDBusInterfaceVTable interface_vtable =
   NULL,
   NULL,
   /* Padding for future expansion */
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL
-  
+  {NULL}
 };
 
 static void

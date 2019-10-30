@@ -63,4 +63,16 @@ class outOfBoundException : public std::exception {
   virtual const char* what() const throw() { return message.c_str(); }
 };
 
+
+// value out of bound exception
+class notValidException : public std::exception {
+ private:
+  std::string message;
+
+ public:
+  notValidException(std::string msg) { message = msg; }
+
+  virtual const char* what() const throw() { return message.c_str(); }
+};
+
 #endif

@@ -46,27 +46,35 @@ void Authenticator::updatePubKey(string key) {
 
 // utility method to validate token.
 int Authenticator::validateToken(WsChannel& channel, string authToken) {
-  auto decoded = jwt::decode(authToken);
   json claims;
-  (void) channel;
-  for (auto& e : decoded.get_payload_claims()) {
-    logger->Log(LogLevel::INFO, e.first + " = " + e.second.to_json().to_str());
-    claims[e.first] = e.second.to_json().to_str();
-  }
-  
-  auto verifier = jwt::verify().allow_algorithm(
-      jwt::algorithm::rs256(pubkey, "", "", ""));
-  try {
-    verifier.verify(decoded);
-  } catch (const std::runtime_error& e) {
-    logger->Log(LogLevel::ERROR, "Authenticator::validate: " + string(e.what())
-         + " Exception occured while authentication. Token is not valid!");
-    return -1;
-  }
+  int ttl = -1;
 
-  int ttl = claims["exp"].as<int>();
-  channel.setAuthorized(true);
-  channel.setAuthToken(authToken);
+  try {
+    auto decoded = jwt::decode(authToken);
+
+    for (auto& e : decoded.get_payload_claims()) {
+      logger->Log(LogLevel::INFO, e.first + " = " + e.second.to_json().to_str());
+      claims[e.first] = e.second.to_json().to_str();
+    }
+
+    auto verifier = jwt::verify().allow_algorithm(
+        jwt::algorithm::rs256(pubkey, "", "", ""));
+    try {
+      verifier.verify(decoded);
+    } catch (const std::runtime_error& e) {
+      logger->Log(LogLevel::ERROR, "Authenticator::validate: " + string(e.what())
+                  + " Exception occurred while authentication. Token is not valid!");
+      return -1;
+    }
+
+    channel.setAuthorized(true);
+    channel.setAuthToken(authToken);
+    ttl = claims["exp"].as<int>();
+  }
+  catch (std::exception &e) {
+    logger->Log(LogLevel::ERROR, "Authenticator::validate: " + string(e.what())
+                + " Exception occurred while decoding token!");
+  }
   return ttl;
 }
 

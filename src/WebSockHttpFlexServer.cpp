@@ -805,26 +805,50 @@ namespace {
                                         std::string(req_.target()),
                                         jsonRequest);
 
+        // regex for extracting HTTP status code from error response
         const std::regex getErrNumber("\"number\":\\ +(\\d+)");
         std::smatch sm;
         std::string response;
 
+        // HTTP response object
         http::response<http::string_body> httpResponse{
           std::piecewise_construct,
           std::make_tuple(""),
           std::make_tuple(http::status::ok, req_.version())};
 
-        // check if it is OPTIONS request to support CORS pre-flight checks from browsers
+        // HTTP 'OPTIONS' method is handled differently to support CORS pre-flight checks from browsers
         if (req_.method_string().compare("OPTIONS") != 0) {
+          // if all ok, process further generated JSON request
           if (res) {
             response = requestHandler_(jsonRequest, channel);
-            // check if there was error so we can set correct HTTP response status
+
+            // check if error was returned so we can set correct HTTP response status
             std::regex_search (response, sm, getErrNumber);
             if (sm.size()) {
               // set error response
               httpResponse.result(std::stoi(sm.str(1)));
             }
             httpResponse.body() = response;
+          }
+          // if getting of JSON request failed, set error HTTP response
+          else {
+            // check if there was error so we can set correct HTTP response status
+            std::regex_search (jsonRequest, sm, getErrNumber);
+            if (sm.size()) {
+              // set error response
+              httpResponse.result(std::stoi(sm.str(1)));
+            }
+            httpResponse.body() = jsonRequest;
+          }
+        }
+        // handle HTTP 'OPTIONS' method
+        else {
+          // if all ok, prepare OPTIONS response
+          if (res) {
+            auto jsonReq = jsoncons::json::parse(jsonRequest);
+            httpResponse.set(http::field::access_control_allow_methods, jsonReq["methods"].as_string());
+            httpResponse.set(http::field::access_control_allow_headers, jsonReq["headers"].as_string());
+            httpResponse.set(http::field::access_control_max_age, jsonReq["max-age"].as_string());
           }
           else {
             // handle error
@@ -837,13 +861,6 @@ namespace {
             }
           }
         }
-        else {
-          auto jsonReq = jsoncons::json::parse(jsonRequest);
-          httpResponse.set(http::field::access_control_allow_methods, jsonReq["methods"].as_string());
-          httpResponse.set(http::field::access_control_allow_headers, jsonReq["headers"].as_string());
-          httpResponse.set(http::field::access_control_max_age, jsonReq["max-age"].as_string());
-        }
-        // Respond to request
         httpResponse.set(http::field::server, BOOST_BEAST_VERSION_STRING);
         httpResponse.set(http::field::content_type, "application/json");
 
@@ -853,6 +870,8 @@ namespace {
 
         httpResponse.keep_alive(req_.keep_alive());
         httpResponse.prepare_payload();
+
+        // add response object in transmit queue
         queue_(std::move(httpResponse));
 
         // If we aren't at the queue limit, try to pipeline another request

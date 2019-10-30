@@ -29,13 +29,29 @@ using namespace jsoncons::jsonpath;
 using jsoncons::json;
 
 namespace {
+  // Check if the value can be converted to requested output type
+  template <typename OutType>
+  void ValidateValue(std::shared_ptr<ILogger> logger, const jsoncons::json &val, OutType &outVal) {
+    try{
+      outVal = val.as<OutType>();
+    }
+    catch (exception &e) {
+      std::stringstream msg;
+      msg << "The input value '" + val.as_string() + "' is not valid!";
+      logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
+
+      throw notValidException(msg.str());
+    }
+  }
+
     // Check the value type and if the value is within the range
   void checkTypeAndBound(std::shared_ptr<ILogger> logger, string value_type, jsoncons::json val) {
     bool typeValid = false;
 
     if (value_type == "uint8") {
       typeValid = true;
-      long double longDoubleVal = val.as<long double>();
+      long double longDoubleVal;
+      ValidateValue(logger, val, longDoubleVal);
       if (!((longDoubleVal <= numeric_limits<uint8_t>::max()) &&
             (longDoubleVal >= numeric_limits<uint8_t>::min()))) {
         std::stringstream msg;
@@ -45,10 +61,10 @@ namespace {
 
         throw outOfBoundException(msg.str());
       }
-
     } else if (value_type == "uint16") {
       typeValid = true;
-      long double longDoubleVal = val.as<long double>();
+      long double longDoubleVal;
+      ValidateValue(logger, val, longDoubleVal);
       if (!((longDoubleVal <= numeric_limits<uint16_t>::max()) &&
             (longDoubleVal >= numeric_limits<uint16_t>::min()))) {
         std::stringstream msg;
@@ -58,10 +74,10 @@ namespace {
 
         throw outOfBoundException(msg.str());
       }
-
     } else if (value_type == "uint32") {
       typeValid = true;
-      long double longDoubleVal = val.as<long double>();
+      long double longDoubleVal;
+      ValidateValue(logger, val, longDoubleVal);
       if (!((longDoubleVal <= numeric_limits<uint32_t>::max()) &&
             (longDoubleVal >= numeric_limits<uint32_t>::min()))) {
         std::stringstream msg;
@@ -71,10 +87,10 @@ namespace {
 
         throw outOfBoundException(msg.str());
       }
-
     } else if (value_type == "int8") {
       typeValid = true;
-      long double longDoubleVal = val.as<long double>();
+      long double longDoubleVal;
+      ValidateValue(logger, val, longDoubleVal);
       if (!((longDoubleVal <= numeric_limits<int8_t>::max()) &&
             (longDoubleVal >= numeric_limits<int8_t>::min()))) {
         std::stringstream msg;
@@ -86,7 +102,8 @@ namespace {
       }
     } else if (value_type == "int16") {
       typeValid = true;
-      long double longDoubleVal = val.as<long double>();
+      long double longDoubleVal;
+      ValidateValue(logger, val, longDoubleVal);
       if (!((longDoubleVal <= numeric_limits<int16_t>::max()) &&
             (longDoubleVal >= numeric_limits<int16_t>::min()))) {
         std::stringstream msg;
@@ -96,10 +113,10 @@ namespace {
 
         throw outOfBoundException(msg.str());
       }
-
     } else if (value_type == "int32") {
       typeValid = true;
-      long double longDoubleVal = val.as<long double>();
+      long double longDoubleVal;
+      ValidateValue(logger, val, longDoubleVal);
       if (!((longDoubleVal <= numeric_limits<int32_t>::max()) &&
             (longDoubleVal >= numeric_limits<int32_t>::min()))) {
         std::stringstream msg;
@@ -111,7 +128,8 @@ namespace {
       }
     } else if (value_type == "float") {
       typeValid = true;
-      long double longDoubleVal = val.as<long double>();
+      long double longDoubleVal;
+      ValidateValue(logger, val, longDoubleVal);
       float max = numeric_limits<float>::max();
       float min = numeric_limits<float>::lowest();
       if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
@@ -124,7 +142,8 @@ namespace {
       }
     } else if (value_type == "double") {
       typeValid = true;
-      long double longDoubleVal = val.as<long double>();
+      long double longDoubleVal;
+      ValidateValue(logger, val, longDoubleVal);
       double max = numeric_limits<double>::max();
       double min = numeric_limits<double>::lowest();
       if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
@@ -135,7 +154,6 @@ namespace {
 
         throw outOfBoundException(msg.str());
       }
-
     } else if (value_type == "boolean") {
       typeValid = true;
     } else if (value_type == "string") {

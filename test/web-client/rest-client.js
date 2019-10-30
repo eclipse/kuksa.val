@@ -95,7 +95,7 @@ function addRespToLog(htmlStatus, message) {
     type = 'ERROR: HTML status = ' + htmlStatus;
     // if no response
     if (message == '') {
-      message = 'No response, check server status';
+      message = 'No response: Check server status or if requested HTTP method is supported by VIS Server';
     }
   }
   var newListItem = document.createElement("LI");

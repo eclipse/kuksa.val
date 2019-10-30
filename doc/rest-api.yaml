@@ -115,6 +115,27 @@ components:
           schema:
             $ref: '#/components/schemas/BadRequestContent'
 
+    UnauthorizedRsp:
+      description: "Provided JWT token could not be authorized"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnauthorizedContent'
+
+    ForbiddenRsp:
+      description: "Access to resource is forbidden"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ForbiddenContent'
+
+    NotFoundRsp:
+      description: "Requested resource not found"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NotFoundContent'
+
   schemas:
 
     Action:
@@ -170,7 +191,7 @@ components:
         number:
           type: integer
           description: "HTML status code"
-          example: 400
+          example: 400, 401, 403, 404
         reason:
           type: string
           description: "Error reason"
@@ -188,6 +209,41 @@ components:
         timestamp:
           $ref: '#/components/schemas/Timestamp'
 
+    UnauthorizedContent:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/Action'
+        error:
+          $ref: '#/components/schemas/ErrorDesc'
+        requestId:
+          $ref: '#/components/schemas/RequestId'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+
+    ForbiddenContent:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/Action'
+        error:
+          $ref: '#/components/schemas/ErrorDesc'
+        requestId:
+          $ref: '#/components/schemas/RequestId'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+
+    NotFoundContent:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/Action'
+        error:
+          $ref: '#/components/schemas/ErrorDesc'
+        requestId:
+          $ref: '#/components/schemas/RequestId'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
 paths:
   /signals/{signalBranchPathWithDots}:
     get:
@@ -205,6 +261,10 @@ paths:
           $ref: '#/components/responses/Success'
         '400':
           $ref: '#/components/responses/BadRequestRsp'
+        '403':
+          $ref: '#/components/responses/ForbiddenRsp'
+        '404':
+          $ref: '#/components/responses/NotFoundRsp'
 
   /signals/{signalBranchPathWithSlashes}:
     get:
@@ -222,6 +282,10 @@ paths:
           $ref: '#/components/responses/Success'
         '400':
           $ref: '#/components/responses/BadRequestRsp'
+        '403':
+          $ref: '#/components/responses/ForbiddenRsp'
+        '404':
+          $ref: '#/components/responses/NotFoundRsp'
 
   /signals/{signalBranchPathWithDots}.{signalId}:
     get:
@@ -238,6 +302,11 @@ paths:
           $ref: '#/components/responses/Success'
         '400':
           $ref: '#/components/responses/BadRequestRsp'
+        '403':
+          $ref: '#/components/responses/ForbiddenRsp'
+        '404':
+          $ref: '#/components/responses/NotFoundRsp'
+
     put:
       tags:
         - signals
@@ -253,6 +322,10 @@ paths:
           $ref: '#/components/responses/Success'
         '400':
           $ref: '#/components/responses/BadRequestRsp'
+        '403':
+          $ref: '#/components/responses/ForbiddenRsp'
+        '404':
+          $ref: '#/components/responses/NotFoundRsp'
 
   /signals/{signalBranchPathWithSlashes}/{signalId}:
     get:
@@ -269,6 +342,11 @@ paths:
           $ref: '#/components/responses/Success'
         '400':
           $ref: '#/components/responses/BadRequestRsp'
+        '403':
+          $ref: '#/components/responses/ForbiddenRsp'
+        '404':
+          $ref: '#/components/responses/NotFoundRsp'
+
     put:
       tags:
         - signals
@@ -284,6 +362,10 @@ paths:
           $ref: '#/components/responses/Success'
         '400':
           $ref: '#/components/responses/BadRequestRsp'
+        '403':
+          $ref: '#/components/responses/ForbiddenRsp'
+        '404':
+          $ref: '#/components/responses/NotFoundRsp'
 
   /metadata/{signalBranchPathWithDots}:
     get:
@@ -367,3 +449,5 @@ paths:
           $ref: '#/components/responses/SuccessAuthorize'
         '400':
           $ref: '#/components/responses/BadRequestRsp'
+        '401':
+          $ref: '#/components/responses/UnauthorizedRsp'
