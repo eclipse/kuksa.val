@@ -24,7 +24,6 @@
 #include <jsoncons/json.hpp>
 #include <jsoncons_ext/jsonpath/json_query.hpp>
 
-#include "WsServer.hpp"
 #include "exception.hpp"
 #include "RestV1ApiHandler.hpp"
 #include "BasicLogger.hpp"
@@ -241,7 +240,6 @@ int main(int argc, const char *argv[]) {
         "Path to directory where 'Server.pem' and 'Server.key' are located")
     ("insecure", "Accept plain (no-SSL) connections")
     ("use-keycloak", "Use KeyCloak for permission management")
-    ("wss-server", "Run old WSS server handler instead of Boost.Beast. Note: No REST API support")
     ("address", program_options::value<string>()->default_value("localhost"), "Address")
     ("port", program_options::value<int>()->default_value(8090), "Port")
     ("log-level", program_options::value<vector<string>>(&logLevels)->composing(),
@@ -307,7 +305,6 @@ int main(int argc, const char *argv[]) {
     auto port = variables["port"].as<int>();
     auto secure = !variables.count("insecure");
     auto vss_filename = variables["vss"].as<string>();
-    auto useNewServer = !variables.count("wss-server");
 
     if (variables.count("use-keycloak")) {
       // Start D-Bus backend connection.
@@ -343,42 +340,25 @@ int main(int argc, const char *argv[]) {
     // by having API versioning through URIs
     std::string docRoot{"/vss/api/v1/"};
 
-    // TODO: refactor out old server when we can remove it
-    auto oldServer = std::make_shared<WsServer>();
-
     auto rest2JsonConverter = std::make_shared<RestV1ApiHandler>(logger, docRoot);
-    auto newServer = std::make_shared<WebSockHttpFlexServer>(logger, std::move(rest2JsonConverter));
-
-    std::shared_ptr<IServer> server;
-    if (!useNewServer) {
-      server = std::static_pointer_cast<IServer>(oldServer);
-    }
-    else {
-      server = std::static_pointer_cast<IServer>(newServer);
-    }
+    auto httpServer = std::make_shared<WebSockHttpFlexServer>(logger, std::move(rest2JsonConverter));
 
     auto tokenValidator = std::make_shared<Authenticator>(logger, "appstacle", "RS256");
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
-    auto subHandler = std::make_shared<SubscriptionHandler>(logger, server, tokenValidator, accessCheck);
+    auto subHandler = std::make_shared<SubscriptionHandler>(logger, httpServer, tokenValidator, accessCheck);
     auto database = std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(logger, database, tokenValidator, subHandler);
 
     gDatabase = database.get();
     database->initJsonTree(vss_filename);
 
-    if (!useNewServer) {
-      oldServer->Initialize(logger, cmdProcessor, secure, port);
-      oldServer->start();
-    }
-    else {
-      newServer->AddListener(ObserverType::ALL, cmdProcessor);
-      newServer->Initialize(variables["address"].as<string>(),
-                            port,
-                            std::move(docRoot),
-                            variables["cert-path"].as<string>(),
-                            !secure);
-      newServer->Start();
-    }
+    httpServer->AddListener(ObserverType::ALL, cmdProcessor);
+    httpServer->Initialize(variables["address"].as<string>(),
+                          port,
+                          std::move(docRoot),
+                          variables["cert-path"].as<string>(),
+                          !secure);
+    httpServer->Start();
 
     while (1) {
       usleep(1000000);

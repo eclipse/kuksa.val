@@ -12,13 +12,14 @@
  * *****************************************************************************
  */
 
-#include <boost/beast/http.hpp>
-#include <boost/beast/websocket.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
 #include <boost/make_unique.hpp>
 #include <cstdlib>
 #include <iostream>

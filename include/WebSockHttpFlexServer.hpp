@@ -16,6 +16,7 @@
 
 #include "IServer.hpp"
 
+#include <boost/asio/ssl/context.hpp>
 #include <vector>
 #include <string>
 #include <mutex>

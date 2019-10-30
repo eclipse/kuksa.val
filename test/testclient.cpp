@@ -12,7 +12,6 @@
  * *****************************************************************************
  */
 
-#include "client_wss.hpp"
 #include <json.hpp>
 #include <boost/program_options.hpp>
 #include <boost/beast/websocket.hpp>
@@ -30,8 +29,6 @@ using namespace jsoncons;
 using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
 namespace ssl = boost::asio::ssl;               // from <boost/asio/ssl.hpp>
 namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.hpp>
-
-using WssClient = SimpleWeb::SocketClient<SimpleWeb::WSS>;
 
 bool subThread = false;
 
@@ -98,75 +95,6 @@ string getKuksaAuthRequest(string clientID , string secret) {
    ss << pretty_print(req);
    return ss.str();
 
-}
-
-void sendRequest(shared_ptr<WssClient::Connection> connection) {
-
-    string path, function;
-    cout << "Enter vis Function eg: authorize, kuksa-authorize, get, set, getmetadata "<< endl;
-    getline (cin, function);
-    string command;
-    if(function == "get") {
-       cout << "Enter vss path eg : Vehicle.OBD.EngineSpeed " <<endl;
-       getline (cin, path);
-       command = getRequest(path);
-    } else if (function == "set") {
-       string val;
-       cout << "Enter vss path eg : Vehicle.OBD.EngineSpeed " <<endl;
-       getline (cin, path);
-       cout << "Enter an integer value for the path "<< endl;
-       getline (cin, val);
-       int value = atoi(val.c_str());
-       command = setRequest(path, value);
-    } else if (function == "getmetadata") {
-        cout << "Enter vss path eg : Vehicle.OBD.EngineSpeed " <<endl;
-        getline (cin, path);
-        command = getMetarequest(path);
-    } else if (function == "authorize") {
-        string token;
-        cout << "Enter Token "<< endl;
-        getline (cin, token);
-        command = getAuthRequest(token);
-    } else if (function == "kuksa-authorize") {
-        string clientid, secret;
-        cout << "Enter clientid "<< endl;
-        getline (cin, clientid);
-        cout << "Enter client secret "<< endl;
-        getline (cin, secret);
-        command = getKuksaAuthRequest(clientid, secret);
-    }
-
-    auto send_stream = make_shared<WssClient::SendStream>();
-    *send_stream << command;
-    connection->send(send_stream);
-}
-
-void startWSClient(std::string host, int port, std::string rootDoc) {
-  std::string url;
-  url = host + ":" + to_string(port) + "/" + rootDoc;
-
-  WssClient client(url , true ,"Client.pem", "Client.key","CA.pem");
-
-  client.on_message = [](shared_ptr<WssClient::Connection> connection, shared_ptr<WssClient::Message> message) {
-    cout << "Response >> " << message->string() << endl;
-    sendRequest(connection); 
-  };
-
-  client.on_open = [url](shared_ptr<WssClient::Connection> connection) {
-    cout << "Connection with server at " << url << " opened" << endl;
-    sendRequest(connection); 
-  };
-
-  client.on_close = [](shared_ptr<WssClient::Connection> /*connection*/, int status, const string & /*reason*/) {
-    cout << "Connection closed with status code " << status << endl;
-  };
-
-  // See http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/reference.html, Error Codes for error code meanings
-  client.on_error = [](shared_ptr<WssClient::Connection> /*connection*/, const SimpleWeb::error_code &ec) {
-    cout << "Error: " << ec << ", message: " << ec.message() << endl;
-  };
-
-  client.start();
 }
 
 void LoadCertData(ssl::context& ctx) {
@@ -282,8 +210,6 @@ void StartSecuredBeastClient(std::string host, int port, std::string rootDoc) {
   // Make the connection on the IP address we get from a lookup
   boost::asio::connect(ws.next_layer().next_layer(), results.begin(), results.end());
 
-  startWSClient(host, port, rootDoc);
-
   // Perform the SSL handshake
   ws.next_layer().handshake(ssl::stream_base::client);
 
@@ -340,7 +266,6 @@ int main(int argc, const char *argv[]) {
   boost::program_options::options_description desc{"Options"};
   desc.add_options()
     ("help,h", "Help screen")
-    ("wss-client", "Use old Simple Web-socket client implementation: Default is Boost.Beast")
     ("insecure", "Run insecure plain Web-socket mode, available only in non wss-client mode; Default: SSL Web-socket mode")
     ("address", boost::program_options::value<string>()->default_value("localhost"), "Address")
     ("port", boost::program_options::value<int>()->default_value(8090), "Port");
@@ -355,29 +280,20 @@ int main(int argc, const char *argv[]) {
       return 0;
     }
 
-    if (variables.count("wss-client")) {
-      std::cout << "Starting Simple WebSocket client" << std::endl;
-      startWSClient(variables["address"].as<string>(), variables["port"].as<int>(), "vss");
+    if (variables.count("insecure") > 0)
+    {
+      std::cout << "Starting Plain Boost.Beast WebSocket client" << std::endl;
+      StartBeastClient(variables["address"].as<string>(),
+                        variables["port"].as<int>(),
+                        "vss");
     }
     else
     {
-      if (variables.count("insecure") > 0)
-      {
-        std::cout << "Starting Boost.Beast WebSocket client" << std::endl;
-        StartBeastClient(variables["address"].as<string>(),
-                         variables["port"].as<int>(),
-                         "vss");
-      }
-      else
-      {
-
-        std::cout << "Starting Secured Boost.Beast WebSocket client" << std::endl;
-        StartSecuredBeastClient(variables["address"].as<string>(),
-                                variables["port"].as<int>(),
-                                "vss");
-      }
+      std::cout << "Starting Secured Boost.Beast WebSocket client" << std::endl;
+      StartSecuredBeastClient(variables["address"].as<string>(),
+                              variables["port"].as<int>(),
+                              "vss");
     }
-
   } catch (const boost::program_options::error &ex) {
     print_usage(argv[0], desc);
     cerr << ex.what() << std::endl;
