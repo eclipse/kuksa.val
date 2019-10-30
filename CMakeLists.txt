@@ -108,6 +108,7 @@ if(UNIT_TEST)
    target_include_directories(${UNITTEST_EXE_NAME} PRIVATE
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/interface>
    )
 
    target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE jwt-cpp jsonpath jsoncons)
@@ -167,6 +168,7 @@ target_include_directories(${SERVER_EXE_NAME}
   PUBLIC
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/interface>
 )
 
 target_link_libraries(${SERVER_EXE_NAME} LINK_PRIVATE jwt-cpp jsonpath jsoncons)
