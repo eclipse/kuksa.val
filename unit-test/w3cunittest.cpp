@@ -28,8 +28,11 @@
 #include "SubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
 #include "VssCommandProcessor.hpp"
-#include "WsServer.hpp"
+#include "WsChannel.hpp"
 #include "ILogger.hpp"
+#include "RestV1ApiHandler.hpp"
+#include "WebSockHttpFlexServer.hpp"
+#include "IRestHandler.hpp"
 #include "BasicLogger.hpp"
 
 namespace utf = boost::unit_test;
@@ -62,31 +65,32 @@ namespace bt = boost::unit_test;
 #define PORT 8090
 
 std::shared_ptr<ILogger> logger;
-std::shared_ptr<WsServer> webSocket;
 std::shared_ptr<ISubscriptionHandler> subhandler;
 std::shared_ptr<IAuthenticator> authhandler;
 std::shared_ptr<IAccessChecker> accesshandler;
 std::shared_ptr<IVssDatabase> database;
 std::shared_ptr<ISigningHandler> json_signer;
 std::shared_ptr<IVssCommandProcessor> commandProc;
+std::shared_ptr<IServer> httpServer;
+std::shared_ptr<IRestHandler> restHandler;
 
 w3cunittest unittestObj(false);
 
 w3cunittest::w3cunittest(bool secure) {
-  webSocket = std::make_shared<WsServer>();
-  logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::ALL));
+  std::string docRoot{"/vss/api/v1/"};
+
+  logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::NONE));
+  restHandler = std::make_shared<RestV1ApiHandler>(logger, docRoot);
+  auto server = std::make_shared<WebSockHttpFlexServer>(logger, std::move(restHandler));
+  httpServer = server;
   authhandler = std::make_shared<Authenticator>(logger, "","");
   accesshandler = std::make_shared<AccessChecker>(authhandler);
-  subhandler = std::make_shared<SubscriptionHandler>(logger, webSocket, authhandler, accesshandler);
+  subhandler = std::make_shared<SubscriptionHandler>(logger, httpServer, authhandler, accesshandler);
   database = std::make_shared<VssDatabase>(logger, subhandler, accesshandler);
   commandProc = std::make_shared<VssCommandProcessor>(logger, database, authhandler , subhandler);
   json_signer = std::make_shared<SigningHandler>(logger);
   database->initJsonTree("vss_rel_2.0.json");
-
-  webSocket->Initialize(logger,
-                        commandProc,
-                        secure,
-                        PORT);
+  server->Initialize("localhost", PORT, std::move(docRoot), ".", secure);
 }
 
 w3cunittest::~w3cunittest() {
@@ -1747,7 +1751,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
    BOOST_TEST(response_json == expected);
 }
 
-BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path, *utf::expected_failures(1))
+BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
 {
 /*
     Token looks like this.
@@ -2971,29 +2975,31 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath, *utf::expected_failures(1))
 // SUBSCRIBE Test
 BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
 {
-string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
+   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
 
+    json perm = json::parse(R"({"$['Vehicle']['children'][*]['children']['EngineSpeed']" : "wr"})");
     WsChannel channel;
     channel.setConnID(1234);
     channel.setAuthorized(true);
     channel.setAuthToken(AUTH_TOKEN);
+    channel.setPermissions(perm);
     string request(R"({
                    "action": "subscribe",
                    "path": "Vehicle.*.EngineSpeed",
                    "requestId": "8778"
                    })");
-    
+
     string response = commandProc->processQuery(request,channel);
-    
+
     json expected = json::parse(R"({
                                 "action": "subscribe",
                                 "requestId": 8778
                                 })");
-    
+
 #ifdef JSON_SIGNING_ON
     response = json_signer->decode(response);
 #endif
-    
+
     json response_json = json::parse(response);
     json request_json = json::parse(request);
     BOOST_TEST(response_json.has_key("timestamp") == true);
@@ -3018,18 +3024,18 @@ string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIE
                    "path": "Vehicle.OBD.EngineSpeed",
                    "requestId": "4243"
                    })");
-    
+
     string response = commandProc->processQuery(request,channel);
-    
+
     json expected = json::parse(R"({
                                 "action": "subscribe",
                                 "requestId": 4243
                                 })");
-    
+
 #ifdef JSON_SIGNING_ON
     response = json_signer->decode(response);
 #endif
-    
+
     json response_json = json::parse(response);
     json request_json = json::parse(request);
     // TEST response for parameters
@@ -3048,7 +3054,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard, *utf::expected_failures
 {
     /*
      Token looks like this.
-     
+
      {
      "sub": "Example JWT",
      "iss": "Eclipse kuksa",
@@ -3062,8 +3068,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard, *utf::expected_failures
      }
      */
     string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
-    
-    
+
+
     WsChannel channel;
     channel.setConnID(1234);
     string authReq(R"({
@@ -3073,23 +3079,23 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard, *utf::expected_failures
     json authReqJson = json::parse(authReq);
     authReqJson["tokens"] = AUTH_TOKEN;
     commandProc->processQuery(authReqJson.as<string>(),channel);
-    
-    
+
+
     string request(R"({
                    "action": "subscribe",
                    "path": "Signal.*.CatCamera",
                    "requestId": "878787"
                    })");
-    
+
     string response = commandProc->processQuery(request,channel);
     json response_json = json::parse(response);
-    
+
     json expected = json::parse(R"({
                                 "action":"subscribe",
                                 "error":{"message":"I can not find Signal.*.CatCamera in my db","number":404,"reason":"Path not found"},
                                 "requestId":878787
                                 })");
-    
+
     BOOST_TEST(response_json.has_key("timestamp") == true);
     // remove timestamp to match
     response_json.erase("timestamp");

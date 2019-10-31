@@ -11,14 +11,20 @@
 #      Robert Bosch GmbH - initial API and functionality
 # *****************************************************************************
 
-cmake_minimum_required(VERSION 2.8)
-project(w3c-visserver)
+cmake_minimum_required(VERSION 3.1.3)
+project(w3c-visserver VERSION 2.0.0 LANGUAGES CXX)
+enable_testing()
+
+# Setup executable names
+set(SERVER_EXE_NAME "w3c-visserver")
+set(UNITTEST_EXE_NAME "w3c-unit-test")
+set(TESTCLIENT_EXE_NAME "testclient")
 
 set(UNIT_TEST ON CACHE STRING "Build unit tests")
 # Set this variable to ON build an exe
 set(BUILD_EXE ON)
 
-#set this variable to ON to build the testclient
+#set this variable to ON to build the ${TESTCLIENT_EXE_NAME}
 set(BUILD_TEST_CLIENT ON CACHE STRING "Build test client")
 
 set(ADDRESS_SAN OFF CACHE STRING "Build with AddressSanitizer")
@@ -29,47 +35,52 @@ if(UNIT_TEST)
    add_definitions(-DUNIT_TEST)
 endif(UNIT_TEST)
 
-add_compile_options(-std=c++11 -pthread -Wall -Wextra -Werror)
+# global
+add_compile_options(-Wall -Wextra -Werror -g)
 
 if ("${ADDRESS_SAN}" STREQUAL "ON" AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   add_compile_options(-g -fsanitize=address -fno-omit-frame-pointer)
   add_link_options(-g -fsanitize=address -ldl)
 endif()
 
+# Get all standard source files
+file(GLOB_RECURSE STANDARD_SRC_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+)
+# But exclude default main.cpp so we can re-use source list with other artifacts
+list(REMOVE_ITEM STANDARD_SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 
-add_library(simple-websocket-server INTERFACE)
+######
+# 3rd-party library includes already available in git
 
-target_include_directories(simple-websocket-server
-  SYSTEM INTERFACE # Set 3rd party libs as "system" in order to ignore warnings in them
-  ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs
-  ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/Simple-WebSocket-Server
-  ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jsoncons
-  ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jwt-cpp
-  INTERFACE
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-  # ${CMAKE_CURRENT_SOURCE_DIR}/unit-test
-  )
+add_library(jsoncons INTERFACE)
+target_include_directories(jsoncons SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs)
 
+add_library(jsonpath INTERFACE)
+target_include_directories(jsonpath SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jsoncons_ext)
 
+add_library(jwt-cpp INTERFACE)
+target_include_directories(jwt-cpp SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jwt-cpp)
+
+######
+# System library includes
+
+# Prefer pthread as threading library
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
-target_link_libraries(simple-websocket-server INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 # Boost
-find_package(Boost REQUIRED)
 set(Boost_USE_STATIC_LIBS ON)
-include_directories(${Boost_INCLUDE_DIRS})
+find_package(Boost REQUIRED)
 message(STATUS " boost includes ${Boost_INCLUDE_DIRS} ")
 
-find_package(Boost 1.67.0 COMPONENTS system thread program_options REQUIRED)
-
-target_link_libraries(simple-websocket-server INTERFACE ${Boost_LIBRARIES})
-target_include_directories(simple-websocket-server INTERFACE ${Boost_INCLUDE_DIR})
+find_package(Boost 1.67.0 REQUIRED COMPONENTS system thread program_options filesystem system unit_test_framework)
 message(STATUS " boost libs ${Boost_LIBRARIES} ")
 
 #openssl
 find_package(OpenSSL REQUIRED)
-target_link_libraries(simple-websocket-server INTERFACE ${OPENSSL_LIBRARIES})
-target_include_directories(simple-websocket-server INTERFACE ${OPENSSL_INCLUDE_DIR})
+message(STATUS " openssl libraries ${OPENSSL_LIBRARIES}")
 
 #glib, gobject
 FIND_PACKAGE(PkgConfig)
@@ -77,96 +88,126 @@ PKG_CHECK_MODULES(GLIB glib-2.0)
 PKG_CHECK_MODULES(GObject gobject-2.0)
 PKG_CHECK_MODULES(GIO gio-2.0)
 
-# Add to include paths
-include_directories(${GLIB_INCLUDE_DIRS})
-add_definitions(${GLIB_CFLAGS_OTHER})
-
-include_directories(${GObject_INCLUDE_DIR})
-link_directories(${GObject_LIBRARY_DIRS})
-
-include_directories(${GIO_INCLUDE_DIR})
-link_directories(${GIO_LIBRARY_DIRS})
-
-
-message(STATUS " openssl libraries ${OPENSSL_LIBRARIES}")
-
-file(GLOB_RECURSE SRC_FILES
-${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
-)
-
-if(NOT BUILD_EXE)
-   add_library(${PROJECT_NAME} ${SRC_FILES})
-else()
-   add_executable(${PROJECT_NAME} ${SRC_FILES})
-endif(NOT BUILD_EXE)
-target_link_libraries(${PROJECT_NAME}  simple-websocket-server)
-#add glib libraries
-target_link_libraries(${PROJECT_NAME} -lgobject-2.0 -lglib-2.0 -lgio-2.0)
+######
+# Build unit test support
 
 if(UNIT_TEST)
+  set(TEST_FILES
+      ${STANDARD_SRC_FILES}
+      # ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssDatabase_test.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp
+   )
 
-   set(TEST_FILES
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/VssDatabase.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/VssCommandProcessor.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/AccessChecker.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/Authenticator.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/SubscriptionHandler.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/SigningHandler.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/WsServer.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/BasicLogger.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/permmclient.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/JsonResponses.cpp
-         # ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssDatabase_test.cpp
-         ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp
-       )
-   add_executable(w3c-unit-test ${TEST_FILES})
-   target_include_directories(simple-websocket-server INTERFACE
-     ${CMAKE_CURRENT_SOURCE_DIR}
-     ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs
-     ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/Simple-WebSocket-Server
-     ${CMAKE_CURRENT_SOURCE_DIR}/include
-     ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jsoncons
-     ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jwt-cpp)
-   target_link_libraries(w3c-unit-test simple-websocket-server)
+   ######
+   # Setup ${UNITTEST_EXE_NAME} with necessary links and includes
+
+   add_executable(${UNITTEST_EXE_NAME} ${TEST_FILES})
+
+   target_compile_features(${UNITTEST_EXE_NAME} PUBLIC cxx_std_11)
+
+   target_include_directories(${UNITTEST_EXE_NAME} PRIVATE
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   )
+
+   target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE jwt-cpp jsonpath jsoncons)
+
+   target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE Threads::Threads)
+
+   target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE ${Boost_LIBRARIES})
+   target_include_directories(${UNITTEST_EXE_NAME} INTERFACE PUBLIC ${Boost_INCLUDE_DIR})
+
+   target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE ${OPENSSL_LIBRARIES})
+   target_include_directories(${UNITTEST_EXE_NAME} INTERFACE PUBLIC ${OPENSSL_INCLUDE_DIR})
+
+   target_include_directories(${UNITTEST_EXE_NAME} INTERFACE PUBLIC ${GLIB_INCLUDE_DIRS})
+   add_definitions(${GLIB_CFLAGS_OTHER})
+
+   target_include_directories(${UNITTEST_EXE_NAME} INTERFACE PUBLIC ${GObject_INCLUDE_DIR})
+   target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE ${GObject_LIBRARY_DIRS})
+
+   target_include_directories(${UNITTEST_EXE_NAME} INTERFACE PUBLIC ${GIO_INCLUDE_DIR})
+   target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE ${GIO_LIBRARY_DIRS})
+
+   target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE gobject-2.0 glib-2.0 gio-2.0)
 endif(UNIT_TEST)
 
-if(UNIT_TEST)
-find_package(Boost COMPONENTS filesystem system unit_test_framework REQUIRED)
-target_include_directories(w3c-unit-test INTERFACE ${Boost_INCLUDE_DIR})
-target_link_libraries(w3c-unit-test ${Boost_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
-endif(UNIT_TEST)
-
-if(UNIT_TEST)
-target_include_directories(w3c-unit-test INTERFACE ${OPENSSL_INCLUDE_DIR})
-target_link_libraries(w3c-unit-test INTERFACE ${OPENSSL_LIBRARIES})
-endif(UNIT_TEST)
+######
+# Build test client
 
 if(BUILD_TEST_CLIENT)
-   add_executable(testclient ${CMAKE_CURRENT_SOURCE_DIR}/test/testclient.cpp)
-   target_link_libraries(testclient  simple-websocket-server)
-   target_include_directories(testclient PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/jsoncons)
-   target_include_directories(testclient INTERFACE ${Boost_INCLUDE_DIR})
-   target_link_libraries(testclient ${Boost_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+   add_executable(${TESTCLIENT_EXE_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/test/testclient.cpp)
+
+   target_compile_features(${TESTCLIENT_EXE_NAME} PUBLIC cxx_std_11)
+
+   target_link_libraries(${TESTCLIENT_EXE_NAME} LINK_PRIVATE jwt-cpp jsonpath jsoncons)
+   target_include_directories(${TESTCLIENT_EXE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/jsoncons)
+   target_link_libraries(${TESTCLIENT_EXE_NAME} LINK_PRIVATE ${Boost_LIBRARIES})
+   target_include_directories(${TESTCLIENT_EXE_NAME} INTERFACE PUBLIC ${Boost_INCLUDE_DIR})
+   target_link_libraries(${TESTCLIENT_EXE_NAME} LINK_PRIVATE ${OPENSSL_LIBRARIES})
+   target_include_directories(${TESTCLIENT_EXE_NAME} INTERFACE PUBLIC ${OPENSSL_INCLUDE_DIR})
+
    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Client.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Client.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/CA.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 endif(BUILD_TEST_CLIENT)
+
+######
+# Setup server build and artifacts
+
+if(NOT BUILD_EXE)
+   add_library(${SERVER_EXE_NAME} ${STANDARD_SRC_FILES})
+else()
+   add_executable(${SERVER_EXE_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp ${STANDARD_SRC_FILES})
+endif(NOT BUILD_EXE)
+
+target_compile_features(${SERVER_EXE_NAME} PUBLIC cxx_std_11)
+
+target_include_directories(${SERVER_EXE_NAME}
+  PUBLIC
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
+target_link_libraries(${SERVER_EXE_NAME} LINK_PRIVATE jwt-cpp jsonpath jsoncons)
+
+target_link_libraries(${SERVER_EXE_NAME} LINK_PRIVATE Threads::Threads)
+
+target_link_libraries(${SERVER_EXE_NAME} LINK_PRIVATE ${Boost_LIBRARIES})
+target_include_directories(${SERVER_EXE_NAME} INTERFACE PUBLIC ${Boost_INCLUDE_DIR})
+
+target_link_libraries(${SERVER_EXE_NAME} LINK_PRIVATE ${OPENSSL_LIBRARIES})
+target_include_directories(${SERVER_EXE_NAME} INTERFACE PUBLIC ${OPENSSL_INCLUDE_DIR})
+
+target_include_directories(${SERVER_EXE_NAME} INTERFACE PUBLIC ${GLIB_INCLUDE_DIRS})
+add_definitions(${GLIB_CFLAGS_OTHER})
+
+target_include_directories(${SERVER_EXE_NAME} INTERFACE PUBLIC ${GObject_INCLUDE_DIR})
+target_link_libraries(${SERVER_EXE_NAME} LINK_PRIVATE ${GObject_LIBRARY_DIRS})
+
+target_include_directories(${SERVER_EXE_NAME} INTERFACE PUBLIC ${GIO_INCLUDE_DIR})
+target_link_libraries(${SERVER_EXE_NAME} LINK_PRIVATE ${GIO_LIBRARY_DIRS})
+
+target_link_libraries(${SERVER_EXE_NAME} LINK_PRIVATE gobject-2.0 glib-2.0 gio-2.0)
+
+######
+# Setup server install and packaging
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/jwt.pub.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/unit-test/vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
-install( TARGETS ${PROJECT_NAME} DESTINATION bin/w3c-visserver)
-install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/jwt.pub.key DESTINATION bin/w3c-visserver)
-install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.pem DESTINATION bin/w3c-visserver)
-install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.key DESTINATION bin/w3c-visserver)
-install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/vss_rel_2.0.json DESTINATION bin/w3c-visserver)
+install( TARGETS ${SERVER_EXE_NAME} DESTINATION bin/${SERVER_EXE_NAME})
+install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/jwt.pub.key DESTINATION bin/${SERVER_EXE_NAME})
+install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.pem DESTINATION bin/${SERVER_EXE_NAME})
+install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../examples/demo-certificates/Server.key DESTINATION bin/${SERVER_EXE_NAME})
+install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/vss_rel_2.0.json DESTINATION bin/${SERVER_EXE_NAME})
 
 # CPack
 INCLUDE(InstallRequiredSystemLibraries)
 
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "w3c-visserver")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${SERVER_EXE_NAME}")
 SET(CPACK_PACKAGE_VENDOR "Robert Bosch GmbH")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
@@ -176,10 +217,10 @@ SET(CPACK_PACKAGE_VERSION_PATCH "0")
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
 
 SET(CPACK_GENERATOR "DEB;TGZ")
-SET(CPACK_STRIP_FILES "bin/w3c-visserver")
+SET(CPACK_STRIP_FILES "bin/${SERVER_EXE_NAME}")
 SET(CPACK_SOURCE_STRIP_FILES "")
 
-SET(CPACK_PACKAGE_EXECUTABLES "w3c-visserver" "W3C VSS server")
+SET(CPACK_PACKAGE_EXECUTABLES "${SERVER_EXE_NAME}" "W3C VSS server")
 
 # debian
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.14), libgcc1 (>= 1:3.0), libssl1.0.0 (>= 1.0.1), libstdc++6 (>= 5.2)")

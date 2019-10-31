@@ -12,7 +12,6 @@
  * *****************************************************************************
  */
 
-#include <boost/asio/ssl.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>

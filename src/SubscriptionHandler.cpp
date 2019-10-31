@@ -16,7 +16,7 @@
 #include <unistd.h> // usleep
 #include <string>
 
-#include <jsoncons_ext/jsonpath/json_query.hpp>
+#include <jsonpath/json_query.hpp>
 
 #include "AccessChecker.hpp"
 #include "Authenticator.hpp"

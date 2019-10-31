@@ -12,7 +12,7 @@
  * *****************************************************************************
  */
 
-#include <jsoncons_ext/jsonpath/json_query.hpp>
+#include <jsonpath/json_query.hpp>
 #include <limits>
 #include <regex>
 #include <stdexcept>

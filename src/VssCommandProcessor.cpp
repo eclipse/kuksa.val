@@ -21,7 +21,7 @@
 
 #include "permmclient.hpp"
 #include "exception.hpp"
-#include "server_ws.hpp"
+#include "WsChannel.hpp"
 
 #include "JsonResponses.hpp"
 #include "visconf.hpp"

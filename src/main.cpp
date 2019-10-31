@@ -22,7 +22,7 @@
 
 #include <boost/program_options.hpp>
 #include <jsoncons/json.hpp>
-#include <jsoncons_ext/jsonpath/json_query.hpp>
+#include <jsonpath/json_query.hpp>
 
 #include "exception.hpp"
 #include "RestV1ApiHandler.hpp"
