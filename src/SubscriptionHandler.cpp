@@ -129,7 +129,7 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID,
 
   for (auto subID : handle->second) {
     std::lock_guard<std::mutex> lock(subMutex);
-    pair<uint32_t, json> newSub;
+    pair<SubConnId, json> newSub;
     newSub = std::make_pair(subID.second, value);
     buffer.push(newSub);
   }
@@ -159,6 +159,7 @@ void* SubscriptionHandler::subThreadRunner() {
       buffer.pop();
 
       auto connId = newSub.first;
+
       jsoncons::json value = newSub.second;
 
       jsoncons::json answer;

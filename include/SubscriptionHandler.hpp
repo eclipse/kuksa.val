@@ -36,8 +36,10 @@ class WsChannel;
 class WsServer;
 class ILogger;
 
+using SubConnId = uint64_t;
+
 // Subscription ID: Client ID
-typedef std::unordered_map<uint32_t, uint64_t> subscriptions_t;
+typedef std::unordered_map<uint32_t, SubConnId> subscriptions_t;
 
 // Subscription UUID
 typedef std::string uuid_t;
@@ -52,7 +54,7 @@ class SubscriptionHandler : public ISubscriptionHandler {
   std::mutex subMutex;
   std::thread subThread;
   bool threadRun;
-  std::queue<std::pair<uint32_t, jsoncons::json>> buffer;
+  std::queue<std::pair<SubConnId, jsoncons::json>> buffer;
 
  public:
   SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,

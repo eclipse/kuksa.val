@@ -532,10 +532,8 @@ void VssDatabase::setSignal(WsChannel& channel,
     for (size_t i = 0; i < setValues.size(); i++) {
       jsoncons::json item = setValues[i];
       string jPath = item["path"].as<string>();
-#ifdef DEBUG
       logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: path found = " + jPath);
       logger->Log(LogLevel::VERBOSE, "value to set asstring = " + item["value"].as<string>());
-#endif
       rwMutex.lock();
       jsoncons::json resArray = json_query(data_tree, jPath);
       rwMutex.unlock();
@@ -551,9 +549,7 @@ void VssDatabase::setSignal(WsChannel& channel,
           rwMutex.lock();
           json_replace(data_tree, jPath, resJson);
           rwMutex.unlock();
-#ifdef DEBUG
           logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: new value set at path " + jPath);
-#endif
 
           string uuid = resJson["uuid"].as<string>();
 

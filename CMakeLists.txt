@@ -141,8 +141,6 @@ target_include_directories(w3c-unit-test INTERFACE ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(w3c-unit-test INTERFACE ${OPENSSL_LIBRARIES})
 endif(UNIT_TEST)
 
-
-
 if(BUILD_TEST_CLIENT)
    add_executable(testclient ${CMAKE_CURRENT_SOURCE_DIR}/test/testclient.cpp)
    target_link_libraries(testclient  simple-websocket-server)

@@ -28,6 +28,7 @@
 #include <vector>
 #include <unordered_map>
 #include <utility>
+#include <limits>
 #include <regex>
 #include <stdexcept>
 
@@ -95,7 +96,6 @@ namespace {
         newChannel->setConnID(reinterpret_cast<uint64_t>(session));
         newChannel->setType(WsChannel::Type::WEBSOCKET_PLAIN);
         connPlainWebSock_[session] = newChannel;
-
         return *newChannel;
       }
 
@@ -199,7 +199,7 @@ namespace {
   std::shared_ptr<ILogger> logger;
   std::shared_ptr<IRestHandler> restHandler;
 
-  const unsigned DEFAULT_TIMEOUT_VALUE   = 60u;   // in seconds
+  const unsigned DEFAULT_TIMEOUT_VALUE   = std::numeric_limits<unsigned int>::max();   // in seconds
   const unsigned WEBSOCKET_TIMEOUT_VALUE = DEFAULT_TIMEOUT_VALUE;
   const unsigned HTTP_TIMEOUT_VALUE      = DEFAULT_TIMEOUT_VALUE;
 
