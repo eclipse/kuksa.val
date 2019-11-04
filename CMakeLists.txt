@@ -62,6 +62,9 @@ target_include_directories(jsonpath SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
 add_library(jwt-cpp INTERFACE)
 target_include_directories(jwt-cpp SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jwt-cpp)
 
+add_library(turtle INTERFACE)
+target_include_directories(jwt-cpp SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/turtle)
+
 ######
 # System library includes
 
@@ -94,8 +97,8 @@ PKG_CHECK_MODULES(GIO gio-2.0)
 if(UNIT_TEST)
   set(TEST_FILES
       ${STANDARD_SRC_FILES}
-      # ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssDatabase_test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/AuthenticatorTests.cpp
    )
 
    ######
@@ -105,13 +108,17 @@ if(UNIT_TEST)
 
    target_compile_features(${UNITTEST_EXE_NAME} PUBLIC cxx_std_14)
 
+   # disable warning, as we are not going to link unit-test library with anyone
+   target_compile_options(${UNITTEST_EXE_NAME} PUBLIC -Wno-noexcept-type)
+
    target_include_directories(${UNITTEST_EXE_NAME} PRIVATE
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/unit-test/mock>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/interface>
    )
 
-   target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE jwt-cpp jsonpath jsoncons)
+   target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE jwt-cpp jsonpath jsoncons turtle)
 
    target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE Threads::Threads)
 

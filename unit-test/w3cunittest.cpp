@@ -36,7 +36,6 @@
 #include "BasicLogger.hpp"
 
 namespace utf = boost::unit_test;
-using namespace std;
 // using namespace jsoncons;
 // using namespace jsoncons::jsonpath;
 // using jsoncons::json;
