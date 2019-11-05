@@ -24,6 +24,8 @@ class WsServer;
 class IVssDatabase;
 class IServer;
 
+using SubscriptionId = uint32_t;
+
 class ISubscriptionHandler {
   public:
     virtual ~ISubscriptionHandler() {}
@@ -31,8 +33,8 @@ class ISubscriptionHandler {
     virtual uint64_t subscribe(WsChannel& channel,
                                std::shared_ptr<IVssDatabase> db,
                                const std::string &path) = 0;
-    virtual int unsubscribe(uint32_t subscribeID) = 0;
-    virtual int unsubscribeAll(uint32_t connectionID) = 0;
+    virtual int unsubscribe(SubscriptionId subscribeID) = 0;
+    virtual int unsubscribeAll(SubscriptionId connectionID) = 0;
     virtual int updateByUUID(const std::string &signalUUID, const jsoncons::json &value) = 0;
     virtual int updateByPath(const std::string &path, const jsoncons::json &value) = 0;
     virtual std::shared_ptr<IServer> getServer() = 0;

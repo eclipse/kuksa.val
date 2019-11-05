@@ -16,6 +16,7 @@
 #include <limits>
 #include <regex>
 #include <stdexcept>
+#include <boost/algorithm/string.hpp>
 
 #include "exception.hpp"
 #include "visconf.hpp"
@@ -47,6 +48,8 @@ namespace {
     // Check the value type and if the value is within the range
   void checkTypeAndBound(std::shared_ptr<ILogger> logger, string value_type, jsoncons::json val) {
     bool typeValid = false;
+
+    boost::algorithm::to_lower(value_type);
 
     if (value_type == "uint8") {
       typeValid = true;

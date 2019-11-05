@@ -78,10 +78,19 @@ bool RestV1ApiHandler::GetSignalPath(uint32_t requestId,
   if (restTarget.size() && verifyPathAndStrip(restTarget, restDelimiter)) {
     while (restTarget.size()) {
       // we only accept clean printable characters
-      const std::regex regexValidWord("^([A-Za-z]+)");
+      const std::regex regexValidWord("^([A-Za-z0-9]+)");
 
       if (std::regex_search(restTarget, sm, regexValidWord)) {
         foundStr = sm.str(1);
+        if (foundStr.size() == 0) {
+           JsonResponses::malFormedRequest(
+              requestId,
+              json["action"].as_string(),
+              "Signal path not valid",
+              json);
+          ret = false;
+          break;
+        }
         signalPath += foundStr;
         if (verifyPathAndStrip(restTarget, foundStr)) {
           if ((restTarget.size() == 0)) {
@@ -115,6 +124,7 @@ bool RestV1ApiHandler::GetSignalPath(uint32_t requestId,
               "Signal path not valid",
               json);
           ret = false;
+          break;
         }
       }
       else {
@@ -124,6 +134,7 @@ bool RestV1ApiHandler::GetSignalPath(uint32_t requestId,
             "Signal path URI not valid",
             json);
         ret = false;
+        break;
       }
     }
   }

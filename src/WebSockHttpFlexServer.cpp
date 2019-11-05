@@ -31,6 +31,7 @@
 #include <limits>
 #include <regex>
 #include <stdexcept>
+#include <list>
 
 #include "detect_ssl.hpp"
 #include "ssl_stream.hpp"
@@ -242,6 +243,7 @@ namespace {
       boost::asio::steady_timer timer_;
       RequestHandler requestHandler_;
       WsChannel channel;
+      std::list<std::string> writeQueue_;
     public:
       // Construct the session
       explicit WebSocketSession(boost::asio::io_context& ioc,
@@ -423,7 +425,14 @@ namespace {
       }
 
       void write(const std::string &message) {
-        // TODO: add queuing as async_write should be called one at a time
+        writeQueue_.push_back(message);
+
+        // there can be only one async_write request at any single time,
+        // so queue additional transfers
+        if (writeQueue_.size() > 1) {
+          return;
+        }
+
         boost::asio::buffer_copy(bufferWrite_.prepare(message.size()), boost::asio::buffer(message));
         bufferWrite_.commit(message.size()); // commit copied data for write
 
@@ -440,8 +449,6 @@ namespace {
       }
 
       void onWrite(boost::system::error_code ec, std::size_t bytesTransferred) {
-        boost::ignore_unused(bytesTransferred);
-
         // Happens when the timer closes the socket
         if(ec == boost::asio::error::operation_aborted)
           return;
@@ -453,6 +460,26 @@ namespace {
 
         // Clear the buffer
         bufferWrite_.consume(bytesTransferred);
+
+        writeQueue_.pop_front();
+
+        // check if there is more to write
+        if (!writeQueue_.empty()) {
+          auto message = writeQueue_.front();
+          boost::asio::buffer_copy(bufferWrite_.prepare(message.size()), boost::asio::buffer(message));
+          bufferWrite_.commit(message.size()); // commit copied data for write
+
+          // send message
+          derived().ws().async_write(
+              bufferWrite_.data(),
+              boost::asio::bind_executor(
+                  strand_,
+                  std::bind(
+                      &WebSocketSession::onWrite,
+                      derived().shared_from_this(),
+                      std::placeholders::_1,
+                      std::placeholders::_2)));
+        }
       }
   };
 

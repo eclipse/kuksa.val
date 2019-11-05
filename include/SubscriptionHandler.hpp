@@ -36,10 +36,11 @@ class WsChannel;
 class WsServer;
 class ILogger;
 
+
 using SubConnId = uint64_t;
 
 // Subscription ID: Client ID
-typedef std::unordered_map<uint32_t, SubConnId> subscriptions_t;
+using subscriptions_t = std::unordered_map<SubscriptionId, SubConnId>;
 
 // Subscription UUID
 typedef std::string uuid_t;
@@ -54,7 +55,7 @@ class SubscriptionHandler : public ISubscriptionHandler {
   std::mutex subMutex;
   std::thread subThread;
   bool threadRun;
-  std::queue<std::pair<SubConnId, jsoncons::json>> buffer;
+  std::queue<std::tuple<SubscriptionId, SubConnId, jsoncons::json>> buffer;
 
  public:
   SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
@@ -66,8 +67,8 @@ class SubscriptionHandler : public ISubscriptionHandler {
   uint64_t subscribe(WsChannel& channel,
                      std::shared_ptr<IVssDatabase> db,
                      const std::string &path);
-  int unsubscribe(uint32_t subscribeID);
-  int unsubscribeAll(uint32_t connectionID);
+  int unsubscribe(SubscriptionId subscribeID);
+  int unsubscribeAll(SubscriptionId connectionID);
   int updateByUUID(const std::string &signalUUID, const jsoncons::json &value);
   int updateByPath(const std::string &path, const jsoncons::json &value);
   std::shared_ptr<IServer> getServer();

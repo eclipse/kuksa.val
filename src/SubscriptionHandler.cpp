@@ -22,8 +22,8 @@
 #include "Authenticator.hpp"
 #include "exception.hpp"
 #include "visconf.hpp"
+#include "WsChannel.hpp"
 #include "VssDatabase.hpp"
-#include "WsServer.hpp"
 #include "ILogger.hpp"
 
 using namespace std;
@@ -129,8 +129,8 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID,
 
   for (auto subID : handle->second) {
     std::lock_guard<std::mutex> lock(subMutex);
-    pair<SubConnId, json> newSub;
-    newSub = std::make_pair(subID.second, value);
+    tuple<SubscriptionId, SubConnId, json> newSub;
+    newSub = std::make_tuple(subID.first, subID.second, value);
     buffer.push(newSub);
   }
 
@@ -158,13 +158,12 @@ void* SubscriptionHandler::subThreadRunner() {
       auto newSub = buffer.front();
       buffer.pop();
 
-      auto connId = newSub.first;
-
-      jsoncons::json value = newSub.second;
+      auto connId = std::get<1>(newSub);
+      jsoncons::json value = std::get<2>(newSub);
 
       jsoncons::json answer;
       answer["action"] = "subscribe";
-      answer["subscriptionId"] = connId;
+      answer["subscriptionId"] = std::get<0>(newSub);
       answer.insert_or_assign("value", value);
       answer["timestamp"] = time(NULL);
 
