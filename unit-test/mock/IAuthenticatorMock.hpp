@@ -16,9 +16,12 @@
 
 #include <turtle/mock.hpp>
 
-#include "ILogger.hpp"
+#include "IAuthenticator.hpp"
 
-MOCK_BASE_CLASS( ILoggerMock, ILogger )
+MOCK_BASE_CLASS( IAuthenticatorMock, IAuthenticator )
 {
-  MOCK_METHOD(Log, 2)
+  MOCK_METHOD(validate, 3)
+  MOCK_METHOD(updatePubKey, 1)
+  MOCK_METHOD(isStillValid, 1)
+  MOCK_METHOD(resolvePermissions, 2)
 };

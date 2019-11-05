@@ -11,14 +11,21 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-
-#pragma once
-
+#include <boost/test/unit_test.hpp>
 #include <turtle/mock.hpp>
 
-#include "ILogger.hpp"
+#include <memory>
+#include <string>
 
-MOCK_BASE_CLASS( ILoggerMock, ILogger )
-{
-  MOCK_METHOD(Log, 2)
-};
+#include "WsChannel.hpp"
+#include "ILoggerMock.hpp"
+
+#include "VssDatabase.hpp"
+
+
+BOOST_AUTO_TEST_SUITE(VssDatabaseTests)
+
+BOOST_AUTO_TEST_CASE(dummy) {
+}
+
+BOOST_AUTO_TEST_SUITE_END()

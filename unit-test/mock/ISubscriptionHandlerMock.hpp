@@ -16,9 +16,19 @@
 
 #include <turtle/mock.hpp>
 
-#include "ILogger.hpp"
+#include "IServer.hpp"
+#include "ISubscriptionHandler.hpp"
 
-MOCK_BASE_CLASS( ILoggerMock, ILogger )
+MOCK_BASE_CLASS( ISubscriptionHandlerMock, ISubscriptionHandler )
 {
-  MOCK_METHOD(Log, 2)
+  MOCK_METHOD(subscribe, 3)
+  MOCK_METHOD(unsubscribe, 1)
+  MOCK_METHOD(unsubscribeAll, 1)
+  MOCK_METHOD(updateByUUID, 2)
+  MOCK_METHOD(updateByPath, 2)
+  MOCK_METHOD(getServer, 0)
+  MOCK_METHOD(startThread, 0)
+  MOCK_METHOD(stopThread, 0)
+  MOCK_CONST_METHOD(isThreadRunning, 0, bool(void))
+  MOCK_METHOD(subThreadRunner, 0, void*(void))
 };

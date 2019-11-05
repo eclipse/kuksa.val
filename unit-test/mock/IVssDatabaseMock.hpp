@@ -11,7 +11,9 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#include <boost/test/included/unit_test.hpp>
+
+#pragma once
+
 #include <turtle/mock.hpp>
 
 #include "IVssDatabase.hpp"

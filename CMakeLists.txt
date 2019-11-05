@@ -99,6 +99,7 @@ if(UNIT_TEST)
       ${STANDARD_SRC_FILES}
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/AuthenticatorTests.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssCommandProcessorTests.cpp
    )
 
    ######
