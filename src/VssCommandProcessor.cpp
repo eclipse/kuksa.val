@@ -72,7 +72,11 @@ string VssCommandProcessor::processGet(WsChannel &channel,
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
     return JsonResponses::noAccess(request_id, "get", nopermission.what());
+  } catch (std::exception &e) {
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
+    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
   }
+
   if (!res.has_key("value")) {
     return JsonResponses::pathNotFound(request_id, "get", path);
   } else {
@@ -119,6 +123,9 @@ string VssCommandProcessor::processSet(WsChannel &channel,
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
     return JsonResponses::noAccess(request_id, "set", nopermission.what());
+  } catch (std::exception &e) {
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
+    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
   }
 
   jsoncons::json answer;
@@ -142,13 +149,16 @@ string VssCommandProcessor::processSubscribe(WsChannel &channel,
   } catch (noPathFoundonTree &noPathFound) {
     logger->Log(LogLevel::ERROR, string(noPathFound.what()));
     return JsonResponses::pathNotFound(request_id, "subscribe", path);
+  } catch (noPermissionException &nopermission) {
+    logger->Log(LogLevel::ERROR, string(nopermission.what()));
+    return JsonResponses::noAccess(request_id, "subscribe", nopermission.what());
   } catch (genException &outofboundExp) {
     logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
     return JsonResponses::valueOutOfBounds(request_id, "subscribe",
                                     outofboundExp.what());
-  } catch (noPermissionException &nopermission) {
-    logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request_id, "subscribe", nopermission.what());
+  } catch (std::exception &e) {
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
+    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
   }
 
   if (subId > 0) {
@@ -267,7 +277,7 @@ string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
         ttl = -1;
      }
   }
-  
+
   if (ttl == -1) {
     jsoncons::json result;
     jsoncons::json error;
@@ -358,10 +368,8 @@ string VssCommandProcessor::processQuery(const string &req_json,
       string clientID = root["clientid"].as<string>();
       string clientSecret = root["secret"].as<string>();
       uint32_t request_id = root["requestId"].as<int>();
-#ifdef DEBUG
       logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: kuksa authorize query with clientID = "
            + clientID + " with secret " + clientSecret);
-#endif
       response = processAuthorizeWithPermManager(channel, request_id, clientID, clientSecret);
     } else {
       string path = root["path"].as<string>();
@@ -392,13 +400,17 @@ string VssCommandProcessor::processQuery(const string &req_json,
         response = processGetMetaData(request_id, path);
       } else {
         logger->Log(LogLevel::INFO, "VssCommandProcessor::processQuery: Unknown action " + action);
+        return JsonResponses::malFormedRequest("Unknown action requested");
       }
     }
   } catch (jsoncons::json_parse_exception e) {
+    logger->Log(LogLevel::ERROR, "JSON parse error");
     return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::key_not_found e) {
+    logger->Log(LogLevel::ERROR, "JSON key not found error");
     return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::not_an_object e) {
+    logger->Log(LogLevel::ERROR, "JSON not an object error");
     return JsonResponses::malFormedRequest(e.what());
   }
 

@@ -36,7 +36,7 @@ if(UNIT_TEST)
 endif(UNIT_TEST)
 
 # global
-add_compile_options(-Wall -Wextra -Werror -g)
+add_compile_options(-Wall -Wextra -Werror)
 
 if ("${ADDRESS_SAN}" STREQUAL "ON" AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   add_compile_options(-g -fsanitize=address -fno-omit-frame-pointer)
