@@ -14,12 +14,20 @@
 #include <boost/test/unit_test.hpp>
 #include <turtle/mock.hpp>
 
+#include <boost/core/ignore_unused.hpp>
+
+#include <jwt-cpp/jwt.h>
+
 #include <memory>
 #include <string>
+#include <chrono>
+#include <algorithm>
 
 #include "WsChannel.hpp"
 #include "ILoggerMock.hpp"
 #include "IVssDatabaseMock.hpp"
+#include "JsonResponses.hpp"
+#include "exception.hpp"
 
 #include "Authenticator.hpp"
 
@@ -69,40 +77,40 @@ namespace {
     "-----END PUBLIC KEY-----\n"
   };
 
-  /* JWT payload:
-    {
-    "sub": "Example JWT",
-    "iss": "Eclipse kuksa",
-    "admin": true,
-    "iat": 1516239022,
-    "exp": 1609372800,
-    "w3c-vss": {
-      "Vehicle.Drivetrain.*": "r",
-      "Vehicle.Drivetrain.Transmission.*": "rw"
+    // common resources for tests
+  std::shared_ptr<ILoggerMock> logMock;
+  std::shared_ptr<IVssDatabaseMock> dbMock;
+
+  std::unique_ptr<Authenticator> auth;
+
+  // Pre-test initialization and post-test desctruction of common resources
+  struct TestSuiteFixture {
+    TestSuiteFixture() {
+      logMock = std::make_shared<ILoggerMock>();
+      dbMock = std::make_shared<IVssDatabaseMock>();
+
+
+      auth = std::make_unique<Authenticator>(logMock, std::string(""), std::string("RS256"));
     }
-  */
-  // JWT is generated based on 'validPrivateKey' content and token content value in comment above
-  // it token needs to be updated, one can use jwt.io or 'w3c-visserver-api/test/web-client/index.html' to generate new JWT
-  const std::string validJWT{
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJzdWIiOiAiRXhhbXBsZSBKV1QiLAogICJpc3MiOiAiRWNsaXBzZSBrdWtzYSIsCiAgImFkbWluIjogdHJ1ZSwKICAiaWF0IjogMTUxNjIzOTAyMiwKICAiZXhwIjogMTYwOTM3MjgwMCwKICAidzNjLXZzcyI6IHsKICAgICJWZWhpY2xlLkRyaXZldHJhaW4uKiI6ICJyIiwKICAgICJWZWhpY2xlLkRyaXZldHJhaW4uVHJhbnNtaXNzaW9uLioiOiAicnciCiAgfQp9.Tdwx083MCyVBKae6Ur_YQQjelv9rYK9GNg9JIHJcQw2bIzXpktim0qaV-v83O-Bjyjs_iALlFUEF-jb4OdCSeQlklUiacQx5Wt7dNGgPx9-v28jSiPYVlVg1pi-yyi28v02sIaBdnyFbC4xcamKDVqj65Fm3LpV0Wpd-NIwmxC7d0Ag1k14P5xW86Mvs7vHhTgmlpsojgnTQvkw1tXCccySzJtude7IiyeF6DckLbeG_MI5HFLeMzWD90t-VskX7z1CPRUvmhU4HrVoTs8uldzh5lXk_1VMNAEDliEtG57GT_7IE_g_D7ubMjTE3rLUagtIX_RDJpwTt0MiJGeAMdw"
+    ~TestSuiteFixture() {
+      logMock.reset();
+      dbMock.reset();
+      auth.reset();
+    }
   };
 }
 
+// Define name of test suite and define test suite fixture for pre and post test handling
+BOOST_FIXTURE_TEST_SUITE(AuthenticatorTests, TestSuiteFixture)
 
-BOOST_AUTO_TEST_SUITE( AuthenticatorTests )
-
-
-BOOST_AUTO_TEST_CASE(ValidateGoodToken)
+BOOST_AUTO_TEST_CASE(Given_GoodToken_When_Validate_Shall_ValidateTokenSuccessfully)
 {
   WsChannel channel;
 
-  // prepare expectations
+  // expectations
 
-  std::shared_ptr<ILoggerMock> logMock = std::make_shared<ILoggerMock>();
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
-
-  std::shared_ptr<IVssDatabaseMock> dbMock = std::make_shared<IVssDatabaseMock>();
 
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
@@ -116,16 +124,137 @@ BOOST_AUTO_TEST_CASE(ValidateGoodToken)
     .with(mock::equal("Vehicle.Drivetrain.Transmission.*"), mock::assign(true))
     .returns(retDbListNarrower);
 
-  // create UUT
-  Authenticator auth(logMock, "appstacle", "RS256");
+  picojson::value picoJson;
+  picojson::parse(picoJson,
+                  R"({"Vehicle.Drivetrain.*" : "r", "Vehicle.Drivetrain.Transmission.*" : "rw"})");
+
+  auto currTime = std::chrono::system_clock::now();
+  auto exprTime = std::chrono::system_clock::now() + std::chrono::hours(24);
+  // create valid token
+  auto token = jwt::create()
+    // header
+    .set_type("JWT")
+    .set_algorithm("RS256")
+    // payload
+    .set_subject("Example JWT")
+    .set_issuer("Eclipse KUKSA")
+    .set_issued_at(currTime)
+    .set_expires_at(exprTime)
+
+    .set_payload_claim("w3c-vss", jwt::claim(picoJson))
+
+    // signature
+    .sign(jwt::algorithm::rs256{validPubKey, validPrivateKey});
 
   // execute
 
-  auth.updatePubKey(validPubKey);
+  auth->updatePubKey(validPubKey);
+  auto res = auth->validate(channel, dbMock, token);
 
   // verify
 
-  BOOST_TEST(auth.validate(channel, dbMock, validJWT) != -1);
+  // verify that returned TTL value is same as expiry time in token
+  BOOST_TEST(res == std::chrono::time_point_cast<std::chrono::seconds>(exprTime).time_since_epoch().count());
+}
+
+BOOST_AUTO_TEST_CASE(Given_BadPathInToken_When_Validate_Shall_ThrowException)
+{
+  WsChannel channel;
+
+  // expectations
+
+  // validate that at least one log event was processed
+  MOCK_EXPECT(logMock->Log).at_least( 1 );
+
+  std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
+  std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
+
+  MOCK_EXPECT(dbMock->getPathForGet)
+    .once()
+    .with(mock::equal("Vehicle.Drivetrain.*"), mock::assign(true))
+    .returns(retDbListWider);
+  MOCK_EXPECT(dbMock->getPathForGet)
+    .once()
+    .with(mock::equal("Vehicle.Drivetrain.Transmission.*"), mock::assign(true))
+    .throws(noPathFoundonTree(""));
+
+  picojson::value picoJson;
+  picojson::parse(picoJson,
+                  R"({"Vehicle.Drivetrain.*" : "r", "Vehicle.Drivetrain.Transmission.*" : "rw"})");
+
+  // create valid token
+  auto token = jwt::create()
+    // header
+    .set_type("JWT")
+    .set_algorithm("RS256")
+    // payload
+    .set_subject("Example JWT")
+    .set_issuer("Eclipse KUKSA")
+    .set_issued_at(std::chrono::system_clock::now())
+    .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours(24))
+
+    .set_payload_claim("w3c-vss", jwt::claim(picoJson))
+
+    // signature
+    .sign(jwt::algorithm::rs256{validPubKey, validPrivateKey});
+
+  // execute
+
+  auth->updatePubKey(validPubKey);
+
+  // verify
+
+  // path in token is not found, so expect exception to be thrown
+  BOOST_CHECK_EXCEPTION(auth->validate(channel, dbMock, token),
+                        noPathFoundonTree,
+                        [](noPathFoundonTree const& e){boost::ignore_unused(e); return true;});
+}
+
+BOOST_AUTO_TEST_CASE(Given_BadToken_When_Validate_Shall_ReturnError)
+{
+  WsChannel channel;
+
+  // expectations
+
+  // validate that at least one log event was processed
+  MOCK_EXPECT(logMock->Log).at_least( 1 );
+
+  std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
+  std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
+
+  picojson::value picoJson;
+  picojson::parse(picoJson,
+                  R"({"Vehicle.Drivetrain.*" : "r", "Vehicle.Drivetrain.Transmission.*" : "rw"})");
+
+  // create valid token
+  auto token = jwt::create()
+    // header
+    .set_type("JWT")
+    .set_algorithm("RS256")
+    // payload
+    .set_subject("Example JWT")
+    .set_issuer("Eclipse KUKSA")
+    .set_issued_at(std::chrono::system_clock::now())
+    .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours(24))
+
+    .set_payload_claim("w3c-vss", jwt::claim(picoJson))
+
+    // signature
+    .sign(jwt::algorithm::rs256{validPubKey, validPrivateKey});
+
+  // execute
+
+  auth->updatePubKey(validPubKey);
+
+  // change something in token so it fails verification
+  token[10] = 'a';
+
+  auto res = auth->validate(channel, dbMock, token);
+
+  // verify
+
+  // verify that TTL is -1 which represents not authorized token
+  BOOST_TEST(res == -1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
