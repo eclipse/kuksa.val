@@ -1436,7 +1436,7 @@ void WebSockHttpFlexServer::LoadCertData(std::string & certPath, boost::asio::ss
   isInitialized = true;
 }
 
-void WebSockHttpFlexServer::SendToConnection(uint64_t connID, const std::string &message) {
+void WebSockHttpFlexServer::SendToConnection(ConnectionId connID, const std::string &message) {
   if (!isInitialized)
   {
     std::string err("Cannot send to connection, server not initialized!");

@@ -100,6 +100,7 @@ if(UNIT_TEST)
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/w3cunittest.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/AuthenticatorTests.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssCommandProcessorTests.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/SubscriptionHandlerTests.cpp
    )
 
    ######

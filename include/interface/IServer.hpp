@@ -30,12 +30,14 @@ enum class ObserverType {
   ALL       = 0x03  //!< Receive all traffic
 };
 
+using ConnectionId = uint64_t;
+
 class IServer {
   public:
     virtual ~IServer() {}
 
     virtual void AddListener(ObserverType, std::shared_ptr<IVssCommandProcessor>) = 0;
     virtual void RemoveListener(ObserverType, std::shared_ptr<IVssCommandProcessor>) = 0;
-    virtual void SendToConnection(uint64_t connID, const std::string &message) = 0;
+    virtual void SendToConnection(ConnectionId connID, const std::string &message) = 0;
 };
 #endif

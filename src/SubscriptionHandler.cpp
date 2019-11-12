@@ -45,11 +45,11 @@ SubscriptionHandler::~SubscriptionHandler() {
   stopThread();
 }
 
-uint64_t SubscriptionHandler::subscribe(WsChannel& channel,
-                                        std::shared_ptr<IVssDatabase> db,
-                                        const string &path) {
+SubscriptionId SubscriptionHandler::subscribe(WsChannel& channel,
+                                              std::shared_ptr<IVssDatabase> db,
+                                              const string &path) {
   // generate subscribe ID "randomly".
-  uint64_t subId = rand() % 9999999;
+  SubscriptionId subId = rand() % 9999999;
   // embed connection ID into subID.
   subId = channel.getConnID() + subId;
 
@@ -67,6 +67,7 @@ uint64_t SubscriptionHandler::subscribe(WsChannel& channel,
   jsoncons::json resArray = jsonpath::json_query(db->data_tree, jPath);
 
   if (resArray.is_array() && resArray.size() == 1) {
+    std::unique_lock<std::mutex> lock(accessMutex);
     jsoncons::json result = resArray[0];
     string sigUUID = result["uuid"].as<string>();
     auto handle = subscribeHandle.find(sigUUID);
@@ -96,7 +97,8 @@ uint64_t SubscriptionHandler::subscribe(WsChannel& channel,
   }
 }
 
-int SubscriptionHandler::unsubscribe(uint32_t subscribeID) {
+int SubscriptionHandler::unsubscribe(SubscriptionId subscribeID) {
+  std::unique_lock<std::mutex> lock(accessMutex);
   for (auto& uuid : subscribeHandle) {
     auto subscriptions = &(uuid.second);
     auto subscription = subscriptions->find(subscribeID);
@@ -107,13 +109,19 @@ int SubscriptionHandler::unsubscribe(uint32_t subscribeID) {
   return 0;
 }
 
-int SubscriptionHandler::unsubscribeAll(uint32_t connectionID) {
+int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
+  std::unique_lock<std::mutex> lock(accessMutex);
   for (auto& uuid : subscribeHandle) {
-    auto subscriptions = &(uuid.second);
-    for (auto& subscription : *subscriptions) {
-      if (subscription.second == (connectionID)) {
-        subscriptions->erase(subscription.first);
-      }
+    auto condition = [connectionID](const std::pair<SubscriptionId, ConnectionId> & pair) {
+                        return (pair.second == (connectionID));
+                      };
+
+    auto found = std::find_if(std::begin(uuid.second),
+                              std::end(uuid.second),
+                              condition);
+
+    if (found != std::end(uuid.second)) {
+      uuid.second.erase(found);
     }
   }
   return 0;
@@ -121,6 +129,7 @@ int SubscriptionHandler::unsubscribeAll(uint32_t connectionID) {
 
 int SubscriptionHandler::updateByUUID(const string &signalUUID,
                                       const jsoncons::json &value) {
+  std::unique_lock<std::mutex> lock(accessMutex);
   auto handle = subscribeHandle.find(signalUUID);
   if (handle == subscribeHandle.end()) {
     // UUID not found
@@ -129,9 +138,10 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID,
 
   for (auto subID : handle->second) {
     std::lock_guard<std::mutex> lock(subMutex);
-    tuple<SubscriptionId, SubConnId, json> newSub;
+    tuple<SubscriptionId, ConnectionId, json> newSub;
     newSub = std::make_tuple(subID.first, subID.second, value);
     buffer.push(newSub);
+    c.notify_one();
   }
 
   return 0;
@@ -154,7 +164,7 @@ void* SubscriptionHandler::subThreadRunner() {
 
   while (isThreadRunning()) {
     if (buffer.size() > 0) {
-      std::lock_guard<std::mutex> lock(subMutex);
+      std::unique_lock<std::mutex> lock(subMutex);
       auto newSub = buffer.front();
       buffer.pop();
 
@@ -173,10 +183,13 @@ void* SubscriptionHandler::subThreadRunner() {
 
       getServer()->SendToConnection(connId, message);
     }
-    // sleep 10 ms
-    usleep(10000);
+    else {
+      std::unique_lock<std::mutex> lock(subMutex);
+      c.wait(lock);
+    }
   }
-  logger->Log(LogLevel::INFO, "SubscribeThread: Subscription handler thread stopped running");
+
+  logger->Log(LogLevel::VERBOSE, "SubscribeThread: Subscription handler thread stopped running");
 
   return NULL;
 }
@@ -188,9 +201,14 @@ int SubscriptionHandler::startThread() {
 }
 
 int SubscriptionHandler::stopThread() {
-  std::lock_guard<std::mutex> lock(subMutex);
-  threadRun = false;
-  subThread.join();
+  if (isThreadRunning()) {
+    {
+      std::lock_guard<std::mutex> lock(subMutex);
+      threadRun = false;
+      c.notify_one();
+    }
+    subThread.join();
+  }
   return 0;
 }
 
