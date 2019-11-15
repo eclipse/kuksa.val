@@ -93,10 +93,10 @@ handle_method_call (GDBusConnection       *connection,
   (void) parameters;
   (void) user_data;
   (void) sender;
-  
+
   json jsonVal;
   const gchar *vss_path = NULL;
-   
+
    if (gDatabase == NULL) {
       g_dbus_method_invocation_return_error (invocation,
                                                  G_IO_ERROR,
@@ -134,7 +134,7 @@ handle_method_call (GDBusConnection       *connection,
      jsonVal = value;
      g_message("pushBool called with param ( %s , %d )", vss_path, value);
 
-   } 
+   }
 
    else if (g_strcmp0 (method_name, "pushString") == 0)
    {
@@ -143,8 +143,8 @@ handle_method_call (GDBusConnection       *connection,
      jsonVal = std::string(value);
      g_message("pushString called with param ( %s , %s )", vss_path, value);
 
-   }  
-   else 
+   }
+   else
    {
       g_dbus_method_invocation_return_error (invocation,
                                                  G_IO_ERROR,
@@ -163,7 +163,7 @@ handle_method_call (GDBusConnection       *connection,
                                                  "Exception occured while setting data to the server.");
       }
 
-      g_dbus_method_invocation_return_value (invocation, NULL);  
+      g_dbus_method_invocation_return_value (invocation, NULL);
 
 
 }
@@ -322,7 +322,7 @@ int main(int argc, const char *argv[]) {
                                  on_name_lost,
                                  NULL,
                                  NULL);
-  
+
       loop = g_main_loop_new (NULL, FALSE);
       g_main_loop_run (loop);
       g_bus_unown_name (owner_id);
