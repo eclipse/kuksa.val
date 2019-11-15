@@ -102,6 +102,7 @@ if(UNIT_TEST)
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssCommandProcessorTests.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/SubscriptionHandlerTests.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssDatabaseTests.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/AccessCheckerTests.cpp
    )
 
    ######
