@@ -101,6 +101,7 @@ if(UNIT_TEST)
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/AuthenticatorTests.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssCommandProcessorTests.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/SubscriptionHandlerTests.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/unit-test/VssDatabaseTests.cpp
    )
 
    ######
@@ -140,6 +141,8 @@ if(UNIT_TEST)
    target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE ${GIO_LIBRARY_DIRS})
 
    target_link_libraries(${UNITTEST_EXE_NAME} LINK_PRIVATE gobject-2.0 glib-2.0 gio-2.0)
+
+   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/unit-test/test_vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 endif(UNIT_TEST)
 
 ######
