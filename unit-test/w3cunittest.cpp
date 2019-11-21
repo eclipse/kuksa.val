@@ -30,10 +30,8 @@
 #include "VssCommandProcessor.hpp"
 #include "WsChannel.hpp"
 #include "ILogger.hpp"
-#include "RestV1ApiHandler.hpp"
-#include "WebSockHttpFlexServer.hpp"
-#include "IRestHandler.hpp"
 #include "BasicLogger.hpp"
+#include "IServerMock.hpp"
 
 namespace utf = boost::unit_test;
 // using namespace jsoncons;
@@ -71,25 +69,22 @@ std::shared_ptr<IVssDatabase> database;
 std::shared_ptr<ISigningHandler> json_signer;
 std::shared_ptr<IVssCommandProcessor> commandProc;
 std::shared_ptr<IServer> httpServer;
-std::shared_ptr<IRestHandler> restHandler;
 
-w3cunittest unittestObj(false);
+w3cunittest unittestObj;
 
-w3cunittest::w3cunittest(bool secure) {
+w3cunittest::w3cunittest() {
   std::string docRoot{"/vss/api/v1/"};
 
   logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::NONE));
-  restHandler = std::make_shared<RestV1ApiHandler>(logger, docRoot);
-  auto server = std::make_shared<WebSockHttpFlexServer>(logger, std::move(restHandler));
-  httpServer = server;
+  // we do not need actual implementation of server, so use mock
+  httpServer = std::make_shared<IServerMock>();
   authhandler = std::make_shared<Authenticator>(logger, "","");
   accesshandler = std::make_shared<AccessChecker>(authhandler);
   subhandler = std::make_shared<SubscriptionHandler>(logger, httpServer, authhandler, accesshandler);
   database = std::make_shared<VssDatabase>(logger, subhandler, accesshandler);
   commandProc = std::make_shared<VssCommandProcessor>(logger, database, authhandler , subhandler);
   json_signer = std::make_shared<SigningHandler>(logger);
-  database->initJsonTree("vss_rel_2.0.json");
-  server->Initialize("localhost", PORT, std::move(docRoot), ".", secure);
+  database->initJsonTree("test_vss_rel_2.0.json");
 }
 
 w3cunittest::~w3cunittest() {

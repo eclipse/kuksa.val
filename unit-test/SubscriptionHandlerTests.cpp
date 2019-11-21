@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
 
   // load data tree
   // TODO: remove when this implicit dependency is removed
-  std::ifstream is("vss_rel_2.0.json");
+  std::ifstream is("test_vss_rel_2.0.json");
   is >> dbMock->data_tree;
 
   // verify
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
 
   // load data tree
   // TODO: remove when this implicit dependency is removed
-  std::ifstream is("vss_rel_2.0.json");
+  std::ifstream is("test_vss_rel_2.0.json");
   is >> dbMock->data_tree;
 
   // verify
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
 
   // load data tree
   // TODO: remove when this implicit dependency is removed
-  std::ifstream is("vss_rel_2.0.json");
+  std::ifstream is("test_vss_rel_2.0.json");
   is >> dbMock->data_tree;
 
   // verify
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
 
   // load data tree
   // TODO: remove when this implicit dependency is removed
-  std::ifstream is("vss_rel_2.0.json");
+  std::ifstream is("test_vss_rel_2.0.json");
   is >> dbMock->data_tree;
 
   // verify
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
 
   // load data tree
   // TODO: remove when this implicit dependency is removed
-  std::ifstream is("vss_rel_2.0.json");
+  std::ifstream is("test_vss_rel_2.0.json");
   is >> dbMock->data_tree;
 
   // verify
@@ -345,7 +345,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
 
   // load data tree
   // TODO: remove when this implicit dependency is removed
-  std::ifstream is("vss_rel_2.0.json");
+  std::ifstream is("test_vss_rel_2.0.json");
   is >> dbMock->data_tree;
 
   // verify
@@ -403,7 +403,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
 
   // load data tree
   // TODO: remove when this implicit dependency is removed
-  std::ifstream is("vss_rel_2.0.json");
+  std::ifstream is("test_vss_rel_2.0.json");
   is >> dbMock->data_tree;
 
   // verify
@@ -487,7 +487,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // load data tree
   // TODO: remove when this implicit dependency is removed
-  std::ifstream is("vss_rel_2.0.json");
+  std::ifstream is("test_vss_rel_2.0.json");
   is >> dbMock->data_tree;
 
   // verify
@@ -613,7 +613,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // load data tree
   // TODO: remove when this implicit dependency is removed
-  std::ifstream is("vss_rel_2.0.json");
+  std::ifstream is("test_vss_rel_2.0.json");
   is >> dbMock->data_tree;
 
   // verify

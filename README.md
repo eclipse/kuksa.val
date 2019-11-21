@@ -10,7 +10,7 @@ The implementation provides all the major functionality defined in the above sta
  - Multi-client server implementing Web-Socket platform communication, with support for both secure [SSL] and insecure [plain] connections. Feature status:
  - User authorization based on industry standard RFC 7519 as JSON Web Tokens
  - Optional JSON signing of messages, described in **_JSON signing_** chapter
- - Multi-client server implementing experimental REST API based on standard specification. REST API specification is available as OpenAPI 3.0 definition available in [rest-api.yaml](doc/rest-api.yaml) file.
+ - Multi-client server implementing experimental REST API based on standard specification. REST API specification is available as OpenAPI 3.0 definition available in [doc/rest-api.yaml](doc/rest-api.yaml) file.
 
  Specific list of of features is listed in table below:
 
@@ -35,28 +35,9 @@ This project uses components from other 3rd party open-source projects:
  [jsoncons](https://github.com/danielaparker/jsoncons) | Boost Software license 1.0 | Utility library for handling JSON.
  [jwt-cpp](https://github.com/Thalhammer/jwt-cpp) | MIT license | Utility library for handling JWT tokens.
 
-# Building W3C-Server
+# W3C-Server Project
 
 [CMake](https://cmake.org/) is tool used to configure, build and package W3C-Server.
-
-## Configure build
-
-Build configuration options of W3C-Server are defined in CMakeLists.txt file.
-
-By changing different option values in CMakeLists.txt file, user can control
-different build options of W3C-Server.  
-Available build options with optional parameters, if available, are presented below. Default parameters are shown in **bold**:
- - **BUILD_EXE** [**ON**/OFF] - Default build shall produce W3C-Server executable.
-   If set to **OFF** W3C-Server shall be built as a library which could be used in another application.
-   Eg: could be found in the _vehicle2cloud_ app.
- - **BUILD_TEST_CLIENT** [**ON**/OFF] - Build separate _testclient_ executable. Test client is a utility to test
-   Web-Socket request interface of W3C-Server and retrieve responses.
- - **UNIT_TEST** [ON/**OFF**] - If enabled, build shall produce separate _w3c-unit-test_ executable which
-   will run existing tests for server implementation.
- - **ADDRESS_SAN** [ON/**OFF**] - If enabled and _Clang_ is used as compiler, _AddressSanitizer_ will be used to build
-   W3C-Server for verifying run-time execution.
-
-After changing any of build options, new clean build should be made, as described in **_Building W3C-Server_** chapter.
 
 ## Building W3C-Server
 
@@ -66,23 +47,77 @@ To generate new clean build (e.g. after git clone or after changing build config
 ```
 cd w3c-visserver-api
 ```
- - Make default build directory where build artifacts will be stored, and move into it
+ - Make default build directory where build artifacts will be stored, and move into it:
 ```
 mkdir build
 cd build
 ```
  - Invoke CMake pointing to location of CMakeLists.txt file to generate
-   Makefile build configuration which will be used to build W3C-Server
+   Makefile build configuration which will be used to build W3C-Server:
 ```
 cmake ..
 ```
- - Run build W3C-Server. Make parameter '_-j_ ' is optional and allows running parallel build jobs to speed up compilation.
+ - Run build W3C-Server. Make parameter '_-j_ ' is optional and allows running parallel build jobs to speed up compilation:
 ```
 make -j
 ```
 If all completes successfully, build artifacts shall be located in 'build' directory.
 
-### JSON signing
+**NOTE:** Build artifacts of each module is located in their own separate build directories under main build directory.
+
+## CMake Project Structure
+
+Structure of CMake project is organized as a tree. This keeps different modules simple and logically separated, but allows for easy re-use and extension.
+
+Root [CMakeLists.txt](CMakeLists.txt) CMake file defines root project and its common properties, like dependency verification and common library definition.
+Adding any new dependency or new module to the project is done in this file.
+Each project module is responsible for its own build configuration options and it should not be handled in root CMakeLists.txt file.
+
+Each project module can have different user-configurable build configuration options. To list currently available build options go to [ List build configuration options](#List-build-configuration-options) chapter.
+
+Current project has three existing modules which can serve as an example and are defined in:
+ - [src/CMakeLists.txt](src/CMakeLists.txt) - Main module which defines W3C-Server library and executable.
+- [test/CMakeLists.txt](test/CMakeLists.txt) - Module defining testclient executable as a helper tool for exercising W3C-Server.
+- [unit-test/CMakeLists.txt](unit-test/CMakeLists.txt) - Module defining unit-test executable for testing build W3C-Server library.
+
+## Configure CMake project
+
+Build configuration options of W3C-Server are defined in different CMakeLists.txt files, depending on each included module in build.
+
+### List build configuration options
+
+To list all available build options, invoke below CMake command from build directory:
+```
+cmake -LH ..
+```
+Provided command shall list cached CMake variables that are available for configuration.
+
+Alternatively, one can use [cmake-gui](https://cmake.org/cmake/help/v3.1/manual/cmake-gui.1.html) to query and|or configure project through UI.
+
+### Main build configuration options
+
+By changing values of different configuration options, user can control
+build of W3C-Server.  
+Available build options with optional parameters, if available, are presented below. Default parameters are shown in **bold**:
+ - **CMAKE_BUILD_TYPE** [**Release**/Debug] - Build type. If set to '_Debug_', debug information shall be left and reduced optimization done.
+ - **BUILD_EXE** [**ON**/OFF] - Default build shall produce W3C-Server executable.
+   If set to **OFF** W3C-Server shall be built as a library which could be used in another application.
+   Eg: could be found in the _vehicle2cloud_ app.
+ - **BUILD_TEST_CLIENT** [**ON**/OFF] - Build separate _testclient_ executable. Test client is a utility to test
+   Web-Socket request interface of W3C-Server and retrieve responses.
+ - **BUILD_UNIT_TEST** [ON/**OFF**] - If enabled, build shall produce separate _w3c-unit-test_ executable which
+   will run existing tests for server implementation.
+ - **ADDRESS_SAN** [ON/**OFF**] - If enabled and _Clang_ is used as compiler, _AddressSanitizer_ will be used to build
+   W3C-Server for verifying run-time execution.
+
+An example of W3C-Server CMake build configuration invocation with enabled unit test is shown below (e.g. used when debugging unit-tests):
+```
+cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_UNIT_TEST=ON ..
+```
+
+After changing any of build options, new clean build should be made, as described in [_Building W3C-Server_](#Building-W3C-Server) chapter, as a sanity check.
+
+### JSON Signing
 
 JSON Signing has been introduced additionally to sign the JSON response for GET and SUBSCRIBE Response. By default this has been disabled. To enable this feature go to visconf.hpp file and uncomment the line `define JSON_SIGNING_ON`. Please note, JSON signing works only with a valid pair of public / private certificate. For testing, you could create example certificates by following the below steps.
 Do not add any passphrase when asked for.
@@ -101,13 +136,13 @@ This could also be easily extended to support JSON signing for the requests as w
 # Running W3C-Server
 
 Depending on build options and provided parameters, W3C-Server will provide different features.
-Chapter **_Parameters_** shall describe different mandatory and optional parameters in more detail.
+Chapter [_Parameters_](#Parameters) shall describe different mandatory and optional parameters in more detail.
 
 Default configuration shall provide both Web-Socket and REST API connectivity.
 
 ## Web-Socket specific testing
 
-This covers only the basic functions like get, set and getmetadata requests. You coulkd skip this and take a look at the unit-test to get better idea about the implementation.
+This covers only the basic functions like _get_, _set_ and _getmetadata_ requests. You could skip this and take a look at the unit-test to get better idea about the implementation.
 
 You could also checkout the in-vehicle apps in the [kuksa.apps](https://github.com/eclipse/kuksa.apps) repo which work with the server.
 
@@ -151,16 +186,16 @@ Below are presented W3C-Server parameters available for user control:
   insecure=
   log-level=ALL
   ```
-- **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.pub.key' are located. Server demo certificates are located in [this](https://github.com/eclipse/kuksa.invehicle/tree/master/examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
-If user needs to use or generate their own certificates, see chapter **_Certificates_** for more details.  
-For authorizing client, file 'jwt.pub.key' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.pub.key' file, see chapter **_Permissions_** for more details.
+- **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.pub.key' are located. Server demo certificates are located in [../examples/demo-certificates](../examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
+If user needs to use or generate their own certificates, see chapter [_Certificates_](#Certificates) for more details.  
+For authorizing client, file 'jwt.pub.key' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.pub.key' file, see chapter [_Permissions_](#Permissions) for more details.
 - **--insecure** [optional] - By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.
 - **--wss-server** [optional][deprecated] - By default, W3C-Server uses Boost.Beast as default connection handler. If provided, W3C-Server shall use deprecated Simple Web-Socket Server, without REST API support.
 - **--address** [optional] - If provided, W3C-Server shall use different server address than default _'localhost'_.
 - **--port** [optional] - If provided, W3C-Server shall use different server port than default '8090' value.
 - **--log-level** [optional] - Enable selected log level value. To allow for different log level combinations, parameter can be provided multiple times with different log level values.
 
-# How tos
+# How-to's
 
 ## Certificates
 
