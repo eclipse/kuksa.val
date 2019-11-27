@@ -99,7 +99,10 @@ Alternatively, one can use [cmake-gui](https://cmake.org/cmake/help/v3.1/manual/
 By changing values of different configuration options, user can control
 build of W3C-Server.  
 Available build options with optional parameters, if available, are presented below. Default parameters are shown in **bold**:
- - **CMAKE_BUILD_TYPE** [**Release**/Debug] - Build type. If set to '_Debug_', debug information shall be left and reduced optimization done.
+ - **CMAKE_BUILD_TYPE** [**Release**/Debug/Coverage] - Build type. Available options:
+   * **_Release_** - Default build type. Enabled optimizations and no debug information is available.
+   * **_Debug_** - Debug information is available and optimization is disabled.
+   * **_Coverage_** - Coverage information is generated with debug information and reduced optimization levels for better reporting. Check [_Coverage_](#Coverage) chapter for more details.
  - **BUILD_EXE** [**ON**/OFF] - Default build shall produce W3C-Server executable.
    If set to **OFF** W3C-Server shall be built as a library which could be used in another application.
    Eg: could be found in the _vehicle2cloud_ app.
@@ -224,6 +227,68 @@ Permissions can be granted by modifying the JSON Claims.
 2. Under the "w3c-vss" claim the permissions can be granted using key value pair. The key should be the path in the signal tree and the value should be strings with "r" for READ-ONLY, "w" for WRITE-ONLY and "rw" or "wr" for READ-AND-WRITE permission. See the image above.
 3. The permissions can contain wild-cards. For eg "Signal.OBD.\*" : "rw" will grant READ-WRITE access to all the signals under Signal.OBD.
 4. The permissions can be granted to a branch. For eg "Signal.Vehicle" : "rw" will grant READ-WRITE access to all the signals under Signal.Vehicle branch.
+
+## Coverage
+
+Coverage information will be generated automatically for W3C-Server core library sources When _CMAKE_BUILD_TYPE_ is set to *Coverage* and GCC or Clang are used as compilers.
+
+While coverage information will be generated, generation of reports are left to be handled by the user and its tool preferences.
+
+Example of way for generating reports for different compilers is shown below.
+We will use unit tests to generate coverage information.
+Setting up build correctly, depending on compiler
+
+### GCC compiler
+
+For GCC compiler, as an example, we can use [_gcovr_](https://gcovr.com/en/stable/) tool to generate reports for generated coverage information.
+
+```
+# Make or goto out-of-source build Directory
+
+# Configure build
+CXX=g++ CC=gcc  cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
+
+# make everything needed
+make -j
+
+# goto and run unit-tests
+cd unit-test
+./w3c-unit-test
+
+# goto build root
+cd ..
+
+# generate coverage information with gcovr
+gcovr -v --html -r ../src/ src/  -o coverage.html
+```
+
+After executing, _coverage.html_ file will be generated with detailed coverage information for core sources.
+
+### Clang compiler
+
+For Clang compiler, as an example, we can use [llvm-cov](https://llvm.org/docs/CommandGuide/llvm-cov.html) tool to generate reports for generated coverage information.
+
+```
+# Make or goto out-of-source build Directory
+
+# Configure build
+CXX=clang++ CC=clang  cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
+
+# make everything needed
+make -j
+
+# goto and run unit-tests
+cd unit-test
+./w3c-unit-test
+
+# convert raw coverage data to indexed
+llvm-profdata merge -sparse default.profraw -o default.profdata
+
+# generate coverage information with llvm-cov
+llvm-cov show  --format=html ../src/libw3c-visserver-core.so -instr-profile=default.profdata > coverage.html
+```
+
+After executing, _coverage.html_ file will be generated with detailed coverage information for core sources.
 
 ## D-BUS Backend Connection
 

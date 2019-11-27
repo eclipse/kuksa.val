@@ -70,6 +70,16 @@ target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
   target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -O1)
+ELSEIF(CMAKE_BUILD_TYPE MATCHES Coverage)
+  if("${CMAKE_C_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
+    target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -O0 -fprofile-instr-generate -fcoverage-mapping)
+    target_link_libraries(${SERVER_OBJ_LIB_NAME} PUBLIC -fprofile-instr-generate -fcoverage-mapping)
+  elseif(CMAKE_COMPILER_IS_GNUCXX)
+    target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -O0 --coverage -fprofile-arcs -ftest-coverage)
+    target_link_libraries(${SERVER_OBJ_LIB_NAME} PUBLIC gcov)
+  else()
+    message(FATAL_ERROR "Code coverage requires Clang or GCC. Aborting.")
+  endif()
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
 if(BUILD_UNIT_TEST)
@@ -90,10 +100,12 @@ endif()
 # shared and static libraries built from the same object files
 add_library(${SERVER_LIB_NAME}        SHARED $<TARGET_OBJECTS:${SERVER_OBJ_LIB_NAME}>)
 add_library(${SERVER_LIB_STATIC_NAME} STATIC $<TARGET_OBJECTS:${SERVER_OBJ_LIB_NAME}>)
-
 # re-use include directories from object library
 target_include_directories(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
 target_include_directories(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
+# re-use link libraries from object library
+target_link_libraries(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
+target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
 
 
 if(BUILD_EXE)
