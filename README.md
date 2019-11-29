@@ -41,6 +41,14 @@ This project uses components from other 3rd party open-source projects:
 
 ## Building W3C-Server
 
+To build or use W3C-Server there are two separate paths:
+
+ - Native setup requires that all dependencies for building are installed and properly configured on local machine. CMake shall do some checks on configure time (e.g Boost version check), but it is possible that some optional or implicit requirements are missed or miss-configured.
+
+ - Docker container provides all dependencies for building and running available in one place, greatly improving setup and speed time. How to use Docker container of W3C-Server, check [_Docker environment_](#Docker_environment) chapter.
+
+Build steps described below are identical for both native and container usage.
+
 To generate new clean build (e.g. after git clone or after changing build configuration options), use standard CMake build order as shown below:
 
  - Go to W3C-Server directory
@@ -287,8 +295,66 @@ llvm-profdata merge -sparse default.profraw -o default.profdata
 # generate coverage information with llvm-cov
 llvm-cov show  --format=html ../src/libw3c-visserver-core.so -instr-profile=default.profdata > coverage.html
 ```
-
 After executing, _coverage.html_ file will be generated with detailed coverage information for core sources.
+
+## Docker environment
+
+To ease setup and increase development time, [Docker](https://www.docker.com/resources/what-container) can be used for any stage in develop or run process of the W3C-Server.
+
+Docker [docker/Dockerfile](docker/Dockerfile) image specification is defined with complete infrastructure to develop and run W3C-Server. Any user can get Docker, build image and run, without any local machine configuration time wasted.
+
+User can use existing git repo or clone one inside of existing Docker image instance.
+
+### Get Docker image
+
+Pre-built Docker container image repository is available at [Docker Hub](https://hub.docker.com/r/bojankv/w3c-visserver-api).
+
+To get latest image, just call:
+```
+sudo docker pull bojankv/w3c-visserver-api
+```
+
+To run downloaded container image, check [Run Docker image](#Run_Docker_image) chapter.
+
+### Build Docker image
+
+To build latest Docker image from project [Dockerfile](docker/Dockerfile):
+```
+cd docker
+
+sudo docker build . -t w3c-server
+```
+
+In case that network proxy configuration is needed, make sure to export _http_proxy_ and _https_proxy_ environment variables with correct proxy configuration, as shown below:
+```
+sudo docker build . --build-arg  http_proxy=$http_proxy --build-arg https_proxy=$https_proxy -t w3c-server
+```
+
+### Run Docker image
+
+Once Docker image is built, we can run it by using default run command:
+```
+sudo docker run -it --rm -p 8090:8090 -v/PATH/TO/GIT/REPO/kuksa.invehicle:/home/kuksa.invehicle w3c-server
+```
+Short explanation of used parameters to run:
+ - `-it` - Create pseudo-TTY (user shell) when starting container
+ - `--rm` - Automatically remove container-only content when user exists from. Remove parameter to preserve internal state of container between runs
+ - `-p` - `HOST_PORT:CONTAINER_PORT` - Connect host port 8090 with container port 8090 (default port of W3C-Server)
+ - `-v` - `HOST_PATH:CONTAINER_PATH` - Host path that will be exposed in container path
+ - `w3c-server` - Name of container image to run. If using downloaded container image, use `bojankv/w3c-visserver-api` as a image name instead
+
+Beside all of dependencies already prepared, container image has additional build scripts to help with building of W3C-Server.
+Depending on compiler needed, scripts below provide simple initial build configuration to be used and|or extended upon:
+ - [docker/build-gcc-default.sh](docker/build-gcc-default.sh),
+ - [docker/build-gcc-coverage.sh](docker/build-gcc-coverage.sh),
+ - [docker/build-clang-default.sh](docker/build-clang-default.sh),
+ - [docker/build-clang-coverage.sh](docker/build-clang-coverage.sh)
+
+In container, scripts are located by default in the `/home/` directory.
+Both [build-gcc-default.sh](docker/build-gcc-default.sh) and [build-clang-default.sh](docker/build-clang-default.sh) scripts accept parameters which will be provided to CMake configuration, so user can provide different options to extend default build (e.g add unit test to build).
+
+**Note:** Default path to git repo in the scripts is set to `/home/kuksa.invehicle`. If host path of the git repo, or internally cloned one, is located on different container path, make sure to update scripts accordingly.
+
 
 ## D-BUS Backend Connection
 

@@ -403,13 +403,13 @@ string VssCommandProcessor::processQuery(const string &req_json,
         return JsonResponses::malFormedRequest("Unknown action requested");
       }
     }
-  } catch (jsoncons::json_parse_exception e) {
+  } catch (jsoncons::json_parse_exception &e) {
     logger->Log(LogLevel::ERROR, "JSON parse error");
     return JsonResponses::malFormedRequest(e.what());
-  } catch (jsoncons::key_not_found e) {
+  } catch (jsoncons::key_not_found &e) {
     logger->Log(LogLevel::ERROR, "JSON key not found error");
     return JsonResponses::malFormedRequest(e.what());
-  } catch (jsoncons::not_an_object e) {
+  } catch (jsoncons::not_an_object &e) {
     logger->Log(LogLevel::ERROR, "JSON not an object error");
     return JsonResponses::malFormedRequest(e.what());
   }
