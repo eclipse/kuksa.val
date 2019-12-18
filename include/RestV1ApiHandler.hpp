@@ -53,7 +53,7 @@ class RestV1ApiHandler : public IRestHandler {
     };
 
   private:
-    bool GetSignalPath(uint32_t requestId,
+    bool GetSignalPath(std::string requestId,
                        jsoncons::json& json,
                        std::string& restTarget);
     /**

@@ -40,15 +40,15 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::shared_ptr<SigningHandler> signer;
 #endif
 
-  std::string processGet(WsChannel& channel, uint32_t request_id, std::string path);
-  std::string processSet(WsChannel& channel, uint32_t request_id, std::string path,
+  std::string processGet(WsChannel& channel, std::string request_id, std::string path);
+  std::string processSet(WsChannel& channel, std::string request_id, std::string path,
                          jsoncons::json value);
-  std::string processSubscribe(WsChannel& channel, uint32_t request_id, std::string path);
-  std::string processUnsubscribe(uint32_t request_id, uint32_t subscribeID);
-  std::string processGetMetaData(uint32_t request_id, std::string path);
-  std::string processAuthorize(WsChannel& channel, uint32_t request_id,
+  std::string processSubscribe(WsChannel& channel, std::string request_id, std::string path);
+  std::string processUnsubscribe(std::string request_id, uint32_t subscribeID);
+  std::string processGetMetaData(std::string request_id, std::string path);
+  std::string processAuthorize(WsChannel& channel, std::string request_id,
                           std::string token);
-  std::string processAuthorizeWithPermManager(WsChannel &channel, uint32_t request_id,
+  std::string processAuthorizeWithPermManager(WsChannel &channel, std::string request_id,
                                  std::string client, std::string clientSecret);
   
 

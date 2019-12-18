@@ -14,7 +14,7 @@
 #include "JsonResponses.hpp"
 
 namespace JsonResponses {
-  void malFormedRequest(uint32_t request_id,
+  void malFormedRequest(std::string request_id,
                         const std::string action,
                         std::string message,
                         jsoncons::json& jsonResponse) {
@@ -27,7 +27,7 @@ namespace JsonResponses {
     jsonResponse["error"] = error;
     jsonResponse["timestamp"] = time(NULL);
   }
-  std::string malFormedRequest(uint32_t request_id,
+  std::string malFormedRequest(std::string request_id,
                                const std::string action,
                                std::string message) {
     jsoncons::json answer;
@@ -57,7 +57,7 @@ namespace JsonResponses {
   }
 
   /** A API call requested a non-existant path */
-  void pathNotFound(uint32_t request_id,
+  void pathNotFound(std::string request_id,
                     const std::string action,
                     const std::string path,
                     jsoncons::json& jsonResponse) {
@@ -70,7 +70,7 @@ namespace JsonResponses {
     jsonResponse["error"] = error;
     jsonResponse["timestamp"] = time(NULL);
   }
-  std::string pathNotFound(uint32_t request_id,
+  std::string pathNotFound(std::string request_id,
                            const std::string action,
                            const std::string path) {
     jsoncons::json answer;
@@ -81,7 +81,7 @@ namespace JsonResponses {
     return ss.str();
   }
 
-  void noAccess(uint32_t request_id,
+  void noAccess(std::string request_id,
                 const std::string action,
                 std::string message,
                 jsoncons::json& jsonResponse) {
@@ -94,7 +94,7 @@ namespace JsonResponses {
     jsonResponse["error"] = error;
     jsonResponse["timestamp"] = time(NULL);
   }
-  std::string noAccess(uint32_t request_id,
+  std::string noAccess(std::string request_id,
                        const std::string action,
                        std::string message) {
     jsoncons::json answer;
@@ -105,7 +105,7 @@ namespace JsonResponses {
     return ss.str();
   }
 
-  void valueOutOfBounds(uint32_t request_id,
+  void valueOutOfBounds(std::string request_id,
                         const std::string action,
                         const std::string message,
                         jsoncons::json& jsonResponse) {
@@ -118,7 +118,7 @@ namespace JsonResponses {
     jsonResponse["error"] = error;
     jsonResponse["timestamp"] = time(NULL);
   }
-  std::string valueOutOfBounds(uint32_t request_id,
+  std::string valueOutOfBounds(std::string request_id,
                                const std::string action,
                                const std::string message) {
     jsoncons::json answer;

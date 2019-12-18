@@ -59,6 +59,7 @@ int Authenticator::validateToken(WsChannel& channel, string authToken) {
 
     auto verifier = jwt::verify().allow_algorithm(
         jwt::algorithm::rs256(pubkey, "", "", ""));
+        
     try {
       verifier.verify(decoded);
     } catch (const std::runtime_error& e) {

@@ -69,7 +69,8 @@ target_include_directories(${SERVER_OBJ_LIB_NAME}
 target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
-  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -O1)
+  message(STATUS "this should be deeeeeebuuuuuuuuuuuuuuuuugggggggggggggggggggggggg")
+  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -O0)
 ELSEIF(CMAKE_BUILD_TYPE MATCHES Coverage)
   if("${CMAKE_C_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
     target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -O0 -fprofile-instr-generate -fcoverage-mapping)

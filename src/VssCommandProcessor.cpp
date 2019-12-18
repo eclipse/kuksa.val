@@ -64,7 +64,8 @@ VssCommandProcessor::~VssCommandProcessor() {
 }
 
 string VssCommandProcessor::processGet(WsChannel &channel,
-                                       uint32_t request_id, string path) {
+                                       string request_id, 
+                                       string path) {
   logger->Log(LogLevel::VERBOSE, "GET :: path received from client = " + path);
   jsoncons::json res;
   try {
@@ -90,7 +91,8 @@ string VssCommandProcessor::processGet(WsChannel &channel,
 }
 
 string VssCommandProcessor::processSet(WsChannel &channel,
-                                       uint32_t request_id, string path,
+                                       string request_id, 
+                                       string path,
                                        jsoncons::json value) {
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processSet: path received from client" + path);
 
@@ -139,7 +141,8 @@ string VssCommandProcessor::processSet(WsChannel &channel,
 }
 
 string VssCommandProcessor::processSubscribe(WsChannel &channel,
-                                             uint32_t request_id, string path) {
+                                             string request_id, 
+                                             string path) {
   logger->Log(LogLevel::VERBOSE, string("VssCommandProcessor::processSubscribe: path received from client ")
               + string("for subscription"));
 
@@ -192,7 +195,7 @@ string VssCommandProcessor::processSubscribe(WsChannel &channel,
   }
 }
 
-string VssCommandProcessor::processUnsubscribe(uint32_t request_id,
+string VssCommandProcessor::processUnsubscribe(string request_id,
                                                uint32_t subscribeID) {
   int res = subHandler->unsubscribe(subscribeID);
   if (res == 0) {
@@ -225,7 +228,7 @@ string VssCommandProcessor::processUnsubscribe(uint32_t request_id,
   }
 }
 
-string VssCommandProcessor::processGetMetaData(uint32_t request_id,
+string VssCommandProcessor::processGetMetaData(string request_id,
                                                string path) {
   jsoncons::json st = database->getMetaData(path);
 
@@ -243,8 +246,9 @@ string VssCommandProcessor::processGetMetaData(uint32_t request_id,
 
 // Talks to the permission management daemon and processes the token received.
 string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
-                                                            uint32_t request_id,
-                                                            string client, string clientSecret) {
+                                                            string request_id,
+                                                            string client, 
+                                                            string clientSecret) {
 
   jsoncons::json response;
   // Get Token from permission management daemon.
@@ -308,7 +312,7 @@ string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
 }
 
 string VssCommandProcessor::processAuthorize(WsChannel &channel,
-                                             uint32_t request_id,
+                                             string request_id,
                                              string token) {
   tokenValidator->updatePubKey("");
   int ttl = tokenValidator->validate(channel, database, token);
@@ -352,32 +356,34 @@ string VssCommandProcessor::processQuery(const string &req_json,
 
     if (action == "authorize") {
       string token = root["tokens"].as<string>();
-      uint32_t request_id = root["requestId"].as<int>();
+      //string request_id = root["requestId"].as<int>();
+      string request_id = root["requestId"].as<string>();
       logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: authorize query with token = "
-           + token + " with request id " + to_string(request_id));
+           + token + " with request id " + request_id);
 
       response = processAuthorize(channel, request_id, token);
     } else if (action == "unsubscribe") {
-      uint32_t request_id = root["requestId"].as<int>();
+      //string request_id = root["requestId"].as<int>();
+      string request_id = root["requestId"].as<string>();
       uint32_t subscribeID = root["subscriptionId"].as<int>();
       logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: unsubscribe query  for sub ID = "
-              + to_string(subscribeID) + " with request id " + to_string(request_id));
+              + to_string(subscribeID) + " with request id " + request_id);
 
       response = processUnsubscribe(request_id, subscribeID);
     } else if ( action == "kuksa-authorize") {
       string clientID = root["clientid"].as<string>();
       string clientSecret = root["secret"].as<string>();
-      uint32_t request_id = root["requestId"].as<int>();
+      //string request_id = root["requestId"].as<int>();
+      string request_id = root["requestId"].as<string>();
       logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: kuksa authorize query with clientID = "
            + clientID + " with secret " + clientSecret);
       response = processAuthorizeWithPermManager(channel, request_id, clientID, clientSecret);
     } else {
       string path = root["path"].as<string>();
-      uint32_t request_id = root["requestId"].as<int>();
-
+      string request_id = root["requestId"].as<string>();
       if (action == "get") {
         logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: get query  for " + path
-                    + " with request id " + to_string(request_id));
+                    + " with request id " + request_id);
 
         response = processGet(channel, request_id, path);
 #ifdef JSON_SIGNING_ON
@@ -387,16 +393,16 @@ string VssCommandProcessor::processQuery(const string &req_json,
         jsoncons::json value = root["value"];
 
         logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: set query  for " + path
-             + " with request id " + to_string(request_id) + " value " + value.as_string());
+             + " with request id " + request_id + " value " + value.as_string());
         response = processSet(channel, request_id, path, value);
       } else if (action == "subscribe") {
         logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: subscribe query  for "
-             + path + " with request id " + to_string(request_id));
+             + path + " with request id " + request_id);
         response =
             processSubscribe(channel, request_id, path);
       } else if (action == "getMetadata") {
         logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: metadata query  for "
-             + path + " with request id " + to_string(request_id));
+             + path + " with request id " + request_id);
         response = processGetMetaData(request_id, path);
       } else {
         logger->Log(LogLevel::INFO, "VssCommandProcessor::processQuery: Unknown action " + action);
