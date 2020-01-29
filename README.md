@@ -1,6 +1,6 @@
-# W3C VIS Server Implementation
+# KUKSA.VAL
 
-The implementation is based on the [W3C Vehicle Information Service Specification](https://www.w3.org/TR/2018/CR-vehicle-information-service-20180213/)
+This is the KUKSA vehicle abstration layer. It is based on the [W3C Vehicle Information Service Specification](https://www.w3.org/TR/2018/CR-vehicle-information-service-20180213/)
 
 This implementation can also provide additional functionality not (yet) available in (draft) standard documents.
 
