@@ -18,11 +18,12 @@
 #include <memory>
 #include <jsoncons/json.hpp>
 
+#include "IServer.hpp"
+
 class VssDatabase;
 class WsChannel;
 class WsServer;
 class IVssDatabase;
-class IServer;
 
 using SubscriptionId = uint32_t;
 
@@ -30,11 +31,11 @@ class ISubscriptionHandler {
   public:
     virtual ~ISubscriptionHandler() {}
 
-    virtual uint64_t subscribe(WsChannel& channel,
-                               std::shared_ptr<IVssDatabase> db,
-                               const std::string &path) = 0;
+    virtual SubscriptionId subscribe(WsChannel& channel,
+                                     std::shared_ptr<IVssDatabase> db,
+                                     const std::string &path) = 0;
     virtual int unsubscribe(SubscriptionId subscribeID) = 0;
-    virtual int unsubscribeAll(SubscriptionId connectionID) = 0;
+    virtual int unsubscribeAll(ConnectionId connectionID) = 0;
     virtual int updateByUUID(const std::string &signalUUID, const jsoncons::json &value) = 0;
     virtual int updateByPath(const std::string &path, const jsoncons::json &value) = 0;
     virtual std::shared_ptr<IServer> getServer() = 0;

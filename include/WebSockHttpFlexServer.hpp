@@ -16,6 +16,7 @@
 
 #include "IServer.hpp"
 
+#include <boost/asio/ssl/context.hpp>
 #include <vector>
 #include <string>
 #include <mutex>
@@ -90,7 +91,7 @@ class WebSockHttpFlexServer : public IServer {
 
     void AddListener(ObserverType type,   std::shared_ptr<IVssCommandProcessor> listener);
     void RemoveListener(ObserverType type, std::shared_ptr<IVssCommandProcessor> listener);
-    void SendToConnection(uint64_t connID, const std::string &message);
+    void SendToConnection(ConnectionId connID, const std::string &message);
 };
 
 

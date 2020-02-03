@@ -12,7 +12,7 @@
  * *****************************************************************************
  */
 
-#include <jsoncons_ext/jsonpath/json_query.hpp>
+#include <jsonpath/json_query.hpp>
 #include <limits>
 #include <regex>
 #include <stdexcept>
@@ -363,6 +363,51 @@ vector<string> getVSSTokens(string path) {
 
   return tokens;
 }
+void VssDatabase::HandleSet(jsoncons::json & setValues) {
+  for (size_t i = 0; i < setValues.size(); i++) {
+    jsoncons::json item = setValues[i];
+    string jPath = item["path"].as<string>();
+
+    logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: path found = " + jPath);
+    logger->Log(LogLevel::VERBOSE, "value to set asstring = " + item["value"].as<string>());
+
+    rwMutex.lock();
+    jsoncons::json resArray = json_query(data_tree, jPath);
+    rwMutex.unlock();
+    if (resArray.is_array() && resArray.size() == 1) {
+      jsoncons::json resJson = resArray[0];
+      if (resJson.has_key("datatype")) {
+        string value_type = resJson["datatype"].as<string>();
+        json val = item["value"];
+        checkTypeAndBound(logger, value_type, val);
+
+        resJson.insert_or_assign("value", val);
+
+        rwMutex.lock();
+        json_replace(data_tree, jPath, resJson);
+        rwMutex.unlock();
+
+        logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: new value set at path " + jPath);
+
+        string uuid = resJson["uuid"].as<string>();
+
+        jsoncons::json value = resJson["value"];
+        subHandler->updateByUUID(uuid, value);
+      } else {
+        stringstream msg;
+        msg << "Type key not found for " << jPath;
+        throw genException(msg.str());
+      }
+
+    } else if (resArray.is_array()) {
+      stringstream msg;
+      msg << "Path " << jPath << " has " << resArray.size()
+          << " signals, the path needs refinement";
+      logger->Log(LogLevel::INFO, "vssdatabase::setSignal : " + msg.str());
+      throw genException(msg.str());
+    }
+  }
+}
 
 // Returns the response JSON for metadata request.
 jsoncons::json VssDatabase::getMetaData(const std::string &path) {
@@ -530,48 +575,8 @@ void VssDatabase::setSignal(WsChannel& channel,
   rwMutex.unlock();
 
   if (setValues.is_array()) {
-
     checkSetPermission(channel, setValues);
-    for (size_t i = 0; i < setValues.size(); i++) {
-      jsoncons::json item = setValues[i];
-      string jPath = item["path"].as<string>();
-      logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: path found = " + jPath);
-      logger->Log(LogLevel::VERBOSE, "value to set asstring = " + item["value"].as<string>());
-      rwMutex.lock();
-      jsoncons::json resArray = json_query(data_tree, jPath);
-      rwMutex.unlock();
-      if (resArray.is_array() && resArray.size() == 1) {
-        jsoncons::json resJson = resArray[0];
-        if (resJson.has_key("datatype")) {
-          string value_type = resJson["datatype"].as<string>();
-          json val = item["value"];
-          checkTypeAndBound(logger, value_type, val);
-
-          resJson.insert_or_assign("value", val);
-
-          rwMutex.lock();
-          json_replace(data_tree, jPath, resJson);
-          rwMutex.unlock();
-          logger->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: new value set at path " + jPath);
-
-          string uuid = resJson["uuid"].as<string>();
-
-          jsoncons::json value = resJson["value"];
-          subHandler->updateByUUID(uuid, value);
-        } else {
-          stringstream msg;
-          msg << "Type key not found for " << jPath;
-          throw genException(msg.str());
-        }
-
-      } else if (resArray.is_array()) {
-        stringstream msg;
-        msg << "Path " << jPath << " has " << resArray.size()
-            << " signals, the path needs refinement";
-        logger->Log(LogLevel::INFO, "vssdatabase::setSignal : " + msg.str());
-        throw genException(msg.str());
-      }
-    }
+    HandleSet(setValues);
   } else {
     string msg = "Exception occured while setting data for " + path;
     throw genException(msg);
@@ -590,50 +595,7 @@ void VssDatabase::setSignal(const string &path,
   rwMutex.unlock();
 
   if (setValues.is_array()) {
-    for (size_t i = 0; i < setValues.size(); i++) {
-      jsoncons::json item = setValues[i];
-      string jPath = item["path"].as<string>();
-
-      logger->Log(LogLevel::VERBOSE, "VssDatabase::setSignal: path found = " + jPath
-                  + "value to set asstring = " + item["value"].as<string>());
-
-      rwMutex.lock();
-      jsoncons::json resArray = json_query(data_tree, jPath);
-      rwMutex.unlock();
-      if (resArray.is_array() && resArray.size() == 1) {
-        jsoncons::json resJson = resArray[0];
-
-        if (resJson.has_key("datatype")) {
-          string value_type = resJson["datatype"].as<string>();
-          json val = item["value"];
-          checkTypeAndBound(logger, value_type, val);
-
-          resJson.insert_or_assign("value", val);
-
-          rwMutex.lock();
-          json_replace(data_tree, jPath, resJson);
-          rwMutex.unlock();
-          logger->Log(LogLevel::VERBOSE, "VssDatabase::setSignal: new value set at path " + jPath);
-
-          string uuid = resJson["uuid"].as<string>();
-
-          jsoncons::json value = resJson["value"];
-          subHandler->updateByUUID(uuid, value);
-
-        } else {
-          stringstream msg;
-          msg << "Type key not found for " << jPath;
-          throw genException(msg.str());
-        }
-
-      } else if (resArray.is_array()) {
-        stringstream msg;
-        msg << "Path " << jPath << " has " << resArray.size() << " signals, the path needs refinement";
-        logger->Log(LogLevel::WARNING, "VssDatabase::setSignal: " + msg.str());
-
-        throw genException(msg.str());
-      }
-    }
+    HandleSet(setValues);
   } else {
     string msg = "Exception occurred while setting data for " + path;
     logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg);

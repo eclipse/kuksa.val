@@ -19,6 +19,11 @@
 #include <regex>
 #include <limits>
 
+#include <stdint.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+
 #include "JsonResponses.hpp"
 #include "ILogger.hpp"
 
@@ -64,7 +69,7 @@ bool RestV1ApiHandler::verifyPathAndStrip(std::string& restTarget, std::string& 
   return false;
 }
 
-bool RestV1ApiHandler::GetSignalPath(uint32_t requestId,
+bool RestV1ApiHandler::GetSignalPath(std::string requestId,
                                      jsoncons::json& json,
                                      std::string& restTarget) {
   std::string signalPath;
@@ -115,6 +120,7 @@ bool RestV1ApiHandler::GetSignalPath(uint32_t requestId,
                 "Signal path delimiter not valid",
                 json);
             ret = false;
+            break;
           }
         }
         else {
@@ -168,7 +174,8 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
   jsoncons::json json;
 
   // TODO: should client provide request ID when using REST API?
-  uint32_t requestId = std::rand() % std::numeric_limits<uint32_t>::max();
+  uint32_t requestIdTemp = std::rand() % std::numeric_limits<uint32_t>::max();
+  std::string requestId = std::to_string(requestIdTemp);
   json["requestId"] = requestId;
 
   // search for supported HTTP requests
@@ -215,8 +222,8 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                }
              }
              else if (httpMethod.compare("put") == 0) {
+               json["action"] = "set";
                if (GetSignalPath(requestId, json, restTarget)) {
-                 json["action"] = "set";
                  std::string queryStr("?value=");
 
                  if (verifyPathAndStrip(restTarget, queryStr)) {
@@ -228,6 +235,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                        json["action"].as_string(),
                        "Invalid query parameter",
                        json);
+                   ret = false;
                  }
                }
                else {
@@ -278,6 +286,7 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
            // //////
            // authorize handler
            else if (foundStr == "authorize") {
+             json["action"] = "authorize";
              // handler CORS pre-flight requests from browsers
              if (httpMethod.compare("options") == 0) {
                json["action"] = "options";
@@ -286,16 +295,14 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
                json["max-age"] = "86400";
                json["origin"] = "*";
              }
-             else if (httpMethod == "post") {
+             else if (httpMethod.compare("post") == 0) {
                std::string tokenParam("?token=");
                if (verifyPathAndStrip(restTarget, tokenParam)) {
                  const std::regex regToken(regexToken_);
                  std::regex_search(restTarget, sm, regToken);
 
-                 sleep(1);
                  if (sm.size()) {
-                   json["action"] = "authorize";
-                   json["tokens"] = sm.str(0);
+                    json["tokens"] = sm.str(0);
                  }
                  else {
                    JsonResponses::malFormedRequest(
@@ -352,6 +359,15 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
              json);
          ret = false;
        }
+    }
+    else {
+      // TODO: evaluate what and how we should support HTTP methods (put, patch, ...)
+      JsonResponses::malFormedRequest(
+          requestId,
+          json["action"].as_string(),
+          "Requested REST resource not found",
+          json);
+      ret = false;
     }
   }
   else
