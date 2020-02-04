@@ -1,0 +1,33 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/tspreck/kuksa.val/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_bae10/fast"
+/usr/bin/make -f CMakeFiles/cmTC_bae10.dir/build.make CMakeFiles/cmTC_bae10.dir/build
+make[1]: Entering directory '/home/tspreck/kuksa.val/build/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_bae10.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++    -fPIE   -o CMakeFiles/cmTC_bae10.dir/CheckSymbolExists.cxx.o -c /home/tspreck/kuksa.val/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+Linking CXX executable cmTC_bae10
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_bae10.dir/link.txt --verbose=1
+/usr/bin/c++       CMakeFiles/cmTC_bae10.dir/CheckSymbolExists.cxx.o  -o cmTC_bae10 
+/usr/bin/ld: CMakeFiles/cmTC_bae10.dir/CheckSymbolExists.cxx.o: in function `main':
+CheckSymbolExists.cxx:(.text+0x1f): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_bae10.dir/build.make:87: cmTC_bae10] Error 1
+make[1]: Leaving directory '/home/tspreck/kuksa.val/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_bae10/fast] Error 2
+
+File /home/tspreck/kuksa.val/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
