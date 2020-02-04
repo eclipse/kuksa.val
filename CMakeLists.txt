@@ -11,7 +11,7 @@
 #      Robert Bosch GmbH - initial API and functionality
 # *****************************************************************************
 
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.12.0)
 project(w3c-visserver-api VERSION 2.0.1 LANGUAGES CXX)
 
 ######
@@ -41,7 +41,7 @@ find_package(Threads REQUIRED)
 set(Boost_USE_STATIC_LIBS OFF)
 set(MIN_BOOST_VER 1.67.0)
 
-find_package(Boost ${MIN_BOOST_VER} REQUIRED COMPONENTS atomic date_time chrono program_options system thread unit_test_framework)
+find_package(Boost ${MIN_BOOST_VER} EXACT REQUIRED COMPONENTS atomic date_time chrono program_options system thread unit_test_framework)
 message(STATUS " boost includes ${Boost_INCLUDE_DIRS} ")
 message(STATUS " boost libs ${Boost_LIBRARIES} ")
 
