@@ -227,21 +227,28 @@ void StartSecuredBeastClient(std::string host, int port, std::string rootDoc) {
 
   for(;;) {
     string path, function;
-      cout << "Enter vss path eg : Signal.Drivetrain.InternalCombustionEngine.RPM " <<endl;
+      cout << "Enter vss path eg : Vehicle.Drivetrain.Transmission.DriveType " <<endl;
       getline (cin, path);
       cout << "Enter vis Function eg: authorize, get, set, getmetadata "<< endl;
       getline (cin, function);
       string command;
-      if(function == "get") {
+      if(function == "get") 
+      {
          command = getRequest(path);
-      } else if (function == "set") {
+      }
+      else if (function == "set") 
+      {
          string val;
          cout << "Enter a value for the path "<< endl;
          getline (cin, val);
          command = setRequest(path, val);
-      } else if (function == "getmetadata") {
+      } 
+      else if (function == "getmetadata") 
+      {
           command = getMetarequest(path);
-      } else if (function == "authorize") {
+      } 
+      else if (function == "authorize") 
+      {
           string token;
           cout << "Enter Token "<< endl;
           getline (cin, token);
