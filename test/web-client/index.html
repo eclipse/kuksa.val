@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>GUI tool for exercising REST API functionality in W3C-VISServer-API</title>
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="jsonview.css">
+  <!-- Linking to helper utilities -->
+  <link href="https://fonts.googleapis.com/css?family=Dosis:400,700" rel="stylesheet">
+  <!-- helper for visualizing JSON in HTML -->
+  <script src="jsonview.js"></script>
+  <!-- helper for JWT token handling -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/8.0.12/jsrsasign-all-min.js"></script>
+</head>
+
+<body>
+  <div id="container">
+    <div id="main-content-tab">
+      <div class="row">
+        <div class="col-logo">
+          <img src="../../../logos/kuksa.png" alt="Eclipse KUKSA">
+        </div>
+        <div class="col-title">
+          <p>W3C Vehicle Information Specification test client for REST and Web-Socket interfaces</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div id="auth-token">
+          Current authorization token:<br>
+          <textarea id="auth-token-string" name="auth-token-string" title="Authorization token generated from Client token content and provided Client private key for test purposes"></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-app">
+          <div class="col-form">
+            Input resource request path to fetch for the W3C VIS Server below:
+            <form id="request-setup">
+              <input id="resource-path" type="text" title="REST API resource path to interact with">
+              <br>
+              <input id="make-get-request" type="submit" value="GET" title="Make HTTP GET request">
+              <input id="make-put-request" type="submit" value="PUT" title="Make HTTP PUT request">
+              <input id="make-post-request" type="submit" value="POST" title="Make HTTP POST request">
+              <input id="make-auth-request" type="submit" value="Authorize" title="Make authorize request with current JWT token">
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" id="logging">
+        <div id="log" class="col-log">
+          <div>
+            Log of REST resource requests and server responses<br>
+            <p>As an option, clicking on resource string of any request shown in log, given resource string will be copied back to input resouce text field.
+            Useful to speed-up testing when identical requests needs to be made or with slight modifications.</p>
+            Color codes: <span class="li-request" >REST Request     </span>   <span class="li-response-ok" >OK REST Response</span>   <span class="li-response-nok" >ERROR REST Response</span>
+          </div>
+          <ul id="log-list">
+          </ul>
+        </div>
+        <div id="json-table" class="col-json-table"/></div>
+      </div>
+    </div>
+
+    <div id="config-content-tab">
+      <div id="server-params">
+        <form>
+         <fieldset autocomplete="on">
+           <legend>Server parameters:</legend>
+           <input type="radio" name="HTTPType" value="HTTP">HTTP<br>
+           <input type="radio" name="HTTPType" value="HTTPS">HTTPS<br>
+           Address:<input id="server-address" type="text" title="Address of VIS server"><br>
+           Port: <input id="server-port" type="number" title="VIS server port to connect to"><br>
+           Doc root: <input id="server-doc-root" type="text" title="VIS server default root URL to which resource requests will be made (appended)"><br>
+         </fieldset>
+        </form>
+      </div>
+      <br>
+      <div id="client-token-certs">
+        <form id="input-client-certs">
+         <fieldset autocomplete="on">
+           <legend>Client token and key configuration</legend>
+           Client token content:
+           <textarea id="client-token" name="client-token" title="Client JWT token payload content" rows="15" cols="64" form="input-client-certs"></textarea><br>
+           Client key certificate content:
+           <textarea id="client-key-cert" name="client-key-cert" title="Client private key for signing JWT token" rows="27" cols="64" form="input-client-certs"></textarea>
+         </fieldset>
+        </form>
+      </div>
+    </div>
+
+  </div>
+  <div class="clear"/>
+  <!-- load our JS code only when all other loaded -->
+  <script src="rest-client.js"></script>
+</body>
+</html>
