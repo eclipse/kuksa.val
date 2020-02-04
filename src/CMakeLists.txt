@@ -69,7 +69,8 @@ target_include_directories(${SERVER_OBJ_LIB_NAME}
 target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
-  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -O1)
+  message(STATUS "this should be deeeeeebuuuuuuuuuuuuuuuuugggggggggggggggggggggggg")
+  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -O0)
 ELSEIF(CMAKE_BUILD_TYPE MATCHES Coverage)
   if("${CMAKE_C_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
     target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -O0 -fprofile-instr-generate -fcoverage-mapping)
@@ -127,15 +128,15 @@ if(BUILD_EXE)
   ######
   # Setup server install and packaging
 
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../examples/demo-certificates/jwt.pub.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../examples/demo-certificates/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../examples/demo-certificates/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/jwt.pub.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../unit-test/vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
   install( TARGETS ${SERVER_EXE_NAME} DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/demo-certificates/jwt.pub.key DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/demo-certificates/Server.pem DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/demo-certificates/Server.key DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../certificates/jwt.pub.key DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Server.pem DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Server.key DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../unit-test/vss_rel_2.0.json DESTINATION bin/${SERVER_EXE_NAME})
 
   # CPack

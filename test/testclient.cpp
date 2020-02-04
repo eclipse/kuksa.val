@@ -43,12 +43,12 @@ string getRequest(string path ) {
    return ss.str();
 }
 
-string setRequest(string path, int val) {
+string setRequest(string path, string val) {
   json req;
    req["requestId"] = 1235;
    req["action"]= "set";
    req["path"] = string(path);
-   req["value"] = val;
+   req["value"] = string(val);
    stringstream ss; 
    ss << pretty_print(req);
    return ss.str();
@@ -154,27 +154,36 @@ void StartBeastClient(std::string host, int port, std::string rootDoc) {
 
   for(;;) {
     string path, function;
-      cout << "Enter vss path eg : Signal.Drivetrain.InternalCombustionEngine.RPM " <<endl;
+      cout << "Enter vss path eg : Vehicle.Drivetrain.Transmission.DriveType " <<endl;
       getline (cin, path);
       cout << "Enter vis Function eg: authorize, get, set, getmetadata "<< endl;
       getline (cin, function);
       string command;
-      if(function == "get") {
+
+      if(function == "get") 
+      {
          command = getRequest(path);
-      } else if (function == "set") {
+      } 
+      else if (function == "set") 
+      {
          string val;
+         // TODO: (TS )
          cout << "Enter an integer value for the path "<< endl;
          getline (cin, val);
-         int value = atoi(val.c_str());
-         command = setRequest(path, value);
-      } else if (function == "getmetadata") {
+         command = setRequest(path, val);
+      } 
+      else if (function == "getmetadata")
+      {
           command = getMetarequest(path);
-      } else if (function == "authorize") {
+      } 
+      else if (function == "authorize") 
+      {
           string token;
           cout << "Enter Token "<< endl;
           getline (cin, token);
           command = getAuthRequest(token);
       }
+
     // Send the message
     ws.write(boost::asio::buffer(std::string(command)));
 
@@ -218,22 +227,28 @@ void StartSecuredBeastClient(std::string host, int port, std::string rootDoc) {
 
   for(;;) {
     string path, function;
-      cout << "Enter vss path eg : Signal.Drivetrain.InternalCombustionEngine.RPM " <<endl;
+      cout << "Enter vss path eg : Vehicle.Drivetrain.Transmission.DriveType " <<endl;
       getline (cin, path);
       cout << "Enter vis Function eg: authorize, get, set, getmetadata "<< endl;
       getline (cin, function);
       string command;
-      if(function == "get") {
+      if(function == "get") 
+      {
          command = getRequest(path);
-      } else if (function == "set") {
+      }
+      else if (function == "set") 
+      {
          string val;
-         cout << "Enter an integer value for the path "<< endl;
+         cout << "Enter a value for the path "<< endl;
          getline (cin, val);
-         int value = atoi(val.c_str());
-         command = setRequest(path, value);
-      } else if (function == "getmetadata") {
+         command = setRequest(path, val);
+      } 
+      else if (function == "getmetadata") 
+      {
           command = getMetarequest(path);
-      } else if (function == "authorize") {
+      } 
+      else if (function == "authorize") 
+      {
           string token;
           cout << "Enter Token "<< endl;
           getline (cin, token);

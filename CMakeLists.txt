@@ -11,7 +11,7 @@
 #      Robert Bosch GmbH - initial API and functionality
 # *****************************************************************************
 
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.12.0)
 project(w3c-visserver-api VERSION 2.0.1 LANGUAGES CXX)
 
 ######
@@ -41,7 +41,7 @@ find_package(Threads REQUIRED)
 set(Boost_USE_STATIC_LIBS OFF)
 set(MIN_BOOST_VER 1.67.0)
 
-find_package(Boost ${MIN_BOOST_VER} REQUIRED COMPONENTS atomic date_time chrono program_options system thread unit_test_framework)
+find_package(Boost ${MIN_BOOST_VER} EXACT REQUIRED COMPONENTS atomic date_time chrono program_options system thread unit_test_framework)
 message(STATUS " boost includes ${Boost_INCLUDE_DIRS} ")
 message(STATUS " boost libs ${Boost_LIBRARIES} ")
 
@@ -59,16 +59,16 @@ PKG_CHECK_MODULES(GIO gio-2.0)
 # 3rd-party library includes already available in git repo
 
 add_library(jsoncons INTERFACE)
-target_include_directories(jsoncons SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs)
+target_include_directories(jsoncons SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs)
 
 add_library(jsonpath INTERFACE)
-target_include_directories(jsonpath SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jsoncons_ext)
+target_include_directories(jsonpath SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/jsoncons_ext)
 
 add_library(jwt-cpp INTERFACE)
-target_include_directories(jwt-cpp SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/jwt-cpp)
+target_include_directories(jwt-cpp SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/jwt-cpp)
 
 add_library(turtle INTERFACE)
-target_include_directories(turtle SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../3rd-party-libs/turtle)
+target_include_directories(turtle SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/turtle)
 
 ###
 # Add project subdirectories to build

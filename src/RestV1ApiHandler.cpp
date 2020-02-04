@@ -19,6 +19,11 @@
 #include <regex>
 #include <limits>
 
+#include <stdint.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+
 #include "JsonResponses.hpp"
 #include "ILogger.hpp"
 
@@ -64,7 +69,7 @@ bool RestV1ApiHandler::verifyPathAndStrip(std::string& restTarget, std::string& 
   return false;
 }
 
-bool RestV1ApiHandler::GetSignalPath(uint32_t requestId,
+bool RestV1ApiHandler::GetSignalPath(std::string requestId,
                                      jsoncons::json& json,
                                      std::string& restTarget) {
   std::string signalPath;
@@ -169,7 +174,8 @@ bool RestV1ApiHandler::GetJson(std::string&& restMethod,
   jsoncons::json json;
 
   // TODO: should client provide request ID when using REST API?
-  uint32_t requestId = std::rand() % std::numeric_limits<uint32_t>::max();
+  uint32_t requestIdTemp = std::rand() % std::numeric_limits<uint32_t>::max();
+  std::string requestId = std::to_string(requestIdTemp);
   json["requestId"] = requestId;
 
   // search for supported HTTP requests
