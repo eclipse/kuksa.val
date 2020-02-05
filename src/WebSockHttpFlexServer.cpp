@@ -12,13 +12,13 @@
  * *****************************************************************************
  */
 
-#include <boost/beast/http.hpp>
-#include <boost/beast/websocket.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
 #include <boost/make_unique.hpp>
 #include <cstdlib>
 #include <iostream>
@@ -1436,7 +1436,7 @@ void WebSockHttpFlexServer::LoadCertData(std::string & certPath, boost::asio::ss
   isInitialized = true;
 }
 
-void WebSockHttpFlexServer::SendToConnection(uint64_t connID, const std::string &message) {
+void WebSockHttpFlexServer::SendToConnection(ConnectionId connID, const std::string &message) {
   if (!isInitialized)
   {
     std::string err("Cannot send to connection, server not initialized!");

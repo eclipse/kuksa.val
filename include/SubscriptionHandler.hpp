@@ -14,6 +14,7 @@
 #ifndef __SUBSCRIPTIONHANDLER_H__
 #define __SUBSCRIPTIONHANDLER_H__
 
+#include <condition_variable>
 #include <mutex>
 #include <queue>
 #include <unordered_map>
@@ -52,10 +53,12 @@ class SubscriptionHandler : public ISubscriptionHandler {
   std::shared_ptr<IServer> server;
   std::shared_ptr<IAuthenticator> validator;
   std::shared_ptr<IAccessChecker> checkAccess;
-  std::mutex subMutex;
+  mutable std::mutex subMutex;
+  mutable std::mutex accessMutex;
+  std::condition_variable c;
   std::thread subThread;
   bool threadRun;
-  std::queue<std::tuple<SubscriptionId, SubConnId, jsoncons::json>> buffer;
+  std::queue<std::tuple<SubscriptionId, ConnectionId, jsoncons::json>> buffer;
 
  public:
   SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
@@ -64,11 +67,11 @@ class SubscriptionHandler : public ISubscriptionHandler {
                       std::shared_ptr<IAccessChecker> checkAccess);
   ~SubscriptionHandler();
 
-  uint64_t subscribe(WsChannel& channel,
-                     std::shared_ptr<IVssDatabase> db,
-                     const std::string &path);
+  SubscriptionId subscribe(WsChannel& channel,
+                           std::shared_ptr<IVssDatabase> db,
+                           const std::string &path);
   int unsubscribe(SubscriptionId subscribeID);
-  int unsubscribeAll(SubscriptionId connectionID);
+  int unsubscribeAll(ConnectionId connectionID);
   int updateByUUID(const std::string &signalUUID, const jsoncons::json &value);
   int updateByPath(const std::string &path, const jsoncons::json &value);
   std::shared_ptr<IServer> getServer();

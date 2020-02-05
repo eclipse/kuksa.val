@@ -10,7 +10,7 @@ The implementation provides all the major functionality defined in the above sta
  - Multi-client server implementing Web-Socket platform communication, with support for both secure [SSL] and insecure [plain] connections. Feature status:
  - User authorization based on industry standard RFC 7519 as JSON Web Tokens
  - Optional JSON signing of messages, described in **_JSON signing_** chapter
- - Multi-client server implementing experimental REST API based on standard specification. REST API specification is available as OpenAPI 3.0 definition available in [rest-api.yaml](doc/rest-api.yaml) file.
+ - Multi-client server implementing experimental REST API based on standard specification. REST API specification is available as OpenAPI 3.0 definition available in [doc/rest-api.yaml](doc/rest-api.yaml) file.
 
  Specific list of of features is listed in table below:
 
@@ -35,30 +35,19 @@ This project uses components from other 3rd party open-source projects:
  [jsoncons](https://github.com/danielaparker/jsoncons) | Boost Software license 1.0 | Utility library for handling JSON.
  [jwt-cpp](https://github.com/Thalhammer/jwt-cpp) | MIT license | Utility library for handling JWT tokens.
 
-# Building W3C-Server
+# W3C-Server Project
 
 [CMake](https://cmake.org/) is tool used to configure, build and package W3C-Server.
 
-## Configure build
-
-Build configuration options of W3C-Server are defined in CMakeLists.txt file.
-
-By changing different option values in CMakeLists.txt file, user can control
-different build options of W3C-Server.  
-Available build options with optional parameters, if available, are presented below. Default parameters are shown in **bold**:
- - **BUILD_EXE** [**ON**/OFF] - Default build shall produce W3C-Server executable.
-   If set to **OFF** W3C-Server shall be built as a library which could be used in another application.
-   Eg: could be found in the _vehicle2cloud_ app.
- - **BUILD_TEST_CLIENT** [**ON**/OFF] - Build separate _testclient_ executable. Test client is a utility to test
-   Web-Socket request interface of W3C-Server and retrieve responses.
- - **UNIT_TEST** [ON/**OFF**] - If enabled, build shall produce separate _w3c-unit-test_ executable which
-   will run existing tests for server implementation.
- - **ADDRESS_SAN** [ON/**OFF**] - If enabled and _Clang_ is used as compiler, _AddressSanitizer_ will be used to build
-   W3C-Server for verifying run-time execution.
-
-After changing any of build options, new clean build should be made, as described in **_Building W3C-Server_** chapter.
-
 ## Building W3C-Server
+
+To build or use W3C-Server there are two separate paths:
+
+ - Native setup requires that all dependencies for building are installed and properly configured on local machine. CMake shall do some checks on configure time (e.g Boost version check), but it is possible that some optional or implicit requirements are missed or miss-configured.
+
+ - Docker container provides all dependencies for building and running available in one place, greatly improving setup and speed time. How to use Docker container of W3C-Server, check [_Docker environment_](#Docker_environment) chapter.
+
+Build steps described below are identical for both native and container usage.
 
 To generate new clean build (e.g. after git clone or after changing build configuration options), use standard CMake build order as shown below:
 
@@ -66,23 +55,80 @@ To generate new clean build (e.g. after git clone or after changing build config
 ```
 cd w3c-visserver-api
 ```
- - Make default build directory where build artifacts will be stored, and move into it
+ - Make default build directory where build artifacts will be stored, and move into it:
 ```
 mkdir build
 cd build
 ```
  - Invoke CMake pointing to location of CMakeLists.txt file to generate
-   Makefile build configuration which will be used to build W3C-Server
+   Makefile build configuration which will be used to build W3C-Server:
 ```
 cmake ..
 ```
- - Run build W3C-Server. Make parameter '_-j_ ' is optional and allows running parallel build jobs to speed up compilation.
+ - Run build W3C-Server. Make parameter '_-j_ ' is optional and allows running parallel build jobs to speed up compilation:
 ```
 make -j
 ```
 If all completes successfully, build artifacts shall be located in 'build' directory.
 
-### JSON signing
+**NOTE:** Build artifacts of each module is located in their own separate build directories under main build directory.
+
+## CMake Project Structure
+
+Structure of CMake project is organized as a tree. This keeps different modules simple and logically separated, but allows for easy re-use and extension.
+
+Root [CMakeLists.txt](CMakeLists.txt) CMake file defines root project and its common properties, like dependency verification and common library definition.
+Adding any new dependency or new module to the project is done in this file.
+Each project module is responsible for its own build configuration options and it should not be handled in root CMakeLists.txt file.
+
+Each project module can have different user-configurable build configuration options. To list currently available build options go to [ List build configuration options](#List-build-configuration-options) chapter.
+
+Current project has three existing modules which can serve as an example and are defined in:
+ - [src/CMakeLists.txt](src/CMakeLists.txt) - Main module which defines W3C-Server library and executable.
+- [test/CMakeLists.txt](test/CMakeLists.txt) - Module defining testclient executable as a helper tool for exercising W3C-Server.
+- [unit-test/CMakeLists.txt](unit-test/CMakeLists.txt) - Module defining unit-test executable for testing build W3C-Server library.
+
+## Configure CMake project
+
+Build configuration options of W3C-Server are defined in different CMakeLists.txt files, depending on each included module in build.
+
+### List build configuration options
+
+To list all available build options, invoke below CMake command from build directory:
+```
+cmake -LH ..
+```
+Provided command shall list cached CMake variables that are available for configuration.
+
+Alternatively, one can use [cmake-gui](https://cmake.org/cmake/help/v3.1/manual/cmake-gui.1.html) to query and|or configure project through UI.
+
+### Main build configuration options
+
+By changing values of different configuration options, user can control
+build of W3C-Server.  
+Available build options with optional parameters, if available, are presented below. Default parameters are shown in **bold**:
+ - **CMAKE_BUILD_TYPE** [**Release**/Debug/Coverage] - Build type. Available options:
+   * **_Release_** - Default build type. Enabled optimizations and no debug information is available.
+   * **_Debug_** - Debug information is available and optimization is disabled.
+   * **_Coverage_** - Coverage information is generated with debug information and reduced optimization levels for better reporting. Check [_Coverage_](#Coverage) chapter for more details.
+ - **BUILD_EXE** [**ON**/OFF] - Default build shall produce W3C-Server executable.
+   If set to **OFF** W3C-Server shall be built as a library which could be used in another application.
+   Eg: could be found in the _vehicle2cloud_ app.
+ - **BUILD_TEST_CLIENT** [**ON**/OFF] - Build separate _testclient_ executable. Test client is a utility to test
+   Web-Socket request interface of W3C-Server and retrieve responses.
+ - **BUILD_UNIT_TEST** [ON/**OFF**] - If enabled, build shall produce separate _w3c-unit-test_ executable which
+   will run existing tests for server implementation.
+ - **ADDRESS_SAN** [ON/**OFF**] - If enabled and _Clang_ is used as compiler, _AddressSanitizer_ will be used to build
+   W3C-Server for verifying run-time execution.
+
+An example of W3C-Server CMake build configuration invocation with enabled unit test is shown below (e.g. used when debugging unit-tests):
+```
+cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_UNIT_TEST=ON ..
+```
+
+After changing any of build options, new clean build should be made, as described in [_Building W3C-Server_](#Building-W3C-Server) chapter, as a sanity check.
+
+### JSON Signing
 
 JSON Signing has been introduced additionally to sign the JSON response for GET and SUBSCRIBE Response. By default this has been disabled. To enable this feature go to visconf.hpp file and uncomment the line `define JSON_SIGNING_ON`. Please note, JSON signing works only with a valid pair of public / private certificate. For testing, you could create example certificates by following the below steps.
 Do not add any passphrase when asked for.
@@ -101,13 +147,13 @@ This could also be easily extended to support JSON signing for the requests as w
 # Running W3C-Server
 
 Depending on build options and provided parameters, W3C-Server will provide different features.
-Chapter **_Parameters_** shall describe different mandatory and optional parameters in more detail.
+Chapter [_Parameters_](#Parameters) shall describe different mandatory and optional parameters in more detail.
 
 Default configuration shall provide both Web-Socket and REST API connectivity.
 
 ## Web-Socket specific testing
 
-This covers only the basic functions like get, set and getmetadata requests. You coulkd skip this and take a look at the unit-test to get better idea about the implementation.
+This covers only the basic functions like _get_, _set_ and _getmetadata_ requests. You could skip this and take a look at the unit-test to get better idea about the implementation.
 
 You could also checkout the in-vehicle apps in the [kuksa.apps](https://github.com/eclipse/kuksa.apps) repo which work with the server.
 
@@ -151,16 +197,16 @@ Below are presented W3C-Server parameters available for user control:
   insecure=
   log-level=ALL
   ```
-- **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.pub.key' are located. Server demo certificates are located in [this](https://github.com/eclipse/kuksa.invehicle/tree/master/examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
-If user needs to use or generate their own certificates, see chapter **_Certificates_** for more details.  
-For authorizing client, file 'jwt.pub.key' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.pub.key' file, see chapter **_Permissions_** for more details.
+- **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.pub.key' are located. Server demo certificates are located in [../examples/demo-certificates](../examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
+If user needs to use or generate their own certificates, see chapter [_Certificates_](#Certificates) for more details.  
+For authorizing client, file 'jwt.pub.key' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.pub.key' file, see chapter [_Permissions_](#Permissions) for more details.
 - **--insecure** [optional] - By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.
 - **--wss-server** [optional][deprecated] - By default, W3C-Server uses Boost.Beast as default connection handler. If provided, W3C-Server shall use deprecated Simple Web-Socket Server, without REST API support.
 - **--address** [optional] - If provided, W3C-Server shall use different server address than default _'localhost'_.
 - **--port** [optional] - If provided, W3C-Server shall use different server port than default '8090' value.
 - **--log-level** [optional] - Enable selected log level value. To allow for different log level combinations, parameter can be provided multiple times with different log level values.
 
-# How tos
+# How-to's
 
 ## Certificates
 
@@ -189,6 +235,126 @@ Permissions can be granted by modifying the JSON Claims.
 2. Under the "w3c-vss" claim the permissions can be granted using key value pair. The key should be the path in the signal tree and the value should be strings with "r" for READ-ONLY, "w" for WRITE-ONLY and "rw" or "wr" for READ-AND-WRITE permission. See the image above.
 3. The permissions can contain wild-cards. For eg "Signal.OBD.\*" : "rw" will grant READ-WRITE access to all the signals under Signal.OBD.
 4. The permissions can be granted to a branch. For eg "Signal.Vehicle" : "rw" will grant READ-WRITE access to all the signals under Signal.Vehicle branch.
+
+## Coverage
+
+Coverage information will be generated automatically for W3C-Server core library sources When _CMAKE_BUILD_TYPE_ is set to *Coverage* and GCC or Clang are used as compilers.
+
+While coverage information will be generated, generation of reports are left to be handled by the user and its tool preferences.
+
+Example of way for generating reports for different compilers is shown below.
+We will use unit tests to generate coverage information.
+Setting up build correctly, depending on compiler
+
+### GCC compiler
+
+For GCC compiler, as an example, we can use [_gcovr_](https://gcovr.com/en/stable/) tool to generate reports for generated coverage information.
+
+```
+# Make or goto out-of-source build Directory
+
+# Configure build
+CXX=g++ CC=gcc  cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
+
+# make everything needed
+make -j
+
+# goto and run unit-tests
+cd unit-test
+./w3c-unit-test
+
+# goto build root
+cd ..
+
+# generate coverage information with gcovr
+gcovr -v --html -r ../src/ src/  -o coverage.html
+```
+
+After executing, _coverage.html_ file will be generated with detailed coverage information for core sources.
+
+### Clang compiler
+
+For Clang compiler, as an example, we can use [llvm-cov](https://llvm.org/docs/CommandGuide/llvm-cov.html) tool to generate reports for generated coverage information.
+
+```
+# Make or goto out-of-source build Directory
+
+# Configure build
+CXX=clang++ CC=clang  cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
+
+# make everything needed
+make -j
+
+# goto and run unit-tests
+cd unit-test
+./w3c-unit-test
+
+# convert raw coverage data to indexed
+llvm-profdata merge -sparse default.profraw -o default.profdata
+
+# generate coverage information with llvm-cov
+llvm-cov show  --format=html ../src/libw3c-visserver-core.so -instr-profile=default.profdata > coverage.html
+```
+After executing, _coverage.html_ file will be generated with detailed coverage information for core sources.
+
+## Docker environment
+
+To ease setup and increase development time, [Docker](https://www.docker.com/resources/what-container) can be used for any stage in develop or run process of the W3C-Server.
+
+Docker [docker/Dockerfile](docker/Dockerfile) image specification is defined with complete infrastructure to develop and run W3C-Server. Any user can get Docker, build image and run, without any local machine configuration time wasted.
+
+User can use existing git repo or clone one inside of existing Docker image instance.
+
+### Get Docker image
+
+Pre-built Docker container image repository is available at [Docker Hub](https://hub.docker.com/r/bojankv/w3c-visserver-api).
+
+To get latest image, just call:
+```
+sudo docker pull bojankv/w3c-visserver-api
+```
+
+To run downloaded container image, check [Run Docker image](#Run_Docker_image) chapter.
+
+### Build Docker image
+
+To build latest Docker image from project [Dockerfile](docker/Dockerfile):
+```
+cd docker
+
+sudo docker build . -t w3c-server
+```
+
+In case that network proxy configuration is needed, make sure to export _http_proxy_ and _https_proxy_ environment variables with correct proxy configuration, as shown below:
+```
+sudo docker build . --build-arg  http_proxy=$http_proxy --build-arg https_proxy=$https_proxy -t w3c-server
+```
+
+### Run Docker image
+
+Once Docker image is built, we can run it by using default run command:
+```
+sudo docker run -it --rm -p 8090:8090 -v/PATH/TO/GIT/REPO/kuksa.invehicle:/home/kuksa.invehicle w3c-server
+```
+Short explanation of used parameters to run:
+ - `-it` - Create pseudo-TTY (user shell) when starting container
+ - `--rm` - Automatically remove container-only content when user exists from. Remove parameter to preserve internal state of container between runs
+ - `-p` - `HOST_PORT:CONTAINER_PORT` - Connect host port 8090 with container port 8090 (default port of W3C-Server)
+ - `-v` - `HOST_PATH:CONTAINER_PATH` - Host path that will be exposed in container path
+ - `w3c-server` - Name of container image to run. If using downloaded container image, use `bojankv/w3c-visserver-api` as a image name instead
+
+Beside all of dependencies already prepared, container image has additional build scripts to help with building of W3C-Server.
+Depending on compiler needed, scripts below provide simple initial build configuration to be used and|or extended upon:
+ - [docker/build-gcc-default.sh](docker/build-gcc-default.sh),
+ - [docker/build-gcc-coverage.sh](docker/build-gcc-coverage.sh),
+ - [docker/build-clang-default.sh](docker/build-clang-default.sh),
+ - [docker/build-clang-coverage.sh](docker/build-clang-coverage.sh)
+
+In container, scripts are located by default in the `/home/` directory.
+Both [build-gcc-default.sh](docker/build-gcc-default.sh) and [build-clang-default.sh](docker/build-clang-default.sh) scripts accept parameters which will be provided to CMake configuration, so user can provide different options to extend default build (e.g add unit test to build).
+
+**Note:** Default path to git repo in the scripts is set to `/home/kuksa.invehicle`. If host path of the git repo, or internally cloned one, is located on different container path, make sure to update scripts accordingly.
+
 
 ## D-BUS Backend Connection
 

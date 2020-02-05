@@ -42,6 +42,7 @@ class VssDatabase : public IVssDatabase {
   std::string getPathForMetadata(std::string path, bool& isBranch);
   std::string getReadablePath(std::string jsonpath);
   void checkSetPermission(WsChannel& channel, jsoncons::json valueJson);
+  void HandleSet(jsoncons::json & setValues);
 
  public:
   VssDatabase(std::shared_ptr<ILogger> loggerUtil,

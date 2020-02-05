@@ -33,7 +33,7 @@ json getPermToken(std::shared_ptr<ILogger> logger, string clientName, string cli
   // Open unix socket connection.
    struct sockaddr_un addr;
    int fd;
-   
+
    if ( (fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
       throw genException("Unable to create a unix socket");
       //logger->Log(LogLevel::ERROR, "Unable to create a unix socket");
@@ -42,14 +42,14 @@ json getPermToken(std::shared_ptr<ILogger> logger, string clientName, string cli
    memset(&addr, 0, sizeof(addr));
    addr.sun_family = AF_UNIX;
    strncpy(addr.sun_path, SERVER, sizeof(addr.sun_path)-1);
-   
+
 
    if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
       throw genException("Unable to connect to server");
       //logger->Log(LogLevel::ERROR, "Unable to connect to server");
    }
 
-   
+
    // Create request in JSON format.
    jsoncons::json requestJson;
    requestJson["api"] = "w3c-visserver";
@@ -64,13 +64,16 @@ json getPermToken(std::shared_ptr<ILogger> logger, string clientName, string cli
    } else {
      logger->Log(LogLevel::INFO, "Request sent ");
    }
-   
+
    char response_buf[1024 * 10] = {0};
-   read(fd, response_buf, sizeof(response_buf));
+   if (read(fd, response_buf, sizeof(response_buf)) == -1) {
+      logger->Log(LogLevel::ERROR, "Response read from server failed!");
+      throw genException("Response read from server failed!");
+   }
 
    logger->Log(LogLevel::INFO, "Response read from server ");
 
-   string response(response_buf); 
+   string response(response_buf);
    jsoncons::json respJson = jsoncons::json::parse(response);
    return respJson;
 }

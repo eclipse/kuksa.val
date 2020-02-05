@@ -72,7 +72,7 @@ is_ssl_handshake(
 
     // Extract the first byte, which holds the
     // "message" type for the Handshake protocol.
-    unsigned char v;
+    unsigned char v = 0;
     boost::asio::buffer_copy(boost::asio::buffer(&v, 1), buffers);
 
     // Check that the message type is "SSL Handshake" (rfc2246)
