@@ -1,0 +1,40 @@
+# Copyright Robert Bosch GmbH, 2020. Part of the Eclipse Kuksa Project.
+#
+# All rights reserved. This configuration file is provided to you under the
+# terms and conditions of the Eclipse Distribution License v1.0 which
+# accompanies this distribution, and is available at
+# http://www.eclipse.org/org/documents/edl-v10.php
+# Quick docker for doing development
+
+FROM ubuntu:bionic as build
+
+RUN apt-get  update 
+RUN apt-get -y install libssl-dev  \
+                        libglib2.0-dev \
+                        pkg-config \
+                        build-essential \
+                        gnupg2 \ 
+                        wget \ 
+                        software-properties-common
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null |  apt-key add -
+RUN apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+RUN apt  update && apt -y install cmake
+
+#Build Boost 1.67
+RUN mkdir /buildboost
+WORKDIR /buildboost
+RUN wget   https://dl.bintray.com/boostorg/release/1.67.0/source/boost_1_67_0.tar.bz2
+RUN tar xvjf boost_1_67_0.tar.bz2
+WORKDIR /buildboost/boost_1_67_0
+RUN ./bootstrap.sh
+RUN ./b2 install
+
+
+ADD . /kuksa.val
+RUN  rm -rf /kuksa.val/build  && mkdir  /kuksa.val/build 
+WORKDIR /kuksa.val/build
+RUN cmake ..
+RUN make
+
+CMD /bin/bash
+
