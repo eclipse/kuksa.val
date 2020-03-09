@@ -1,0 +1,17 @@
+# This is used on Jenkins with Docker slaves to build
+# We  use an ubuntu as base image to install and run required packages for docker, 
+FROM ubuntu:18.04
+
+# Install all the pre-requisits we need in the docker image
+RUN apt-get update \
+  && apt-get install -y qemu-user-static docker.io sudo bzip2
+  
+  
+
+
+#Group 999 is docker group on host
+RUN groupadd -g 999 test 
+RUN useradd -u 1000 -G test,docker jenkins
+RUN usermod -aG test jenkins
+
+RUN echo "jenkins     ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
