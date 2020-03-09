@@ -87,5 +87,3 @@ fi
 for ARCH in $ARCHS; do
     build $ARCH
 done
-
-cd $OLDDIR
