@@ -1294,7 +1294,7 @@ void WebSockHttpFlexServer::Initialize(std::string host,
                                        std::string && docRoot,
                                        std::string certPath,
                                        bool allowInsecure) {
-    logger_->Log(LogLevel::INFO, "Initializing Boost.Beast web-socket and http server");
+    logger_->Log(LogLevel::INFO, "Initializing Boost.Beast web-socket and http server on port "+std::to_string(port));
 
     docRoot_ = docRoot;
 
