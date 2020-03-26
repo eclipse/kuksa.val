@@ -1294,7 +1294,7 @@ void WebSockHttpFlexServer::Initialize(std::string host,
                                        std::string && docRoot,
                                        std::string certPath,
                                        bool allowInsecure) {
-    logger_->Log(LogLevel::INFO, "Initializing Boost.Beast web-socket and http server");
+    logger_->Log(LogLevel::INFO, "Initializing Boost.Beast web-socket and http server on port "+std::to_string(port));
 
     docRoot_ = docRoot;
 
@@ -1404,7 +1404,8 @@ void WebSockHttpFlexServer::LoadCertData(std::string & certPath, boost::asio::ss
       inputFile.close();
     }
     else {
-      throw std::runtime_error("Could not load server certificate");
+      logger_->Log(LogLevel::ERROR, "Could not load server certificate from "+certPath + delimiter + serverCertFilename_);
+      throw std::runtime_error("No certificate.");
     }
   }
   // read key
@@ -1421,7 +1422,8 @@ void WebSockHttpFlexServer::LoadCertData(std::string & certPath, boost::asio::ss
       inputFile.close();
     }
     else {
-      throw std::runtime_error("Could not load server key");
+      logger_->Log(LogLevel::ERROR, "Could not load server key from "+certPath + delimiter + serverKeyFilename_);
+      throw std::runtime_error("No key.");
     }
   }
 
