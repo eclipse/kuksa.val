@@ -143,8 +143,7 @@ string VssCommandProcessor::processSet(WsChannel &channel,
 string VssCommandProcessor::processSubscribe(WsChannel &channel,
                                              string request_id, 
                                              string path) {
-  logger->Log(LogLevel::VERBOSE, string("VssCommandProcessor::processSubscribe: path received from client ")
-              + string("for subscription"));
+  logger->Log(LogLevel::VERBOSE, string("VssCommandProcessor::processSubscribe: Client wants to subscribe ")+path);
 
   uint32_t subId = -1;
   try {
