@@ -72,7 +72,7 @@ You need to give the  PUBLIC key "jwt.key.pub" to the kuksa.val server, so it ca
 ```
 
 
-Another great ressource to play with and understand JWT tokens is https://jwt.io/. Use the RSA256 algorithm from the drop down. It can immediately decode al `*.token` files from kuksa.val.  Try it! When you copy the contents of `jwt.key.pub` to the public key textfield,m it can check whether signature is valid, if you also copy the `jwt.key` to the private key texfield you can modify and create valid kuksa.val tokens directly on the webpage without the need for `createToken.py` script
+Another great ressource to play with and understand JWT tokens is https://jwt.io/. Use the RSA256 algorithm from the drop down. It can immediately decode all `*.token` files from kuksa.val.  Try it! When you copy the contents of `jwt.key.pub` to the public key textfield, it can check whether signature is valid, if you also copy the `jwt.key` to the private key textfield you can modify and create valid kuksa.val tokens directly on the webpage without the need for `createToken.py` script
 
 
 ![Alt text](.//pictures/jwt.png?raw=true "jwt")

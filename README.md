@@ -152,7 +152,7 @@ Chapter [_Parameters_](#Parameters) shall describe different mandatory and optio
 Default configuration shall provide both Web-Socket and REST API connectivity.
 
 ## JWT Permissions
-The kuksa.val server uses JSON Web Tokens (JWT) to authorize clients. For testing you can use the [Supers Admin Token](certificates/jwt/super-admin.json.token). To learn how to to set up tokens go to [kuksa.val JWT documentation](doc/jwt.md).
+The kuksa.val server uses JSON Web Tokens (JWT) to authorize clients. For testing you can use the [Super Admin Token](certificates/jwt/super-admin.json.token). To learn how to to set up tokens go to [kuksa.val JWT documentation](doc/jwt.md).
 
 ## Web-Socket specific testing
 
@@ -182,7 +182,7 @@ _**NOTE:** If using SSL connections and self-signed certificates, make sure that
 Reason for this is that browsers automatically try to verify validity of server certificates, so secured connection shall fail with default configuration._
 
 Similar to above mentioned testclient, there is available [client test page](./test/web-client/index.html) in git repo to aid testing.
-Test page support custom GET, PUT and POST HTTP requests to W3C-Server. Additional benefit is that it can automatically generate JWT token based on input token value and provided Client key which is used in authorization. Note that if users changes Client key, user must also update 'jwt.pub.key' with corresponding public key.
+Test page support custom GET, PUT and POST HTTP requests to W3C-Server. Additional benefit is that it can automatically generate JWT token based on input token value and provided Client key which is used in authorization. Note that if users changes Client key, user must also update 'jwt.key.pub' with corresponding public key.
 
 Additional tool which is quite useful is [Swagger](https://editor.swagger.io). It is a dual-use tool which allows for writing OpenAPI specifications, but also generates runnable REST API samples for moslient test endpoints.
 Open Swagger editor and import our REST API [definition](./doc/rest-api.yaml) file. Swagger shall generate HTML page with API documentation. When one of the endpoints is selected, 'try' button appears which allows for making REST requests directly to running W3C-Server.
@@ -200,9 +200,9 @@ Below are presented W3C-Server parameters available for user control:
   insecure=
   log-level=ALL
   ```
-- **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.pub.key' are located. Server demo certificates are located in [../examples/demo-certificates](../examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
+- **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. Server demo certificates are located in [../examples/demo-certificates](../examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
 If user needs to use or generate their own certificates, see chapter [_Certificates_](#Certificates) for more details.  
-For authorizing client, file 'jwt.pub.key' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.pub.key' file, see chapter [_Permissions_](#Permissions) for more details.
+For authorizing client, file 'jwt.key.pub' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.key.pub' file, see chapter [_Permissions_](#Permissions) for more details.
 - **--insecure** [optional] - By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.
 - **--wss-server** [optional][deprecated] - By default, W3C-Server uses Boost.Beast as default connection handler. If provided, W3C-Server shall use deprecated Simple Web-Socket Server, without REST API support.
 - **--address** [optional] - If provided, W3C-Server shall use different server address than default _'localhost'_.
