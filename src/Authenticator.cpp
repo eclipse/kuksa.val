@@ -28,20 +28,26 @@ using namespace std;
 // using jsoncons;
 using jsoncons::json;
 
-namespace {
-  string getPublicKeyFromFile(string fileName) {
-    std::ifstream fileStream(fileName);
-    std::string key((std::istreambuf_iterator<char>(fileStream)),
-                    (std::istreambuf_iterator<char>()));
+string Authenticator::getPublicKeyFromFile(string fileName, std::shared_ptr<ILogger> logger) {
+  logger->Log(LogLevel::VERBOSE, "Try reading JWT pub key from "+fileName);
 
-    return key;
-  }
+   std::ifstream fileStream(fileName);
+   if (fileStream.fail()) {
+    logger->Log(LogLevel::ERROR, "Unable to open JWT pub key "+fileName);
+   }
+   std::string key((std::istreambuf_iterator<char>(fileStream)),
+                   (std::istreambuf_iterator<char>()));
+  return key;
 }
 
+
 void Authenticator::updatePubKey(string key) {
-   pubkey = key;
-   if(pubkey == "")
-      pubkey = getPublicKeyFromFile("jwt.pub.key");
+  pubkey=key;
+  if (key == "") {
+    logger->Log(LogLevel::WARNING, "Empty key in Authenticator::updatePubKey. Subsequent JWT token validations will fail.");
+    return;
+  }
+  logger->Log(LogLevel::VERBOSE, "Updated JWT token validation public key.");
 }
 
 // utility method to validate token.

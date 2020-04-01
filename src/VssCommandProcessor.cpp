@@ -314,7 +314,6 @@ string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
 string VssCommandProcessor::processAuthorize(WsChannel &channel,
                                              string request_id,
                                              string token) {
-  tokenValidator->updatePubKey("");
   int ttl = tokenValidator->validate(channel, database, token);
 
   if (ttl == -1) {

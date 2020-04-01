@@ -310,8 +310,9 @@ int main(int argc, const char *argv[]) {
     auto httpServer = std::make_shared<WebSockHttpFlexServer>(
         logger, std::move(rest2JsonConverter));
 
+    string jwtPubkey=Authenticator::getPublicKeyFromFile("jwt.key.pub",logger);
     auto tokenValidator =
-        std::make_shared<Authenticator>(logger, "appstacle", "RS256");
+        std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
     auto subHandler = std::make_shared<SubscriptionHandler>(
         logger, httpServer, tokenValidator, accessCheck);
