@@ -75,10 +75,11 @@ w3cunittest unittestObj;
 w3cunittest::w3cunittest() {
   std::string docRoot{"/vss/api/v1/"};
 
-  logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::NONE));
+  logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::WARNING));
   // we do not need actual implementation of server, so use mock
   httpServer = std::make_shared<IServerMock>();
-  authhandler = std::make_shared<Authenticator>(logger, "","");
+  string jwtPubkey=Authenticator::getPublicKeyFromFile("jwt.pub.key",logger);
+  authhandler = std::make_shared<Authenticator>(logger, jwtPubkey,"");
   accesshandler = std::make_shared<AccessChecker>(authhandler);
   subhandler = std::make_shared<SubscriptionHandler>(logger, httpServer, authhandler, accesshandler);
   database = std::make_shared<VssDatabase>(logger, subhandler, accesshandler);
@@ -1190,7 +1191,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 
    json set_response_expected = json::parse(R"({
     "action": "set",
-    "requestId": 8750
+    "requestId": "8750"
      }
      )");
 
@@ -1216,7 +1217,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
    json expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 2345
     })");
 
@@ -1253,7 +1254,7 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
    json expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 2345
     })");
 
@@ -1297,7 +1298,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
 
    json set_response_expected = json::parse(R"({
     "action": "set",
-    "requestId": 8750
+    "requestId": "8750"
      }
      )");
 
@@ -1321,7 +1322,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
 
    json expected = json::parse(R"({
     "action": "get",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": [
         {
             "Vehicle.Chassis.Axle.Row2.Wheel.Right.Tire.Temperature": 65
@@ -1377,7 +1378,7 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
    json expected = json::parse(R"({
                          "action":"get",
                          "error":{"message":"I can not find Signal.*.RPM1 in my db","number":404,"reason":"Path not found"},
-                         "requestId":8756
+                         "requestId":"8756"
                          })");
 
    json response_json = json::parse(response);
@@ -1413,7 +1414,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_withwildcard_invalid)
    json expected = json::parse(R"({
                               "action":"set",
                               "error":{"message":"Path(s) in set request do not have write access or is invalid","number":403,"reason":"Forbidden"},
-                              "requestId":8756
+                              "requestId":"8756"
                               })");
 
    json response_json = json::parse(response);
@@ -1449,7 +1450,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_invalid_value, *utf::expected_failures(1)
    json expected = json::parse(R"({
                                "action":"set",
                                "error":{"message":"The type uint8 with value 3.45638e+22 is out of bound","number":400,"reason":"Value passed is out of bounds"},
-                               "requestId":8756
+                               "requestId":"8756"
                                })");
 
    json response_json = json::parse(response);
@@ -1486,7 +1487,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value, *utf::expect
    json expected = json::parse(R"({
                                "action":"set",
                                "error":{"message":"The type uint8 with value 3.45638e+22 is out of bound","number":400,"reason":"Value passed is out of bounds"},
-                               "requestId":8756
+                               "requestId":"8756"
                                })");
 
    json response_json = json::parse(response);
@@ -1511,7 +1512,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value, *utf::expect
    json expected_getvalid = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 2345
     })");
 
@@ -1563,7 +1564,7 @@ BOOST_AUTO_TEST_CASE(json_SigningHandler)
    json expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 2345
     })");
 
@@ -1626,7 +1627,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
    json expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 2345
     })");
 
@@ -1679,7 +1680,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
 
    json expected = json::parse(R"({
     "action": "get",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": [{"Vehicle.OBD.EngineSpeed":2345}]
     })");
 
@@ -1731,7 +1732,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "requestId":8756,
+                   "requestId":"8756",
                    "value":{"Vehicle.OBD.EngineSpeed":2345}
         })");
 
@@ -1784,7 +1785,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
    json expected = json::parse(R"({
                    "action":"get",
                    "error":{"message":"No read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
-                   "requestId":8756
+                   "requestId":"8756"
         })");
 
    json response_json = json::parse(response);
@@ -1835,7 +1836,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
    json expected = json::parse(R"({
                    "action":"get",
                    "error":{"message":"No read access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
-                   "requestId":8756
+                   "requestId":"8756"
         })");
 
    json response_json = json::parse(response);
@@ -1886,7 +1887,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
   json expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 2345
     })");
 
@@ -1939,7 +1940,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
   json expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 2345
     })");
 
@@ -1992,7 +1993,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
   json expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 2345
     })");
 
@@ -2045,7 +2046,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
    json expected = json::parse(R"({
                    "action":"get",
                    "error":{"message":"No read access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
-                   "requestId":8756
+                   "requestId":"8756"
         })");
 
    json response_json = json::parse(response);
@@ -2095,7 +2096,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_wildcard_req
 
   json expected = json::parse(R"({
     "action": "get",
-    "requestId": 8756,
+    "requestId": "8756",
     "value":[{"Vehicle.OBD.EngineSpeed":2345}]
     })");
 
@@ -2147,7 +2148,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_branch_path_
 
   json expected = json::parse(R"({
     "action": "get",
-    "requestId": 8756,
+    "requestId": "8756",
     "value":{"Vehicle.OBD.EngineSpeed":2345}
     })");
 
@@ -2200,7 +2201,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
   json expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 2345
     })");
 
@@ -2253,7 +2254,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
 
   json expected = json::parse(R"({
     "action":"set",
-    "requestId":8756
+    "requestId":"8756"
     })");
 
    json response_json = json::parse(response);
@@ -2306,7 +2307,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
   json expected = json::parse(R"({
     "action":"set",
     "error":{"message":"Path(s) in set request do not have write access or is invalid","number":403,"reason":"Forbidden"},
-    "requestId":8756
+    "requestId":"8756"
     })");
 
    json response_json = json::parse(response);
@@ -2358,7 +2359,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 
   json expected = json::parse(R"({
     "action":"set",
-    "requestId":8756
+    "requestId":"8756"
     })");
 
    json response_json = json::parse(response);
@@ -2383,7 +2384,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
   json get_expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.Speed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 345
     })");
 
@@ -2436,7 +2437,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
   json expected = json::parse(R"({
     "action":"set",
-    "requestId":8756
+    "requestId":"8756"
     })");
 
    json response_json = json::parse(response);
@@ -2461,7 +2462,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
   json get_expected = json::parse(R"({
     "action": "get",
     "error":{"message":"No read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
-    "requestId": 8756
+    "requestId": "8756"
     })");
 
    json get_response_json = json::parse(get_response);
@@ -2511,7 +2512,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
    json get_expected_2 = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.Speed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 345
     })");
 
@@ -2565,7 +2566,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_permitted_path)
 
   json expected = json::parse(R"({
     "action":"set",
-    "requestId":8756
+    "requestId":"8756"
     })");
 
    json response_json = json::parse(response);
@@ -2590,7 +2591,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_permitted_path)
   json get_expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 50
     })");
 
@@ -2644,7 +2645,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path, *
   json expected = json::parse(R"({
     "action":"set",
     "error":{"message":"Path(s) in set request do not have write access or is invalid","number":403,"reason":"Forbidden"},
-    "requestId":8756
+    "requestId":"8756"
     })");
 
    json response_json = json::parse(response);
@@ -2669,7 +2670,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path, *
   json get_expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": 8756,
+    "requestId": "8756",
     "value": 50
     })");
 
@@ -2725,7 +2726,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
 
    json expected = json::parse(R"({
      "action":"subscribe",
-     "requestId":8778
+     "requestId":"8778"
     })");
 
    BOOST_TEST(response_json.has_key("timestamp") == true);
@@ -2767,7 +2768,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
 
    json expected_unsub = json::parse(R"({
      "action":"unsubscribe",
-     "requestId":8779
+     "requestId":"8779"
     })");
 
    BOOST_TEST(unsub_response_json == expected_unsub);
@@ -2813,7 +2814,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
 
    json expected = json::parse(R"({
      "action":"subscribe",
-     "requestId":8778
+     "requestId":"8778"
     })");
 
    BOOST_TEST(response_json.has_key("timestamp") == true);
@@ -2855,7 +2856,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
 
    json expected_unsub = json::parse(R"({
      "action":"unsubscribe",
-     "requestId":8779
+     "requestId":"8779"
     })");
 
    BOOST_TEST(unsub_response_json == expected_unsub);
@@ -2903,7 +2904,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission, *utf::expected_failures(1)
    json expected = json::parse(R"({
                    "action":"subscribe",
                    "error":{"message":"no permission to subscribe to path","number":403,"reason":"Forbidden"},
-                   "requestId":8778
+                   "requestId":"8778"
                    })");
 
    BOOST_TEST(response_json.has_key("timestamp") == true);
@@ -2956,7 +2957,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath, *utf::expected_failures(1))
    json expected = json::parse(R"({
                    "action":"subscribe",
                    "error":{"message":"I can not find Vehicle.OBD.EngineSpeed1 in my db","number":404,"reason":"Path not found"},
-                   "requestId":8778
+                   "requestId":"8778"
                    })");
 
    BOOST_TEST(response_json.has_key("timestamp") == true);
@@ -2987,7 +2988,7 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
 
     json expected = json::parse(R"({
                                 "action": "subscribe",
-                                "requestId": 8778
+                                "requestId": "8778"
                                 })");
 
 #ifdef JSON_SIGNING_ON
@@ -3023,7 +3024,7 @@ string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIE
 
     json expected = json::parse(R"({
                                 "action": "subscribe",
-                                "requestId": 4243
+                                "requestId": "4243"
                                 })");
 
 #ifdef JSON_SIGNING_ON
@@ -3087,7 +3088,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard, *utf::expected_failures
     json expected = json::parse(R"({
                                 "action":"subscribe",
                                 "error":{"message":"I can not find Signal.*.CatCamera in my db","number":404,"reason":"Path not found"},
-                                "requestId":878787
+                                "requestId":"878787"
                                 })");
 
     BOOST_TEST(response_json.has_key("timestamp") == true);

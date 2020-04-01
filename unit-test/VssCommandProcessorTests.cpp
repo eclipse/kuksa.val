@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonPathNotFound;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonMalformedReq;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonNoAccess;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonSignalValue;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   jsoncons::json jsonSignalValue;
   jsoncons::json jsonPathNotFound;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -283,7 +283,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
   jsoncons::json jsonSignalValue;
   jsoncons::json jsonPathNotFound;
 
-  int requestId = 1;
+  string requestId = "1";
   int requestValue = 123;
   std::string path{"Signal.OBD.DTC1"};
 
@@ -332,7 +332,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
   jsoncons::json jsonSignalValue;
   jsoncons::json jsonValueOutOfBound;
 
-  int requestId = 1;
+  string requestId = "1";
   int requestValue = 123;
   std::string path{"Signal.OBD.DTC1"};
 
@@ -381,7 +381,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
   jsoncons::json jsonSignalValue;
   jsoncons::json jsonNoAccess;
 
-  int requestId = 1;
+  string requestId = "1";
   int requestValue = 123;
   std::string path{"Signal.OBD.DTC1"};
 
@@ -430,7 +430,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
   jsoncons::json jsonSignalValue;
   jsoncons::json jsonMalformedReq;
 
-  int requestId = 1;
+  string requestId = "1";
   int requestValue = 123;
   std::string path{"Signal.OBD.DTC1"};
 
@@ -479,7 +479,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   jsoncons::json jsonSignalValue;
   jsoncons::json jsonMalformedReq;
 
-  int requestId = 1;
+  string requestId = "1";
   int requestValue = 123;
   std::string path{"Signal.OBD.DTC1"};
 
@@ -528,7 +528,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
 
-  int requestId = 1;
+  string requestId = "1";
   int subscriptionId = 123;
   std::string path{"Signal.OBD.DTC1"};
 
@@ -575,7 +575,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
   jsoncons::json jsonSignalValue;
   jsoncons::json jsonSignalValueErr;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -623,7 +623,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonNoAccess;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -665,7 +665,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonPathNotFound;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -707,7 +707,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonOutOfBound;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -749,7 +749,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonMalformedReq;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -794,7 +794,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
   jsoncons::json jsonUnsubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
 
-  int requestId = 1;
+  string requestId = "1";
   int subscriptionId = 123;
 
   // setup
@@ -839,7 +839,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
   jsoncons::json jsonUnsubscribeRequestForSignal;
   jsoncons::json jsonSignalValue, jsonSignalValueErr;
 
-  int requestId = 1;
+  string requestId = "1";
   int subscriptionId = 123;
 
   // setup
@@ -890,7 +890,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
   jsoncons::json jsonGetMetaRequest;
   jsoncons::json jsonValue, jsonMetadata;
 
-  int requestId = 1;
+  string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -940,7 +940,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
   jsoncons::json jsonAuthRequest;
   jsoncons::json jsonValue, jsonMetadata;
 
-  int requestId = 1;
+  string requestId = "1";
   int ttl = 5555;
   std::string dummyToken{"header.payload.signature"};
 
@@ -963,9 +963,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(authMock->updatePubKey)
-    .once()
-    .with("");
+  
   MOCK_EXPECT(authMock->validate)
     .once()
     .with(mock::any, dbMock, dummyToken)
@@ -990,7 +988,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
   jsoncons::json jsonAuthRequest;
   jsoncons::json jsonValue, jsonValueErr;
 
-  int requestId = 1;
+  string requestId = "1";
   int ttl = -1;
   std::string dummyToken{"header.payload.signature"};
 
@@ -1016,9 +1014,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(authMock->updatePubKey)
-    .once()
-    .with("");
+  
   MOCK_EXPECT(authMock->validate)
     .once()
     .with(mock::any, dbMock, dummyToken)
