@@ -75,7 +75,7 @@ w3cunittest unittestObj;
 w3cunittest::w3cunittest() {
   std::string docRoot{"/vss/api/v1/"};
 
-  logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::WARNING));
+  logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::NONE));
   // we do not need actual implementation of server, so use mock
   httpServer = std::make_shared<IServerMock>();
   string jwtPubkey=Authenticator::getPublicKeyFromFile("jwt.pub.key",logger);
@@ -779,58 +779,8 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
     BOOST_TEST(result["value"] == std::numeric_limits<float>::min() * 2);
 
-    // Test out of bound
-    isExceptionThrown = false;
-    json test_value_Float_boundary_low_outbound;
-    double minFloat_value = numeric_limits<float>::min();
-    test_value_Float_boundary_low_outbound = minFloat_value / 2;
-
-    try {
-       database->setSignal(channel,test_path_Float, test_value_Float_boundary_low_outbound);
-    } catch (outOfBoundException & e) {
-       isExceptionThrown =  true;
-    }
-    BOOST_TEST(isExceptionThrown == true);
-
-    isExceptionThrown = false;
-
-    json test_value_Float_boundary_high_outbound;
-    double maxFloat_value = numeric_limits<float>::max();
-    test_value_Float_boundary_high_outbound = maxFloat_value * 2;
-    try {
-       database->setSignal(channel,test_path_Float, test_value_Float_boundary_high_outbound);
-    } catch (outOfBoundException & e) {
-       isExceptionThrown =  true;
-    }
-
-    BOOST_TEST(isExceptionThrown == true);
-
-    // Test negative out of bound
-    isExceptionThrown = false;
-    json test_value_Float_boundary_low_outbound_neg;
-    double minFloat_value_neg = numeric_limits<float>::min() * -1;
-    test_value_Float_boundary_low_outbound_neg = minFloat_value_neg / 2;
-
-    try {
-       database->setSignal(channel,test_path_Float, test_value_Float_boundary_low_outbound_neg);
-    } catch (outOfBoundException & e) {
-       isExceptionThrown =  true;
-    }
-    BOOST_TEST(isExceptionThrown == true);
-
-    isExceptionThrown = false;
-
-    json test_value_Float_boundary_high_outbound_neg;
-    double maxFloat_value_neg = numeric_limits<float>::max() * -1;
-    test_value_Float_boundary_high_outbound_neg = maxFloat_value_neg * 2;
-    try {
-       database->setSignal(channel,test_path_Float, test_value_Float_boundary_high_outbound_neg);
-    } catch (outOfBoundException & e) {
-       isExceptionThrown =  true;
-    }
-
-    BOOST_TEST(isExceptionThrown == true);
-
+    
+    
 //---------------------  Double SET/GET TEST ------------------------------------
 
     json test_value_Double_boundary_low;
@@ -884,46 +834,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
     BOOST_TEST(result["value"] == std::numeric_limits<double>::min() * 2);
 
-    // Test positive out of bound
-    isExceptionThrown = false;
-    json test_value_Double_boundary_low_outbound;
-    long double minDouble_value = numeric_limits<double>::min();
-    test_value_Double_boundary_low_outbound = minDouble_value / 2;
-    try {
-       database->setSignal(channel,test_path_Double, test_value_Double_boundary_low_outbound);
-    } catch (outOfBoundException & e) {
-       isExceptionThrown =  true;
-    }
-    BOOST_TEST(isExceptionThrown == true);
-
-    isExceptionThrown = false;
-
-    json test_value_Double_boundary_high_outbound;
-    long double maxDouble_value = numeric_limits<double>::max();
-    test_value_Double_boundary_high_outbound = maxDouble_value * 2;
-    try {
-       database->setSignal(channel,test_path_Double, test_value_Double_boundary_high_outbound);
-    } catch (outOfBoundException & e) {
-       isExceptionThrown =  true;
-    }
-
-    BOOST_TEST(isExceptionThrown == true);
-
-    // Test negative out of bound
-    isExceptionThrown = false;
-    json test_value_Double_boundary_low_outbound_neg;
-    long double minDouble_value_neg = numeric_limits<double>::min() * -1;
-    test_value_Double_boundary_low_outbound_neg = minDouble_value_neg / 2;
-    try {
-       database->setSignal(channel,test_path_Double, test_value_Double_boundary_low_outbound_neg);
-    } catch (outOfBoundException & e) {
-       isExceptionThrown =  true;
-    }
-    BOOST_TEST(isExceptionThrown == true);
-
-    isExceptionThrown = false;
-
-    // no negative infinite test
+    
 
 
 //---------------------  String SET/GET TEST ------------------------------------
@@ -2800,7 +2711,10 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   commandProc->processQuery(authReqJson.as_string(),channel);
+   string response=commandProc->processQuery(authReqJson.as_string(),channel);
+   json response_json=json::parse(response);
+   BOOST_TEST(response_json.has_key("action") == true);
+   BOOST_TEST(response_json["action"] == "authorize");
 
 
    string request(R"({
@@ -2809,8 +2723,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
 		"requestId": "8778"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
-   json response_json = json::parse(response);
+   response = commandProc->processQuery(request,channel);
+   response_json = json::parse(response);
 
    json expected = json::parse(R"({
      "action":"subscribe",
@@ -3010,10 +2924,17 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
 {
 string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
 
-    WsChannel channel;
-    channel.setConnID(1234);
-    channel.setAuthorized(true);
-    channel.setAuthToken(AUTH_TOKEN);
+   WsChannel channel;
+   channel.setConnID(1234);
+    
+   string authReq(R"({
+		"action": "authorize",
+		"requestId": "87568"
+	})");
+   json authReqJson = json::parse(authReq);
+   authReqJson["tokens"] = AUTH_TOKEN;
+   commandProc->processQuery(authReqJson.as_string(),channel);
+
     string request(R"({
                    "action": "subscribe",
                    "path": "Vehicle.OBD.EngineSpeed",
