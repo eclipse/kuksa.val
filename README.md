@@ -151,6 +151,9 @@ Chapter [_Parameters_](#Parameters) shall describe different mandatory and optio
 
 Default configuration shall provide both Web-Socket and REST API connectivity.
 
+## JWT Permissions
+The kuksa.val server uses JSON Web Tokens (JWT) to authorize clients. For testing you can use the [Supers Admin Token](certificates/jwt/super-admin.json.token). To learn how to to set up tokens go to [kuksa.val JWT documentation](doc/jwt.md).
+
 ## Web-Socket specific testing
 
 This covers only the basic functions like _get_, _set_ and _getmetadata_ requests. You could skip this and take a look at the unit-test to get better idea about the implementation.
@@ -223,18 +226,7 @@ Go to examples/demo-certificates folder. Make changes in the openssl.cnf file re
 
 Steps were taken from [here]( https://kb.op5.com/pages/viewpage.action?pageId=19073746#sthash.GHsaFkZe.WDGgcOja.dpbs) & [here](https://stackoverflow.com/questions/18233835/creating-an-x509-v3-user-certificate-by-signing-csr).
 
-## Permissions
 
-The W3C-Server needs authorization JWT Token to allow access to server side resources. You can create a dummy JWT Token from https://jwt.io/. Use the RSA256 algorithm from the drop down and enter valid "iat" and "exp" data and set "iss : kuksa" and generate a JWT. Once the JWT is generated on the left side. Copy the Public key from the Text box on the right side to a file and rename the field to jwt.pub.key and copy the file to  `w3c-visserver/build` folder. Also store the JWT token somewhere so that you could pass the Token to the server for authentication.
-
-![Alt text](./doc/pictures/jwt.png?raw=true "jwt")
-
-Permissions can be granted by modifying the JSON Claims.
-
-1. The JWT Token should contain a "w3c-vss" claim.
-2. Under the "w3c-vss" claim the permissions can be granted using key value pair. The key should be the path in the signal tree and the value should be strings with "r" for READ-ONLY, "w" for WRITE-ONLY and "rw" or "wr" for READ-AND-WRITE permission. See the image above.
-3. The permissions can contain wild-cards. For eg "Signal.OBD.\*" : "rw" will grant READ-WRITE access to all the signals under Signal.OBD.
-4. The permissions can be granted to a branch. For eg "Signal.Vehicle" : "rw" will grant READ-WRITE access to all the signals under Signal.Vehicle branch.
 
 ## Coverage
 
