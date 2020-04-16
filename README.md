@@ -151,6 +151,9 @@ Chapter [_Parameters_](#Parameters) shall describe different mandatory and optio
 
 Default configuration shall provide both Web-Socket and REST API connectivity.
 
+## JWT Permissions
+The kuksa.val server uses JSON Web Tokens (JWT) to authorize clients. For testing you can use the [Super Admin Token](certificates/jwt/super-admin.json.token). To learn how to to set up tokens go to [kuksa.val JWT documentation](doc/jwt.md).
+
 ## Web-Socket specific testing
 
 This covers only the basic functions like _get_, _set_ and _getmetadata_ requests. You could skip this and take a look at the unit-test to get better idea about the implementation.
@@ -179,7 +182,7 @@ _**NOTE:** If using SSL connections and self-signed certificates, make sure that
 Reason for this is that browsers automatically try to verify validity of server certificates, so secured connection shall fail with default configuration._
 
 Similar to above mentioned testclient, there is available [client test page](./test/web-client/index.html) in git repo to aid testing.
-Test page support custom GET, PUT and POST HTTP requests to W3C-Server. Additional benefit is that it can automatically generate JWT token based on input token value and provided Client key which is used in authorization. Note that if users changes Client key, user must also update 'jwt.pub.key' with corresponding public key.
+Test page support custom GET, PUT and POST HTTP requests to W3C-Server. Additional benefit is that it can automatically generate JWT token based on input token value and provided Client key which is used in authorization. Note that if users changes Client key, user must also update 'jwt.key.pub' with corresponding public key.
 
 Additional tool which is quite useful is [Swagger](https://editor.swagger.io). It is a dual-use tool which allows for writing OpenAPI specifications, but also generates runnable REST API samples for moslient test endpoints.
 Open Swagger editor and import our REST API [definition](./doc/rest-api.yaml) file. Swagger shall generate HTML page with API documentation. When one of the endpoints is selected, 'try' button appears which allows for making REST requests directly to running W3C-Server.
@@ -197,9 +200,9 @@ Below are presented W3C-Server parameters available for user control:
   insecure=
   log-level=ALL
   ```
-- **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.pub.key' are located. Server demo certificates are located in [../examples/demo-certificates](../examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
+- **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. Server demo certificates are located in [../examples/demo-certificates](../examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
 If user needs to use or generate their own certificates, see chapter [_Certificates_](#Certificates) for more details.  
-For authorizing client, file 'jwt.pub.key' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.pub.key' file, see chapter [_Permissions_](#Permissions) for more details.
+For authorizing client, file 'jwt.key.pub' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.key.pub' file, see chapter [_Permissions_](#Permissions) for more details.
 - **--insecure** [optional] - By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.
 - **--wss-server** [optional][deprecated] - By default, W3C-Server uses Boost.Beast as default connection handler. If provided, W3C-Server shall use deprecated Simple Web-Socket Server, without REST API support.
 - **--address** [optional] - If provided, W3C-Server shall use different server address than default _'localhost'_.
@@ -223,18 +226,7 @@ Go to examples/demo-certificates folder. Make changes in the openssl.cnf file re
 
 Steps were taken from [here]( https://kb.op5.com/pages/viewpage.action?pageId=19073746#sthash.GHsaFkZe.WDGgcOja.dpbs) & [here](https://stackoverflow.com/questions/18233835/creating-an-x509-v3-user-certificate-by-signing-csr).
 
-## Permissions
 
-The W3C-Server needs authorization JWT Token to allow access to server side resources. You can create a dummy JWT Token from https://jwt.io/. Use the RSA256 algorithm from the drop down and enter valid "iat" and "exp" data and set "iss : kuksa" and generate a JWT. Once the JWT is generated on the left side. Copy the Public key from the Text box on the right side to a file and rename the field to jwt.pub.key and copy the file to  `w3c-visserver/build` folder. Also store the JWT token somewhere so that you could pass the Token to the server for authentication.
-
-![Alt text](./doc/pictures/jwt.png?raw=true "jwt")
-
-Permissions can be granted by modifying the JSON Claims.
-
-1. The JWT Token should contain a "w3c-vss" claim.
-2. Under the "w3c-vss" claim the permissions can be granted using key value pair. The key should be the path in the signal tree and the value should be strings with "r" for READ-ONLY, "w" for WRITE-ONLY and "rw" or "wr" for READ-AND-WRITE permission. See the image above.
-3. The permissions can contain wild-cards. For eg "Signal.OBD.\*" : "rw" will grant READ-WRITE access to all the signals under Signal.OBD.
-4. The permissions can be granted to a branch. For eg "Signal.Vehicle" : "rw" will grant READ-WRITE access to all the signals under Signal.Vehicle branch.
 
 ## Coverage
 

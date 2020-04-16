@@ -43,5 +43,7 @@ class Authenticator : public IAuthenticator {
   void updatePubKey(string key);
   bool isStillValid(WsChannel &channel);
   void resolvePermissions(WsChannel &channel, std::shared_ptr<IVssDatabase> database);
+
+  static string getPublicKeyFromFile(string fileName, std::shared_ptr<ILogger> logger);
 };
 #endif

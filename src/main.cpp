@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2019 Robert Bosch GmbH.
+ * Copyright (c) 2019-2020 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -310,8 +310,9 @@ int main(int argc, const char *argv[]) {
     auto httpServer = std::make_shared<WebSockHttpFlexServer>(
         logger, std::move(rest2JsonConverter));
 
+    string jwtPubkey=Authenticator::getPublicKeyFromFile("jwt.key.pub",logger);
     auto tokenValidator =
-        std::make_shared<Authenticator>(logger, "appstacle", "RS256");
+        std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
     auto subHandler = std::make_shared<SubscriptionHandler>(
         logger, httpServer, tokenValidator, accessCheck);

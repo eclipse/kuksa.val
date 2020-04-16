@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2018 Robert Bosch GmbH.
+ * Copyright (c) 2018-2020 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -143,8 +143,7 @@ string VssCommandProcessor::processSet(WsChannel &channel,
 string VssCommandProcessor::processSubscribe(WsChannel &channel,
                                              string request_id, 
                                              string path) {
-  logger->Log(LogLevel::VERBOSE, string("VssCommandProcessor::processSubscribe: path received from client ")
-              + string("for subscription"));
+  logger->Log(LogLevel::VERBOSE, string("VssCommandProcessor::processSubscribe: Client wants to subscribe ")+path);
 
   uint32_t subId = -1;
   try {
@@ -314,7 +313,6 @@ string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
 string VssCommandProcessor::processAuthorize(WsChannel &channel,
                                              string request_id,
                                              string token) {
-  tokenValidator->updatePubKey("");
   int ttl = tokenValidator->validate(channel, database, token);
 
   if (ttl == -1) {
