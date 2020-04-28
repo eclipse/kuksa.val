@@ -305,7 +305,7 @@ int main(int argc, const char *argv[]) {
     // older by having API versioning through URIs
     std::string docRoot{"/vss/api/v1/"};
 
-    string jwtPubkey=Authenticator::getPublicKeyFromFile("jwt.key.pub",logger);
+    string jwtPubkey=Authenticator::getPublicKeyFromFile(variables["cert-path"].as<string>()+"/jwt.key.pub",logger);
     if (jwtPubkey == "" ) {
         logger->Log(LogLevel::ERROR, "Could not read valid JWT pub key. Terminating.");
         return -1;
