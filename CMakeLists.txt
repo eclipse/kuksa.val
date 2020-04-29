@@ -14,6 +14,13 @@
 cmake_minimum_required(VERSION 3.12.0)
 project(w3c-visserver-api VERSION 2.0.1 LANGUAGES CXX)
 
+#####
+# Create buildinfo
+#
+set(PRE_CONFIGURE_FILE "buildinfo.h.in")
+set(POST_CONFIGURE_FILE "buildinfo.h")
+include(git_watcher.cmake)
+
 ######
 # Root CMake file responsible for setting up mandatory dependencies
 # and any other global information for 'w3c-visserver-api'
