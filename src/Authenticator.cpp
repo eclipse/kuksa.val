@@ -17,6 +17,7 @@
 #include <iostream>
 #include <list>
 #include <string>
+#include <unistd.h>
 
 #include <jwt-cpp/jwt.h>
 #include <jsoncons/json.hpp>
@@ -31,11 +32,16 @@ using jsoncons::json;
 string Authenticator::getPublicKeyFromFile(string fileName, std::shared_ptr<ILogger> logger) {
   logger->Log(LogLevel::VERBOSE, "Try reading JWT pub key from "+fileName);
 
-   std::ifstream fileStream(fileName);
-   if (fileStream.fail()) {
+  if ( access(fileName.c_str(),F_OK) != 0 )
+  {
+    logger->Log(LogLevel::ERROR, "Unable to find JWT pub key "+fileName);
+    return "";
+  }
+  std::ifstream fileStream(fileName);
+  if (fileStream.fail()) {
     logger->Log(LogLevel::ERROR, "Unable to open JWT pub key "+fileName);
-   }
-   std::string key((std::istreambuf_iterator<char>(fileStream)),
+  }
+  std::string key((std::istreambuf_iterator<char>(fileStream)),
                    (std::istreambuf_iterator<char>()));
   return key;
 }
