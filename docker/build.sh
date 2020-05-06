@@ -68,6 +68,10 @@ function build {
     # build image
     cd ../
     docker build --squash --platform linux/$ARCH -f ./docker/Dockerfile.build -t ${ARCH}/${NAME}:${VERSION} .
+    if [ "$?" != "0" ]; then
+        echo "Docker build failed."
+        exit 1
+    fi
     cd docker
 
     # cleanup
