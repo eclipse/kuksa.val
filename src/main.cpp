@@ -34,6 +34,8 @@
 #include "WebSockHttpFlexServer.hpp"
 #include "exception.hpp"
 
+#include "../buildinfo.h"
+
 using namespace std;
 using namespace boost;
 using namespace jsoncons;
@@ -194,6 +196,12 @@ int main(int argc, const char *argv[]) {
   string configFile;
   vector<string> logLevels{"NONE"};
   uint8_t logLevelsActive = static_cast<uint8_t>(LogLevel::NONE);
+
+  std::cout << "kuksa.val server" << std::endl;
+  std::cout << "Commit "  << string(GIT_HEAD_SHA1).substr(0,7);
+  if (GIT_IS_DIRTY)
+    std::cout << "-dirty";
+  std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
 
   program_options::options_description desc{"Options"};
   desc.add_options()("help,h", "Help screen")(
