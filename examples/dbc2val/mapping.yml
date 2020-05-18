@@ -1,0 +1,13 @@
+# Map OBD values to tree
+
+UIspeed_signed257:
+  minupdatedelay: 1000
+  targets: 
+    - Vehicle.Drivetrain.Transmission.Speed
+    - Vehicle.OBD.Speed
+
+
+SteeringAngle129:
+  minupdatedelay: 1000
+  targets:
+    - Vehicle.OBD.EngineLoad
