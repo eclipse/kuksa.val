@@ -13,14 +13,13 @@
 
 import argparse
 import configparser
-import sys
-import time
 import queue
 
-# import obdconnector as obdC
 import dbc2vssmapper
-import websocketconnector, dbcreader
-import yaml
+import dbcreader
+import websocketconnector
+import elm2canbridge
+
 
 cfg = {}
 
@@ -29,7 +28,7 @@ def getConfig():
     global cfg
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--device", help="CAN port. Choose \"obd\" for ELM adapter", type=str)
+    parser.add_argument("-d", "--device", help="CAN port. Choose \"elmcsn\" for ELM adapter", type=str)
 
     parser.add_argument("--obdbaudrate", help="Baudrate to ELM if CAN port is \"elmcan\"", type=int)
     parser.add_argument("--obdcanspeed", help="CAN bus speed if CAN port is \"elmcan\"", type=int)
@@ -125,7 +124,8 @@ vss = websocketconnector.vssclient(cfg['vss.server'], token)
 canQueue = queue.Queue()
 
 if cfg['can.port'] == 'elmcan':
-    print("ELM can not yet supported")
+    print("Using elmcan. Trying to set up elm2can bridge")
+    elmbr=elm2canbridge.elm2canbridge(cfg)
 
 dbcR = dbcreader.DBCReader(cfg,canQueue,mapping)
 
