@@ -131,9 +131,9 @@ dbcR = dbcreader.DBCReader(cfg,canQueue,mapping)
 
 while True:
     signal, value=canQueue.get()
-    #print("Update signal {} to {}".format(signal, value))
+    print("Update signal {} to {}".format(signal, value))
     for target in mapping[signal]['targets']:
-        #print("Publish {}{}: to ".format(signal,target))
+        print("Publish {} to {}".format(signal,target))
         vss.push(target, value)
 
 

@@ -37,6 +37,7 @@ class DBCReader:
                 #print("Decod" +str(decode))
             except:
                 self.parseErr+=1
+                #print("Error Decoding")
                 continue
             rxTime=time.time()
             for k,v in decode.items():
