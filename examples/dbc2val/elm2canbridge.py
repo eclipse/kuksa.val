@@ -13,6 +13,13 @@
 import os,sys
 import serial, can
 import threading
+from multiprocessing import Queue, Process
+
+# To limit memory in case parsing thread dies and serial reader keeps filling
+QUEUE_MAX_ELEMENTS = 2048
+
+
+
 
 class elm2canbridge:
     def __init__(self,cfg):
@@ -32,54 +39,86 @@ class elm2canbridge:
 
         self.initelm(elm,cfg['elm.canspeed'], cfg['elm.canack'])
         can = self.initcan(cfg)
-        mt = threading.Thread(target=self.monitoringThread, args=(elm, can,))
+
+        serQueue = Queue(QUEUE_MAX_ELEMENTS)
+
+        mt = threading.Thread(target=self.serialProcesor, args=(serQueue, can,))
         mt.start()
 
-    def monitoringThread(self,elm, can):
+        sr = p = Process(target=self.serialReader, args=(elm, serQueue,))
+        #sr = threading.Thread(target=self.serialReader, args=(elm, serQueue,))
+        sr.start()
+        srpid=sr.pid
+        print("Running on pid {}".format(srpid))
+
+    def serialReader(self, elm, q):
+        # No time to loose. Read and stuff into queue
+        # using bytearray, reading bigger strides and searching for '\r' gets input overruns in UART
+        # so this is the dumbest, fastest way
+
+        buffer = bytearray(64)
+        index = 0
+
+        os.nice(-10)
         print("elm2canbridge: Enter monitoring mode...")
         elm.write(b'STMA\r')
         elm.read(5)  # Consume echo
         elm.timeout = None
-
-        # the builtin readline in python serial lib is too slow
-        rlh = SerReadLineHelper(elm)
+        CR=13
         while True:
-            line = rlh.readline()
-            self.forward(line, can)
+            buffer[index] = elm.read()[0]
+            #print("Read: {}=={} ".format(buffer[index],CR))
+            #print("Buffer {}".format(buffer))
+            if buffer[index] == CR or index == 63:
+                #print("Received {}".format(bytes(buffer).hex()[:index]))
+                q.put(buffer[:index]) #Todo will slice copy deep enough or is this a race?
+                index=0
+                continue
+            index+=1
 
-    #parse line from ELM and  create a real CAN message
-    def forward(self,elmrx,candevice):
-        line=elmrx.decode('utf-8')
-        isextendedid=False
-        #print("Received from elm: {}".format(line))
-        try:
-            items = line.split()
-            if len(items[0]) == 3:  # nromal id
-                canid=int(items[0], 16)
-                #print("Normal ID {}".format(canid))
-                del items[0]
-            elif len(items) >= 4:  # extended id
-                isextendedid=True
-                canid = int(items[0] + items[1] + items[2] + items[3], 16)
-                items = items[4:]
-                #print("Extended ID {}".format(canid))
-            else:
-                print(
-                    "Parseline: Invalid line: {}, len first element: {}, total elements: {}".format(line, len(items[0]),
-                                                                                                    len(items)))
-                return
 
-            data=''.join(items)
-            #print("data: {}".format(data))
-            dataBytes= bytearray.fromhex(data)
-        except Exception as e:
-            print("Error parsing: " + str(e))
-            print("Error. ELM line //{}//, items **{}**".format(elmrx.hex(), line.split()))
-            return
 
-        canmsg = can.Message(arbitration_id=canid, data=dataBytes, is_extended_id=isextendedid)
-        candevice.send(canmsg)
 
+    def serialProcesor(self,q, candevice):
+        print("elm2canbridge: Waiting for incoming...")
+
+        while True:
+            line=q.get().decode('utf-8')
+            #print("Received {}".format(line))
+
+            isextendedid=False
+            #print("Received from elm: {}".format(line))
+            try:
+                items = line.split()
+                if len(items[0]) == 3:  # normal id
+                    canid=int(items[0], 16)
+                    #print("Normal ID {}".format(canid))
+                    del items[0]
+                elif len(items) >= 4:  # extended id
+                    isextendedid=True
+                    canid = int(items[0] + items[1] + items[2] + items[3], 16)
+                    items = items[4:]
+                    #print("Extended ID {}".format(canid))
+                else:
+                    print(
+                        "Parseline: Invalid line: {}, len first element: {}, total elements: {}".format(line, len(items[0]),
+                                                                                                        len(items)))
+                    continue
+
+                data=''.join(items)
+                #print("data: {}".format(data))
+                dataBytes= bytearray.fromhex(data)
+            except Exception as e:
+                print("Error parsing: " + str(e))
+                print("Error. ELM line, items **{}**".format(line.split()))
+                continue
+
+            canmsg = can.Message(arbitration_id=canid, data=dataBytes, is_extended_id=isextendedid)
+            try:
+                candevice.send(canmsg)
+            except Exception as e:
+                print("Error formwarding message to Can ID 0x{:02x} (extended: {}) with data 0x{}".format(canid, isextendedid, dataBytes.hex()))
+                print("Error: {}".format(e))
 
 
     #Currently only works with obdlink devices
@@ -89,11 +128,13 @@ class elm2canbridge:
         self.waitforprompt(elm)
         self.writetoelm(elm, b'ATI\r')
         resp = self.readresponse(elm)
-        if not resp.startswith("ELM"):
+        if not resp.strip().startswith("ELM"):
             print("Unexpected response to ATI: {}".format(resp))
             sys.exit(-1)
 
         self.waitforprompt(elm)
+        print("Disable linefeed")
+        self.executecommand(elm, b'ATL 0\r')
         print("Enable Headers")
         self.executecommand(elm, b'AT H1\r')
         print("Enable Spaces")
@@ -146,26 +187,3 @@ class elm2canbridge:
             sys.exit(-1)
         self.waitforprompt(elm)
         return resp
-
-
-class SerReadLineHelper:
-    def __init__(self, s):
-        self.buf = bytearray()
-        self.s = s
-
-    def readline(self):
-        i = self.buf.find(b"\r")
-        if i >= 0:
-            r = self.buf[:i + 1]
-            self.buf = self.buf[i + 1:]
-            return r
-        while True:
-            i = max(1, min(2048, self.s.in_waiting))
-            data = self.s.read(i)
-            i = data.find(b"\r")
-            if i >= 0:
-                r = self.buf + data[:i + 1]
-                self.buf[0:] = data[i + 1:]
-                return r
-            else:
-                self.buf.extend(data)
