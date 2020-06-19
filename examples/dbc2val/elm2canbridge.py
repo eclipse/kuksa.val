@@ -22,11 +22,12 @@ QUEUE_MAX_ELEMENTS = 2048
 
 
 class elm2canbridge:
-    def __init__(self,cfg):
+    def __init__(self,cfg, whitelist=None):
         print("Try setting up elm2can bridge")
         print("Creating virtual CAN interface")
         os.system("./createelmcanvcan.sh")
 
+        self.whitelist=whitelist
         elm = serial.Serial()
         elm.baudrate = cfg['elm.baudrate']
         elm.port = cfg['elm.port']
@@ -61,8 +62,15 @@ class elm2canbridge:
 
         os.nice(-10)
         print("elm2canbridge: Enter monitoring mode...")
-        elm.write(b'STMA\r')
-        elm.read(5)  # Consume echo
+        if self.whitelist != None:
+            print("Applying whitelist")
+            elm.write(b'STM\r')
+            elm.read(4)  # Consume echo
+        else:
+            print("No filter applied")
+            elm.write(b'STMA\r')
+            elm.read(5)  # Consume echo
+
         elm.timeout = None
         CR=13
         while True:
@@ -109,8 +117,14 @@ class elm2canbridge:
                 #print("data: {}".format(data))
                 dataBytes= bytearray.fromhex(data)
             except Exception as e:
-                print("Error parsing: " + str(e))
-                print("Error. ELM line, items **{}**".format(line.split()))
+#                print("Error parsing: " + str(e))
+#                print("Error. ELM line, items **{}**".format(line.split()))
+                continue
+
+            if len(dataBytes) > 8:
+                continue
+
+            if canid > 0x2000000:
                 continue
 
             canmsg = can.Message(arbitration_id=canid, data=dataBytes, is_extended_id=isextendedid)
@@ -141,6 +155,20 @@ class elm2canbridge:
         self.executecommand(elm, b'AT S1\r')
         print("Disable DLC")
         self.executecommand(elm, b'AT D0\r')
+
+        if self.whitelist != None:
+            print("Using Whitelist")
+            print("Clear all filters")
+            self.executecommand(elm, b'STFAC\r')
+            for canid in self.whitelist:
+                if canid < 2048:
+                    cmd="STFPA {:04x}, 7fff\r".format(canid)
+                else:
+                    cmd = "STFPA {:08x}, 1fffffff\r".format(canid)
+                print("Exec "+str(cmd))
+                self.executecommand(elm, cmd.encode('utf-8'))
+
+
         print("Set CAN speed")
         self.executecommand(elm, b'STP 32\r')
         cmd = "STPBR " + str(canspeed) + "\r"

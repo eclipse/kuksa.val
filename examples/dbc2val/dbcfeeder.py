@@ -123,17 +123,19 @@ mapping = dbc2vssmapper.mapper("mapping.yml")
 vss = websocketconnector.vssclient(cfg['vss.server'], token)
 canQueue = queue.Queue()
 
+dbcR = dbcreader.DBCReader(cfg,canQueue,mapping)
+
 if cfg['can.port'] == 'elmcan':
     print("Using elmcan. Trying to set up elm2can bridge")
-    elmbr=elm2canbridge.elm2canbridge(cfg)
+    elmbr=elm2canbridge.elm2canbridge(cfg, dbcR.canidwl)
 
-dbcR = dbcreader.DBCReader(cfg,canQueue,mapping)
+dbcR.start_listening()
 
 while True:
     signal, value=canQueue.get()
     print("Update signal {} to {}".format(signal, value))
     for target in mapping[signal]['targets']:
-        print("Publish {} to {}".format(signal,target))
+        #print("Publish {} to {}".format(signal,target))
         vss.push(target, value)
 
 
