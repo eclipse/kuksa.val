@@ -11,6 +11,7 @@
 ########################################################################
 
 
+import sys
 import argparse
 import configparser
 import queue
@@ -32,8 +33,13 @@ def getConfig():
 
     parser.add_argument("--obdbaudrate", help="Baudrate to ELM if CAN port is \"elmcan\"", type=int)
     parser.add_argument("--obdcanspeed", help="CAN bus speed if CAN port is \"elmcan\"", type=int)
-    parser.add_argument("--obdcanack", default=False,
-                        help="Should CAN messages be acknowledged. Only if CAN port is \"elmcan\"", type=bool)
+    parser.add_argument("--noobdcanack",
+                        help="Do not acknowledge CAN messages be  Only if CAN port is \"elmcan\"",  dest='nocanack_override', action='store_true')
+    parser.add_argument("--obdcanack",
+                        help="Acknowledge CAN messages be  Only if CAN port is \"elmcan\"",  dest='canack_override', action='store_true')
+
+
+
     parser.add_argument("--obdport", help="Serial port where ELM is connected. Only if CAN port is \"elmcan\"",
                         type=str)
 
@@ -84,8 +90,12 @@ def getConfig():
         cfg['elm.canspeed'] = args.obdcanspeed
 
     cfg['elm.canack'] = elmcfg.getboolean("canack", False)
-    if args.obdcanack:
-        cfg['elm.canack'] = args.obdcanack
+
+    # Can override CAN ACK setting from commandline. Safe choice, no ack, is dominant
+    if args.canack_override:
+        cfg['elm.canack'] = True
+    if args.nocanack_override:
+        cfg['elm.canack'] = False
 
 
 def publishData(vss):
@@ -115,6 +125,7 @@ if cfg['can.port'] == "elmcan":
     print("ELM CAN Speed       : {}".format(cfg['elm.canspeed']))
     print("ELM Ack CAN frames  : {}".format(cfg['elm.canack']))
 
+
 with open(cfg['vss.jwttoken'], 'r') as f:
     token = f.read()
 
@@ -140,4 +151,3 @@ while True:
 
 
 sys.exit(0)
-
