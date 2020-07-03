@@ -1,0 +1,18 @@
+# Map OBD values to tree
+
+UIspeed_signed257:
+  minupdatedelay: 100
+  targets: 
+    - Vehicle.OBD.Speed
+
+
+RearPower266:
+  minupdatedelay: 100
+  targets:
+    - Vehicle.OBD.EngineLoad
+
+#Change this to type string in VSS file to work with M3 DBC
+DIgear118:
+  minupdatedelay: 100
+  targets:
+    - Vehicle.Drivetrain.Transmission.Gear

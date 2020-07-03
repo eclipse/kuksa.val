@@ -1,0 +1,3 @@
+pyserial
+cantools
+python-can
