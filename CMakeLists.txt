@@ -51,6 +51,8 @@ set(MIN_BOOST_VER 1.67.0)
 find_package(Boost ${MIN_BOOST_VER} EXACT REQUIRED COMPONENTS atomic date_time chrono program_options system thread unit_test_framework)
 message(STATUS " boost includes ${Boost_INCLUDE_DIRS} ")
 message(STATUS " boost libs ${Boost_LIBRARIES} ")
+include_directories(${Boost_INCLUDE_DIRS})
+add_compile_options(-Wfatal-errors)
 
 # OpenSSL
 find_package(OpenSSL REQUIRED)

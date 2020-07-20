@@ -51,10 +51,6 @@ Build steps described below are identical for both native and container usage.
 
 To generate new clean build (e.g. after git clone or after changing build configuration options), use standard CMake build order as shown below:
 
- - Go to W3C-Server directory
-```
-cd w3c-visserver-api
-```
  - Make default build directory where build artifacts will be stored, and move into it:
 ```
 mkdir build
@@ -67,7 +63,7 @@ cmake ..
 ```
  - Run build W3C-Server. Make parameter '_-j_ ' is optional and allows running parallel build jobs to speed up compilation:
 ```
-make -j
+make -j8
 ```
 If all completes successfully, build artifacts shall be located in 'build' directory.
 
