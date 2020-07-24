@@ -5,3 +5,5 @@
 .settings/**
 .vscode/**
 compile_commands.json
+*.swp
+buildinfo.h
