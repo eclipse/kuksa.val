@@ -14,6 +14,8 @@
 cmake_minimum_required(VERSION 3.12.0)
 project(w3c-visserver-api VERSION 2.0.1 LANGUAGES CXX)
 
+# Generate compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 #####
 # Create buildinfo
 #
