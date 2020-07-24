@@ -48,6 +48,7 @@ set(LIB_SOURCES
    VssCommandProcessor.cpp
    VssDatabase.cpp
    WebSockHttpFlexServer.cpp
+   MQTTClient.cpp
 )
 
 ###
@@ -124,6 +125,8 @@ if(BUILD_EXE)
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE "-ldl")
+  target_include_directories(${SERVER_EXE_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIR})
+  target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${MOSQUITTO_LIBRARY})
 
   ######
   # Setup server install and packaging

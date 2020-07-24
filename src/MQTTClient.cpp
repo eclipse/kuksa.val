@@ -12,100 +12,77 @@
  * *****************************************************************************
  */
 
+#include <regex>
 #include "MQTTClient.hpp"
 
 #include "ILogger.hpp"
 
-MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const char *id, const char *host, int port)
- : logger_(loggerUtil),
-{
+MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const char *id, const char *host, int port, int keepalive)
+ : logger_(loggerUtil){
+    mosquitto_lib_init();
+    mosq_ = mosquitto_new(id, true, this);
+
+    int rc = mosquitto_connect_async(mosq_, host, port, keepalive);
+	if(rc){
+        logger_->Log(LogLevel::ERROR, std::string("Connection Error: ")+std::string(mosquitto_strerror(rc)));
+        throw std::runtime_error(mosquitto_strerror(rc));
+	}
+    isInitialized = (rc == 0);
 }
 
-MQTTClient::~MQTTClient() {
-  ioc->stop(); // stop execution of io runner
-
-  // wait to finish
-  for(auto& thread : iocRunners) {
-    thread.join();
-  }
+MQTTClient::~MQTTClient() { 
+    mosquitto_disconnect(mosq_);
+    mosquitto_loop_stop(mosq_, false);
+    mosquitto_destroy(mosq_);
+    mosquitto_lib_cleanup();
 }
-
-void MQTTClient::SendToConnection(ConnectionId connID, const std::string &message) {
+bool MQTTClient::SendMsg(const char *topic, int payloadlen, const void *payload) {
   if (!isInitialized)
   {
     std::string err("Cannot send to connection, server not initialized!");
     logger_->Log(LogLevel::ERROR, err);
     throw std::runtime_error(err);
   }
+  int rc = mosquitto_publish(mosq_, NULL, topic, payloadlen, payload, 0, false);
+	if(rc){
+        logger_->Log(LogLevel::ERROR, std::string("Connection Error: ")+std::string(mosquitto_strerror(rc)));
+        throw std::runtime_error(mosquitto_strerror(rc));
+	}
+    return (rc == 0);
+}
 
-  bool isFound = false;
-
-  // try to find active connection to send data to
-
-  if (!isFound) {
-    auto session = reinterpret_cast<PlainWebsocketSession *>(connID);
-    std::lock_guard<std::mutex> lock(connHandler.mPlainWebSock_);
-    auto iter = connHandler.connPlainWebSock_.find(session);
-    if (iter != std::end(connHandler.connPlainWebSock_))
-    {
-      isFound = true;
-      session->write(message);
+bool MQTTClient::SendPathValue(const std::string &path, const jsoncons::json &value) {
+    logger_->Log(LogLevel::VERBOSE, "MQTTClient::SendPathValue: send path " + path + " value " + value.as_string() + " length " + std::to_string(value.as_string().size()));
+    // TODO better parsing
+    const std::regex regex("([a-zA-Z]+)");
+    std::smatch matches; 
+    std::string topic;
+    std::string pathString(path);
+    while (std::regex_search (pathString,matches,regex)) {
+        std::cout << std::endl;
+        if(matches[1] == std::string("children")){
+            pathString = matches.suffix().str();
+            continue;
+        }
+        if(topic.size() > 0){
+            topic += "/";
+        }
+        topic += matches[1];
+        pathString = matches.suffix().str();
     }
-  }
-  if (!isFound) {
-    auto session = reinterpret_cast<SslWebsocketSession *>(connID);
-    std::lock_guard<std::mutex> lock(connHandler.mSslWebSock_);
-    auto iter = connHandler.connSslWebSock_.find(session);
-    if (iter != std::end(connHandler.connSslWebSock_))
-    {
-      isFound = true;
-      session->write(message);
-    }
-  }
-  if (!isFound) {
-    auto session = reinterpret_cast<PlainHttpSession *>(connID);
-    std::lock_guard<std::mutex> lock(connHandler.mPlainHttp_);
-    auto iter = connHandler.connPlainHttp_.find(session);
-    if (iter != std::end(connHandler.connPlainHttp_))
-    {
-      isFound = true;
-      // TODO: check how we are going to handle ASYNC writes on HTTP connection?
-    }
-  }
-  if (!isFound) {
-    auto session = reinterpret_cast<SslHttpSession *>(connID);
-    std::lock_guard<std::mutex> lock(connHandler.mSslHttp_);
-    auto iter = connHandler.connSslHttp_.find(session);
-    if (iter != std::end(connHandler.connSslHttp_))
-    {
-      isFound = true;
-      // TODO: check how we are going to handle ASYNC writes on HTTP connection?
-    }
-  }
+    logger_->Log(LogLevel::VERBOSE, "MQTTClient::SendPathValue: Topic is " + topic);
+    SendMsg(topic.c_str(), value.as_string().size(), value.as_cstring());
+    return true;
 }
 
 void MQTTClient::Start() {
   if (!isInitialized)
   {
-    std::string err("Cannot start server, server not initialized!");
+    std::string err("Cannot start client, client not initialized!");
     logger_->Log(LogLevel::ERROR, err);
     throw std::runtime_error(err);
   }
+  mosquitto_loop_start(mosq_);
 
-  logger_->Log(LogLevel::INFO, "Starting Boost.Beast web-socket and http server");
-
-  // start listening for connections
-  connListener->run();
-
-  // run the I/O service on the requested number of threads
-  iocRunners.reserve(NumOfThreads);
-  for(auto i = 0; i < NumOfThreads; ++i) {
-    iocRunners.emplace_back(
-      []
-      {
-        boost::system::error_code ec;
-        ioc->run(ec);
-      });
-  }
 }
 

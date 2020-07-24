@@ -32,6 +32,7 @@
 #include "VssCommandProcessor.hpp"
 #include "VssDatabase.hpp"
 #include "WebSockHttpFlexServer.hpp"
+#include "MQTTClient.hpp"
 #include "exception.hpp"
 
 #include "../buildinfo.h"
@@ -76,7 +77,7 @@ static const gchar introspection_xml[] =
     "  </interface>"
     "</node>";
 
-static void handle_method_call(GDBusConnection *connection, const gchar *sender,
+static void handle_method_call(GDBusConnection *connection, const gchar *msender,
                                const gchar *object_path,
                                const gchar *interface_name,
                                const gchar *method_name, GVariant *parameters,
@@ -87,7 +88,6 @@ static void handle_method_call(GDBusConnection *connection, const gchar *sender,
   (void)interface_name;
   (void)parameters;
   (void)user_data;
-  (void)sender;
 
   json jsonVal;
   const gchar *vss_path = NULL;
@@ -324,11 +324,14 @@ int main(int argc, const char *argv[]) {
     auto httpServer = std::make_shared<WebSockHttpFlexServer>(
         logger, std::move(rest2JsonConverter));
 
+    auto mqttClient = std::make_unique<MQTTClient>(
+        logger, "vss", "localhost", 1883);
+
     auto tokenValidator =
         std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
     auto subHandler = std::make_shared<SubscriptionHandler>(
-        logger, httpServer, tokenValidator, accessCheck);
+        logger, httpServer, std::move(mqttClient), tokenValidator, accessCheck);
     auto database =
         std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(

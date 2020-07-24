@@ -17,14 +17,14 @@
 
 #include <string>
 #include <memory>
+#include <jsoncons/json.hpp>
 
-using ConnectionId = uint64_t;
-
-class IServer {
+class IClient {
   public:
-    virtual ~IServer() {}
+    virtual ~IClient() {}
 
-    virtual void SendToConnection(ConnectionId connID, const std::string &message) = 0;
+    //virtual void SendMsg(const std::string &message) = 0;
+    virtual bool SendPathValue(const std::string &path, const jsoncons::json &value) = 0;
 };
 #endif
 

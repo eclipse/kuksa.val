@@ -393,6 +393,7 @@ void VssDatabase::HandleSet(jsoncons::json & setValues) {
 
         jsoncons::json value = resJson["value"];
         subHandler->updateByUUID(uuid, value);
+        subHandler->updateByPath(jPath, value);
       } else {
         stringstream msg;
         msg << "Type key not found for " << jPath;

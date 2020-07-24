@@ -66,6 +66,14 @@ PKG_CHECK_MODULES(GLIB glib-2.0)
 PKG_CHECK_MODULES(GObject gobject-2.0)
 PKG_CHECK_MODULES(GIO gio-2.0)
 
+# mosquitto
+find_path(MOSQUITTO_INCLUDE_DIR 	NAMES mosquitto.h ) 
+find_library(MOSQUITTO_LIBRARY 	NAMES mosquitto )
+include(FindPackageHandleStandardArgs) 
+# handle the QUIETLY and REQUIRED arguments and set VILLASNODE_FOUND to TRUE 
+# if all listed variables are TRUE 
+find_package_handle_standard_args(Mosquitto DEFAULT_MSG MOSQUITTO_LIBRARY MOSQUITTO_INCLUDE_DIR)
+
 ###
 # 3rd-party library includes already available in git repo
 
