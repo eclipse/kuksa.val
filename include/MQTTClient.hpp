@@ -43,7 +43,7 @@ class MQTTClient : public IClient
      *              message to the client if no other messages have been exchanged
      *              in that time. Default is 60s
      */
-    MQTTClient(std::shared_ptr<ILogger> loggerUtil, const char *id, const char *host, int port, int keepalive=60);
+    MQTTClient(std::shared_ptr<ILogger> loggerUtil, const char *id, const std::string& host, int port, int keepalive=60);
     ~MQTTClient();
 
     /**

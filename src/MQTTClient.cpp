@@ -17,12 +17,12 @@
 
 #include "ILogger.hpp"
 
-MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const char *id, const char *host, int port, int keepalive)
+MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const char *id, const std::string & host, int port, int keepalive)
  : logger_(loggerUtil){
     mosquitto_lib_init();
     mosq_ = mosquitto_new(id, true, this);
 
-    int rc = mosquitto_connect_async(mosq_, host, port, keepalive);
+    int rc = mosquitto_connect_async(mosq_, host.c_str(), port, keepalive);
 	if(rc){
         logger_->Log(LogLevel::ERROR, std::string("Connection Error: ")+std::string(mosquitto_strerror(rc)));
         throw std::runtime_error(mosquitto_strerror(rc));
@@ -59,7 +59,6 @@ bool MQTTClient::SendPathValue(const std::string &path, const jsoncons::json &va
     std::string topic;
     std::string pathString(path);
     while (std::regex_search (pathString,matches,regex)) {
-        std::cout << std::endl;
         if(matches[1] == std::string("children")){
             pathString = matches.suffix().str();
             continue;

@@ -216,6 +216,11 @@ int main(int argc, const char *argv[]) {
       "address", program_options::value<string>()->default_value("localhost"),
       "Address")("port", program_options::value<int>()->default_value(8090),
                  "Port")(
+      "enable-mqtt", "Publish topics to mqtt broker")(
+      "mqtt-address", program_options::value<string>()->default_value("localhost"),
+      "Address of MQTT broker")(
+      "mqtt-port", program_options::value<int>()->default_value(1883),
+      "Port of MQTT broker")(
       "log-level",
       program_options::value<vector<string>>(&logLevels)->composing(),
       "Log level event type to be enabled. "
@@ -324,12 +329,19 @@ int main(int argc, const char *argv[]) {
     auto httpServer = std::make_shared<WebSockHttpFlexServer>(
         logger, std::move(rest2JsonConverter));
 
-    auto mqttClient = std::make_unique<MQTTClient>(
-        logger, "vss", "localhost", 1883);
-
     auto tokenValidator =
         std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
+
+    unique_ptr<MQTTClient> mqttClient = nullptr;
+    if(variables.count("enable-mqtt")){
+        auto mqttPort = variables["port"].as<int>();
+        mqttClient = std::make_unique<MQTTClient>(
+            logger, "vss", variables["mqtt-address"].as<string>()
+            , variables["mqtt-port"].as<int>()
+            );
+    }
+
     auto subHandler = std::make_shared<SubscriptionHandler>(
         logger, httpServer, std::move(mqttClient), tokenValidator, accessCheck);
     auto database =
