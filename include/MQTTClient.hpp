@@ -15,6 +15,7 @@
 #define __MQTTCLIENT_H__
 
 #include "IClient.hpp"
+#include <regex>
 #include "mosquitto.h"
 
 class ILogger;
@@ -30,6 +31,7 @@ class MQTTClient : public IClient
     std::shared_ptr<ILogger> logger_;
     struct mosquitto *mosq_ = nullptr;
 
+    std::vector<std::regex> topics_;
     bool isInitialized = false;
 
   public:
@@ -52,7 +54,7 @@ class MQTTClient : public IClient
     void Start();
 
     // IClient
-    bool SendMsg(const char *topic, int payloadlen=0, const void *payload=NULL);
+    bool SendMsg(const std::string& topic, const std::string& payload) override;
     bool SendPathValue(const std::string &path, const jsoncons::json &value) override;
 
 };

@@ -23,7 +23,7 @@ class IClient {
   public:
     virtual ~IClient() {}
 
-    //virtual void SendMsg(const std::string &message) = 0;
+    virtual bool SendMsg(const std::string& topic, const std::string& value) = 0;
     virtual bool SendPathValue(const std::string &path, const jsoncons::json &value) = 0;
 };
 #endif

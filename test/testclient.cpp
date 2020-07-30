@@ -154,7 +154,7 @@ void StartBeastClient(std::string host, int port, std::string rootDoc) {
 
   for(;;) {
     string path, function;
-      cout << "Enter vss path eg : Vehicle.Drivetrain.Transmission.DriveType " <<endl;
+      cout << "Enter vss path eg : Vehicle.OBD.Speed " <<endl;
       getline (cin, path);
       cout << "Enter vis Function eg: authorize, get, set, getmetadata "<< endl;
       getline (cin, function);

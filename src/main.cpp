@@ -217,7 +217,7 @@ int main(int argc, const char *argv[]) {
       "address", program_options::value<string>()->default_value("localhost"),
       "Address")("port", program_options::value<int>()->default_value(8090),
                  "Port")(
-      "mqtt-topics", program_options::value<string>()->default_value(""), "Published topics to mqtt broker")(
+      "mqtt-topics", program_options::value<string>()->default_value(""), "Published topics to mqtt broker, using \";\" as seperator and \"*\" as wildcard")(
       "mqtt-address", program_options::value<string>()->default_value("localhost"),
       "Address of MQTT broker")(
       "mqtt-port", program_options::value<int>()->default_value(1883),
@@ -358,7 +358,7 @@ int main(int argc, const char *argv[]) {
     httpServer->AddListener(ObserverType::ALL, cmdProcessor);
     httpServer->Initialize(variables["address"].as<string>(), port,
                            std::move(docRoot),
-                           variables["cert-path"].as<string>(), !secure);
+                           variables["cert-path"].as<boost::filesystem::path>().string(), !secure);
     httpServer->Start();
 
     while (1) {

@@ -12,14 +12,26 @@
  * *****************************************************************************
  */
 
-#include <regex>
+#include <sstream>
+
 #include "MQTTClient.hpp"
 
 #include "ILogger.hpp"
 
 MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string& id, const std::string & host, int port, const std::string & topics, int keepalive)
  : logger_(loggerUtil){
-    if(!topics.empty()){
+    auto topicsstring = std::regex_replace(topics, std::regex("\\s+"), std::string(""));
+    topicsstring = std::regex_replace(topicsstring, std::regex("\""), std::string(""));
+    logger_->Log(LogLevel::VERBOSE, std::string("MQTTClient:: The following topics will be published via MQTT: "));
+
+    if(!topicsstring.empty()){
+        std::stringstream topicsstream(topicsstring);
+        std::string token;
+        while (std::getline(topicsstream, token, ';')) {
+            token = std::regex_replace(topics, std::regex("\\*"), std::string(".*"));
+            logger_->Log(LogLevel::VERBOSE, std::string("\t") + token);
+            topics_.push_back(std::regex{token});
+        }
         mosquitto_lib_init();
         mosq_ = mosquitto_new(id.c_str(), true, this);
 
@@ -40,24 +52,29 @@ MQTTClient::~MQTTClient() {
         mosquitto_lib_cleanup();
     }
 }
-bool MQTTClient::SendMsg(const char *topic, int payloadlen, const void *payload) {
+bool MQTTClient::SendMsg(const std::string& topic, const std::string& payload){
   if (!isInitialized)
   {
     std::string err("Cannot send to connection, server not initialized!");
     logger_->Log(LogLevel::ERROR, err);
     throw std::runtime_error(err);
   }
-  int rc = mosquitto_publish(mosq_, NULL, topic, payloadlen, payload, 0, false);
-	if(rc){
-        logger_->Log(LogLevel::ERROR, std::string("Connection Error: ")+std::string(mosquitto_strerror(rc)));
-        throw std::runtime_error(mosquitto_strerror(rc));
-	}
-    return (rc == 0);
+  for (auto topic_regex: topics_){
+    std::smatch base_match;
+    if(std::regex_match(topic, base_match, topic_regex)){
+      int rc = mosquitto_publish(mosq_, NULL, topic.c_str(), payload.size(), payload.c_str(), 0, false);
+        if(rc){
+            logger_->Log(LogLevel::ERROR, std::string("Connection Error: ")+std::string(mosquitto_strerror(rc)));
+            throw std::runtime_error(mosquitto_strerror(rc));
+        }
+        return (rc == 0);
+    }
+  }
+  return false;
 }
 
 bool MQTTClient::SendPathValue(const std::string &path, const jsoncons::json &value) {
     logger_->Log(LogLevel::VERBOSE, "MQTTClient::SendPathValue: send path " + path + " value " + value.as_string() + " length " + std::to_string(value.as_string().size()));
-    // TODO better parsing
     const std::regex regex("([a-zA-Z]+)");
     std::smatch matches; 
     std::string topic;
@@ -74,7 +91,7 @@ bool MQTTClient::SendPathValue(const std::string &path, const jsoncons::json &va
         pathString = matches.suffix().str();
     }
     logger_->Log(LogLevel::VERBOSE, "MQTTClient::SendPathValue: Topic is " + topic);
-    SendMsg(topic.c_str(), value.as_string().size(), value.as_cstring());
+    SendMsg(topic, value.as_string());
     return true;
 }
 
