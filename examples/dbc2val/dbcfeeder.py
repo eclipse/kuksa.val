@@ -61,7 +61,7 @@ def getConfig():
 
     cfg['vss.jwttoken'] = vsscfg.get("jwt", "jwt.token")
     if args.jwt:
-        cfg['vss.server'] = args.jwt
+        cfg['vss.jwttoken'] = args.jwt
 
     cfg['vss.mapping'] = vsscfg.get("mapping", "mapping.yaml")
     if args.mapping:
