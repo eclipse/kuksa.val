@@ -70,7 +70,7 @@ class vssclient:
         self.request+=1
         req['action']="set"
         req['path']=path
-        req['value']=value
+        req['value']=str(value)
         self.queue.put_nowait(json.dumps(req))
         
         
