@@ -1,4 +1,4 @@
-/*
+    /*
  * ******************************************************************************
  * Copyright (c) 2019-2020 Robert Bosch GmbH.
  *
@@ -78,7 +78,7 @@ static const gchar introspection_xml[] =
     "  </interface>"
     "</node>";
 
-static void handle_method_call(GDBusConnection *connection, const gchar *msender,
+static void handle_method_call(GDBusConnection *connection, const gchar *sender,
                                const gchar *object_path,
                                const gchar *interface_name,
                                const gchar *method_name, GVariant *parameters,
@@ -89,6 +89,7 @@ static void handle_method_call(GDBusConnection *connection, const gchar *msender
   (void)interface_name;
   (void)parameters;
   (void)user_data;
+  (void)sender;
 
   json jsonVal;
   const gchar *vss_path = NULL;
