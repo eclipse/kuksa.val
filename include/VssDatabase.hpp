@@ -50,15 +50,15 @@ class VssDatabase : public IVssDatabase {
               std::shared_ptr<IAccessChecker> accValidator);
   ~VssDatabase();
 
-  void initJsonTree(const std::string &fileName);
-  jsoncons::json getMetaData(const std::string &path);
-  void setSignal(WsChannel& channel, const std::string &path, jsoncons::json value);
+  void initJsonTree(const boost::filesystem::path &fileName) override;
+  jsoncons::json getMetaData(const std::string &path) override;
+  void setSignal(WsChannel& channel, const std::string &path, jsoncons::json value) override;
   void setSignal(const std::string &path, jsoncons::json value);
-  jsoncons::json getSignal(WsChannel& channel, const std::string &path);
+  jsoncons::json getSignal(WsChannel& channel, const std::string &path) override;
 
-  std::list<std::string> getPathForGet(const std::string &path, bool& isBranch);
+  std::list<std::string> getPathForGet(const std::string &path, bool& isBranch) override;
   std::string getVSSSpecificPath(const std::string &path, bool& isBranch,
-                                 jsoncons::json& tree);
-  jsoncons::json getPathForSet(const std::string &path, jsoncons::json value);
+                                 jsoncons::json& tree) override;
+  jsoncons::json getPathForSet(const std::string &path, jsoncons::json value) override;
 };
 #endif

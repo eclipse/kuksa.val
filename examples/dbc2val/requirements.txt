@@ -1,3 +1,5 @@
 pyserial
 cantools
 python-can
+pyyaml
+websockets

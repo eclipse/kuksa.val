@@ -50,7 +50,7 @@ find_package(Threads REQUIRED)
 set(Boost_USE_STATIC_LIBS OFF)
 set(MIN_BOOST_VER 1.67.0)
 
-find_package(Boost ${MIN_BOOST_VER} EXACT REQUIRED COMPONENTS atomic date_time chrono program_options system thread unit_test_framework)
+find_package(Boost ${MIN_BOOST_VER} EXACT REQUIRED COMPONENTS atomic date_time chrono filesystem program_options system thread unit_test_framework)
 message(STATUS " boost includes ${Boost_INCLUDE_DIRS} ")
 message(STATUS " boost libs ${Boost_LIBRARIES} ")
 include_directories(${Boost_INCLUDE_DIRS})

@@ -135,6 +135,7 @@ if(BUILD_EXE)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../unit-test/vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../unit-test/config.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
   install( TARGETS ${SERVER_EXE_NAME} DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../certificates/jwt/jwt.key.pub DESTINATION bin/${SERVER_EXE_NAME})
@@ -167,6 +168,7 @@ if(BUILD_EXE)
     "libgcc1 (>= 1:3.0)"
     "libssl1.0.0 (>= 1.0.1)"
     "libstdc++6 (>= 5.2)"
+    "libboost-filesystem (>= ${MIN_BOOST_VER})"
     "libboost-atomic (>= ${MIN_BOOST_VER})"
     "libboost-date-time-dev (>= ${MIN_BOOST_VER})"
     "libboost-chrono (>= ${MIN_BOOST_VER})"

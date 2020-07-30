@@ -28,7 +28,7 @@ class MQTTClient : public IClient
  {
   private:
     std::shared_ptr<ILogger> logger_;
-    struct mosquitto *mosq_;
+    struct mosquitto *mosq_ = nullptr;
 
     bool isInitialized = false;
 
@@ -43,7 +43,7 @@ class MQTTClient : public IClient
      *              message to the client if no other messages have been exchanged
      *              in that time. Default is 60s
      */
-    MQTTClient(std::shared_ptr<ILogger> loggerUtil, const char *id, const std::string& host, int port, int keepalive=60);
+    MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string &id, const std::string& host, int port, const std::string& topics, int keepalive=60);
     ~MQTTClient();
 
     /**

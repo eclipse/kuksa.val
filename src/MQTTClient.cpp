@@ -17,24 +17,28 @@
 
 #include "ILogger.hpp"
 
-MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const char *id, const std::string & host, int port, int keepalive)
+MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string& id, const std::string & host, int port, const std::string & topics, int keepalive)
  : logger_(loggerUtil){
-    mosquitto_lib_init();
-    mosq_ = mosquitto_new(id, true, this);
+    if(!topics.empty()){
+        mosquitto_lib_init();
+        mosq_ = mosquitto_new(id.c_str(), true, this);
 
-    int rc = mosquitto_connect_async(mosq_, host.c_str(), port, keepalive);
-	if(rc){
-        logger_->Log(LogLevel::ERROR, std::string("Connection Error: ")+std::string(mosquitto_strerror(rc)));
-        throw std::runtime_error(mosquitto_strerror(rc));
-	}
-    isInitialized = (rc == 0);
+        int rc = mosquitto_connect_async(mosq_, host.c_str(), port, keepalive);
+        if(rc){
+            logger_->Log(LogLevel::ERROR, std::string("MQTT Connection Error: ")+std::string(mosquitto_strerror(rc)));
+            throw std::runtime_error(mosquitto_strerror(rc));
+        }
+        isInitialized = (rc == 0);
+    }
 }
 
 MQTTClient::~MQTTClient() { 
-    mosquitto_disconnect(mosq_);
-    mosquitto_loop_stop(mosq_, false);
-    mosquitto_destroy(mosq_);
-    mosquitto_lib_cleanup();
+    if(isInitialized){
+        mosquitto_disconnect(mosq_);
+        mosquitto_loop_stop(mosq_, false);
+        mosquitto_destroy(mosq_);
+        mosquitto_lib_cleanup();
+    }
 }
 bool MQTTClient::SendMsg(const char *topic, int payloadlen, const void *payload) {
   if (!isInitialized)

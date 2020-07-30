@@ -199,14 +199,14 @@ VssDatabase::VssDatabase(std::shared_ptr<ILogger> loggerUtil,
 VssDatabase::~VssDatabase() {}
 
 // Initializer
-void VssDatabase::initJsonTree(const string &fileName) {
+void VssDatabase::initJsonTree(const boost::filesystem::path &fileName) {
   try {
-    std::ifstream is(fileName);
+    std::ifstream is(fileName.string());
     is >> data_tree;
     meta_tree = data_tree;
 
     logger->Log(LogLevel::VERBOSE, "VssDatabase::VssDatabase : VSS tree initialized using JSON file = "
-                + fileName);
+                + fileName.string());
     is.close();
   } catch (exception const& e) {
     logger->Log(LogLevel::ERROR,

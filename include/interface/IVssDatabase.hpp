@@ -17,6 +17,7 @@
 #include <string>
 
 #include <jsoncons/json.hpp>
+#include <boost/filesystem.hpp>
 
 class WsChannel;
 
@@ -24,7 +25,7 @@ class IVssDatabase {
   public:
     virtual ~IVssDatabase() {}
 
-    virtual void initJsonTree(const std::string &fileName) = 0;
+    virtual void initJsonTree(const boost::filesystem::path &fileName) = 0;
     virtual jsoncons::json getMetaData(const std::string &path) = 0;
     virtual void setSignal(WsChannel& channel,
                            const std::string &path,

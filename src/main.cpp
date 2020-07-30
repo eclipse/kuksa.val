@@ -21,6 +21,7 @@
 #include <string>
 
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <jsoncons/json.hpp>
 #include <jsonpath/json_query.hpp>
 
@@ -193,7 +194,7 @@ static void print_usage(const char *prog_name,
 }
 
 int main(int argc, const char *argv[]) {
-  string configFile;
+  boost::filesystem::path configFile;
   vector<string> logLevels{"NONE"};
   uint8_t logLevelsActive = static_cast<uint8_t>(LogLevel::NONE);
 
@@ -205,18 +206,18 @@ int main(int argc, const char *argv[]) {
 
   program_options::options_description desc{"Options"};
   desc.add_options()("help,h", "Help screen")(
-      "config-file,cfg", program_options::value<string>(&configFile),
+      "config-file,cfg", program_options::value<boost::filesystem::path>(&configFile)->default_value(boost::filesystem::path{"config.ini"}),
       "Configuration file path for program parameters. "
       "Can be provided instead of command line options")(
-      "vss", program_options::value<string>(), "vss_rel*.json file")(
-      "cert-path", program_options::value<string>()->default_value("."),
+      "vss", program_options::value<boost::filesystem::path>(), "vss_rel*.json file")(
+      "cert-path", program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"."}),
       "Path to directory where 'Server.pem' and 'Server.key' are located")(
       "insecure", "Accept plain (no-SSL) connections")(
       "use-keycloak", "Use KeyCloak for permission management")(
       "address", program_options::value<string>()->default_value("localhost"),
       "Address")("port", program_options::value<int>()->default_value(8090),
                  "Port")(
-      "enable-mqtt", "Publish topics to mqtt broker")(
+      "mqtt-topics", program_options::value<string>()->default_value(""), "Published topics to mqtt broker")(
       "mqtt-address", program_options::value<string>()->default_value("localhost"),
       "Address of MQTT broker")(
       "mqtt-port", program_options::value<int>()->default_value(1883),
@@ -233,13 +234,16 @@ int main(int argc, const char *argv[]) {
   program_options::notify(variables);
   // if config file passed, get configuration from it
   if (configFile.size()) {
-    cout << configFile << std::endl;
-    std::ifstream ifs(configFile.c_str());
-    if (!ifs) {
+    auto configFilePath = boost::filesystem::path(configFile);
+    std::ifstream ifs(configFile.string());
+    if (ifs) {
+      program_options::store(parse_config_file(ifs, desc), variables);
+      auto vss_path = variables["vss"].as<boost::filesystem::path>();
+      variables.at("vss").value() = boost::filesystem::absolute(vss_path, configFilePath.parent_path());
+    } else if (!variables["config-file"].defaulted()){
       std::cerr << "Could not open config file: " << configFile << std::endl;
       return -1;
     }
-    program_options::store(parse_config_file(ifs, desc), variables);
   }
   program_options::notify(variables);
 
@@ -287,7 +291,7 @@ int main(int argc, const char *argv[]) {
 
     auto port = variables["port"].as<int>();
     auto secure = !variables.count("insecure");
-    auto vss_filename = variables["vss"].as<string>();
+    auto vss_path = variables["vss"].as<boost::filesystem::path>();
 
     if (variables.count("use-keycloak")) {
       // Start D-Bus backend connection.
@@ -318,7 +322,8 @@ int main(int argc, const char *argv[]) {
     // older by having API versioning through URIs
     std::string docRoot{"/vss/api/v1/"};
 
-    string jwtPubkey=Authenticator::getPublicKeyFromFile(variables["cert-path"].as<string>()+"/jwt.key.pub",logger);
+    auto pubKeyFile = variables["cert-path"].as<boost::filesystem::path>()/"jwt.key.pub";
+    string jwtPubkey=Authenticator::getPublicKeyFromFile(pubKeyFile.string(), logger);
     if (jwtPubkey == "" ) {
         logger->Log(LogLevel::ERROR, "Could not read valid JWT pub key. Terminating.");
         return -1;
@@ -333,14 +338,11 @@ int main(int argc, const char *argv[]) {
         std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
 
-    unique_ptr<MQTTClient> mqttClient = nullptr;
-    if(variables.count("enable-mqtt")){
-        auto mqttPort = variables["port"].as<int>();
-        mqttClient = std::make_unique<MQTTClient>(
+    auto  mqttClient = std::make_unique<MQTTClient>(
             logger, "vss", variables["mqtt-address"].as<string>()
-            , variables["mqtt-port"].as<int>()
+            , variables["mqtt-port"].as<int>(),
+            variables["mqtt-topics"].as<string>()
             );
-    }
 
     auto subHandler = std::make_shared<SubscriptionHandler>(
         logger, httpServer, std::move(mqttClient), tokenValidator, accessCheck);
@@ -350,7 +352,8 @@ int main(int argc, const char *argv[]) {
         logger, database, tokenValidator, subHandler);
 
     gDatabase = database.get();
-    database->initJsonTree(vss_filename);
+
+    database->initJsonTree(vss_path);
 
     httpServer->AddListener(ObserverType::ALL, cmdProcessor);
     httpServer->Initialize(variables["address"].as<string>(), port,
