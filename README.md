@@ -23,6 +23,7 @@ The implementation provides all the major functionality defined in the above sta
   | Authentification  | :heavy_check_mark: |
   | JSON signing    | :heavy_check_mark:  |
   | REST API | :heavy_check_mark:  |
+  | MQTT Publisher | :construction:  |
 
 ## Dependencies
 
@@ -34,6 +35,7 @@ This project uses components from other 3rd party open-source projects:
  [Simple-WebSocket-Server](https://gitlab.com/eidheim/Simple-WebSocket-Server) _[deprecated]_ | MIT license | Simple implementation of Web-Socket server.
  [jsoncons](https://github.com/danielaparker/jsoncons) | Boost Software license 1.0 | Utility library for handling JSON.
  [jwt-cpp](https://github.com/Thalhammer/jwt-cpp) | MIT license | Utility library for handling JWT tokens.
+ [mosquitto](https://github.com/eclipse/mosquitto) | Eclipse Public License 1.0 | An open source MQTT broker and client
 
 # W3C-Server Project
 
@@ -186,23 +188,20 @@ Open Swagger editor and import our REST API [definition](./doc/rest-api.yaml) fi
 ## Parameters
 Below are presented W3C-Server parameters available for user control:
 - **--help** - Show W3C-Server usage and exit
-- **--vss** [mandatory] - Path to VSS data file describing VSS data tree structure which W3C-Server shall handle. Sample 'vss_rel_2.0.json' file can be found [here](./unit-test/vss_rel_2.0.json).
-- **--config-file** [optional] - Path to configuration file with W3C-Server input parameters.    
+- **--config-file** [optional] - Path to configuration file with W3C-Server input parameters. By default, the found `config.ini` file in the current folder will be used.    
   Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup).
-  Sample of configuration file parameters is shown below:
-  ```
-  vss=vss_rel_2.0.json
-  cert-path=.
-  insecure=
-  log-level=ALL
-  ```
+  Sample of configuration file parameters can be found unter [config.ini](unit-test/config.ini)
+- **--vss** [mandatory] - Path to VSS data file describing VSS data tree structure which W3C-Server shall handle. Sample 'vss_rel_2.0.json' file can be found [here](./unit-test/vss_rel_2.0.json).
 - **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. Server demo certificates are located in [../examples/demo-certificates](../examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
 If user needs to use or generate their own certificates, see chapter [_Certificates_](#Certificates) for more details.  
 For authorizing client, file 'jwt.key.pub' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.key.pub' file, see chapter [_Permissions_](#Permissions) for more details.
 - **--insecure** [optional] - By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.
-- **--wss-server** [optional][deprecated] - By default, W3C-Server uses Boost.Beast as default connection handler. If provided, W3C-Server shall use deprecated Simple Web-Socket Server, without REST API support.
+- **--use-keycloak** [optional] - Use KeyCloak for permission management
 - **--address** [optional] - If provided, W3C-Server shall use different server address than default _'localhost'_.
 - **--port** [optional] - If provided, W3C-Server shall use different server port than default '8090' value.
+- **--mqtt-topics** [optional] - If provided, W3C-Server shall connect to configured mqtt broker to puhlish the given topics. Use `;` as seperator for multiple topics and `*` as wildcard symbol
+- **--mqtt-address** [optional] - If provided, W3C-Server shall connect to different server address than default _'localhost'_.
+- **--mqtt-port** [optional] - If provided, W3C-Server shall connect to different mqtt port than default '1883' value.
 - **--log-level** [optional] - Enable selected log level value. To allow for different log level combinations, parameter can be provided multiple times with different log level values.
 
 # How-to's

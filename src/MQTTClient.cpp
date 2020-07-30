@@ -22,9 +22,9 @@ MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string& i
  : logger_(loggerUtil){
     auto topicsstring = std::regex_replace(topics, std::regex("\\s+"), std::string(""));
     topicsstring = std::regex_replace(topicsstring, std::regex("\""), std::string(""));
-    logger_->Log(LogLevel::VERBOSE, std::string("MQTTClient:: The following topics will be published via MQTT: "));
 
     if(!topicsstring.empty()){
+        logger_->Log(LogLevel::VERBOSE, std::string("MQTTClient:: The following topics will be published via MQTT: "));
         std::stringstream topicsstream(topicsstring);
         std::string token;
         while (std::getline(topicsstream, token, ';')) {
