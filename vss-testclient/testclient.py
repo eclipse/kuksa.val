@@ -1,8 +1,14 @@
 #! /usr/bin/python3
-'''
-Main python script for the test VSS Client
+########################################################################
+# Copyright (c) 2020 Robert Bosch GmbH
+#
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+########################################################################
 
-'''
 import argparse, json, sys
 from cmd2 import Cmd, with_argparser, with_category
 import ipaddress, queue, time
