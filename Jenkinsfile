@@ -20,6 +20,7 @@ node('docker') {
             ./docker/build.sh amd64
             '''
             sh './docker/build.sh arm64'
+            sh 'docker build -t kuksa-val-dev:ubuntu20.04 -f docker/Dockerfile.dev .'
         }
         stage('Collect') {
 			sh '''
@@ -27,6 +28,7 @@ node('docker') {
             rm -f artifacts/*
             docker save $(docker images --filter "reference=amd64/kuksa-val*" -q | head -1) | bzip2 -9 > artifacts/kuksa-val-amd64.tar.bz2
 			docker save $(docker images --filter "reference=arm64/kuksa-val*" -q | head -1) | bzip2 -9 > artifacts/kuksa-val-arm64.tar.bz2
+			docker save kuksa-val-dev:ubuntu20.04 | bzip2 -9 > artifacts/kuksa-val-dev-ubuntu20.04.tar.bz2
             '''
         }
         stage ('Archive') {

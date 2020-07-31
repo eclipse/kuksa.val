@@ -211,7 +211,7 @@ int main(int argc, const char *argv[]) {
       "Configuration file path for program parameters. "
       "Can be provided instead of command line options")
     ("vss", program_options::value<boost::filesystem::path>()->required(), "vss_rel*.json file")
-    ("cert-path", program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"."})->required(),
+    ("cert-path", program_options::value<boost::filesystem::path>()->required(),
       "Path to directory where 'Server.pem' and 'Server.key' are located")
     ("insecure", "Accept plain (no-SSL) connections")
     ("use-keycloak", "Use KeyCloak for permission management")
@@ -249,6 +249,8 @@ int main(int argc, const char *argv[]) {
       program_options::store(parse_config_file(ifs, desc), variables);
       auto vss_path = variables["vss"].as<boost::filesystem::path>();
       variables.at("vss").value() = boost::filesystem::absolute(vss_path, configFilePath.parent_path());
+      auto cert_path = variables["cert-path"].as<boost::filesystem::path>();
+      variables.at("cert-path").value() = boost::filesystem::absolute(cert_path, configFilePath.parent_path());
     } else if (!variables["config-file"].defaulted()){
       std::cerr << "Could not open config file: " << configFile << std::endl;
       return -1;
