@@ -59,7 +59,7 @@ def getConfig():
     if args.server:
         cfg['vss.server'] = args.server
 
-    cfg['vss.jwttoken'] = vsscfg.get("jwt", "jwt.token")
+    cfg['vss.jwttoken'] = vsscfg.get("jwttoken", "jwt.token")
     if args.jwt:
         cfg['vss.jwttoken'] = args.jwt
 
