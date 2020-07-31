@@ -246,11 +246,18 @@ int main(int argc, const char *argv[]) {
     auto configFilePath = boost::filesystem::path(configFile);
     std::ifstream ifs(configFile.string());
     if (ifs) {
+      // update path only, if these options is not defined via command line, but via config file
+      bool update_vss_path = !variables.count("vss");
+      bool update_cert_path = !variables.count("cert-path");
       program_options::store(parse_config_file(ifs, desc), variables);
-      auto vss_path = variables["vss"].as<boost::filesystem::path>();
-      variables.at("vss").value() = boost::filesystem::absolute(vss_path, configFilePath.parent_path());
-      auto cert_path = variables["cert-path"].as<boost::filesystem::path>();
-      variables.at("cert-path").value() = boost::filesystem::absolute(cert_path, configFilePath.parent_path());
+      if(update_vss_path){
+          auto vss_path = variables["vss"].as<boost::filesystem::path>();
+          variables.at("vss").value() = boost::filesystem::absolute(vss_path, configFilePath.parent_path());
+      }
+      if(update_cert_path){
+          auto cert_path = variables["cert-path"].as<boost::filesystem::path>();
+          variables.at("cert-path").value() = boost::filesystem::absolute(cert_path, configFilePath.parent_path());
+      }
     } else if (!variables["config-file"].defaulted()){
       std::cerr << "Could not open config file: " << configFile << std::endl;
       return -1;
