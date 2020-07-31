@@ -20,5 +20,4 @@ mkdir /deploy/exampleconfig
 mkdir /deploy/exampleconfig/certs
 
 cp /kuksa.val/build/src/vss_rel_2.0.json  /deploy/exampleconfig/vss.json
-cp /kuksa.val/build/src/Server.key /deploy/exampleconfig/kuksa.val.key
 cp -r  /kuksa.val/certificates/* /deploy/exampleconfig/certs/
