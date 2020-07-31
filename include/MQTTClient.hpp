@@ -29,9 +29,10 @@ class MQTTClient : public IClient
  {
   private:
     std::shared_ptr<ILogger> logger_;
-    struct mosquitto *mosq_ = nullptr;
-
     std::vector<std::regex> topics_;
+    int keepalive_;
+    int qos_;
+    struct mosquitto *mosq_ = nullptr;
     bool isInitialized = false;
 
   public:
@@ -42,16 +43,23 @@ class MQTTClient : public IClient
      * @param host broker host
      * @param port Port where to wait for connections
      * @param keepalive the number of seconds after which the broker should send a PING
+     * @param qos integer value 0, 1 or 2 indicating the Quality of Service to be used for the message
      *              message to the client if no other messages have been exchanged
      *              in that time. Default is 60s
      */
-    MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string &id, const std::string& host, int port, const std::string& topics, int keepalive=60);
+    MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string &id, const std::string& host, int port, const std::string& topics, int keepalive=60, int qos=0);
     ~MQTTClient();
 
     /**
      * @brief Start client
      */
     void Start();
+    void StartInsecure();
+
+    /**
+     * @brief Set username and password for this mqtt client
+     */
+    bool setUsernamePassword(const 	std::string& username, const std::string& password);
 
     // IClient
     bool SendMsg(const std::string& topic, const std::string& payload) override;

@@ -199,11 +199,17 @@ For authorizing client, file 'jwt.key.pub' contains public key used to verify th
 - **--use-keycloak** [optional] - Use KeyCloak for permission management
 - **--address** [optional] - If provided, W3C-Server shall use different server address than default _'localhost'_.
 - **--port** [optional] - If provided, W3C-Server shall use different server port than default '8090' value.
-- **--mqtt-topics** [optional] - If provided, W3C-Server shall connect to configured mqtt broker to puhlish the given topics. Use `;` as seperator for multiple topics and `*` as wildcard symbol
-- **--mqtt-address** [optional] - If provided, W3C-Server shall connect to different server address than default _'localhost'_.
-- **--mqtt-port** [optional] - If provided, W3C-Server shall connect to different mqtt port than default '1883' value.
 - **--log-level** [optional] - Enable selected log level value. To allow for different log level combinations, parameter can be provided multiple times with different log level values.
 
+### MQTT parameters
+- **--mqtt.insecure** [optional] - Do not check that the server certificate hostname matches the remote hostname, Do not use this option in a production environment
+- **--mqtt.username** [optional] - Provide a mqtt usernam
+- **--mqtt.password** [optional] - Provide a mqtt password
+- **--mqtt.topics** [optional] - If provided, W3C-Server shall connect to configured mqtt broker to puhlish the given topics. Use `;` as seperator for multiple topics and `*` as wildcard symbol
+- **--mqtt.address** [optional] - If provided, W3C-Server shall connect to different server address than default _'localhost'_.
+- **--mqtt.port** [optional] - If provided, W3C-Server shall connect to different mqtt port than default '1883' value.
+- **--mqtt.qos** [optional] - Quality of service level to use for all messages. Defaults to 0
+- **--mqtt.keepalive** [optional] - Keep alive in seconds for this mqtt client. Defaults to 60
 # How-to's
 
 ## Certificates

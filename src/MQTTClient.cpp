@@ -18,8 +18,12 @@
 
 #include "ILogger.hpp"
 
-MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string& id, const std::string & host, int port, const std::string & topics, int keepalive)
- : logger_(loggerUtil){
+MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string& id, const std::string & host, int port, const std::string & topics, int keepalive, int qos)
+  : logger_(loggerUtil)
+  , topics_()
+  , keepalive_(keepalive)
+  , qos_(qos)
+ {
     auto topicsstring = std::regex_replace(topics, std::regex("\\s+"), std::string(""));
     topicsstring = std::regex_replace(topicsstring, std::regex("\""), std::string(""));
 
@@ -35,7 +39,7 @@ MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string& i
         mosquitto_lib_init();
         mosq_ = mosquitto_new(id.c_str(), true, this);
 
-        int rc = mosquitto_connect_async(mosq_, host.c_str(), port, keepalive);
+        int rc = mosquitto_connect_async(mosq_, host.c_str(), port, keepalive_);
         if(rc){
             logger_->Log(LogLevel::ERROR, std::string("MQTT Connection Error: ")+std::string(mosquitto_strerror(rc)));
             throw std::runtime_error(mosquitto_strerror(rc));
@@ -62,12 +66,13 @@ bool MQTTClient::SendMsg(const std::string& topic, const std::string& payload){
   for (auto topic_regex: topics_){
     std::smatch base_match;
     if(std::regex_match(topic, base_match, topic_regex)){
-      int rc = mosquitto_publish(mosq_, NULL, topic.c_str(), payload.size(), payload.c_str(), 0, false);
-        if(rc){
-            logger_->Log(LogLevel::ERROR, std::string("Connection Error: ")+std::string(mosquitto_strerror(rc)));
+        logger_->Log(LogLevel::VERBOSE, "MQTTClient::Publish topic " + topic);
+      int rc = mosquitto_publish(mosq_, NULL, topic.c_str(), payload.size(), payload.c_str(), qos_, false);
+        if(rc != MOSQ_ERR_SUCCESS){
+            logger_->Log(LogLevel::ERROR, std::string("MQTT publish Error: ")+std::string(mosquitto_strerror(rc)));
             throw std::runtime_error(mosquitto_strerror(rc));
         }
-        return (rc == 0);
+        return true;
     }
   }
   return false;
@@ -90,19 +95,38 @@ bool MQTTClient::SendPathValue(const std::string &path, const jsoncons::json &va
         topic += matches[1];
         pathString = matches.suffix().str();
     }
-    logger_->Log(LogLevel::VERBOSE, "MQTTClient::SendPathValue: Topic is " + topic);
     SendMsg(topic, value.as_string());
     return true;
 }
 
+bool MQTTClient::setUsernamePassword(const 	std::string& username, const std::string& password){
+    if(isInitialized){
+        int rc = mosquitto_username_pw_set(mosq_, username.c_str(), password.c_str());
+        if(rc!=MOSQ_ERR_SUCCESS){
+            logger_->Log(LogLevel::ERROR, std::string("MQTT username password error: ")+std::string(mosquitto_strerror(rc)));
+            throw std::runtime_error(mosquitto_strerror(rc));
+        }
+    }
+    return false;
+}
 void MQTTClient::Start() {
-  if (!isInitialized)
+  if (isInitialized)
   {
-    std::string err("Cannot start client, client not initialized!");
-    logger_->Log(LogLevel::ERROR, err);
-    throw std::runtime_error(err);
+      mosquitto_loop_start(mosq_);
   }
-  mosquitto_loop_start(mosq_);
 
 }
 
+void MQTTClient::StartInsecure() {
+  if (isInitialized)
+  {
+    int rc = mosquitto_tls_insecure_set(mosq_, true);
+    if(MOSQ_ERR_SUCCESS != rc){
+        logger_->Log(LogLevel::ERROR, std::string("MQTT Problem setting TLS insecure option: ")+std::string(mosquitto_strerror(rc)));
+		mosquitto_lib_cleanup();
+            throw std::runtime_error(mosquitto_strerror(rc));
+        
+    }
+    Start();
+  }
+}

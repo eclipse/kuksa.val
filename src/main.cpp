@@ -227,11 +227,16 @@ int main(int argc, const char *argv[]) {
   // mqtt options 
   program_options::options_description mqtt_desc("MQTT Options");
   mqtt_desc.add_options()
-    ("mqtt.topics", program_options::value<string>()->default_value(""), "Published topics to mqtt broker, using \";\" as seperator and \"*\" as wildcard")
+    ("mqtt.insecure", "Do not check that the server certificate hostname matches the remote hostname. Do not use this option in a production environment")
+    ("mqtt.username", program_options::value<string>(), "Provide a mqtt username")
+    ("mqtt.password", program_options::value<string>(), "Provide a mqtt password")
+    ("mqtt.topics,t", program_options::value<string>()->default_value(""), "Published topics to mqtt broker, using \";\" as seperator and \"*\" as wildcard")
     ("mqtt.address", program_options::value<string>()->default_value("localhost"),
     "Address of MQTT broker")
     ("mqtt.port", program_options::value<int>()->default_value(1883),
-    "Port of MQTT broker");
+    "Port of MQTT broker")
+    ("mqtt.qos", program_options::value<int>()->default_value(0),"Quality of service level to use for all messages. Defaults to 0")
+    ("mqtt.keepalive", program_options::value<int>()->default_value(60),"Keep alive in seconds for this mqtt client. Defaults to 60");
   desc.add(mqtt_desc);
   program_options::variables_map variables;
   program_options::store(parse_command_line(argc, argv, desc), variables);
@@ -333,9 +338,27 @@ int main(int argc, const char *argv[]) {
 
     auto  mqttClient = std::make_unique<MQTTClient>(
             logger, "vss", variables["mqtt.address"].as<string>()
-            , variables["mqtt.port"].as<int>(),
-            variables["mqtt.topics"].as<string>()
+            , variables["mqtt.port"].as<int>()
+            , variables["mqtt.topics"].as<string>()
+            , variables["mqtt.keepalive"].as<int>()
+            , variables["mqtt.qos"].as<int>()
             );
+    if (variables.count("mqtt.username")) {
+        std::string password;
+        if (!variables.count("mqtt.password")){
+            std::cout << "Please input your mqtt password:" << std::endl;
+            std::cin >> password;
+
+        } else {
+            password = variables["mqtt.password"].as<string>();
+        }
+        mqttClient->setUsernamePassword(variables["mqtt.username"].as<string>(), password);
+    }
+    if (variables.count("mqtt.insecure")) {
+        mqttClient->StartInsecure();
+    } else {
+        mqttClient->Start();
+    }
 
     auto subHandler = std::make_shared<SubscriptionHandler>(
         logger, httpServer, std::move(mqttClient), tokenValidator, accessCheck);
