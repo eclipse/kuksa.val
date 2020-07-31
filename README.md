@@ -277,17 +277,21 @@ sudo docker build . --build-arg  http_proxy=$http_proxy --build-arg https_proxy=
 
 ### Run Docker image
 
-Once Docker image is built, we can run it by using default run command:
-```
-sudo docker run -it --rm -p 8090:8090 -v/PATH/TO/GIT/REPO/kuksa.invehicle:/home/kuksa.invehicle w3c-server
-```
-Short explanation of used parameters to run:
- - `-it` - Create pseudo-TTY (user shell) when starting container
- - `--rm` - Automatically remove container-only content when user exists from. Remove parameter to preserve internal state of container between runs
- - `-p` - `HOST_PORT:CONTAINER_PORT` - Connect host port 8090 with container port 8090 (default port of W3C-Server)
- - `-v` - `HOST_PATH:CONTAINER_PATH` - Host path that will be exposed in container path
- - `w3c-server` - Name of container image to run. If using downloaded container image, use `bojankv/w3c-visserver-api` as a image name instead
+Once Docker image is built, we can run it by using the  run command:
 
+```
+sudo docker run -it -v $HOME/kuksaval.config:/config -e LOG_LEVEL=ALL amd64/kuksa-val:0.1.1
+```
+where `$HOME/kuksaval.config` is a directory on your host machine containing the KUKSA.VAL configuration. The directory can be empty, then it will be populated with an exmple configuration during start.
+
+The environment variable `KUKSAVAL_OPTARGS` can be used to add arbitrary command line arguments e.g.
+
+```
+sudo docker run -it -v $HOME/kuksaval.config:/config -e LOG_LEVEL=ALL -e KUKSAVAL_OPTARGS="--insecure" amd64/kuksa-val:0.1.1
+
+```
+
+### Advanced docker
 Beside all of dependencies already prepared, container image has additional build scripts to help with building of W3C-Server.
 Depending on compiler needed, scripts below provide simple initial build configuration to be used and|or extended upon:
  - [docker/build-gcc-default.sh](docker/build-gcc-default.sh),
