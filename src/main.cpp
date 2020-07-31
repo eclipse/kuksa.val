@@ -195,7 +195,6 @@ static void print_usage(const char *prog_name,
 }
 
 int main(int argc, const char *argv[]) {
-  boost::filesystem::path configFile;
   vector<string> logLevels{"NONE"};
   uint8_t logLevelsActive = static_cast<uint8_t>(LogLevel::NONE);
 
@@ -206,35 +205,39 @@ int main(int argc, const char *argv[]) {
   std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
 
   program_options::options_description desc{"Options"};
-  desc.add_options()("help,h", "Help screen")(
-      "config-file,cfg", program_options::value<boost::filesystem::path>(&configFile)->default_value(boost::filesystem::path{"config.ini"}),
+  desc.add_options()
+    ("help,h", "Help screen")
+    ("config-file,cfg", program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"config.ini"}),
       "Configuration file path for program parameters. "
-      "Can be provided instead of command line options")(
-      "vss", program_options::value<boost::filesystem::path>(), "vss_rel*.json file")(
-      "cert-path", program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"."}),
-      "Path to directory where 'Server.pem' and 'Server.key' are located")(
-      "insecure", "Accept plain (no-SSL) connections")(
-      "use-keycloak", "Use KeyCloak for permission management")(
-      "address", program_options::value<string>()->default_value("localhost"),
+      "Can be provided instead of command line options")
+    ("vss", program_options::value<boost::filesystem::path>()->required(), "vss_rel*.json file")
+    ("cert-path", program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"."})->required(),
+      "Path to directory where 'Server.pem' and 'Server.key' are located")
+    ("insecure", "Accept plain (no-SSL) connections")
+    ("use-keycloak", "Use KeyCloak for permission management")
+    ("address", program_options::value<string>()->default_value("localhost"),
       "Address")("port", program_options::value<int>()->default_value(8090),
-                 "Port")(
-      "mqtt-topics", program_options::value<string>()->default_value(""), "Published topics to mqtt broker, using \";\" as seperator and \"*\" as wildcard")(
-      "mqtt-address", program_options::value<string>()->default_value("localhost"),
-      "Address of MQTT broker")(
-      "mqtt-port", program_options::value<int>()->default_value(1883),
-      "Port of MQTT broker")(
-      "log-level",
+                 "Port")
+    ("log-level",
       program_options::value<vector<string>>(&logLevels)->composing(),
       "Log level event type to be enabled. "
       "To enable different log levels, provide this option multiple times with "
       "required log levels. \n"
       "Supported log levels: NONE, VERBOSE, INFO, WARNING, ERROR, ALL");
-
+  // mqtt options 
+  program_options::options_description mqtt_desc("MQTT Options");
+  mqtt_desc.add_options()
+    ("mqtt.topics", program_options::value<string>()->default_value(""), "Published topics to mqtt broker, using \";\" as seperator and \"*\" as wildcard")
+    ("mqtt.address", program_options::value<string>()->default_value("localhost"),
+    "Address of MQTT broker")
+    ("mqtt.port", program_options::value<int>()->default_value(1883),
+    "Port of MQTT broker");
+  desc.add(mqtt_desc);
   program_options::variables_map variables;
   program_options::store(parse_command_line(argc, argv, desc), variables);
-  program_options::notify(variables);
   // if config file passed, get configuration from it
-  if (configFile.size()) {
+  if (variables.count("config-file")) {
+    auto configFile = variables["config-file"].as<boost::filesystem::path>();
     auto configFilePath = boost::filesystem::path(configFile);
     std::ifstream ifs(configFile.string());
     if (ifs) {
@@ -246,24 +249,13 @@ int main(int argc, const char *argv[]) {
       return -1;
     }
   }
-  program_options::notify(variables);
 
-  // verify parameters
-
-  if (!variables.count("vss")) {
-    print_usage(argv[0], desc);
-    cerr << "the option '--vss' is required but missing" << std::endl;
-    return -1;
-  }
-  if (!variables.count("cert-path")) {
-    cerr << "the option '--cert-path' is required but missing" << std::endl;
-    print_usage(argv[0], desc);
-    return -1;
-  }
+  // print usage
   if (variables.count("help")) {
     print_usage(argv[0], desc);
-    return -1;
+    return 0;
   }
+  program_options::notify(variables);
 
   for (auto const &token : logLevels) {
     if (token == "NONE")
@@ -340,9 +332,9 @@ int main(int argc, const char *argv[]) {
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
 
     auto  mqttClient = std::make_unique<MQTTClient>(
-            logger, "vss", variables["mqtt-address"].as<string>()
-            , variables["mqtt-port"].as<int>(),
-            variables["mqtt-topics"].as<string>()
+            logger, "vss", variables["mqtt.address"].as<string>()
+            , variables["mqtt.port"].as<int>(),
+            variables["mqtt.topics"].as<string>()
             );
 
     auto subHandler = std::make_shared<SubscriptionHandler>(
