@@ -33,7 +33,6 @@ sudo apt install cmake  libboost1.67-all-dev   libssl-dev libglib2.0-dev
 
 Then create a build folder inside the kuksa.val folder and execute cmake
 
->>>>>>> origin/master
 ```
 mkdir build
 cd build
