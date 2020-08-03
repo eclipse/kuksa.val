@@ -11,7 +11,7 @@
 
 import argparse, json, sys
 from cmd2 import Cmd, with_argparser, with_category
-import ipaddress, queue, time
+import queue, time
 from clientComm import VSSClientComm
 
 ap_getServerAddr = argparse.ArgumentParser()
@@ -146,7 +146,6 @@ class VSSTestClient(Cmd):
     def do_setServerAddress(self, args):
         """Sets the IP Address for the VSS Server"""
         try:
-            ipaddress.ip_address(args.IP)
             self.serverIP = args.IP
             self.serverPort = args.Port
             print("Setting Server Address to " + args.IP + ":" + str(args.Port))
