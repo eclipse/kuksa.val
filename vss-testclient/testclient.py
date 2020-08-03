@@ -14,6 +14,9 @@ from cmd2 import Cmd, with_argparser, with_category
 import queue, time
 from clientComm import VSSClientComm
 
+DEFAULT_SERVER_ADDR = "localhost"
+DEFAULT_SERVER_PORT = 8090
+
 ap_getServerAddr = argparse.ArgumentParser()
 ap_connect = argparse.ArgumentParser()
 ap_connect.add_argument('-i', "--insecure", default=False, action="store_true", help='Connect in insecure mode')
@@ -21,8 +24,8 @@ ap_disconnect = argparse.ArgumentParser()
 ap_authorize = argparse.ArgumentParser()
 ap_authorize.add_argument('Token', help='JWT for authorizing the client.')
 ap_setServerAddr = argparse.ArgumentParser()
-ap_setServerAddr.add_argument('IP', help='VSS Server IP Address')
-ap_setServerAddr.add_argument('Port', type=int, help='VSS Server Websocket Port')
+ap_setServerAddr.add_argument('IP', help='VSS Server IP Address', default=DEFAULT_SERVER_ADDR)
+ap_setServerAddr.add_argument('Port', type=int, help='VSS Server Websocket Port', default=DEFAULT_SERVER_PORT)
 ap_setValue = argparse.ArgumentParser()
 ap_setValue.add_argument("Parameter", help="Parameter to be set")
 ap_setValue.add_argument("Value", help="Value to be set")
@@ -43,6 +46,8 @@ class VSSTestClient(Cmd):
         self.prompt = "VSS Client> "
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
+        self.serverIP = DEFAULT_SERVER_ADDR
+        self.serverPort = DEFAULT_SERVER_PORT
 
 
     @with_category(COMM_SETUP_COMMANDS)
