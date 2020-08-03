@@ -32,4 +32,19 @@ else
 fi
 
 
-LD_LIBRARY_PATH=./ ./w3c-visserver --vss /config/vss.json --cert-path /config/certs --log-level $LOG_LEVEL --address $BIND_ADDRESS
+if [ -e /config/certs/jwt.key.pub ]
+then
+    echo "Using existing jwt key"
+else
+    echo "No jwt key configured, initialize with example"
+    cp /kuksa.val/exampleconfig/certs/jwt/jwt.key.pub /config/certs/
+fi
+
+if [[ -z "${KUKSAVAL_OPTARGS}" ]]; then
+  OPTARGS=""
+else
+  OPTARGS="${KUKSAVAL_OPTARGS}"
+fi
+
+
+LD_LIBRARY_PATH=./ ./w3c-visserver --vss /config/vss.json --cert-path /config/certs --log-level $LOG_LEVEL --address $BIND_ADDRESS $OPTARGS
