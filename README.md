@@ -4,8 +4,6 @@ This is the KUKSA vehicle abstration layer. It is based on the [W3C Vehicle Info
 
 This implementation can also provide additional functionality not (yet) available in (draft) standard documents.
 
-The implementation provides all the major functionality defined in the above standard specification. and also uses JWT Token for permissions handling with decent amount of unit-tests covering all the basic funtions.
-
 ## Features
  - Multi-client server implementing Web-Socket platform communication, with support for both secure [SSL] and insecure [plain] connections. Feature status:
  - User authorization based on industry standard RFC 7519 as JSON Web Tokens
@@ -23,128 +21,70 @@ The implementation provides all the major functionality defined in the above sta
   | Authentification  | :heavy_check_mark: |
   | JSON signing    | :heavy_check_mark:  |
   | REST API | :heavy_check_mark:  |
+  
 
-## Dependencies
+## Building KUKSA.VAL
+KUKSA.val uses the cmake build system. First install the required packages. On Ubuntu 20.04 this can be achieved by
 
-This project uses components from other 3rd party open-source projects:
-
-| Library       | License       | Description |
-| ------------- | ------------- | ----------- |
- [Boost.Beast](https://www.boost.org/doc/libs/1_67_0/libs/beast/doc/html/index.html) | Boost Software license 1.0 | Foundation library for simplified handling of various Web-Socket, HTTP or other protocols with and without security, based on Boost.Asio.
- [Simple-WebSocket-Server](https://gitlab.com/eidheim/Simple-WebSocket-Server) _[deprecated]_ | MIT license | Simple implementation of Web-Socket server.
- [jsoncons](https://github.com/danielaparker/jsoncons) | Boost Software license 1.0 | Utility library for handling JSON.
- [jwt-cpp](https://github.com/Thalhammer/jwt-cpp) | MIT license | Utility library for handling JWT tokens.
-
-# W3C-Server Project
-
-[CMake](https://cmake.org/) is tool used to configure, build and package W3C-Server.
-
-## Building W3C-Server
-
-To build or use W3C-Server there are two separate paths:
-
- - Native setup requires that all dependencies for building are installed and properly configured on local machine. CMake shall do some checks on configure time (e.g Boost version check), but it is possible that some optional or implicit requirements are missed or miss-configured.
-
- - Docker container provides all dependencies for building and running available in one place, greatly improving setup and speed time. How to use Docker container of W3C-Server, check [_Docker environment_](#Docker_environment) chapter.
-
-Build steps described below are identical for both native and container usage.
-
-To generate new clean build (e.g. after git clone or after changing build configuration options), use standard CMake build order as shown below:
-
- - Go to W3C-Server directory
 ```
-cd w3c-visserver-api
+sudo apt install cmake  libboost1.67-all-dev   libssl-dev libglib2.0-dev
 ```
- - Make default build directory where build artifacts will be stored, and move into it:
+
+Then create a build folder inside the kuksa.val folder and execute cmake
+
 ```
 mkdir build
 cd build
-```
- - Invoke CMake pointing to location of CMakeLists.txt file to generate
-   Makefile build configuration which will be used to build W3C-Server:
-```
 cmake ..
 ```
- - Run build W3C-Server. Make parameter '_-j_ ' is optional and allows running parallel build jobs to speed up compilation:
-```
-make -j
-```
-If all completes successfully, build artifacts shall be located in 'build' directory.
 
-**NOTE:** Build artifacts of each module is located in their own separate build directories under main build directory.
-
-## CMake Project Structure
-
-Structure of CMake project is organized as a tree. This keeps different modules simple and logically separated, but allows for easy re-use and extension.
-
-Root [CMakeLists.txt](CMakeLists.txt) CMake file defines root project and its common properties, like dependency verification and common library definition.
-Adding any new dependency or new module to the project is done in this file.
-Each project module is responsible for its own build configuration options and it should not be handled in root CMakeLists.txt file.
-
-Each project module can have different user-configurable build configuration options. To list currently available build options go to [ List build configuration options](#List-build-configuration-options) chapter.
-
-Current project has three existing modules which can serve as an example and are defined in:
- - [src/CMakeLists.txt](src/CMakeLists.txt) - Main module which defines W3C-Server library and executable.
-- [test/CMakeLists.txt](test/CMakeLists.txt) - Module defining testclient executable as a helper tool for exercising W3C-Server.
-- [unit-test/CMakeLists.txt](unit-test/CMakeLists.txt) - Module defining unit-test executable for testing build W3C-Server library.
-
-## Configure CMake project
-
-Build configuration options of W3C-Server are defined in different CMakeLists.txt files, depending on each included module in build.
-
-### List build configuration options
-
-To list all available build options, invoke below CMake command from build directory:
-```
-cmake -LH ..
-```
-Provided command shall list cached CMake variables that are available for configuration.
-
-Alternatively, one can use [cmake-gui](https://cmake.org/cmake/help/v3.1/manual/cmake-gui.1.html) to query and|or configure project through UI.
-
-### Main build configuration options
-
-By changing values of different configuration options, user can control
-build of W3C-Server.  
-Available build options with optional parameters, if available, are presented below. Default parameters are shown in **bold**:
- - **CMAKE_BUILD_TYPE** [**Release**/Debug/Coverage] - Build type. Available options:
-   * **_Release_** - Default build type. Enabled optimizations and no debug information is available.
-   * **_Debug_** - Debug information is available and optimization is disabled.
-   * **_Coverage_** - Coverage information is generated with debug information and reduced optimization levels for better reporting. Check [_Coverage_](#Coverage) chapter for more details.
- - **BUILD_EXE** [**ON**/OFF] - Default build shall produce W3C-Server executable.
-   If set to **OFF** W3C-Server shall be built as a library which could be used in another application.
-   Eg: could be found in the _vehicle2cloud_ app.
- - **BUILD_TEST_CLIENT** [**ON**/OFF] - Build separate _testclient_ executable. Test client is a utility to test
-   Web-Socket request interface of W3C-Server and retrieve responses.
- - **BUILD_UNIT_TEST** [ON/**OFF**] - If enabled, build shall produce separate _w3c-unit-test_ executable which
-   will run existing tests for server implementation.
- - **ADDRESS_SAN** [ON/**OFF**] - If enabled and _Clang_ is used as compiler, _AddressSanitizer_ will be used to build
-   W3C-Server for verifying run-time execution.
-
-An example of W3C-Server CMake build configuration invocation with enabled unit test is shown below (e.g. used when debugging unit-tests):
-```
-cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_UNIT_TEST=ON ..
-```
-
-After changing any of build options, new clean build should be made, as described in [_Building W3C-Server_](#Building-W3C-Server) chapter, as a sanity check.
-
-### JSON Signing
-
-JSON Signing has been introduced additionally to sign the JSON response for GET and SUBSCRIBE Response. By default this has been disabled. To enable this feature go to visconf.hpp file and uncomment the line `define JSON_SIGNING_ON`. Please note, JSON signing works only with a valid pair of public / private certificate. For testing, you could create example certificates by following the below steps.
-Do not add any passphrase when asked for.
+If there are any missing dependencies, cmake will tell you. If everythig works fine, execute make
 
 ```
-ssh-keygen -t rsa -b 4096 -m PEM -f signing.private.key
-openssl rsa -in signing.private.key  -pubout -outform PEM -out signing.public.key
+make
 ```
 
-Copy the files signing.private.key & signing.public.key to the build directory.
+(if you have more cores, you can speed up compilation with something like  `make -j 8`
 
-The client also needs to validate the signed JSON using the public certificate when JSON signing is enabled in server.
+Additional information about our cmake setup (in case you need adavanced options or intend to extend it) can be [found here](doc/cmake.md)
 
-This could also be easily extended to support JSON signing for the requests as well with very little effort.
 
-# Running W3C-Server
+
+
+# Running kuksa.val
+After you successfully built the kuksa.val server you can run it like this
+
+```bash
+#assuming you are inside kuksa.val/build directory
+cd src
+./w3c-visserver  --vss ./vss_rel_2.0.json  --log-level ALL
+
+```
+Setting log level to `ALL` gives you some more information about what is going on.
+
+
+## KUKSA.VAL Parameters
+Below are presented W3C-Server parameters available for user control:
+- **--help** - Show W3C-Server usage and exit
+- **--vss** [mandatory] - Path to VSS data file describing VSS data tree structure which W3C-Server shall handle. Sample 'vss_rel_2.0.json' file can be found [here](./unit-test/vss_rel_2.0.json).
+- **--config-file** [optional] - Path to configuration file with W3C-Server input parameters.    
+  Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup).
+  Sample of configuration file parameters is shown below:
+  ```
+  vss=vss_rel_2.0.json
+  cert-path=.
+  insecure=
+  log-level=ALL
+  ```
+- **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. Server demo certificates are located in [../examples/demo-certificates](../examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
+If user needs to use or generate their own certificates, see chapter [_Certificates_](#Certificates) for more details.  
+For authorizing client, file 'jwt.key.pub' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.key.pub' file, see chapter [_Permissions_](#Permissions) for more details.
+- **--insecure** [optional] - By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.
+- **--address** [optional] - If provided, W3C-Server shall use different server address than default _'localhost'_.
+- **--port** [optional] - If provided, W3C-Server shall use different server port than default '8090' value.
+- **--log-level** [optional] - Enable selected log level value. To allow for different log level combinations, parameter can be provided multiple times with different log level values.
+
+
 
 Depending on build options and provided parameters, W3C-Server will provide different features.
 Chapter [_Parameters_](#Parameters) shall describe different mandatory and optional parameters in more detail.
@@ -187,29 +127,24 @@ Test page support custom GET, PUT and POST HTTP requests to W3C-Server. Addition
 Additional tool which is quite useful is [Swagger](https://editor.swagger.io). It is a dual-use tool which allows for writing OpenAPI specifications, but also generates runnable REST API samples for moslient test endpoints.
 Open Swagger editor and import our REST API [definition](./doc/rest-api.yaml) file. Swagger shall generate HTML page with API documentation. When one of the endpoints is selected, 'try' button appears which allows for making REST requests directly to running W3C-Server.
 
-## Parameters
-Below are presented W3C-Server parameters available for user control:
-- **--help** - Show W3C-Server usage and exit
-- **--vss** [mandatory] - Path to VSS data file describing VSS data tree structure which W3C-Server shall handle. Sample 'vss_rel_2.0.json' file can be found [here](./unit-test/vss_rel_2.0.json).
-- **--config-file** [optional] - Path to configuration file with W3C-Server input parameters.    
-  Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup).
-  Sample of configuration file parameters is shown below:
-  ```
-  vss=vss_rel_2.0.json
-  cert-path=.
-  insecure=
-  log-level=ALL
-  ```
-- **--cert-path** [mandatory] - Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. Server demo certificates are located in [../examples/demo-certificates](../examples/demo-certificates) directory of git repo. Certificates from 'demo-certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
-If user needs to use or generate their own certificates, see chapter [_Certificates_](#Certificates) for more details.  
-For authorizing client, file 'jwt.key.pub' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.key.pub' file, see chapter [_Permissions_](#Permissions) for more details.
-- **--insecure** [optional] - By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.
-- **--wss-server** [optional][deprecated] - By default, W3C-Server uses Boost.Beast as default connection handler. If provided, W3C-Server shall use deprecated Simple Web-Socket Server, without REST API support.
-- **--address** [optional] - If provided, W3C-Server shall use different server address than default _'localhost'_.
-- **--port** [optional] - If provided, W3C-Server shall use different server port than default '8090' value.
-- **--log-level** [optional] - Enable selected log level value. To allow for different log level combinations, parameter can be provided multiple times with different log level values.
 
 # How-to's
+
+### JSON Signing
+
+JSON Signing has been introduced additionally to sign the JSON response for GET and SUBSCRIBE Response. By default this has been disabled. To enable this feature go to visconf.hpp file and uncomment the line `define JSON_SIGNING_ON`. Please note, JSON signing works only with a valid pair of public / private certificate. For testing, you could create example certificates by following the below steps.
+Do not add any passphrase when asked for.
+
+```
+ssh-keygen -t rsa -b 4096 -m PEM -f signing.private.key
+openssl rsa -in signing.private.key  -pubout -outform PEM -out signing.public.key
+```
+
+Copy the files signing.private.key & signing.public.key to the build directory.
+
+The client also needs to validate the signed JSON using the public certificate when JSON signing is enabled in server.
+
+This could also be easily extended to support JSON signing for the requests as well with very little effort.
 
 ## Certificates
 
@@ -297,25 +232,43 @@ Docker [docker/Dockerfile](docker/Dockerfile) image specification is defined wit
 
 User can use existing git repo or clone one inside of existing Docker image instance.
 
-### Get Docker image
-
-Pre-built Docker container image repository is available at [Docker Hub](https://hub.docker.com/r/bojankv/w3c-visserver-api).
-
-To get latest image, just call:
-```
-sudo docker pull bojankv/w3c-visserver-api
-```
-
-To run downloaded container image, check [Run Docker image](#Run_Docker_image) chapter.
 
 ### Build Docker image
 
-To build latest Docker image from project [Dockerfile](docker/Dockerfile):
+You can build a docker image for KUKSA.val. You can cross compile an image for other platofrms such as `arm64`. To do this, make sure you have installed docker and qemu-user-static
+
+```
+sudo apt install qemu-user-static
+```
+
+Enable dockers experimental features by creating a `daemon.json`  file in `/etc/docker/` and add
+
+```json
+{
+  "experimental" : true
+}
+```
+After creeating the configuration you need to restart docker
+
+```
+systemctl restart docker
+```
+
+To build a docker for an x86/amd64 platform from `kuksa.val` directory do
+
 ```
 cd docker
-
-sudo docker build . -t w3c-server
+sudo  ./build.sh amd64
 ```
+
+To build an arm64 call the build script like this 
+
+```
+sudo  ./build.sh arm64
+```
+
+Beware, that this needs a fast computer as compilation runs through qemu (emulating the target processor in software).
+
 
 In case that network proxy configuration is needed, make sure to export _http_proxy_ and _https_proxy_ environment variables with correct proxy configuration, as shown below:
 ```
@@ -324,17 +277,21 @@ sudo docker build . --build-arg  http_proxy=$http_proxy --build-arg https_proxy=
 
 ### Run Docker image
 
-Once Docker image is built, we can run it by using default run command:
-```
-sudo docker run -it --rm -p 8090:8090 -v/PATH/TO/GIT/REPO/kuksa.invehicle:/home/kuksa.invehicle w3c-server
-```
-Short explanation of used parameters to run:
- - `-it` - Create pseudo-TTY (user shell) when starting container
- - `--rm` - Automatically remove container-only content when user exists from. Remove parameter to preserve internal state of container between runs
- - `-p` - `HOST_PORT:CONTAINER_PORT` - Connect host port 8090 with container port 8090 (default port of W3C-Server)
- - `-v` - `HOST_PATH:CONTAINER_PATH` - Host path that will be exposed in container path
- - `w3c-server` - Name of container image to run. If using downloaded container image, use `bojankv/w3c-visserver-api` as a image name instead
+Once Docker image is built, we can run it by using the  run command:
 
+```
+sudo docker run -it -v $HOME/kuksaval.config:/config -e LOG_LEVEL=ALL amd64/kuksa-val:0.1.1
+```
+where `$HOME/kuksaval.config` is a directory on your host machine containing the KUKSA.VAL configuration. The directory can be empty, then it will be populated with an exmple configuration during start.
+
+The environment variable `KUKSAVAL_OPTARGS` can be used to add arbitrary command line arguments e.g.
+
+```
+sudo docker run -it -v $HOME/kuksaval.config:/config -e LOG_LEVEL=ALL -e KUKSAVAL_OPTARGS="--insecure" amd64/kuksa-val:0.1.1
+
+```
+
+### Advanced docker
 Beside all of dependencies already prepared, container image has additional build scripts to help with building of W3C-Server.
 Depending on compiler needed, scripts below provide simple initial build configuration to be used and|or extended upon:
  - [docker/build-gcc-default.sh](docker/build-gcc-default.sh),
