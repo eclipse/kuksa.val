@@ -42,7 +42,6 @@ MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string& i
         int rc = mosquitto_connect_async(mosq_, host.c_str(), port, keepalive_);
         if(rc){
             logger_->Log(LogLevel::ERROR, std::string("MQTT Connection Error: ")+std::string(mosquitto_strerror(rc)));
-            throw std::runtime_error(mosquitto_strerror(rc));
         }
         isInitialized = (rc == 0);
     }
@@ -61,7 +60,7 @@ bool MQTTClient::SendMsg(const std::string& topic, const std::string& payload){
   {
     std::string err("Cannot send to connection, server not initialized!");
     logger_->Log(LogLevel::ERROR, err);
-    throw std::runtime_error(err);
+    return false;
   }
   for (auto topic_regex: topics_){
     std::smatch base_match;
@@ -70,7 +69,6 @@ bool MQTTClient::SendMsg(const std::string& topic, const std::string& payload){
       int rc = mosquitto_publish(mosq_, NULL, topic.c_str(), payload.size(), payload.c_str(), qos_, false);
         if(rc != MOSQ_ERR_SUCCESS){
             logger_->Log(LogLevel::ERROR, std::string("MQTT publish Error: ")+std::string(mosquitto_strerror(rc)));
-            throw std::runtime_error(mosquitto_strerror(rc));
         }
         return true;
     }
@@ -104,7 +102,6 @@ bool MQTTClient::setUsernamePassword(const 	std::string& username, const std::st
         int rc = mosquitto_username_pw_set(mosq_, username.c_str(), password.c_str());
         if(rc!=MOSQ_ERR_SUCCESS){
             logger_->Log(LogLevel::ERROR, std::string("MQTT username password error: ")+std::string(mosquitto_strerror(rc)));
-            throw std::runtime_error(mosquitto_strerror(rc));
         }
     }
     return false;
@@ -124,8 +121,6 @@ void MQTTClient::StartInsecure() {
     if(MOSQ_ERR_SUCCESS != rc){
         logger_->Log(LogLevel::ERROR, std::string("MQTT Problem setting TLS insecure option: ")+std::string(mosquitto_strerror(rc)));
 		mosquitto_lib_cleanup();
-            throw std::runtime_error(mosquitto_strerror(rc));
-        
     }
     Start();
   }
