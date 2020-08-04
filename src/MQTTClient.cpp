@@ -42,6 +42,8 @@ MQTTClient::MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string& i
         int rc = mosquitto_connect_async(mosq_, host.c_str(), port, keepalive_);
         if(rc){
             logger_->Log(LogLevel::ERROR, std::string("MQTT Connection Error: ")+std::string(mosquitto_strerror(rc)));
+        } else {
+            logger_->Log(LogLevel::INFO, std::string("Connect to MQTT server ")+ host + ":" + std::to_string(port));
         }
         isInitialized = (rc == 0);
     }
@@ -56,16 +58,16 @@ MQTTClient::~MQTTClient() {
     }
 }
 bool MQTTClient::SendMsg(const std::string& topic, const std::string& payload){
-  if (!isInitialized)
-  {
-    std::string err("Cannot send to connection, server not initialized!");
-    logger_->Log(LogLevel::ERROR, err);
-    return false;
-  }
   for (auto topic_regex: topics_){
     std::smatch base_match;
     if(std::regex_match(topic, base_match, topic_regex)){
         logger_->Log(LogLevel::VERBOSE, "MQTTClient::Publish topic " + topic);
+        if (!isInitialized)
+        {
+          std::string err("Cannot send to connection, server not initialized!");
+          logger_->Log(LogLevel::ERROR, err);
+          return false;
+        }
       int rc = mosquitto_publish(mosq_, NULL, topic.c_str(), payload.size(), payload.c_str(), qos_, false);
         if(rc != MOSQ_ERR_SUCCESS){
             logger_->Log(LogLevel::ERROR, std::string("MQTT publish Error: ")+std::string(mosquitto_strerror(rc)));

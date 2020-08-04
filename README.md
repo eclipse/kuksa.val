@@ -9,6 +9,7 @@ This implementation can also provide additional functionality not (yet) availabl
  - User authorization based on industry standard RFC 7519 as JSON Web Tokens
  - Optional JSON signing of messages, described in **_JSON signing_** chapter
  - Multi-client server implementing experimental REST API based on standard specification. REST API specification is available as OpenAPI 3.0 definition available in [doc/rest-api.yaml](doc/rest-api.yaml) file.
+ - Publish VSS data to MQTT broker using [mosquitto](https://mosquitto.org/)
 
  Specific list of of features is listed in table below:
 

@@ -211,7 +211,7 @@ int main(int argc, const char *argv[]) {
       "Configuration file path for program parameters. "
       "Can be provided instead of command line options")
     ("vss", program_options::value<boost::filesystem::path>()->required(), "vss_rel*.json file")
-    ("cert-path", program_options::value<boost::filesystem::path>()->required(),
+    ("cert-path", program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
       "Path to directory where 'Server.pem' and 'Server.key' are located")
     ("insecure", "Accept plain (no-SSL) connections")
     ("use-keycloak", "Use KeyCloak for permission management")
@@ -248,15 +248,17 @@ int main(int argc, const char *argv[]) {
     if (ifs) {
       // update path only, if these options is not defined via command line, but via config file
       bool update_vss_path = !variables.count("vss");
-      bool update_cert_path = !variables.count("cert-path");
+      bool update_cert_path = (!variables.count("cert-path")) || (!variables["cert-file"].defaulted());
       program_options::store(parse_config_file(ifs, desc), variables);
       if(update_vss_path){
-          auto vss_path = variables["vss"].as<boost::filesystem::path>();
-          variables.at("vss").value() = boost::filesystem::absolute(vss_path, configFilePath.parent_path());
+        auto vss_path = variables["vss"].as<boost::filesystem::path>();
+        variables.at("vss").value() = boost::filesystem::absolute(vss_path, configFilePath.parent_path());
+        std::cout << "Update vss path to " <<  variables["vss"].as<boost::filesystem::path>().string() <<std::endl;
       }
       if(update_cert_path){
-          auto cert_path = variables["cert-path"].as<boost::filesystem::path>();
-          variables.at("cert-path").value() = boost::filesystem::absolute(cert_path, configFilePath.parent_path());
+        auto cert_path = variables["cert-path"].as<boost::filesystem::path>();
+        variables.at("cert-path").value() = boost::filesystem::absolute(cert_path, configFilePath.parent_path());
+        std::cout << "Update cert-path to " <<  variables["cert-path"].as<boost::filesystem::path>().string() <<std::endl;
       }
     } else if (!variables["config-file"].defaulted()){
       std::cerr << "Could not open config file: " << configFile << std::endl;
