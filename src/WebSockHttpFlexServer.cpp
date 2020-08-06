@@ -214,6 +214,13 @@ namespace {
     logger->Log(LogLevel::ERROR, std::string(what) + ": " + ec.message());
   }
 
+  void
+  failFatal(boost::system::error_code ec, char const* what)
+  {
+    fail(ec,what);
+    throw runtime_error("Terminating.");
+  }
+
   /// Report a failure and remove client from active connections that are tracked
   template <typename T>
   void fail(const T* fromType, boost::system::error_code ec, char const* what) {
@@ -1201,7 +1208,7 @@ namespace {
         acceptor_.open(endpoint.protocol(), ec);
         if(ec)
         {
-          fail(ec, "open");
+          failFatal(ec, "open");
           return;
         }
 
@@ -1209,7 +1216,7 @@ namespace {
         acceptor_.set_option(boost::asio::socket_base::reuse_address(true));
         if(ec)
         {
-          fail(ec, "set_option");
+          failFatal(ec, "set_option");
           return;
         }
 
@@ -1217,7 +1224,7 @@ namespace {
         acceptor_.bind(endpoint, ec);
         if(ec)
         {
-          fail(ec, "bind");
+          failFatal(ec, "bind");
           return;
         }
 
@@ -1226,7 +1233,7 @@ namespace {
             boost::asio::socket_base::max_listen_connections, ec);
         if(ec)
         {
-          fail(ec, "listen");
+          failFatal(ec, "listen");
           return;
         }
       }
