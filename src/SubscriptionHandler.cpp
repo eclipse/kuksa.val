@@ -32,12 +32,12 @@ using jsoncons::json;
 
 SubscriptionHandler::SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
                                          std::shared_ptr<IServer> wserver,
-                                         std::unique_ptr<IClient> mclient,
+                                         std::shared_ptr<IClient> mclient,
                                          std::shared_ptr<IAuthenticator> authenticate,
                                          std::shared_ptr<IAccessChecker> checkAcc) {
   logger = loggerUtil;
   server = wserver;
-  client = std::move(mclient);
+  client = mclient;
   validator = authenticate;
   checkAccess = checkAcc;
   startThread();
@@ -163,7 +163,7 @@ int SubscriptionHandler::updateByPath(const string &path, const json &value) {
   std::cout << ss.str() << std::endl;
   logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByPath: new value set at path " + path + ss.str());
   if(client){
-    client->SendPathValue(path, value);
+    client->sendPathValue(path, value);
   }
 
 

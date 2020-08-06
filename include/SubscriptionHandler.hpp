@@ -52,7 +52,7 @@ class SubscriptionHandler : public ISubscriptionHandler {
   std::shared_ptr<ILogger> logger;
   std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
   std::shared_ptr<IServer> server;
-  std::unique_ptr<IClient> client;
+  std::shared_ptr<IClient> client;
   std::shared_ptr<IAuthenticator> validator;
   std::shared_ptr<IAccessChecker> checkAccess;
   mutable std::mutex subMutex;
@@ -65,7 +65,7 @@ class SubscriptionHandler : public ISubscriptionHandler {
  public:
   SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
                       std::shared_ptr<IServer> wserver,
-                      std::unique_ptr<IClient> mclient,
+                      std::shared_ptr<IClient> mclient,
                       std::shared_ptr<IAuthenticator> authenticate,
                       std::shared_ptr<IAccessChecker> checkAccess);
   ~SubscriptionHandler();
