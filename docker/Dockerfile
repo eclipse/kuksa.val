@@ -12,7 +12,7 @@ LABEL maintainer="Sebastian Schildt <sebastian.schildt@de.bosch.com>"
 
 COPY docker/qemu-aarch64-static /usr/bin/qemu-aarch64-static
 
-RUN apk update && apk add cmake wget alpine-sdk glib-dev openssl-dev libstdc++
+RUN apk update && apk add cmake wget alpine-sdk glib-dev openssl-dev libstdc++ mosquitto-dev
 
 
 #Build Boost 1.67

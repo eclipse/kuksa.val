@@ -14,6 +14,8 @@
 cmake_minimum_required(VERSION 3.12.0)
 project(w3c-visserver-api VERSION 2.0.1 LANGUAGES CXX)
 
+# Generate compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 #####
 # Create buildinfo
 #
@@ -48,9 +50,11 @@ find_package(Threads REQUIRED)
 set(Boost_USE_STATIC_LIBS OFF)
 set(MIN_BOOST_VER 1.67.0)
 
-find_package(Boost ${MIN_BOOST_VER} EXACT REQUIRED COMPONENTS atomic date_time chrono program_options system thread unit_test_framework)
+find_package(Boost ${MIN_BOOST_VER} EXACT REQUIRED COMPONENTS atomic date_time chrono filesystem program_options system thread unit_test_framework)
 message(STATUS " boost includes ${Boost_INCLUDE_DIRS} ")
 message(STATUS " boost libs ${Boost_LIBRARIES} ")
+include_directories(${Boost_INCLUDE_DIRS})
+add_compile_options(-Wfatal-errors)
 
 # OpenSSL
 find_package(OpenSSL REQUIRED)
@@ -61,6 +65,14 @@ FIND_PACKAGE(PkgConfig)
 PKG_CHECK_MODULES(GLIB glib-2.0)
 PKG_CHECK_MODULES(GObject gobject-2.0)
 PKG_CHECK_MODULES(GIO gio-2.0)
+
+# mosquitto
+find_path(MOSQUITTO_INCLUDE_DIR 	NAMES mosquitto.h ) 
+find_library(MOSQUITTO_LIBRARY 	NAMES mosquitto )
+include(FindPackageHandleStandardArgs) 
+# handle the QUIETLY and REQUIRED arguments and set VILLASNODE_FOUND to TRUE 
+# if all listed variables are TRUE 
+find_package_handle_standard_args(Mosquitto DEFAULT_MSG MOSQUITTO_LIBRARY MOSQUITTO_INCLUDE_DIR)
 
 ###
 # 3rd-party library includes already available in git repo

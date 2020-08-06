@@ -1,4 +1,4 @@
-/*
+    /*
  * ******************************************************************************
  * Copyright (c) 2019-2020 Robert Bosch GmbH.
  *
@@ -21,6 +21,7 @@
 #include <string>
 
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <jsoncons/json.hpp>
 #include <jsonpath/json_query.hpp>
 
@@ -32,6 +33,7 @@
 #include "VssCommandProcessor.hpp"
 #include "VssDatabase.hpp"
 #include "WebSockHttpFlexServer.hpp"
+#include "MQTTClient.hpp"
 #include "exception.hpp"
 
 #include "../buildinfo.h"
@@ -193,7 +195,6 @@ static void print_usage(const char *prog_name,
 }
 
 int main(int argc, const char *argv[]) {
-  string configFile;
   vector<string> logLevels{"NONE"};
   uint8_t logLevelsActive = static_cast<uint8_t>(LogLevel::NONE);
 
@@ -204,56 +205,73 @@ int main(int argc, const char *argv[]) {
   std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
 
   program_options::options_description desc{"Options"};
-  desc.add_options()("help,h", "Help screen")(
-      "config-file,cfg", program_options::value<string>(&configFile),
+  desc.add_options()
+    ("help,h", "Help screen")
+    ("config-file,cfg", program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"config.ini"}),
       "Configuration file path for program parameters. "
-      "Can be provided instead of command line options")(
-      "vss", program_options::value<string>(), "vss_rel*.json file")(
-      "cert-path", program_options::value<string>()->default_value("."),
-      "Path to directory where 'Server.pem' and 'Server.key' are located")(
-      "insecure", "Accept plain (no-SSL) connections")(
-      "use-keycloak", "Use KeyCloak for permission management")(
-      "address", program_options::value<string>()->default_value("localhost"),
+      "Can be provided instead of command line options")
+    ("vss", program_options::value<boost::filesystem::path>()->required(), "vss_rel*.json file")
+    ("cert-path", program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
+      "Path to directory where 'Server.pem' and 'Server.key' are located")
+    ("insecure", "Accept plain (no-SSL) connections")
+    ("use-keycloak", "Use KeyCloak for permission management")
+    ("address", program_options::value<string>()->default_value("localhost"),
       "Address")("port", program_options::value<int>()->default_value(8090),
-                 "Port")(
-      "log-level",
+                 "Port")
+    ("log-level",
       program_options::value<vector<string>>(&logLevels)->composing(),
       "Log level event type to be enabled. "
       "To enable different log levels, provide this option multiple times with "
       "required log levels. \n"
       "Supported log levels: NONE, VERBOSE, INFO, WARNING, ERROR, ALL");
-
+  // mqtt options 
+  program_options::options_description mqtt_desc("MQTT Options");
+  mqtt_desc.add_options()
+    ("mqtt.insecure", "Do not check that the server certificate hostname matches the remote hostname. Do not use this option in a production environment")
+    ("mqtt.username", program_options::value<string>(), "Provide a mqtt username")
+    ("mqtt.password", program_options::value<string>(), "Provide a mqtt password")
+    ("mqtt.topics,t", program_options::value<string>()->default_value(""), "Published topics to mqtt broker, using \";\" as seperator and \"*\" as wildcard")
+    ("mqtt.address", program_options::value<string>()->default_value("localhost"),
+    "Address of MQTT broker")
+    ("mqtt.port", program_options::value<int>()->default_value(1883),
+    "Port of MQTT broker")
+    ("mqtt.qos", program_options::value<int>()->default_value(0),"Quality of service level to use for all messages. Defaults to 0")
+    ("mqtt.keepalive", program_options::value<int>()->default_value(60),"Keep alive in seconds for this mqtt client. Defaults to 60");
+  desc.add(mqtt_desc);
   program_options::variables_map variables;
   program_options::store(parse_command_line(argc, argv, desc), variables);
-  program_options::notify(variables);
   // if config file passed, get configuration from it
-  if (configFile.size()) {
-    cout << configFile << std::endl;
-    std::ifstream ifs(configFile.c_str());
-    if (!ifs) {
+  if (variables.count("config-file")) {
+    auto configFile = variables["config-file"].as<boost::filesystem::path>();
+    auto configFilePath = boost::filesystem::path(configFile);
+    std::ifstream ifs(configFile.string());
+    if (ifs) {
+      // update path only, if these options is not defined via command line, but via config file
+      bool update_vss_path = !variables.count("vss");
+      bool update_cert_path = (!variables.count("cert-path")) || (!variables["cert-file"].defaulted());
+      program_options::store(parse_config_file(ifs, desc), variables);
+      if(update_vss_path){
+        auto vss_path = variables["vss"].as<boost::filesystem::path>();
+        variables.at("vss").value() = boost::filesystem::absolute(vss_path, configFilePath.parent_path());
+        std::cout << "Update vss path to " <<  variables["vss"].as<boost::filesystem::path>().string() <<std::endl;
+      }
+      if(update_cert_path){
+        auto cert_path = variables["cert-path"].as<boost::filesystem::path>();
+        variables.at("cert-path").value() = boost::filesystem::absolute(cert_path, configFilePath.parent_path());
+        std::cout << "Update cert-path to " <<  variables["cert-path"].as<boost::filesystem::path>().string() <<std::endl;
+      }
+    } else if (!variables["config-file"].defaulted()){
       std::cerr << "Could not open config file: " << configFile << std::endl;
       return -1;
     }
-    program_options::store(parse_config_file(ifs, desc), variables);
   }
-  program_options::notify(variables);
 
-  // verify parameters
-
-  if (!variables.count("vss")) {
-    print_usage(argv[0], desc);
-    cerr << "the option '--vss' is required but missing" << std::endl;
-    return -1;
-  }
-  if (!variables.count("cert-path")) {
-    cerr << "the option '--cert-path' is required but missing" << std::endl;
-    print_usage(argv[0], desc);
-    return -1;
-  }
+  // print usage
   if (variables.count("help")) {
     print_usage(argv[0], desc);
-    return -1;
+    return 0;
   }
+  program_options::notify(variables);
 
   for (auto const &token : logLevels) {
     if (token == "NONE")
@@ -282,7 +300,7 @@ int main(int argc, const char *argv[]) {
 
     auto port = variables["port"].as<int>();
     auto secure = !variables.count("insecure");
-    auto vss_filename = variables["vss"].as<string>();
+    auto vss_path = variables["vss"].as<boost::filesystem::path>();
 
     if (variables.count("use-keycloak")) {
       // Start D-Bus backend connection.
@@ -313,7 +331,8 @@ int main(int argc, const char *argv[]) {
     // older by having API versioning through URIs
     std::string docRoot{"/vss/api/v1/"};
 
-    string jwtPubkey=Authenticator::getPublicKeyFromFile(variables["cert-path"].as<string>()+"/jwt.key.pub",logger);
+    auto pubKeyFile = variables["cert-path"].as<boost::filesystem::path>()/"jwt.key.pub";
+    string jwtPubkey=Authenticator::getPublicKeyFromFile(pubKeyFile.string(), logger);
     if (jwtPubkey == "" ) {
         logger->Log(LogLevel::ERROR, "Could not read valid JWT pub key. Terminating.");
         return -1;
@@ -327,20 +346,46 @@ int main(int argc, const char *argv[]) {
     auto tokenValidator =
         std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
+
+    auto  mqttClient = std::make_unique<MQTTClient>(
+            logger, "vss", variables["mqtt.address"].as<string>()
+            , variables["mqtt.port"].as<int>()
+            , variables["mqtt.topics"].as<string>()
+            , variables["mqtt.keepalive"].as<int>()
+            , variables["mqtt.qos"].as<int>()
+            );
+    if (variables.count("mqtt.username")) {
+        std::string password;
+        if (!variables.count("mqtt.password")){
+            std::cout << "Please input your mqtt password:" << std::endl;
+            std::cin >> password;
+
+        } else {
+            password = variables["mqtt.password"].as<string>();
+        }
+        mqttClient->setUsernamePassword(variables["mqtt.username"].as<string>(), password);
+    }
+    if (variables.count("mqtt.insecure")) {
+        mqttClient->StartInsecure();
+    } else {
+        mqttClient->Start();
+    }
+
     auto subHandler = std::make_shared<SubscriptionHandler>(
-        logger, httpServer, tokenValidator, accessCheck);
+        logger, httpServer, std::move(mqttClient), tokenValidator, accessCheck);
     auto database =
         std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(
         logger, database, tokenValidator, subHandler);
 
     gDatabase = database.get();
-    database->initJsonTree(vss_filename);
+
+    database->initJsonTree(vss_path);
 
     httpServer->AddListener(ObserverType::ALL, cmdProcessor);
     httpServer->Initialize(variables["address"].as<string>(), port,
                            std::move(docRoot),
-                           variables["cert-path"].as<string>(), !secure);
+                           variables["cert-path"].as<boost::filesystem::path>().string(), !secure);
     httpServer->Start();
 
     while (1) {

@@ -9,6 +9,7 @@ This implementation can also provide additional functionality not (yet) availabl
  - User authorization based on industry standard RFC 7519 as JSON Web Tokens
  - Optional JSON signing of messages, described in **_JSON signing_** chapter
  - Multi-client server implementing experimental REST API based on standard specification. REST API specification is available as OpenAPI 3.0 definition available in [doc/rest-api.yaml](doc/rest-api.yaml) file.
+ - Publish VSS data to MQTT broker using [mosquitto](https://mosquitto.org/)
 
  Specific list of of features is listed in table below:
 
@@ -21,7 +22,8 @@ This implementation can also provide additional functionality not (yet) availabl
   | Authentification  | :heavy_check_mark: |
   | JSON signing    | :heavy_check_mark:  |
   | REST API | :heavy_check_mark:  |
-  
+  | MQTT Publisher | :construction:  |
+
 
 ## Building KUKSA.VAL
 KUKSA.val uses the cmake build system. First install the required packages. On Ubuntu 20.04 this can be achieved by
@@ -37,7 +39,6 @@ mkdir build
 cd build
 cmake ..
 ```
-
 If there are any missing dependencies, cmake will tell you. If everythig works fine, execute make
 
 ```
@@ -126,7 +127,6 @@ Test page support custom GET, PUT and POST HTTP requests to W3C-Server. Addition
 
 Additional tool which is quite useful is [Swagger](https://editor.swagger.io). It is a dual-use tool which allows for writing OpenAPI specifications, but also generates runnable REST API samples for moslient test endpoints.
 Open Swagger editor and import our REST API [definition](./doc/rest-api.yaml) file. Swagger shall generate HTML page with API documentation. When one of the endpoints is selected, 'try' button appears which allows for making REST requests directly to running W3C-Server.
-
 
 # How-to's
 
