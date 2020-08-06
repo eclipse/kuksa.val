@@ -65,7 +65,7 @@ def getConfig():
 
     cfg['vss.mapping'] = vsscfg.get("mapping", "mapping.yaml")
     if args.mapping:
-        cfg['vss.server'] = args.mapping
+        cfg['vss.mapping'] = args.mapping
 
     cfg['vss.dbcfile'] = vsscfg.get("dbcfile", "example.dbc")
     if args.dbc:
@@ -129,7 +129,7 @@ if cfg['can.port'] == "elmcan":
 with open(cfg['vss.jwttoken'], 'r') as f:
     token = f.read()
 
-mapping = dbc2vssmapper.mapper("mapping.yml")
+mapping = dbc2vssmapper.mapper(cfg['vss.mapping'])
 
 vss = websocketconnector.vssclient(cfg['vss.server'], token)
 canQueue = queue.Queue()
