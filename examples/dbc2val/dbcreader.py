@@ -62,9 +62,9 @@ class DBCReader:
             try:
                 decode=self.db.decode_message(msg.arbitration_id, msg.data)
                 #print("Decod" +str(decode))
-            except:
+            except Exception as e:
                 self.parseErr+=1
-                #print("Error Decoding")
+                #print("Error Decoding: "+str(e))
                 continue
             rxTime=time.time()
             for k,v in decode.items():
