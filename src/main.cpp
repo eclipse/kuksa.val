@@ -409,7 +409,6 @@ int main(int argc, const char *argv[]) {
                            std::move(docRoot),
                            variables["cert-path"].as<boost::filesystem::path>().string(), !secure);
     httpServer->Start();
-    string metadata{"*"};
 
     while (1) {
       usleep(1000000);
