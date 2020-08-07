@@ -160,7 +160,6 @@ int SubscriptionHandler::updateByPath(const string &path, const json &value) {
   
   std::stringstream ss;
   ss << pretty_print(value);
-  std::cout << ss.str() << std::endl;
   logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByPath: new value set at path " + path + ss.str());
   if(client){
     client->sendPathValue(path, value);
