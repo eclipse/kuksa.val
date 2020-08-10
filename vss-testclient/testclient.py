@@ -128,6 +128,10 @@ class VSSTestClient(Cmd):
     @with_argparser(ap_connect)
     def do_connect(self, args):
         """Connect to the VSS Server"""
+        if hasattr(self, "commThread"):
+            if self.commThread != None:
+                self.commThread.stopComm()
+                self.commThread = None
         self.commThread = VSSClientComm(self.serverIP, self.serverPort, self.sendMsgQueue, self.recvMsgQueue, args.insecure)
         self.commThread.start()
 
