@@ -29,11 +29,15 @@ class MQTTClient : public IClient
  {
   private:
     std::shared_ptr<ILogger> logger_;
-    std::vector<std::regex> topics_;
+    std::vector<std::string> paths_;
     int keepalive_;
     int qos_;
+    int connection_retry_;
     struct mosquitto *mosq_ = nullptr;
-    bool isInitialized = false;
+    bool isConnected_ = false;
+    std::string prefix_{};
+    const std::string host_;
+    const int port_;
 
   public:
     /**
@@ -47,14 +51,15 @@ class MQTTClient : public IClient
      *              message to the client if no other messages have been exchanged
      *              in that time. Default is 60s
      */
-    MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string &id, const std::string& host, int port, const std::string& topics, int keepalive=60, int qos=0);
+    MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string &id, const std::string& host, int port, bool insecure = false,  int keepalive=60, int qos=0, int connection_retry = 3);
     ~MQTTClient();
 
     /**
      * @brief Start client
      */
-    void Start();
-    void StartInsecure();
+    bool start();
+    void addPrefix(const std::string& prefix);
+    void addPublishPath(const std::string& path);
 
     /**
      * @brief Set username and password for this mqtt client
@@ -62,8 +67,7 @@ class MQTTClient : public IClient
     bool setUsernamePassword(const 	std::string& username, const std::string& password);
 
     // IClient
-    bool SendMsg(const std::string& topic, const std::string& payload) override;
-    bool SendPathValue(const std::string &path, const jsoncons::json &value) override;
+    bool sendPathValue(const std::string &path, const jsoncons::json &value) override;
 
 };
 

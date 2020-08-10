@@ -230,13 +230,15 @@ int main(int argc, const char *argv[]) {
     ("mqtt.insecure", "Do not check that the server certificate hostname matches the remote hostname. Do not use this option in a production environment")
     ("mqtt.username", program_options::value<string>(), "Provide a mqtt username")
     ("mqtt.password", program_options::value<string>(), "Provide a mqtt password")
-    ("mqtt.topics,t", program_options::value<string>()->default_value(""), "Published topics to mqtt broker, using \";\" as seperator and \"*\" as wildcard")
     ("mqtt.address", program_options::value<string>()->default_value("localhost"),
     "Address of MQTT broker")
     ("mqtt.port", program_options::value<int>()->default_value(1883),
     "Port of MQTT broker")
-    ("mqtt.qos", program_options::value<int>()->default_value(0),"Quality of service level to use for all messages. Defaults to 0")
-    ("mqtt.keepalive", program_options::value<int>()->default_value(60),"Keep alive in seconds for this mqtt client. Defaults to 60");
+    ("mqtt.qos", program_options::value<int>()->default_value(0), "Quality of service level to use for all messages. Defaults to 0")
+    ("mqtt.keepalive", program_options::value<int>()->default_value(60), "Keep alive in seconds for this mqtt client. Defaults to 60")
+    ("mqtt.retry", program_options::value<int>()->default_value(3), "Times of retry via connections. Defaults to 3")
+    ("mqtt.topic-prefix", program_options::value<string>(), "Prefix to add for each mqtt topics")
+    ("mqtt.publish", program_options::value<string>()->default_value(""), "List of vss data path (using readable format with `.`) to be published to mqtt broker, using \";\" to seperate multiple path and \"*\" as wildcard");
   desc.add(mqtt_desc);
   program_options::variables_map variables;
   program_options::store(parse_command_line(argc, argv, desc), variables);
@@ -347,12 +349,13 @@ int main(int argc, const char *argv[]) {
         std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
 
-    auto  mqttClient = std::make_unique<MQTTClient>(
+    auto  mqttClient = std::make_shared<MQTTClient>(
             logger, "vss", variables["mqtt.address"].as<string>()
             , variables["mqtt.port"].as<int>()
-            , variables["mqtt.topics"].as<string>()
+            , variables.count("mqtt.insecure")
             , variables["mqtt.keepalive"].as<int>()
             , variables["mqtt.qos"].as<int>()
+            , variables["mqtt.retry"].as<int>()
             );
     if (variables.count("mqtt.username")) {
         std::string password;
@@ -365,14 +368,12 @@ int main(int argc, const char *argv[]) {
         }
         mqttClient->setUsernamePassword(variables["mqtt.username"].as<string>(), password);
     }
-    if (variables.count("mqtt.insecure")) {
-        mqttClient->StartInsecure();
-    } else {
-        mqttClient->Start();
+    if (variables.count("mqtt.topic-prefix")) {
+        mqttClient->addPrefix(variables["mqtt.topic-prefix"].as<string>());
     }
 
     auto subHandler = std::make_shared<SubscriptionHandler>(
-        logger, httpServer, std::move(mqttClient), tokenValidator, accessCheck);
+        logger, httpServer, mqttClient, tokenValidator, accessCheck);
     auto database =
         std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(
@@ -381,6 +382,27 @@ int main(int argc, const char *argv[]) {
     gDatabase = database.get();
 
     database->initJsonTree(vss_path);
+
+    if(variables.count("mqtt.publish")){
+        string path_to_publish = variables["mqtt.publish"].as<string>();
+
+        // remove whitespace and "
+        path_to_publish = std::regex_replace(path_to_publish, std::regex("\\s+"), std::string(""));
+        path_to_publish = std::regex_replace(path_to_publish, std::regex("\""), std::string(""));
+
+        if(!path_to_publish.empty()){
+            std::stringstream topicsstream(path_to_publish);
+            std::string token;
+            while (std::getline(topicsstream, token, ';')) {
+                if(database->checkPathValid(token)){
+                    mqttClient->addPublishPath(token);
+                }else{
+                    logger->Log(LogLevel::ERROR, string("main: ") +
+                    token + string(" is not a valid path to publish"));
+                }
+            }
+        }
+    }
 
     httpServer->AddListener(ObserverType::ALL, cmdProcessor);
     httpServer->Initialize(variables["address"].as<string>(), port,
