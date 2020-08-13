@@ -12,6 +12,12 @@ node('docker') {
     checkout scm
     	def buildImage = docker.build("my-image:${env.BUILD_ID}", "-f docker/Dockerfile-Jenkins-Build-Env .")
         buildImage.inside(" -v /var/run/docker.sock:/var/run/docker.sock " ){
+        stage('Prepare') {
+        sh '''
+            mkdir -p artifacts
+            rm -f artifacts/*
+            '''
+        }
         stage('Build') {
 			sh '''
 			 # need this to use host docker. Putting jenkins user  in the correct group with correct gid doesn't help
@@ -24,8 +30,6 @@ node('docker') {
         }
         stage('Collect') {
 			sh '''
-            mkdir -p artifacts
-            rm -f artifacts/*
             docker save $(docker images --filter "reference=amd64/kuksa-val*" -q | head -1) | bzip2 -9 > artifacts/kuksa-val-amd64.tar.bz2
 			docker save $(docker images --filter "reference=arm64/kuksa-val*" -q | head -1) | bzip2 -9 > artifacts/kuksa-val-arm64.tar.bz2
 			docker save kuksa-val-dev:ubuntu20.04 | bzip2 -9 > artifacts/kuksa-val-dev-ubuntu20.04.tar.bz2
