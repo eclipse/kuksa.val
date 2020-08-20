@@ -20,19 +20,16 @@ node('docker') {
         }
         stage('Build') {
 			sh '''
-			 # need this to use host docker. Putting jenkins user  in the correct group with correct gid doesn't help
-             # but strangely this works. Don't try at home
-            sudo chmod ugo+rwx /var/run/docker.sock
-            ./docker/build.sh amd64
+			 ./docker/build.sh amd64
             '''
             sh './docker/build.sh arm64'
-            sh 'docker build -t kuksa-val-dev:ubuntu20.04 -f docker/Dockerfile.dev .'
+            sh 'sudo docker build -t kuksa-val-dev:ubuntu20.04 -f docker/Dockerfile.dev .'
         }
         stage('Collect') {
 			sh '''
-            docker save $(docker images --filter "reference=amd64/kuksa-val*" -q | head -1) | bzip2 -9 > artifacts/kuksa-val-amd64.tar.bz2
-			docker save $(docker images --filter "reference=arm64/kuksa-val*" -q | head -1) | bzip2 -9 > artifacts/kuksa-val-arm64.tar.bz2
-			docker save kuksa-val-dev:ubuntu20.04 | bzip2 -9 > artifacts/kuksa-val-dev-ubuntu20.04.tar.bz2
+            sudo docker save $(sudo docker images --filter "reference=amd64/kuksa-val*" -q | head -1) | bzip2 -9 > artifacts/kuksa-val-amd64.tar.bz2
+			sudo docker save $(sudo docker images --filter "reference=arm64/kuksa-val*" -q | head -1) | bzip2 -9 > artifacts/kuksa-val-arm64.tar.bz2
+			sudo docker save kuksa-val-dev:ubuntu20.04 | bzip2 -9 > artifacts/kuksa-val-dev-ubuntu20.04.tar.bz2
             '''
         }
         stage ('Archive') {

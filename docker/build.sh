@@ -18,7 +18,7 @@ if [ -z "$VERSION" ]; then
     exit 1
 fi
 
-EXPERIMENTAL=`docker version | grep Experimental | tail -n 1 | xargs`
+EXPERIMENTAL=`sudo docker version | grep Experimental | tail -n 1 | xargs`
 if [ "$EXPERIMENTAL" != "Experimental: true" ]; then
     echo "Please enable the docker engine's experimental features" 1>&2
     exit 1
@@ -67,7 +67,7 @@ function build {
 
     # build image
     cd ../
-    docker build --squash --platform linux/$ARCH -f ./docker/Dockerfile.build -t ${ARCH}/${NAME}:${VERSION} .
+    sudo docker build --squash --platform linux/$ARCH -f ./docker/Dockerfile.build -t ${ARCH}/${NAME}:${VERSION} .
     if [ "$?" != "0" ]; then
         echo "Docker build failed."
         exit 1
