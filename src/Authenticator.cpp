@@ -139,8 +139,8 @@ void Authenticator::resolvePermissions(WsChannel& channel,
     claims[e.first] = json::parse(value.str());
   }
 
-  if (claims.has_key("w3c-vss")) {
-    json tokenPermJson = claims["w3c-vss"];
+  if (claims.has_key("kuksa-vss")) {
+    json tokenPermJson = claims["kuksa-vss"];
     json permissions;
     for (auto path : tokenPermJson.object_range()) {
       bool isBranch;

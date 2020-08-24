@@ -3,8 +3,8 @@ Description=w3c VIS server
 After=network.target
 
 [Service]
-WorkingDirectory=/usr/bin/w3c-visserver
-ExecStart=/usr/bin/w3c-visserver/w3c-visserver
+WorkingDirectory=/usr/bin/kuksa-val-server
+ExecStart=/usr/bin/kuksa-val/kuksa-val-server
 Restart=on-abort
 
 [Install]

@@ -11,15 +11,15 @@
 #      Robert Bosch GmbH - initial API and functionality
 # *****************************************************************************
 
-project(w3c-visserver)
+project(kuksa-val-server)
 enable_testing()
 
 ######
-# CMake configuration responsible for building w3c-visserver core library and executable
+# CMake configuration responsible for building core library and executable
 
 ###
 # Setup target names
-set(SERVER_EXE_NAME "w3c-visserver" )
+set(SERVER_EXE_NAME "${PROJECT_NAME}" )
 set(SERVER_OBJ_LIB_NAME ${SERVER_EXE_NAME}-object )
 set(SERVER_LIB_NAME ${SERVER_EXE_NAME}-core )
 set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
@@ -28,8 +28,8 @@ set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
 ###
 # Setup command-line options
 
-# Set if w3c-visserver executable should be built
-set(BUILD_EXE ON CACHE BOOL "Build 'w3c-visserver' executable")
+# Set if executable should be built
+set(BUILD_EXE ON CACHE BOOL "Build '${SERVER_EXE_NAME}' executable")
 # Use address sanitizer when building with Clang
 set(ADDRESS_SAN OFF CACHE BOOL "Build with AddressSanitizer")
 
@@ -67,7 +67,7 @@ target_include_directories(${SERVER_OBJ_LIB_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/interface>
 )
 
-target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror)
+target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=maybe-uninitialized)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
   message(STATUS "this should be deeeeeebuuuuuuuuuuuuuuuuugggggggggggggggggggggggg")

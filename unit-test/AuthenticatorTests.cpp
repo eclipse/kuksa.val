@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(Given_GoodToken_When_Validate_Shall_ValidateTokenSuccessful
     .set_issued_at(currTime)
     .set_expires_at(exprTime)
 
-    .set_payload_claim("w3c-vss", jwt::claim(picoJson))
+    .set_payload_claim("kuksa-vss", jwt::claim(picoJson))
 
     // signature
     .sign(jwt::algorithm::rs256{validPubKey, validPrivateKey});
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(Given_BadPathInToken_When_Validate_Shall_ThrowException)
     .set_issued_at(std::chrono::system_clock::now())
     .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours(24))
 
-    .set_payload_claim("w3c-vss", jwt::claim(picoJson))
+    .set_payload_claim("kuksa-vss", jwt::claim(picoJson))
 
     // signature
     .sign(jwt::algorithm::rs256{validPubKey, validPrivateKey});
@@ -237,7 +237,7 @@ BOOST_AUTO_TEST_CASE(Given_BadToken_When_Validate_Shall_ReturnError)
     .set_issued_at(std::chrono::system_clock::now())
     .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours(24))
 
-    .set_payload_claim("w3c-vss", jwt::claim(picoJson))
+    .set_payload_claim("kuksa-vss", jwt::claim(picoJson))
 
     // signature
     .sign(jwt::algorithm::rs256{validPubKey, validPrivateKey});

@@ -3,8 +3,6 @@
 ########
 # Build and generate coverage based on unit-tests by default
 
-cd kuksa.invehicle/w3c-visserver-api
-
 # Make or goto out-of-source build Directory
 mkdir -p build
 cd build
@@ -13,7 +11,7 @@ cd build
 CC=gcc CXX=g++ cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
 
 # Build
-make -j
+make -j8
 
 # goto and run unit-tests
 cd unit-test

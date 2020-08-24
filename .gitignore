@@ -1,5 +1,6 @@
 /build
 /unit-test/build
+*.build
 .cproject
 .project
 .settings/**
@@ -7,3 +8,6 @@
 compile_commands.json
 *.swp
 buildinfo.h
+__pycache__
+.venv
+.vssclient_history

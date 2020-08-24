@@ -4,7 +4,7 @@
   "admin": true,
   "iat": 1516239022,
   "exp": 1696239022,
-  "w3c-vss":  {
+  "kuksa-vss":  {
      "Vehicle.Drivetrain.Transmission.DriveType": "r"
   }
 }
