@@ -14,7 +14,7 @@
 project(w3c-testclient)
 
 ######
-# CMake configuration responsible for building w3c-visserver optional test client
+# CMake configuration responsible for building kuksa-val optional test client
 
 ###
 # Setup target names

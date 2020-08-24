@@ -15,7 +15,7 @@ project(w3c-unit-test)
 enable_testing()
 
 ######
-# CMake configuration responsible for building w3c-visserver optional unit tests based on core library
+# CMake configuration responsible for building kuksa-val optional unit tests based on core library
 
 ###
 # Setup target names
@@ -43,7 +43,7 @@ if(BUILD_UNIT_TEST)
   target_compile_options(${UNITTEST_EXE_NAME} PRIVATE -Wno-noexcept-type)
 
   # using shared library as it allows us to re-use test runner to verify different library versions, if needed
-  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE "w3c-visserver-core")
+  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE "kuksa-val-core")
 
   target_include_directories(${UNITTEST_EXE_NAME} PRIVATE mock)
 

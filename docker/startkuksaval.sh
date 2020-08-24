@@ -47,4 +47,4 @@ else
 fi
 
 
-LD_LIBRARY_PATH=./ ./w3c-visserver --vss /config/vss.json --cert-path /config/certs --log-level $LOG_LEVEL --address $BIND_ADDRESS $OPTARGS
+LD_LIBRARY_PATH=./ ./kuksa-val-server --vss /config/vss.json --cert-path /config/certs --log-level $LOG_LEVEL --address $BIND_ADDRESS $OPTARGS

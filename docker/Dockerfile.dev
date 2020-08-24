@@ -35,5 +35,5 @@ WORKDIR /kuksa.val/build
 RUN cmake ..
 RUN make -j8
 
-CMD ./src/w3c-visserver -c src/config.ini 
+CMD ./src/kuksa-val-server -c src/config.ini 
 

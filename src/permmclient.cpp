@@ -52,7 +52,7 @@ json getPermToken(std::shared_ptr<ILogger> logger, string clientName, string cli
 
    // Create request in JSON format.
    jsoncons::json requestJson;
-   requestJson["api"] = "w3c-visserver";
+   requestJson["api"] = "kuksa-val";
    requestJson["appid"] = clientName;
    requestJson["secret"] = clientSecret;
    string request = requestJson.as<string>();

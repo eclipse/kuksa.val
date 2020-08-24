@@ -12,7 +12,7 @@
 # *****************************************************************************
 
 cmake_minimum_required(VERSION 3.12.0)
-project(w3c-visserver-api VERSION 2.0.1 LANGUAGES CXX)
+project(kuksa-val VERSION 2.0.1 LANGUAGES CXX)
 
 # Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
@@ -25,7 +25,7 @@ include(git_watcher.cmake)
 
 ######
 # Root CMake file responsible for setting up mandatory dependencies
-# and any other global information for 'w3c-visserver-api'
+# and any other global information
 
 ###
 # Default option setup

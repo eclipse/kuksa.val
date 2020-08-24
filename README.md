@@ -45,7 +45,7 @@ If there are any missing dependencies, cmake will tell you. If everythig works f
 make
 ```
 
-(if you have more cores, you can speed up compilation with something like  `make -j 8`
+(if you have more cores, you can speed up compilation with something like  `make -j8`
 
 Additional information about our cmake setup (in case you need adavanced options or intend to extend it) can be [found here](doc/cmake.md)
 
@@ -58,7 +58,7 @@ After you successfully built the kuksa.val server you can run it like this
 ```bash
 #assuming you are inside kuksa.val/build directory
 cd src
-./w3c-visserver  --vss ./vss_rel_2.0.json  --log-level ALL
+./kuksa-val-server  --vss ./vss_rel_2.0.json  --log-level ALL
 
 ```
 Setting log level to `ALL` gives you some more information about what is going on.
@@ -101,9 +101,9 @@ This covers only the basic functions like _get_, _set_ and _getmetadata_ request
 
 You could also checkout the in-vehicle apps in the [kuksa.apps](https://github.com/eclipse/kuksa.apps) repo which work with the server.
 
-Now the apps are ready for testing. Run w3c-visserver using `./w3c-visserver` command and then in a separate terminal start testclient using `./testclient`.
+Now the apps are ready for testing. Run `./kuksa-val-server` command and then in a separate terminal start testclient using `./testclient`.
 
-Testclient should connect to the w3c-visserver and promt a message as below
+Testclient should connect to the kuksa-val-server and promt a message as below
 ![Alt text](./doc/pictures/test1.png?raw=true "test1")
 
 Authenticate with the server using the JWT token
@@ -184,7 +184,7 @@ For GCC compiler, as an example, we can use [_gcovr_](https://gcovr.com/en/stabl
 CXX=g++ CC=gcc  cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
 
 # make everything needed
-make -j
+make -j8
 
 # goto and run unit-tests
 cd unit-test
@@ -210,7 +210,7 @@ For Clang compiler, as an example, we can use [llvm-cov](https://llvm.org/docs/C
 CXX=clang++ CC=clang  cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
 
 # make everything needed
-make -j
+make -j8
 
 # goto and run unit-tests
 cd unit-test
@@ -220,7 +220,7 @@ cd unit-test
 llvm-profdata merge -sparse default.profraw -o default.profdata
 
 # generate coverage information with llvm-cov
-llvm-cov show  --format=html ../src/libw3c-visserver-core.so -instr-profile=default.profdata > coverage.html
+llvm-cov show  --format=html ../src/libkuksa-val-server-core.so -instr-profile=default.profdata > coverage.html
 ```
 After executing, _coverage.html_ file will be generated with detailed coverage information for core sources.
 
@@ -338,11 +338,11 @@ The W3C Sever exposes the below methods and these methods could be used (as meth
 
 * Create an AGL image using the instructions in `agl-kuksa` project.
 * Burn the image on to an SD card and boot the image on a Raspi 3.
-* w3c-visserver is deployed as a systemd service `w3c-visserver.service` which opens a secure websocket connection on port 8090.
+* kuksa-val is deployed as a systemd service `kuksa-val.service` which opens a secure websocket connection on port 8090.
 
 ### On first launch
 
 * ssh into the raspi 3 with root.
-* Go to `/usr/bin/w3c-visserver` using the ssh connection.
-* copy the vss data file https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.json into `./usr/bin/w3c-visserver`. By default the AGL build will contain demo cerificates that work with other apps in the repo. You could create your own cerificates and tokens using the instaructions above.
+* Go to `/usr/bin/kuksa-val-server` using the ssh connection.
+* copy the vss data file https://github.com/GENIVI/vehicle_signal_specification/blob/master/vss_rel_1.0.json into `./usr/bin/kuksa-val`. By default the AGL build will contain demo cerificates that work with other apps in the repo. You could create your own cerificates and tokens using the instaructions above.
 * Reboot the raspi 3
