@@ -45,7 +45,7 @@ namespace utf = boost::unit_test;
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Signal.OBD.*": "rw",
     "Signal.Chassis.Axle.*": "rw",
     "Vehicle.Drivetrain.*": "rw",
@@ -1510,7 +1510,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "r"
   }
 }
@@ -1564,7 +1564,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "r"
   }
 }
@@ -1616,7 +1616,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "r"
   }
 }
@@ -1668,7 +1668,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "r"
   }
 }
@@ -1720,7 +1720,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed1": "r"    (invalid path)
   }
 }
@@ -1770,7 +1770,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD": "r"    (branch permission)
   }
 }
@@ -1823,7 +1823,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.*": "r"    (branch permission with a *)
   }
 }
@@ -1876,7 +1876,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.*.EngineSpeed": "r"    (permission with a *)
   }
 }
@@ -1929,7 +1929,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.*.EngineSpeed": "w"    (permission with a * but only to write)
   }
 }
@@ -1980,7 +1980,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_wildcard_req
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.*.EngineSpeed": "r"    (permission with a *)
   }
 }
@@ -2032,7 +2032,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_branch_path_
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.*.EngineSpeed": "r"    (permission with a *)
   }
 }
@@ -2085,7 +2085,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle": "r"    (permission to read everything)
   }
 }
@@ -2137,7 +2137,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.Speed": "w"
   }
 }
@@ -2189,7 +2189,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.Speed": "w"
   }
 }
@@ -2242,7 +2242,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.*": "rw"
   }
 }
@@ -2321,7 +2321,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD": "w"
   }
 }
@@ -2396,7 +2396,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.Speed": "r"
   }
 }
@@ -2449,7 +2449,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_permitted_path)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "wr",                     ("wr" or "rw" both work!)
     "Vehicle.OBD.Speed": "w"
   }
@@ -2528,7 +2528,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path, *
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "wr"    ("wr" or "rw" both work!)
   }
 }
@@ -2607,7 +2607,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "wr",
     "Vehicle.OBD.Speed": "w"
   }
@@ -2696,7 +2696,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.*": "rw"
   }
 }
@@ -2787,7 +2787,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission, *utf::expected_failures(1)
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "wr",                     ("wr" or "rw" both work!)
     "Vehicle.OBD.Speed": "w"
   }
@@ -2840,7 +2840,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath, *utf::expected_failures(1))
   "admin": true,
   "iat": 1516239022,
   "exp": 1609372800,
-  "w3c-vss": {
+  "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "wr",                     ("wr" or "rw" both work!)
     "Vehicle.OBD.Speed": "w"
   }
@@ -2977,7 +2977,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard, *utf::expected_failures
      "admin": true,
      "iat": 1516239022,
      "exp": 1609372800,
-     "w3c-vss": {
+     "kuksa-vss": {
      "Signal.OBD.RPM": "wr",                     ("wr" or "rw" both work!)
      "Signal.OBD.Speed": "w"
      }
