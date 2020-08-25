@@ -280,14 +280,14 @@ sudo docker build . --build-arg  http_proxy=$http_proxy --build-arg https_proxy=
 Once Docker image is built, we can run it by using the  run command:
 
 ```
-sudo docker run -it -v $HOME/kuksaval.config:/config -e LOG_LEVEL=ALL amd64/kuksa-val:0.1.1
+sudo docker run -it -v $HOME/kuksaval.config:/config  -p 127.0.0.1:8090:8090 -e LOG_LEVEL=ALL amd64/kuksa-val:0.1.1
 ```
 where `$HOME/kuksaval.config` is a directory on your host machine containing the KUKSA.VAL configuration. The directory can be empty, then it will be populated with an exmple configuration during start.
 
 The environment variable `KUKSAVAL_OPTARGS` can be used to add arbitrary command line arguments e.g.
 
 ```
-sudo docker run -it -v $HOME/kuksaval.config:/config -e LOG_LEVEL=ALL -e KUKSAVAL_OPTARGS="--insecure" amd64/kuksa-val:0.1.1
+sudo docker run -it -v $HOME/kuksaval.config:/config  -p 127.0.0.1:8090:8090 -e LOG_LEVEL=ALL -e KUKSAVAL_OPTARGS="--insecure" amd64/kuksa-val:0.1.1
 
 ```
 
