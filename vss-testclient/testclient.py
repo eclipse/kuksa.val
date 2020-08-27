@@ -11,7 +11,7 @@
 
 import argparse, json, sys
 from cmd2 import Cmd, with_argparser, with_category
-import queue, time
+import queue, time, os
 from clientComm import VSSClientComm
 
 DEFAULT_SERVER_ADDR = "localhost"
@@ -22,7 +22,7 @@ ap_connect = argparse.ArgumentParser()
 ap_connect.add_argument('-i', "--insecure", default=False, action="store_true", help='Connect in insecure mode')
 ap_disconnect = argparse.ArgumentParser()
 ap_authorize = argparse.ArgumentParser()
-ap_authorize.add_argument('Token', help='JWT for authorizing the client.')
+ap_authorize.add_argument('Token', help='JWT(or the file storing the token) for authorizing the client.')
 ap_setServerAddr = argparse.ArgumentParser()
 ap_setServerAddr.add_argument('IP', help='VSS Server IP Address', default=DEFAULT_SERVER_ADDR)
 ap_setServerAddr.add_argument('Port', type=int, help='VSS Server Websocket Port', default=DEFAULT_SERVER_PORT)
@@ -39,6 +39,7 @@ class VSSTestClient(Cmd):
 
     COMM_SETUP_COMMANDS = "Communication Set-up Commands"
     VSS_COMMANDS = "VSS Interaction Commands"
+    complete_authorize = Cmd.path_complete
 
     # Constructor
     def __init__(self):
@@ -54,7 +55,15 @@ class VSSTestClient(Cmd):
     @with_argparser(ap_authorize)
     def do_authorize(self, args):
         """Authorize the client to interact with the server"""
-        token = args.Token
+        tokenOrFile = args.Token
+        token = None
+        # Check if the token is passed in as a text or file path
+        if os.path.isfile(tokenOrFile):
+            with open(tokenOrFile, "r") as f:
+                token = f.readline()
+        else:
+            token = tokenOrFile
+
         req = {}
         req["requestId"] = 1238
         req["action"]= "authorize"
@@ -132,6 +141,8 @@ class VSSTestClient(Cmd):
             if self.commThread != None:
                 self.commThread.stopComm()
                 self.commThread = None
+        self.sendMsgQueue = queue.Queue()
+        self.recvMsgQueue = queue.Queue()
         self.commThread = VSSClientComm(self.serverIP, self.serverPort, self.sendMsgQueue, self.recvMsgQueue, args.insecure)
         self.commThread.start()
 
