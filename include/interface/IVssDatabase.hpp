@@ -26,6 +26,7 @@ class IVssDatabase {
     virtual ~IVssDatabase() {}
 
     virtual void initJsonTree(const boost::filesystem::path &fileName) = 0;
+    virtual void updateJsonTree()
     virtual jsoncons::json getMetaData(const std::string &path) = 0;
     virtual void setSignal(WsChannel& channel,
                            const std::string &path,
