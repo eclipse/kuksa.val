@@ -16,6 +16,16 @@ project(kuksa-val VERSION 2.0.1 LANGUAGES CXX)
 
 # Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
+
+# Compiler setting
+add_compile_options(-Wfatal-errors)
+find_program(CCACHE_BIN ccache)                                                 
+if(CCACHE_BIN)                                                                  
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_BIN})             
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE_BIN}) 
+  message("Use ccache from ${CCACHE_BIN}")
+endif()
+
 #####
 # Create buildinfo
 #
@@ -47,14 +57,7 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
 # Boost
-set(Boost_USE_STATIC_LIBS OFF)
-set(MIN_BOOST_VER 1.67.0)
-
-find_package(Boost ${MIN_BOOST_VER} EXACT REQUIRED COMPONENTS atomic date_time chrono filesystem program_options system thread unit_test_framework)
-message(STATUS " boost includes ${Boost_INCLUDE_DIRS} ")
-message(STATUS " boost libs ${Boost_LIBRARIES} ")
-include_directories(${Boost_INCLUDE_DIRS})
-add_compile_options(-Wfatal-errors)
+include(boost.cmake)
 
 # OpenSSL
 find_package(OpenSSL REQUIRED)
