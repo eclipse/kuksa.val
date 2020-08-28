@@ -216,6 +216,7 @@ void VssDatabase::initJsonTree(const boost::filesystem::path &fileName) {
   }
 }
 
+
 bool VssDatabase::checkPathValid(const std::string & path){
     bool isBranch;
     return !getPathForGet(path, isBranch).empty();
@@ -413,6 +414,19 @@ void VssDatabase::HandleSet(jsoncons::json & setValues) {
       throw genException(msg.str());
     }
   }
+}
+
+void VssDatabase::updateMetaData(WsChannel& channel, const jsoncons::json& metadata){
+    bool haveAccess = accessValidator_->checkMetaDataWriteAccess(channel);
+    if (!haveAccess) {
+       stringstream msg;
+       msg << "Path(s) in set request do not have write access or is invalid";
+       throw noPermissionException(msg.str());
+    }
+    std::cout <<" with values " << pretty_print(data_tree__);
+    std::cout <<" with values " << pretty_print(metadata);
+    data_tree__.merge(metadata);
+    meta_tree__.merge(metadata);
 }
 
 // Returns the response JSON for metadata request.

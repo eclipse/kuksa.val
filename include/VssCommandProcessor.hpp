@@ -40,16 +40,17 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::shared_ptr<SigningHandler> signer;
 #endif
 
-  std::string processGet(WsChannel& channel, std::string request_id, std::string path);
-  std::string processSet(WsChannel& channel, std::string request_id, std::string path,
+  std::string processGet(WsChannel& channel, const std::string& request_id, const std::string& path);
+  std::string processSet(WsChannel& channel, const std::string& request_id, const std::string& path,
                          jsoncons::json value);
-  std::string processSubscribe(WsChannel& channel, std::string request_id, std::string path);
-  std::string processUnsubscribe(std::string request_id, uint32_t subscribeID);
-  std::string processGetMetaData(std::string request_id, std::string path);
-  std::string processAuthorize(WsChannel& channel, std::string request_id,
-                          std::string token);
-  std::string processAuthorizeWithPermManager(WsChannel &channel, std::string request_id,
-                                 std::string client, std::string clientSecret);
+  std::string processSubscribe(WsChannel& channel, const std::string& request_id, const std::string& path);
+  std::string processUnsubscribe(const std::string & request_id, uint32_t subscribeID);
+  std::string processGetMetaData(const std::string & request_id, const std::string & path);
+  std::string processUpdateMetaData(WsChannel& channel, const std::string& request_id, const jsoncons::json& metadata);
+  std::string processAuthorize(WsChannel& channel, const std::string & request_id,
+                          const std::string & token);
+  std::string processAuthorizeWithPermManager(WsChannel &channel, const std::string & request_id,
+                                 const std::string & client, const std::string& clientSecret);
   
 
  public:

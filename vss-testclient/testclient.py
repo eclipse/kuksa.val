@@ -30,9 +30,11 @@ ap_setValue = argparse.ArgumentParser()
 ap_setValue.add_argument("Parameter", help="Parameter to be set")
 ap_setValue.add_argument("Value", help="Value to be set")
 ap_getValue = argparse.ArgumentParser()
-ap_getValue.add_argument("Parameter", help="Parameter whose metadata is to be read")
-ap_getMetadata = argparse.ArgumentParser()
-ap_getMetadata.add_argument("Parameter", help="Parameter whose metadata is to be read")
+ap_getValue.add_argument("Parameter", help="Parameter whose MetaData is to be read")
+ap_getMetaData = argparse.ArgumentParser()
+ap_getMetaData.add_argument("Parameter", help="Parameter whose MetaData is to be read")
+ap_updateMetaData = argparse.ArgumentParser()
+ap_updateMetaData.add_argument("Json", help="Parameter whose MetaData is to be read")
 
 
 class VSSTestClient(Cmd):
@@ -40,6 +42,7 @@ class VSSTestClient(Cmd):
     COMM_SETUP_COMMANDS = "Communication Set-up Commands"
     VSS_COMMANDS = "VSS Interaction Commands"
     complete_authorize = Cmd.path_complete
+    complete_updateMetaData = Cmd.path_complete
 
     # Constructor
     def __init__(self):
@@ -110,12 +113,31 @@ class VSSTestClient(Cmd):
         sys.exit(0)
 
     @with_category(VSS_COMMANDS)
-    @with_argparser(ap_getMetadata)
-    def do_getMetadata(self, args):
-        """Get Metadata of the parameter"""
+    @with_argparser(ap_updateMetaData)
+    def do_updateMetaData(self, args):
+        """Set the value of a parameter"""
+        req = {}
+        req["requestId"] = 1237
+        req["action"]= "updateMetaData"
+        if os.path.isfile(args.Json):
+            with open(args.Json, "r") as f:
+                req["metadata"] = json.load(f)
+        else:
+            testjson = {"Vehicle":{"test": "test"}}
+            req["metadata"] = testjson
+        jsonDump = json.dumps(req)
+        self.sendMsgQueue.put(jsonDump)
+        print(jsonDump)
+        resp = self.recvMsgQueue.get()
+        print(resp)
+
+    @with_category(VSS_COMMANDS)
+    @with_argparser(ap_getMetaData)
+    def do_getMetaData(self, args):
+        """Get MetaData of the parameter"""
         req = {}
         req["requestId"] = 1236
-        req["action"]= "getMetadata"
+        req["action"]= "getMetaData"
         req["path"] = args.Parameter
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
