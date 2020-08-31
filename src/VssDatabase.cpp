@@ -420,7 +420,7 @@ void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, co
   bool haveAccess = accessValidator_->checkMetaDataWriteAccess(channel);
   if (!haveAccess) {
      stringstream msg;
-     msg << "Path(s) in set request do not have write access or is invalid";
+     msg << "do not have write access for updating MetaData or is invalid";
      throw noPermissionException(msg.str());
   }
   string format_path = "$";

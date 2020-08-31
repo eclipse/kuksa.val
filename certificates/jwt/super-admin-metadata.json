@@ -1,0 +1,12 @@
+{
+  "sub": "kuksa.val",
+  "iss": "Eclipse KUKSA Dev",
+  "admin": true,
+  "metadata": "rw",
+  "iat": 1516239022,
+  "exp": 1606239022,
+  "kuksa-vss":  {
+     "*": "rw"
+  }
+}
+

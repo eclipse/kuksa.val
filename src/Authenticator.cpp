@@ -139,9 +139,13 @@ void Authenticator::resolvePermissions(WsChannel& channel,
     claims[e.first] = json::parse(value.str());
   }
 
+  json permissions;
+  if (claims.has_key("metadata")) {
+    permissions.insert_or_assign("metadata", claims["metadata"]);
+  }
+
   if (claims.has_key("kuksa-vss")) {
     json tokenPermJson = claims["kuksa-vss"];
-    json permissions;
     for (auto path : tokenPermJson.object_range()) {
       bool isBranch;
       string pathString(path.key());
@@ -151,6 +155,6 @@ void Authenticator::resolvePermissions(WsChannel& channel,
         permissions.insert_or_assign(verifiedPath, path.value());
       }
     }
-    channel.setPermissions(permissions);
   }
+  channel.setPermissions(permissions);
 }
