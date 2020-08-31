@@ -433,6 +433,7 @@ void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, co
     return;
   }
   if(isBranch){
+    // TODO really merge children?
     jPath+="[\'children\']";
   }
   logger_->Log(LogLevel::VERBOSE, "VssDatabase::updateMetaData: VSS specific path =" + jPath + " , which is " + (isBranch?"":"not ") + "branch");
@@ -466,8 +467,7 @@ void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, co
 
     throw notValidException(msg.str());
   }
-  std::cout <<" merge " << pretty_print(resMetaTree)<<std::endl;
-  std::cout <<" with values " << pretty_print(metadata)<<std::endl;
+  // TODO merge metadata may cause overwritting existing data values
   resMetaTree.merge_or_update(metadata);
   resDataTree.merge_or_update(metadata);
   rwMutex_.lock();
