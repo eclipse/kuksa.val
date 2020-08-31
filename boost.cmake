@@ -1,7 +1,9 @@
+# Copyright (c) 2019 Robert Bosch GmbH.
+
 set(Boost_USE_STATIC_LIBS OFF)
 set(BOOST_VER 1.67.0)
 set(BOOST_COMPONENTS atomic date_time chrono filesystem program_options system thread)
-find_package(Boost ${BOOST_VER} EXACT COMPONENTS ${BOOST_COMPONENTS})
+find_package(Boost ${BOOST_VER} EXACT COMPONENTS ${BOOST_COMPONENTS} unit_test_framework)
 
 if(NOT Boost_FOUND)
   string(REPLACE "." "_" BOOST_VER_ ${BOOST_VER}) 
