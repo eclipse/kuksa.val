@@ -416,17 +416,64 @@ void VssDatabase::HandleSet(jsoncons::json & setValues) {
   }
 }
 
-void VssDatabase::updateMetaData(WsChannel& channel, const jsoncons::json& metadata){
-    bool haveAccess = accessValidator_->checkMetaDataWriteAccess(channel);
-    if (!haveAccess) {
-       stringstream msg;
-       msg << "Path(s) in set request do not have write access or is invalid";
-       throw noPermissionException(msg.str());
-    }
-    std::cout <<" with values " << pretty_print(data_tree__);
-    std::cout <<" with values " << pretty_print(metadata);
-    data_tree__.merge(metadata);
-    meta_tree__.merge(metadata);
+void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, const jsoncons::json& metadata){
+  bool haveAccess = accessValidator_->checkMetaDataWriteAccess(channel);
+  if (!haveAccess) {
+     stringstream msg;
+     msg << "Path(s) in set request do not have write access or is invalid";
+     throw noPermissionException(msg.str());
+  }
+  string format_path = "$";
+  bool isBranch = false;
+  rwMutex_.lock();
+  string jPath = getPathForMetadata(path, isBranch);
+  rwMutex_.unlock();
+
+  if (jPath == "") {
+    return;
+  }
+  if(isBranch){
+    jPath+="[\'children\']";
+  }
+  logger_->Log(LogLevel::VERBOSE, "VssDatabase::updateMetaData: VSS specific path =" + jPath + " , which is " + (isBranch?"":"not ") + "branch");
+    
+  jsoncons::json resMetaTree, resDataTree;
+    
+  rwMutex_.lock();
+  jsoncons::json resMetaTreeArray= json_query(meta_tree__, jPath);
+  jsoncons::json resDataTreeArray = json_query(data_tree__, jPath);
+  rwMutex_.unlock();
+
+  if (resMetaTreeArray.is_array() && resMetaTreeArray.size() == 1) {
+    resMetaTree = resMetaTreeArray[0];
+  }else if(resMetaTreeArray.is_object()){
+    resMetaTree = resMetaTreeArray;
+  }else{
+    std::stringstream msg;
+    msg << jPath + " is not a valid path";
+    logger_->Log(LogLevel::ERROR, "VssDatabase::updateMetaData " + msg.str());
+
+    throw notValidException(msg.str());
+  }
+  if (resDataTreeArray.is_array() && resDataTreeArray.size() == 1) {
+    resDataTree = resDataTreeArray[0];
+  }else if(resDataTreeArray.is_object()){
+    resDataTree = resDataTreeArray;
+  }else{
+    std::stringstream msg;
+    msg << jPath + " is not a valid path";
+    logger_->Log(LogLevel::ERROR, "VssDatabase::updateMetaData " + msg.str());
+
+    throw notValidException(msg.str());
+  }
+  std::cout <<" merge " << pretty_print(resMetaTree)<<std::endl;
+  std::cout <<" with values " << pretty_print(metadata)<<std::endl;
+  resMetaTree.merge_or_update(metadata);
+  resDataTree.merge_or_update(metadata);
+  rwMutex_.lock();
+  json_replace(meta_tree__, jPath, resMetaTree);
+  json_replace(data_tree__, jPath, resDataTree);
+  rwMutex_.unlock();
 }
 
 // Returns the response JSON for metadata request.

@@ -34,7 +34,8 @@ ap_getValue.add_argument("Parameter", help="Parameter whose MetaData is to be re
 ap_getMetaData = argparse.ArgumentParser()
 ap_getMetaData.add_argument("Parameter", help="Parameter whose MetaData is to be read")
 ap_updateMetaData = argparse.ArgumentParser()
-ap_updateMetaData.add_argument("Json", help="Parameter whose MetaData is to be read")
+ap_updateMetaData.add_argument("Parameter", help="Parameter whose MetaData is to update")
+ap_updateMetaData.add_argument("Json", help="MetaData to update")
 
 
 class VSSTestClient(Cmd):
@@ -119,12 +120,12 @@ class VSSTestClient(Cmd):
         req = {}
         req["requestId"] = 1237
         req["action"]= "updateMetaData"
+        req["path"] = args.Parameter
         if os.path.isfile(args.Json):
             with open(args.Json, "r") as f:
                 req["metadata"] = json.load(f)
         else:
-            testjson = {"Vehicle":{"test": "test"}}
-            req["metadata"] = testjson
+            req["metadata"] = json.loads(args.Json) 
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         print(jsonDump)

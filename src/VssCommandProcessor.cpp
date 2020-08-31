@@ -243,11 +243,11 @@ string VssCommandProcessor::processGetMetaData(const string & request_id,
   return ss.str();
 }
 
-string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, const std::string& request_id, const jsoncons::json& metaData){
+string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, const std::string& request_id, const string& path, const jsoncons::json& metaData){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateMetaData");
 
   try {
-    database->updateMetaData(channel, metaData);
+    database->updateMetaData(channel, path, metaData);
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json root;
@@ -419,10 +419,6 @@ string VssCommandProcessor::processQuery(const string &req_json,
       logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: kuksa authorize query with clientID = "
            + clientID + " with secret " + clientSecret);
       response = processAuthorizeWithPermManager(channel, request_id, clientID, clientSecret);
-    } else if (action == "updateMetaData") {
-      string request_id = root["requestId"].as<string>();
-      logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: update MetaData query  for with request id " + request_id);
-      response = processUpdateMetaData(channel, request_id, root["metadata"]);
     } else {
       string path = root["path"].as<string>();
       string request_id = root["requestId"].as<string>();
@@ -449,6 +445,10 @@ string VssCommandProcessor::processQuery(const string &req_json,
         logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: get MetaData query  for "
              + path + " with request id " + request_id);
         response = processGetMetaData(request_id, path);
+      } else if (action == "updateMetaData") {
+        string request_id = root["requestId"].as<string>();
+        logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: update MetaData query  for with request id " + request_id);
+        response = processUpdateMetaData(channel, request_id, path, root["metadata"]);
       } else {
         logger->Log(LogLevel::INFO, "VssCommandProcessor::processQuery: Unknown action " + action);
         return JsonResponses::malFormedRequest("Unknown action requested");
