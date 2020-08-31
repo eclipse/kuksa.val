@@ -227,6 +227,43 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
   }
 }
 
+string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, const string& request_id, const jsoncons::json& metaData){
+  logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateVSSTree");
+  
+  jsoncons::json answer;
+  answer["action"] = "updateVSSTree";
+  answer["requestId"] = request_id;
+  answer["timestamp"] = time(NULL);
+
+  std::stringstream ss;
+  try {
+    database->updateJsonTree(channel, metaData);
+  } catch (genException &e) {
+    logger->Log(LogLevel::ERROR, string(e.what()));
+    jsoncons::json error;
+
+    error["number"] = 401;
+    error["reason"] = "Unknown error";
+    error["message"] = e.what();
+
+    answer["error"] = error;
+
+    ss << pretty_print(answer);
+    return ss.str();
+  } catch (noPermissionException &nopermission) {
+    logger->Log(LogLevel::ERROR, string(nopermission.what()));
+    return JsonResponses::noAccess(request_id, "updateVSSTree", nopermission.what());
+  } catch (std::exception &e) {
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
+    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
+  }
+
+
+  ss << pretty_print(answer);
+  return ss.str();
+  
+}
+
 string VssCommandProcessor::processGetMetaData(const string & request_id,
                                                const string & path) {
   jsoncons::json st = database->getMetaData(path);
@@ -246,25 +283,25 @@ string VssCommandProcessor::processGetMetaData(const string & request_id,
 string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, const std::string& request_id, const string& path, const jsoncons::json& metaData){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateMetaData");
 
+  jsoncons::json answer;
+  answer["action"] = "updateMetaData";
+  answer["requestId"] = request_id;
+  answer["timestamp"] = time(NULL);
+
+  std::stringstream ss;
   try {
     database->updateMetaData(channel, path, metaData);
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
-    jsoncons::json root;
     jsoncons::json error;
-
-    root["action"] = "updateMetaData";
-    root["requestId"] = request_id;
 
     error["number"] = 401;
     error["reason"] = "Unknown error";
     error["message"] = e.what();
 
-    root["error"] = error;
-    root["timestamp"] = time(NULL);
+    answer["error"] = error;
 
-    std::stringstream ss;
-    ss << pretty_print(root);
+    ss << pretty_print(answer);
     return ss.str();
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
@@ -272,14 +309,8 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, const std:
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
-  }
+  } 
 
-  jsoncons::json answer;
-  answer["action"] = "updateMetaData";
-  answer["requestId"] = request_id;
-  answer["timestamp"] = time(NULL);
-
-  std::stringstream ss;
   ss << pretty_print(answer);
   return ss.str();
   
@@ -419,6 +450,10 @@ string VssCommandProcessor::processQuery(const string &req_json,
       logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: kuksa authorize query with clientID = "
            + clientID + " with secret " + clientSecret);
       response = processAuthorizeWithPermManager(channel, request_id, clientID, clientSecret);
+    } else if (action == "updateVSSTree") {
+      string request_id = root["requestId"].as<string>();
+      logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: update MetaData query  for with request id " + request_id);
+      response = processUpdateVSSTree(channel, request_id, root["metadata"]);
     } else {
       string path = root["path"].as<string>();
       string request_id = root["requestId"].as<string>();

@@ -45,6 +45,7 @@ class VssCommandProcessor : public IVssCommandProcessor {
                          jsoncons::json value);
   std::string processSubscribe(WsChannel& channel, const std::string& request_id, const std::string& path);
   std::string processUnsubscribe(const std::string & request_id, uint32_t subscribeID);
+  std::string processUpdateVSSTree(WsChannel& channel, const std::string& request_id, const jsoncons::json& metadata);
   std::string processGetMetaData(const std::string & request_id, const std::string & path);
   std::string processUpdateMetaData(WsChannel& channel, const std::string& request_id, const std::string& path, const jsoncons::json& metadata);
   std::string processAuthorize(WsChannel& channel, const std::string & request_id,
