@@ -417,6 +417,29 @@ void VssDatabase::HandleSet(jsoncons::json & setValues) {
   }
 }
 
+void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree){
+  std::error_code ec;
+
+  rwMutex_.lock();
+  auto patches = jsoncons::jsonpatch::from_diff(sourceTree, jsonTree);
+  rwMutex_.unlock();
+  jsoncons::json patchArray = jsoncons::json::array();
+  for(auto& patch: patches.array_range()){
+    if (patch["op"] != "remove"){
+      patchArray.push_back(patch);
+       
+    }
+  }
+  rwMutex_.lock();
+  jsonpatch::apply_patch(sourceTree, patchArray, ec);
+  rwMutex_.unlock();
+
+  if(ec){
+    std::cout << "error " << ec.message() << std::endl;
+  }
+
+}
+
 void VssDatabase::updateJsonTree(WsChannel& channel, const jsoncons::json& jsonTree){
   bool haveAccess = accessValidator_->checkMetaDataWriteAccess(channel);
   if (!haveAccess) {
@@ -425,27 +448,9 @@ void VssDatabase::updateJsonTree(WsChannel& channel, const jsoncons::json& jsonT
      throw noPermissionException(msg.str());
   }
 
-  rwMutex_.lock();
-  auto patches = jsoncons::jsonpatch::from_diff(meta_tree__, jsonTree);
-  rwMutex_.unlock();
-  std::cout << pretty_print(patches) << std::endl;
-  std::cout << patches.size() << std::endl;
-  jsoncons::json patchArray = jsoncons::json::array();
-  for(auto& patch: patches.array_range()){
-    if (patch["op"] != "remove"){
-      patchArray.push_back(patch);
-       
-    }
-  }
-  std::cout << pretty_print(patchArray) << std::endl;
-  std::error_code ec;
-  rwMutex_.lock();
-  jsonpatch::apply_patch(meta_tree__, patchArray, ec);
+  updateJsonTree(meta_tree__, jsonTree);
+  updateJsonTree(data_tree__, jsonTree);
 
-  rwMutex_.unlock();
-  if(ec){
-  std::cout << "error " << ec.message() << std::endl;
-  }
 }
 
 // update a metadata in tree, which will only do one-level-deep shallow merge/update.
