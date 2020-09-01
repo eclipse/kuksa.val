@@ -22,6 +22,7 @@ class IAuthenticator;
 class AccessChecker : public IAccessChecker {
  private:
   std::shared_ptr<IAuthenticator> tokenValidator;
+  bool checkSignalAccess(const WsChannel& channel, const std::string& path, const std::string& requiredPermission);
 
  public:
   AccessChecker(std::shared_ptr<IAuthenticator> vdator);

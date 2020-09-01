@@ -36,12 +36,12 @@ class VssDatabase : public IVssDatabase {
  private:
   std::shared_ptr<ILogger> logger_;
   std::mutex rwMutex_;
-
   std::shared_ptr<ISubscriptionHandler> subHandler_;
   std::shared_ptr<IAccessChecker> accessValidator_;
+
   std::string getPathForMetadata(std::string path, bool& isBranch);
   std::string getReadablePath(std::string jsonpath);
-  void checkSetPermission(WsChannel& channel,  jsoncons::json valueJson);
+  void checkSetPermission(WsChannel& channel, const std::string& path);
   void HandleSet(jsoncons::json & setValues);
 
  public:

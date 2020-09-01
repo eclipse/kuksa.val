@@ -347,7 +347,7 @@ string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
   if (response.has_key("token") && response.has_key("pubkey")) {
      try {
         tokenValidator->updatePubKey(response["pubkey"].as<string>());
-        ttl = tokenValidator->validate(channel, database, response["token"].as<string>());
+        ttl = tokenValidator->validate(channel, response["token"].as<string>());
      } catch (exception &e) {
         logger->Log(LogLevel::ERROR, e.what());
         ttl = -1;
@@ -386,7 +386,7 @@ string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
 string VssCommandProcessor::processAuthorize(WsChannel &channel,
                                              const string & request_id,
                                              const string & token) {
-  int ttl = tokenValidator->validate(channel, database, token);
+  int ttl = tokenValidator->validate(channel, token);
 
   if (ttl == -1) {
     jsoncons::json result;

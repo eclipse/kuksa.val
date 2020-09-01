@@ -45,10 +45,10 @@ class WsChannel {
   void setPermissions(json perm) { permissions = perm; }
   void setType(Type type) { typeOfConnection = type; }
 
-  uint64_t getConnID() { return connectionID; }
-  bool isAuthorized() { return authorized; }
-  string getAuthToken() { return authToken; }
-  json getPermissions() { return permissions; }
-  Type getType() { return typeOfConnection; }
+  uint64_t getConnID() const { return connectionID; }
+  bool isAuthorized() const { return authorized; }
+  string getAuthToken() const { return authToken; }
+  json getPermissions() const { return permissions; }
+  Type getType() const { return typeOfConnection; }
 };
 #endif

@@ -22,7 +22,6 @@
 using namespace std;
 
 class WsChannel;
-class IVssDatabase;
 class ILogger;
 
 class Authenticator : public IAuthenticator {
@@ -37,12 +36,11 @@ class Authenticator : public IAuthenticator {
   Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algorithm);
 
   int validate(WsChannel &channel,
-               std::shared_ptr<IVssDatabase> dn,
                string authToken);
 
   void updatePubKey(string key);
   bool isStillValid(WsChannel &channel);
-  void resolvePermissions(WsChannel &channel, std::shared_ptr<IVssDatabase> database);
+  void resolvePermissions(WsChannel &channel);
 
   static string getPublicKeyFromFile(string fileName, std::shared_ptr<ILogger> logger);
 };

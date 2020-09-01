@@ -9,14 +9,33 @@
           "fuelcell2": {
             "description": "fuel cell data new2.", 
             "uuid": "3a09fbe354655939a4d0bd62865ba034", 
-            "type": "branch", 
-            "children": {}
+            "type": "sensor", 
+            "datatype": "uint8"
           },
           "fuelcell": {
             "description": "fuel cell data new.", 
             "uuid": "3a09fbe354655939a4d0bd62865ba034", 
+            "type": "sensor", 
+            "datatype": "uint8"
+          },
+          "Transmission": {
+            "uuid": "e198a8805b345c8c818558bc79b0ce25", 
             "type": "branch", 
-            "children": {}
+            "children": {
+              "DriveType": {
+                "description": "Drive type.", 
+                "datatype": "string", 
+                "enum": [
+                  "unknown", 
+                  "forward wheel drive", 
+                  "rear wheel drive", 
+                  "all wheel drive"
+                ], 
+                "uuid": "d9dc4d1fc38a5e1896ca24f4efcda4fe", 
+                "value": "unknown", 
+                "type": "attribute"
+              }
+            }
           }
         }
       },

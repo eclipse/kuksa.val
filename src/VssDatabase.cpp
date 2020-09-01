@@ -658,9 +658,9 @@ jsoncons::json VssDatabase::getPathForSet(const string &path, jsoncons::json val
   return setValues;
 }
 
-void VssDatabase::checkSetPermission(WsChannel& channel, jsoncons::json valueJson) {
+void VssDatabase::checkSetPermission(WsChannel& channel, const string & path) {
     // check if all the paths have write access.
-    bool haveAccess = accessValidator_->checkPathWriteAccess(channel, valueJson);
+    bool haveAccess = accessValidator_->checkWriteAccess(channel, path);
     if (!haveAccess) {
        stringstream msg;
        msg << "Path(s) in set request do not have write access or is invalid";
@@ -676,12 +676,12 @@ void VssDatabase::setSignal(WsChannel& channel,
     string msg = "Path is empty while setting";
     throw genException(msg);
   }
+  checkSetPermission(channel, path);
   rwMutex_.lock();
   jsoncons::json setValues = getPathForSet(path, valueJson);
   rwMutex_.unlock();
 
   if (setValues.is_array()) {
-    checkSetPermission(channel, setValues);
     HandleSet(setValues);
   } else {
     string msg = "Exception occured while setting data for " + path;
@@ -736,7 +736,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
       for (int i = 0; i < pathsFound; i++) {
         string jPath = jPaths.back();
         // check Read access here.
-        if (!accessValidator_->checkReadAccess(channel, jPath)) {
+        if (!accessValidator_->checkReadAccess(channel, getReadablePath(jPath))) {
           // Allow the permitted signals to return. If exception is enable here,
           // then say only "Signal.OBD.RPM" is permitted and get request is made
           // for a branch like "Signal.OBD" then
@@ -765,7 +765,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
   } else if (pathsFound == 1) {
     string jPath = jPaths.back();
     // check Read access here.
-    if (!accessValidator_->checkReadAccess(channel, jPath)) {
+    if (!accessValidator_->checkReadAccess(channel, getReadablePath(jPath))) {
       stringstream msg;
       msg << "No read access to " << getReadablePath(jPath);
       throw noPermissionException(msg.str());
@@ -792,7 +792,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
       jsoncons::json value;
       string jPath = jPaths.back();
       // Check access here.
-      if (!accessValidator_->checkReadAccess(channel, jPath)) {
+      if (!accessValidator_->checkReadAccess(channel, getReadablePath(jPath))) {
         // Allow the permitted signals to return. If exception is enable here,
         // then say only "Signal.OBD.RPM" is permitted and get request is made
         // using wildcard like "Signal.OBD.*" then
