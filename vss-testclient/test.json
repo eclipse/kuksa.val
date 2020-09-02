@@ -7,13 +7,13 @@
         "type": "branch", 
         "children": {
           "fuelcell2": {
-            "description": "fuel cell data new2.", 
+            "description": "fuel cell data new.", 
             "uuid": "3a09fbe354655939a4d0bd62865ba034", 
             "type": "sensor", 
             "datatype": "uint8"
           },
           "fuelcell": {
-            "description": "fuel cell data new.", 
+            "description": "fuel cell data new2.", 
             "uuid": "3a09fbe354655939a4d0bd62865ba034", 
             "type": "sensor", 
             "datatype": "uint8"
@@ -38,11 +38,6 @@
             }
           }
         }
-      },
-      "Media": {
-        "description": "Media service data2.", 
-        "uuid": "d5f81ea8da7d5c3796acd4f75298847d", 
-        "type": "Actor"
       }
     }
   }

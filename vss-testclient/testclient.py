@@ -35,9 +35,9 @@ ap_getMetaData = argparse.ArgumentParser()
 ap_getMetaData.add_argument("Parameter", help="Parameter whose MetaData is to be read")
 ap_updateMetaData = argparse.ArgumentParser()
 ap_updateMetaData.add_argument("Parameter", help="Parameter whose MetaData is to update")
-ap_updateMetaData.add_argument("Json", help="MetaData to update")
+ap_updateMetaData.add_argument("Json", help="MetaData to update. Note, only attributes can be update, if update children or the whole vss tree, use `updateVSSTree` instead.")
 ap_updateVSSTree = argparse.ArgumentParser()
-ap_updateVSSTree.add_argument("Json", help="MetaData to update")
+ap_updateVSSTree.add_argument("Json", help="Json tree to update VSS")
 
 
 class VSSTestClient(Cmd):
@@ -45,7 +45,6 @@ class VSSTestClient(Cmd):
     COMM_SETUP_COMMANDS = "Communication Set-up Commands"
     VSS_COMMANDS = "VSS Interaction Commands"
     complete_authorize = Cmd.path_complete
-    complete_updateMetaData = Cmd.path_complete
     complete_updateVSSTree = Cmd.path_complete
 
     # Constructor
@@ -121,13 +120,9 @@ class VSSTestClient(Cmd):
     def do_updateVSSTree(self, args):
         """Set the value of a parameter"""
         req = {}
-        req["requestId"] = 1237
+        req["requestId"] = 1233
         req["action"]= "updateVSSTree"
-        if os.path.isfile(args.Json):
-            with open(args.Json, "r") as f:
-                req["metadata"] = json.load(f)
-        else:
-            req["metadata"] = json.loads(args.Json) 
+        req["metadata"] = json.loads(args.Json) 
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         resp = self.recvMsgQueue.get()

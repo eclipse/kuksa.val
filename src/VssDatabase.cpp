@@ -424,19 +424,20 @@ void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::jso
   auto patches = jsoncons::jsonpatch::from_diff(sourceTree, jsonTree);
   rwMutex_.unlock();
   jsoncons::json patchArray = jsoncons::json::array();
+  std::cout << pretty_print(patches) << std::endl;
   for(auto& patch: patches.array_range()){
     if (patch["op"] != "remove"){
       patchArray.push_back(patch);
        
     }
   }
-  std::cout << pretty_print(patchArray) << std::endl;
   rwMutex_.lock();
   jsonpatch::apply_patch(sourceTree, patchArray, ec);
   rwMutex_.unlock();
 
   if(ec){
     std::cout << "error " << ec.message() << std::endl;
+    throw genException(ec.message());
   }
 
 }
