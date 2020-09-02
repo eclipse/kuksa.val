@@ -122,7 +122,11 @@ class VSSTestClient(Cmd):
         req = {}
         req["requestId"] = 1233
         req["action"]= "updateVSSTree"
-        req["metadata"] = json.loads(args.Json) 
+        if os.path.isfile(args.Json):
+            with open(args.Json, "r") as f:
+                req["metadata"] = json.load(f)
+        else:
+            req["metadata"] = json.loads(args.Json) 
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         resp = self.recvMsgQueue.get()
@@ -136,11 +140,7 @@ class VSSTestClient(Cmd):
         req["requestId"] = 1237
         req["action"]= "updateMetaData"
         req["path"] = args.Parameter
-        if os.path.isfile(args.Json):
-            with open(args.Json, "r") as f:
-                req["metadata"] = json.load(f)
-        else:
-            req["metadata"] = json.loads(args.Json) 
+        req["metadata"] = json.loads(args.Json) 
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         print(jsonDump)
