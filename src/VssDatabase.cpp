@@ -430,6 +430,7 @@ void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::jso
        
     }
   }
+  std::cout << pretty_print(patchArray) << std::endl;
   rwMutex_.lock();
   jsonpatch::apply_patch(sourceTree, patchArray, ec);
   rwMutex_.unlock();
