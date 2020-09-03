@@ -29,7 +29,6 @@ class AccessChecker : public IAccessChecker {
   bool checkReadAccess(WsChannel &channel, const std::string &path) override;
   bool checkWriteAccess(WsChannel &channel, const std::string &path) override;
   bool checkPathWriteAccess(WsChannel &channel, const jsoncons::json &paths) override;
-  bool checkMetaDataWriteAccess(WsChannel &channel) override;
 };
 
 #endif

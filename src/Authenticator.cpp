@@ -139,8 +139,8 @@ void Authenticator::resolvePermissions(WsChannel& channel) {
   }
 
   json permissions;
-  if (claims.has_key("metadata")) {
-    permissions.insert_or_assign("metadata", claims["metadata"]);
+  if (claims.has_key("modifyTree") && claims["modifyTree"].as<bool>()) {
+    channel.enableModifyTree();
   }
 
   if (claims.has_key("kuksa-vss")) {

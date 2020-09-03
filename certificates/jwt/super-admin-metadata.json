@@ -2,7 +2,7 @@
   "sub": "kuksa.val",
   "iss": "Eclipse KUKSA Dev",
   "admin": true,
-  "metadata": "rw",
+  "modifyTree": true,
   "iat": 1516239022,
   "exp": 1606239022,
   "kuksa-vss":  {

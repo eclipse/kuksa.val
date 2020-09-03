@@ -69,9 +69,3 @@ bool AccessChecker::checkPathWriteAccess(WsChannel &channel, const json &paths) 
   return true;
 }
 
-// check the permissions json in WsChannel if path has write access to metadata
-bool AccessChecker::checkMetaDataWriteAccess(WsChannel &channel){
-  string permission = channel.getPermissions().get_with_default("metadata", "r");
-  return permission.find("w") != std::string::npos;
-  
-}
