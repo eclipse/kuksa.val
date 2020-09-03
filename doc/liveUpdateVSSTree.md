@@ -42,111 +42,33 @@ Please note, that due to current vss-tools limitations you need to recreate the 
 Use the Genivi tools to generate a JSON
 
 ```
- python3 vspec2json.py -i :my.id -I ../spec/ roadster-elon.vspec  roadster-elon.json
+  python3 vspec2json.py -i :my.id -I ../spec/ roadster-elon.vspec  roadster-elon.json
 ```
 
-Now let's try on a kuksa-val istance with a vanilla VSS structure
-
+Now let's try on a kuksa-val instance with a vanilla VSS structure.
+Use the test client, you can update the VSS tree live:
 ```
-VSS Client> authorize ../certificates/jwt/super-admin-metadata.json.token 
-{
-    "TTL": 1606239022,
-    "action": "authorize",
-    "requestId": "1238",
-    "timestamp": 1599041658
-}
-VSS Client> getValue Vehicle.Private.ThrustersActive
-{
-    "action": "get",
-    "error": {
-        "message": "I can not find Vehicle.Private.ThrustersActive in my db",
-        "number": 404,
-        "reason": "Path not found"
-    },
-    "requestId": "1234",
-    "timestamp": 1599041683
-}
-VSS Client> 
-VSS Client> getMetaData Vehicle.Speed
-{
-    "action": "getMetaData",
-    "metadata": {
-        "Vehicle": {
-            "children": {
-                "Speed": {
-                    "datatype": "int32",
-                    "description": "Vehicle speed, as sensed by the gearbox.",
-                    "max": 250,
-                    "min": -250,
-                    "type": "sensor",
-                    "unit": "km/h",
-                    "uuid": "1efc9a11943b5a15ac159786051c5836"
-                }
-            },
-            "description": "High-level vehicle data.",
-            "type": "branch",
-            "uuid": "1c72453e738511e9b29ad46a6a4b77e9"
-        }
-    },
-    "requestId": "1236",
-    "timestamp": 1599041716
-}
-```
-As expected the ThrustersActive Signal does not exist and the max speed is limited to 250.
-
-Now lets load the overlay and check what happens.
-
-```
-VSS Client> updateVSSTree roadster-elon.json 
-{
-    "action": "updateVSSTree",
-    "requestId": "1237",
-    "timestamp": 1599041821
-}
-VSS Client> getValue Vehicle.Private.ThrustersActive
-{
-    "action": "get",
-    "path": "Vehicle.Private.ThrustersActive",
-    "requestId": "1234",
-    "timestamp": 1599041835,
-    "value": "---"
-}
-VSS Client> getMetaData Vehicle.Speed
-{
-    "action": "getMetaData",
-    "metadata": {
-        "Vehicle": {
-            "children": {
-                "Speed": {
-                    "datatype": "int32",
-                    "description": "Vehicle speed, as sensed by the gearbox.",
-                    "max": 9001,
-                    "min": -250,
-                    "type": "sensor",
-                    "unit": "km/h",
-                    "uuid": "efe50798638d55fab18ab7d43cc490e9"
-                }
-            },
-            "description": "High-level vehicle data.",
-            "type": "branch",
-            "uuid": "ccc825f94139544dbb5f4bfd033bece6"
-        }
-    },
-    "requestId": "1236",
-    "timestamp": 1599041841
-}
-VSS Client> 
+  updateVSSTree roadster-elon.json 
 ```
 
-As you can see, the new signal is available and the max speed limit has increased.
+Then you can see, the new signal is available and the max speed limit has increased:
+
+![Alt text](./doc/pictures/testclient_updateVSSTree.gif "test client update vss tree")
+
+**Note:** You may need the [super-admin-metadata.json.token](../certificates/jwt/super-admin-metadata.json.token) for authorization. 
 
 ## Hot-patching with updateMetaData
-if you just want to add or change a single metadata item in a signal or sensor, going through the whole VSS tooling may be a littel cumbersome.
-...
+if you just want to add or change a single metadata item in a signal or sensor, going through the whole VSS tooling may be a littel cumbersome. But you can use the test client to update metadata of a single path directly, if you have the permission to modify metadata:
+```
+  updateMetaData updateMetaData Vehicle.Speed '{"max":9999}'
+```
 
+![Alt text](./doc/pictures/testclient_updateMetaData.gif "test client update vss tree")
+
+**Note:**: `updateMetaData` only do one-level-deep shallow merge. If more level update required, use `updateVSSTree` instead.
 
 ## Limitations
 As the Input data to `updateVSSTree` as well as `updateMetaData`is merged with the existing data structure, there is no way to _remove_ previosuly added elements.
 
-This feature schould be considered Beta quality
-. Similar to the initial JSON, there is not much input verification going on. We _check_ that you provide syntactically valid JSON, we _trust_ that it is a valid VSS structure. Therefore, or systemd esing suggestion is doing all the neccesary potentially dangerous data structure modifcations during an initialiazation phase.
+This feature schould be considered Beta quality.
+Similar to the initial JSON, there is not much input verification going on. We _check_ that you provide syntactically valid JSON, we _trust_ that it is a valid VSS structure. Therefore, or systemd esing suggestion is doing all the neccesary potentially dangerous data structure modifcations during an initialiazation phase.

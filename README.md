@@ -147,25 +147,17 @@ Default configuration shall provide both Web-Socket and REST API connectivity.
 ## JWT Permissions
 The kuksa.val server uses JSON Web Tokens (JWT) to authorize clients. For testing you can use the [Super Admin Token](certificates/jwt/super-admin.json.token). To learn how to to set up tokens go to [kuksa.val JWT documentation](doc/jwt.md).
 
-## Web-Socket specific testing
+## Web-Socket client for testing
 
-This covers only the basic functions like _get_, _set_ and _getmetadata_ requests. You could skip this and take a look at the unit-test to get better idea about the implementation.
+You can use the [testclient](./vss-testclient/) to test basic functions like _getMetaData_, _getValue_ and _setValue_ requests.
+
+After starting the kuksa server using `./kuksa-val-server` command. You can start the testclient as follows:
+
+![Alt text](./doc/pictures/testclient_basic.gif "test client usage")
+
+Using the testclient, it is also possible to update the VSS tree live. More details can be found [here](./doc/liveUpdateVSSTree.md).
 
 You could also checkout the in-vehicle apps in the [kuksa.apps](https://github.com/eclipse/kuksa.apps) repo which work with the server.
-
-Now the apps are ready for testing. Run `./kuksa-val-server` command and then in a separate terminal start testclient using `./testclient`.
-
-Testclient should connect to the kuksa-val-server and promt a message as below
-![Alt text](./doc/pictures/test1.png?raw=true "test1")
-
-Authenticate with the server using the JWT token
-![Alt text](./doc/pictures/test4.png?raw=true "test4")
-
-Enter the vss path and function as set and a dummy integer value.
-![Alt text](./doc/pictures/test2.png?raw=true "test2")
-
-Enter the same vss path as above and fuction as get. You should receive the previously set value in the JSON response.
-![Alt text](./doc/pictures/test3.png?raw=true "test3")
 
 ## REST API specific testing
 
