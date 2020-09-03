@@ -48,19 +48,20 @@ Use the Genivi tools to generate a JSON
 Now let's try on a kuksa-val instance with a vanilla VSS structure.
 Use the test client, you can update the VSS tree live:
 ```
-  updateVSSTree roadster-elon.json 
+updateVSSTree roadster-elon.json 
 ```
 
 Then you can see, the new signal is available and the max speed limit has increased:
 
 ![Alt text](./pictures/testclient_updateVSSTree.gif "test client update vss tree")
 
-**Note:** You may need the [super-admin-metadata.json.token](../certificates/jwt/super-admin-metadata.json.token) for authorization. 
+**Note:** You may need the [super-admin.json.token](../certificates/jwt/super-admin.json.token) for authorization. 
 
 ## Hot-patching with updateMetaData
 if you just want to add or change a single metadata item in a signal or sensor, going through the whole VSS tooling may be a littel cumbersome. But you can use the test client to update metadata of a single path directly, if you have the permission to modify metadata:
+
 ```
-  updateMetaData updateMetaData Vehicle.Speed '{"max":9999}'
+updateMetaData updateMetaData Vehicle.Speed '{"max":9999}'
 ```
 
 ![Alt text](./pictures/testclient_updateMetaData.gif "test client update metadata")
