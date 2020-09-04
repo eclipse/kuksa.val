@@ -229,13 +229,22 @@ string VssCommandProcessor::processUnsubscribe(string request_id,
 
 string VssCommandProcessor::processGetMetaData(string request_id,
                                                string path) {
-  jsoncons::json st = database->getMetaData(path);
-
   jsoncons::json result;
   result["action"] = "getMetadata";
   result["requestId"] = request_id;
-  result["metadata"] = st;
+
+  jsoncons::json st = database->getMetaData(path);
   result["timestamp"] = time(NULL);
+  if (0 == st.size()){
+    jsoncons::json error;
+    error["number"] = 404;
+    error["reason"] = "Path not found";
+    error["message"] = "In database no metadata found for path " + path;
+    result["error"] = error;
+  
+  } else {
+    result["metadata"] = st;
+  }
 
   std::stringstream ss;
   ss << pretty_print(result);
