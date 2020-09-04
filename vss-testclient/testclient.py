@@ -10,45 +10,89 @@
 ########################################################################
 
 import argparse, json, sys
-from cmd2 import Cmd, with_argparser, with_category
+from typing import Dict, List
 import queue, time, os
 from clientComm import VSSClientComm
-
+from pygments import highlight, lexers, formatters
+from cmd2 import Cmd, with_argparser, with_category, Cmd2ArgumentParser, CompletionItem
+from cmd2.utils import CompletionError, basic_complete
+import functools
 DEFAULT_SERVER_ADDR = "localhost"
 DEFAULT_SERVER_PORT = 8090
-
-ap_getServerAddr = argparse.ArgumentParser()
-ap_connect = argparse.ArgumentParser()
-ap_connect.add_argument('-i', "--insecure", default=False, action="store_true", help='Connect in insecure mode')
-ap_disconnect = argparse.ArgumentParser()
-ap_authorize = argparse.ArgumentParser()
-ap_authorize.add_argument('Token', help='JWT(or the file storing the token) for authorizing the client.')
-ap_setServerAddr = argparse.ArgumentParser()
-ap_setServerAddr.add_argument('IP', help='VSS Server IP Address', default=DEFAULT_SERVER_ADDR)
-ap_setServerAddr.add_argument('Port', type=int, help='VSS Server Websocket Port', default=DEFAULT_SERVER_PORT)
-ap_setValue = argparse.ArgumentParser()
-ap_setValue.add_argument("Parameter", help="Parameter to be set")
-ap_setValue.add_argument("Value", help="Value to be set")
-ap_getValue = argparse.ArgumentParser()
-ap_getValue.add_argument("Parameter", help="Parameter whose metadata is to be read")
-ap_getMetadata = argparse.ArgumentParser()
-ap_getMetadata.add_argument("Parameter", help="Parameter whose metadata is to be read")
-
-
 class VSSTestClient(Cmd):
+    def get_childtree(self, pathText):
+        childVssTree = self.vssTree
+        if "." in pathText:
+            paths = pathText.split(".")
+            for path in paths:
+                if path in childVssTree:
+                    childVssTree = childVssTree[path]
+                elif 'children' in childVssTree and path in childVssTree['children']:
+                    childVssTree = childVssTree['children'][path]
+            if 'children' in childVssTree:
+                childVssTree = childVssTree['children']
+        return childVssTree
+
+    def path_completer(self, text, line, begidx, endidx):
+        if len(self.pathCompletionItems) == 0:
+            tree = json.loads(self.getMetaData("*"))
+                
+            if 'metadata' in tree:
+                self.vssTree = tree['metadata']
+
+        self.pathCompletionItems = []
+        childTree = self.get_childtree(text)
+        prefix = ""
+        if "." in text:
+            prefix = text[:text.rfind(".")]+"."
+        for key in childTree:
+            description = ""
+            if 'description' in childTree[key]:
+                description = "("+childTree[key]['description']+")"
+            self.pathCompletionItems.append(CompletionItem(prefix + key, description))
+            if 'children' in childTree[key]:
+                self.pathCompletionItems.append(CompletionItem(prefix + key + ".", "(children...)"))
+
+        return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
     COMM_SETUP_COMMANDS = "Communication Set-up Commands"
     VSS_COMMANDS = "VSS Interaction Commands"
-    complete_authorize = Cmd.path_complete
+
+    ap_getServerAddr = argparse.ArgumentParser()
+    ap_connect = argparse.ArgumentParser()
+    ap_connect.add_argument('-i', "--insecure", default=False, action="store_true", help='Connect in insecure mode')
+    ap_disconnect = argparse.ArgumentParser()
+    ap_authorize = argparse.ArgumentParser()
+    tokenfile_completer_method = functools.partial(Cmd.path_complete,
+        path_filter=lambda path: (os.path.isdir(path) or path.endswith(".token")))
+    ap_authorize.add_argument('Token', help='JWT(or the file storing the token) for authorizing the client.', completer_method=tokenfile_completer_method)
+    ap_setServerAddr = argparse.ArgumentParser()
+    ap_setServerAddr.add_argument('IP', help='VSS Server IP Address', default=DEFAULT_SERVER_ADDR)
+    ap_setServerAddr.add_argument('Port', type=int, help='VSS Server Websocket Port', default=DEFAULT_SERVER_PORT)
+
+    ap_setValue = argparse.ArgumentParser()
+    ap_setValue.add_argument("Parameter", help="Parameter to be set", completer_method=path_completer)
+    ap_setValue.add_argument("Value", help="Value to be set")
+
+    ap_getValue = argparse.ArgumentParser()
+    ap_getValue.add_argument("Parameter", help="Parameter whose metadata is to be read", completer_method=path_completer)
+    ap_getMetadata = argparse.ArgumentParser()
+    ap_getMetadata.add_argument("Parameter", help="Parameter whose metadata is to be read", completer_method=path_completer)
+
 
     # Constructor
     def __init__(self):
         super(VSSTestClient, self).__init__(persistent_history_file=".vssclient_history", persistent_history_length=100)
+
         self.prompt = "VSS Client> "
+        self.max_completion_items = 20
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
         self.serverIP = DEFAULT_SERVER_ADDR
         self.serverPort = DEFAULT_SERVER_PORT
+        self.vssTree = {}
+        self.pathCompletionItems = []
+        self.connect()
 
 
     @with_category(COMM_SETUP_COMMANDS)
@@ -71,7 +115,7 @@ class VSSTestClient(Cmd):
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         resp = self.recvMsgQueue.get()
-        print(resp)
+        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_setValue)
@@ -85,7 +129,8 @@ class VSSTestClient(Cmd):
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         resp = self.recvMsgQueue.get()
-        print(resp)
+        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
 
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_getValue)
@@ -98,7 +143,8 @@ class VSSTestClient(Cmd):
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         resp = self.recvMsgQueue.get()
-        print(resp)
+        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
 
 
     def do_quit(self, args):
@@ -109,18 +155,27 @@ class VSSTestClient(Cmd):
         super(VSSTestClient, self).do_quit(args)
         sys.exit(0)
 
+    def getMetaData(self, path):
+        """Get Metadata of the parameter"""
+        if hasattr(self, "commThread") and self.commThread.wsConnected:
+            req = {}
+            req["requestId"] = 1236
+            req["action"]= "getMetadata"
+            req["path"] = path 
+            jsonDump = json.dumps(req)
+            self.sendMsgQueue.put(jsonDump)
+            resp = self.recvMsgQueue.get()
+            return resp
+        else:
+            return "{}"
+
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_getMetadata)
-    def do_getMetadata(self, args):
-        """Get Metadata of the parameter"""
-        req = {}
-        req["requestId"] = 1236
-        req["action"]= "getMetadata"
-        req["path"] = args.Parameter
-        jsonDump = json.dumps(req)
-        self.sendMsgQueue.put(jsonDump)
-        resp = self.recvMsgQueue.get()
-        print(resp)
+    def do_getMetaData(self, args):
+        """Get MetaData of the parameter"""
+        resp = self.getMetaData(args.Parameter)
+        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
 
 
     @with_category(COMM_SETUP_COMMANDS)
@@ -133,9 +188,7 @@ class VSSTestClient(Cmd):
                 self.commThread = None
             print("Websocket disconnected!!")
 
-    @with_category(COMM_SETUP_COMMANDS)
-    @with_argparser(ap_connect)
-    def do_connect(self, args):
+    def connect(self, insecure=False):
         """Connect to the VSS Server"""
         if hasattr(self, "commThread"):
             if self.commThread != None:
@@ -143,7 +196,7 @@ class VSSTestClient(Cmd):
                 self.commThread = None
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
-        self.commThread = VSSClientComm(self.serverIP, self.serverPort, self.sendMsgQueue, self.recvMsgQueue, args.insecure)
+        self.commThread = VSSClientComm(self.serverIP, self.serverPort, self.sendMsgQueue, self.recvMsgQueue, insecure)
         self.commThread.start()
 
         pollIndex = 10
@@ -160,6 +213,11 @@ class VSSTestClient(Cmd):
             print("Websocket could not be connected!!")
             self.commThread.stopComm()
             self.commThread = None
+
+    @with_category(COMM_SETUP_COMMANDS)
+    @with_argparser(ap_connect)
+    def do_connect(self, args):
+        self.connect(args.insecure)
 
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_setServerAddr)
