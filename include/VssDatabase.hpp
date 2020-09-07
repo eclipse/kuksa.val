@@ -36,12 +36,12 @@ class VssDatabase : public IVssDatabase {
  private:
   std::shared_ptr<ILogger> logger_;
   std::mutex rwMutex_;
-
   std::shared_ptr<ISubscriptionHandler> subHandler_;
   std::shared_ptr<IAccessChecker> accessValidator_;
+
   std::string getPathForMetadata(std::string path, bool& isBranch);
   std::string getReadablePath(std::string jsonpath);
-  void checkSetPermission(WsChannel& channel, jsoncons::json valueJson);
+  void checkSetPermission(WsChannel& channel, const std::string& path);
   void HandleSet(jsoncons::json & setValues);
 
  public:
@@ -52,6 +52,9 @@ class VssDatabase : public IVssDatabase {
 
   void initJsonTree(const boost::filesystem::path &fileName) override;
   bool checkPathValid(const std::string& path);
+  void updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree);
+  void updateJsonTree(WsChannel& channel, const jsoncons::json& value) override;
+  void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& newTree) override;
   jsoncons::json getMetaData(const std::string &path) override;
   void setSignal(WsChannel& channel, const std::string &path, jsoncons::json value) override;
   void setSignal(const std::string &path, jsoncons::json value);

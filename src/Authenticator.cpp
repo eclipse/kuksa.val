@@ -99,11 +99,11 @@ Authenticator::Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretk
 
 // validates the token against expiry date/time. should be extended to check
 // some other claims.
-int Authenticator::validate(WsChannel& channel, std::shared_ptr<IVssDatabase> db,
+int Authenticator::validate(WsChannel& channel,
                             string authToken) {
   int ttl = validateToken(channel, authToken);
   if (ttl > 0) {
-    resolvePermissions(channel, db);
+    resolvePermissions(channel);
   }
 
   return ttl;
@@ -127,8 +127,7 @@ bool Authenticator::isStillValid(WsChannel& channel) {
 // **Do this only once for authenticate request**
 // resolves the permission in the JWT token and store the absolute path to the
 // signals in permissions JSON in WsChannel.
-void Authenticator::resolvePermissions(WsChannel& channel,
-                                       std::shared_ptr<IVssDatabase> database) {
+void Authenticator::resolvePermissions(WsChannel& channel) {
   string authToken = channel.getAuthToken();
   auto decoded = jwt::decode(authToken);
   json claims;
@@ -139,18 +138,24 @@ void Authenticator::resolvePermissions(WsChannel& channel,
     claims[e.first] = json::parse(value.str());
   }
 
+  json permissions;
+  if (claims.has_key("modifyTree") && claims["modifyTree"].as<bool>()) {
+    channel.enableModifyTree();
+  }
+
   if (claims.has_key("kuksa-vss")) {
     json tokenPermJson = claims["kuksa-vss"];
-    json permissions;
-    for (auto path : tokenPermJson.object_range()) {
-      bool isBranch;
-      string pathString(path.key());
-      list<string> paths = database->getPathForGet(pathString, isBranch);
-
-      for (string verifiedPath : paths) {
-        permissions.insert_or_assign(verifiedPath, path.value());
+    for (auto permission : tokenPermJson.object_range()) {
+      // TODO use regex to check
+      if(permission.value() == "rw"
+        || permission.value() == "wr"
+        || permission.value() == "w"
+        || permission.value() == "r"){
+        permissions.insert_or_assign(permission.key(), permission.value());
+      } else {
+        logger->Log(LogLevel::ERROR, "Permission for " + string(permission.key()) + " = " + permission.value().as<std::string>() + " is not valid, only r|w are supported");
       }
     }
-    channel.setPermissions(permissions);
   }
+  channel.setPermissions(permissions);
 }

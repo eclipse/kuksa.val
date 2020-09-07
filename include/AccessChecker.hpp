@@ -22,12 +22,13 @@ class IAuthenticator;
 class AccessChecker : public IAccessChecker {
  private:
   std::shared_ptr<IAuthenticator> tokenValidator;
+  bool checkSignalAccess(const WsChannel& channel, const std::string& path, const std::string& requiredPermission);
 
  public:
   AccessChecker(std::shared_ptr<IAuthenticator> vdator);
-  bool checkReadAccess(WsChannel &channel, const std::string &path);
-  bool checkWriteAccess(WsChannel &channel, const std::string &path);
-  bool checkPathWriteAccess(WsChannel &channel, const jsoncons::json &paths);
+  bool checkReadAccess(WsChannel &channel, const std::string &path) override;
+  bool checkWriteAccess(WsChannel &channel, const std::string &path) override;
+  bool checkPathWriteAccess(WsChannel &channel, const jsoncons::json &paths) override;
 };
 
 #endif

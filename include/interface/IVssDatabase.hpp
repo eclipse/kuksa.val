@@ -26,6 +26,8 @@ class IVssDatabase {
     virtual ~IVssDatabase() {}
 
     virtual void initJsonTree(const boost::filesystem::path &fileName) = 0;
+    virtual void updateJsonTree(WsChannel& channel, const jsoncons::json& value) = 0;
+    virtual void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& value) = 0;
     virtual jsoncons::json getMetaData(const std::string &path) = 0;
     virtual void setSignal(WsChannel& channel,
                            const std::string &path,
@@ -33,8 +35,8 @@ class IVssDatabase {
     virtual jsoncons::json getSignal(WsChannel& channel, const std::string &path) = 0;
 
     // TODO: temporary added while components are refactored
-    jsoncons::json data_tree;
-    jsoncons::json meta_tree;
+    jsoncons::json data_tree__;
+    jsoncons::json meta_tree__;
     virtual std::list<std::string> getPathForGet(const std::string &path, bool& isBranch) = 0;
     virtual std::string getVSSSpecificPath(const std::string &path, bool& isBranch, jsoncons::json& tree) = 0;
     virtual jsoncons::json getPathForSet(const std::string &path, jsoncons::json value) = 0;

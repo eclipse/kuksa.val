@@ -208,21 +208,25 @@ int main(int argc, const char *argv[]) {
   desc.add_options()
     ("help,h", "Help screen")
     ("config-file,cfg", program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"config.ini"}),
-      "Configuration file path for program parameters. "
-      "Can be provided instead of command line options")
-    ("vss", program_options::value<boost::filesystem::path>()->required(), "vss_rel*.json file")
+      "Configuration file with W3C-Server input parameters."
+      "Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup)."
+      "Sample of configuration file parameters looks like:\n"
+      "vss=vss_rel_2.0.json\n"
+      "cert-path=. \n"
+      "insecure=true \n"
+      "log-level=ALL\n")
+    ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which W3C-Server shall handle. Sample 'vss_rel_2.0.json' file can be found under [unit-test](./unit-test/vss_rel_2.0.json)")
     ("cert-path", program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
-      "Path to directory where 'Server.pem' and 'Server.key' are located")
-    ("insecure", "Accept plain (no-SSL) connections")
+      "[mandatory] Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. ")
+    ("insecure", "By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.")
     ("use-keycloak", "Use KeyCloak for permission management")
     ("address", program_options::value<string>()->default_value("localhost"),
-      "Address")("port", program_options::value<int>()->default_value(8090),
-                 "Port")
+      "If provided, W3C-Server shall use different server address than default _'localhost'_")
+    ("port", program_options::value<int>()->default_value(8090),
+        "If provided, W3C-Server shall use different server port than default '8090' value")
     ("log-level",
       program_options::value<vector<string>>(&logLevels)->composing(),
-      "Log level event type to be enabled. "
-      "To enable different log levels, provide this option multiple times with "
-      "required log levels. \n"
+      "Enable selected log level value. To allow for different log level combinations, parameter can be provided multiple times with different log level values.\n"
       "Supported log levels: NONE, VERBOSE, INFO, WARNING, ERROR, ALL");
   // mqtt options 
   program_options::options_description mqtt_desc("MQTT Options");

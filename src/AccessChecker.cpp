@@ -16,6 +16,7 @@
 
 #include <jsoncons/json.hpp>
 #include <string>
+#include <regex>
 
 #include "IAuthenticator.hpp"
 #include "WsChannel.hpp"
@@ -28,26 +29,31 @@ AccessChecker::AccessChecker(std::shared_ptr<IAuthenticator> vdator) {
   tokenValidator = vdator;
 }
 
+bool AccessChecker::checkSignalAccess(const WsChannel& channel, const string& path, const string& requiredPermission){
+  json permissions = channel.getPermissions();
+  string permissionValue = permissions.get_with_default(path, "");
+  if (permissionValue.empty()){
+    for (auto permission : permissions.object_range()) {
+      string pathString(permission.key());
+      auto path_regex = std::regex{
+        std::regex_replace(pathString, std::regex("\\*"), std::string(".*"))};
+      std::smatch base_match;
+      if (std::regex_match(path, base_match, path_regex)) {
+        permissionValue = permission.value().as<string>();
+      }
+    }
+  
+  } 
+  return permissionValue.find(requiredPermission) != std::string::npos;
+}
 // check the permissions json in WsChannel if path has read access
 bool AccessChecker::checkReadAccess(WsChannel &channel, const string &path) {
-  json permissions = channel.getPermissions();
-  string perm = permissions.get_with_default(path, "");
-
-  if (perm == "r" || perm == "rw" || perm == "wr") {
-    return true;
-  }
-  return false;
+  return checkSignalAccess(channel, path, "r");
 }
 
 // check the permissions json in WsChannel if path has write access
 bool AccessChecker::checkWriteAccess(WsChannel &channel, const string &path) {
-  json permissions = channel.getPermissions();
-  string perm = permissions.get_with_default(path, "");
-
-  if (perm == "w" || perm == "rw" || perm == "wr") {
-    return true;
-  }
-  return false;
+  return checkSignalAccess(channel, path, "w");
 }
 
 // Checks if all the paths have write access.If even 1 path in the list does not
@@ -62,3 +68,4 @@ bool AccessChecker::checkPathWriteAccess(WsChannel &channel, const json &paths) 
   }
   return true;
 }
+

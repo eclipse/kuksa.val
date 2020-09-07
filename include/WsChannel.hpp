@@ -33,6 +33,7 @@ class WsChannel {
  private:
   uint64_t connectionID;
   bool authorized = false;
+  bool modifyTree = false;
   string authToken;
   json permissions;
   Type typeOfConnection;
@@ -44,11 +45,13 @@ class WsChannel {
   void setAuthToken(string tok) { authToken = tok; }
   void setPermissions(json perm) { permissions = perm; }
   void setType(Type type) { typeOfConnection = type; }
+  void enableModifyTree (){ modifyTree = true; }
 
-  uint64_t getConnID() { return connectionID; }
-  bool isAuthorized() { return authorized; }
-  string getAuthToken() { return authToken; }
-  json getPermissions() { return permissions; }
-  Type getType() { return typeOfConnection; }
+  uint64_t getConnID() const { return connectionID; }
+  bool isAuthorized() const { return authorized; }
+  bool authorizedToModifyTree() const { return modifyTree; }
+  string getAuthToken() const { return authToken; }
+  json getPermissions() const { return permissions; }
+  Type getType() const { return typeOfConnection; }
 };
 #endif
