@@ -1,7 +1,20 @@
+#
+# ******************************************************************************
+# Copyright (c) 2020 Robert Bosch GmbH and others.
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v2.0
+# which accompanies this distribution, and is available at
+# https://www.eclipse.org/org/documents/epl-2.0/index.php
+#
+#  Contributors:
+#      Robert Bosch GmbH 
+# *****************************************************************************
+
 set(Boost_USE_STATIC_LIBS OFF)
 set(BOOST_VER 1.67.0)
 set(BOOST_COMPONENTS atomic date_time chrono filesystem program_options system thread)
-find_package(Boost ${BOOST_VER} EXACT COMPONENTS ${BOOST_COMPONENTS})
+find_package(Boost ${BOOST_VER} EXACT COMPONENTS ${BOOST_COMPONENTS} unit_test_framework)
 
 if(NOT Boost_FOUND)
   string(REPLACE "." "_" BOOST_VER_ ${BOOST_VER}) 
