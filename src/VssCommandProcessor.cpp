@@ -266,13 +266,22 @@ string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, const strin
 
 string VssCommandProcessor::processGetMetaData(const string & request_id,
                                                const string & path) {
-  jsoncons::json st = database->getMetaData(path);
-
   jsoncons::json result;
   result["action"] = "getMetaData";
   result["requestId"] = request_id;
-  result["metadata"] = st;
+
+  jsoncons::json st = database->getMetaData(path);
   result["timestamp"] = time(NULL);
+  if (0 == st.size()){
+    jsoncons::json error;
+    error["number"] = 404;
+    error["reason"] = "Path not found";
+    error["message"] = "In database no metadata found for path " + path;
+    result["error"] = error;
+  
+  } else {
+    result["metadata"] = st;
+  }
 
   std::stringstream ss;
   ss << pretty_print(result);
