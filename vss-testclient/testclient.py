@@ -19,6 +19,7 @@ from cmd2.utils import CompletionError, basic_complete
 import functools
 DEFAULT_SERVER_ADDR = "localhost"
 DEFAULT_SERVER_PORT = 8090
+
 class VSSTestClient(Cmd):
     def get_childtree(self, pathText):
         childVssTree = self.vssTree
@@ -76,8 +77,16 @@ class VSSTestClient(Cmd):
 
     ap_getValue = argparse.ArgumentParser()
     ap_getValue.add_argument("Parameter", help="Parameter whose metadata is to be read", completer_method=path_completer)
-    ap_getMetadata = argparse.ArgumentParser()
-    ap_getMetadata.add_argument("Parameter", help="Parameter whose metadata is to be read", completer_method=path_completer)
+    ap_getMetaData = argparse.ArgumentParser()
+    ap_getMetaData.add_argument("Parameter", help="Parameter whose metadata is to be read", completer_method=path_completer)
+    ap_updateMetaData = argparse.ArgumentParser()
+    ap_updateMetaData.add_argument("Parameter", help="Parameter whose MetaData is to update", completer_method=path_completer)
+    ap_updateMetaData.add_argument("Json", help="MetaData to update. Note, only attributes can be update, if update children or the whole vss tree, use `updateVSSTree` instead.")
+
+    ap_updateVSSTree = argparse.ArgumentParser()
+    jsonfile_completer_method = functools.partial(Cmd.path_complete,
+        path_filter=lambda path: (os.path.isdir(path) or path.endswith(".json")))
+    ap_updateVSSTree.add_argument("Json", help="Json tree to update VSS", completer_method=jsonfile_completer_method)
 
 
     # Constructor
@@ -156,11 +165,11 @@ class VSSTestClient(Cmd):
         sys.exit(0)
 
     def getMetaData(self, path):
-        """Get Metadata of the parameter"""
+        """Get MetaData of the parameter"""
         if hasattr(self, "commThread") and self.commThread.wsConnected:
             req = {}
             req["requestId"] = 1236
-            req["action"]= "getMetadata"
+            req["action"]= "getMetaData"
             req["path"] = path 
             jsonDump = json.dumps(req)
             self.sendMsgQueue.put(jsonDump)
@@ -170,7 +179,38 @@ class VSSTestClient(Cmd):
             return "{}"
 
     @with_category(VSS_COMMANDS)
-    @with_argparser(ap_getMetadata)
+    @with_argparser(ap_updateVSSTree)
+    def do_updateVSSTree(self, args):
+        """Set the value of a parameter"""
+        req = {}
+        req["requestId"] = 1233
+        req["action"]= "updateVSSTree"
+        if os.path.isfile(args.Json):
+            with open(args.Json, "r") as f:
+                req["metadata"] = json.load(f)
+        else:
+            req["metadata"] = json.loads(args.Json) 
+        jsonDump = json.dumps(req)
+        self.sendMsgQueue.put(jsonDump)
+        resp = self.recvMsgQueue.get()
+        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+
+    @with_category(VSS_COMMANDS)
+    @with_argparser(ap_updateMetaData)
+    def do_updateMetaData(self, args):
+        """Set the value of a parameter"""
+        req = {}
+        req["requestId"] = 1237
+        req["action"]= "updateMetaData"
+        req["path"] = args.Parameter
+        req["metadata"] = json.loads(args.Json) 
+        jsonDump = json.dumps(req)
+        self.sendMsgQueue.put(jsonDump)
+        resp = self.recvMsgQueue.get()
+        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+
+    @with_category(VSS_COMMANDS)
+    @with_argparser(ap_getMetaData)
     def do_getMetaData(self, args):
         """Get MetaData of the parameter"""
         resp = self.getMetaData(args.Parameter)

@@ -67,7 +67,7 @@ target_include_directories(${SERVER_OBJ_LIB_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/interface>
 )
 
-target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=maybe-uninitialized)
+target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=maybe-uninitialized -Wno-error=parentheses)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
   message(STATUS "this should be deeeeeebuuuuuuuuuuuuuuuuugggggggggggggggggggggggg")
@@ -168,14 +168,6 @@ if(BUILD_EXE)
     "libgcc1 (>= 1:3.0)"
     "libssl1.0.0 (>= 1.0.1)"
     "libstdc++6 (>= 5.2)"
-    "libboost-filesystem (>= ${MIN_BOOST_VER})"
-    "libboost-atomic (>= ${MIN_BOOST_VER})"
-    "libboost-date-time-dev (>= ${MIN_BOOST_VER})"
-    "libboost-chrono (>= ${MIN_BOOST_VER})"
-    "libboost-program_options (>= ${MIN_BOOST_VER})"
-    "libboost-system (>= ${MIN_BOOST_VER})"
-    "libboost-thread (>= ${MIN_BOOST_VER})"
-    "libboost-unit_test_framework (>= ${MIN_BOOST_VER})"
   )
 
   STRING(REPLACE ";" ", " DEPENDENCIES "${DEPENDENCY_LIBRARY_LIST}")

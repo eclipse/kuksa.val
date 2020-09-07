@@ -14,6 +14,7 @@
 #ifndef __SIGNING_H__
 #define __SIGNING_H__
 
+#include <stdexcept>
 #include <jwt-cpp/base.h>
 #include <jwt-cpp/jwt.h>
 #include <fstream>
