@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 cmd2 = "*"
 websockets = "*"
+pygments = "*"
 
 [requires]
 python_version = "3.8"
