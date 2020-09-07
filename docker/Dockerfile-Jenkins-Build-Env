@@ -4,7 +4,7 @@ FROM ubuntu:18.04
 
 # Install all the pre-requisits we need in the docker image
 RUN apt-get update \
-  && apt-get install -y qemu-user-static docker.io sudo bzip2 ccache
+  && apt-get install -y qemu-user-static docker.io sudo bzip2
   
   
 
