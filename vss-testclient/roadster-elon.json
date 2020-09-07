@@ -1,0 +1,24 @@
+{
+  "Vehicle": {
+    "type": "branch",
+    "uuid": "ccc825f94139544dbb5f4bfd033bece6",
+    "children": {
+      "Speed": {
+        "max": 9001,
+        "type": "sensor",
+        "uuid": "efe50798638d55fab18ab7d43cc490e9"
+      },
+      "Private": {
+        "type": "branch",
+        "uuid": "4161866b048a5b76aa3124dec82e0260",
+        "children": {
+          "ThrustersActive": {
+            "datatype": "boolean",
+            "type": "sensor",
+            "uuid": "304b0817a2df524fa442c6a2d2742ed0"
+          }
+        }
+      }
+    }
+  }
+}

@@ -25,6 +25,7 @@
 #include "IAccessChecker.hpp"
 #include "ISubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
+#include "WsChannel.hpp"
 
 using namespace std;
 using namespace jsoncons;
@@ -443,8 +444,7 @@ void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::jso
 }
 
 void VssDatabase::updateJsonTree(WsChannel& channel, const jsoncons::json& jsonTree){
-  bool haveAccess = accessValidator_->checkMetaDataWriteAccess(channel);
-  if (!haveAccess) {
+  if (! channel.authorizedToModifyTree()) {
      stringstream msg;
      msg << "do not have write access for updating json tree or is invalid";
      throw noPermissionException(msg.str());
@@ -458,8 +458,7 @@ void VssDatabase::updateJsonTree(WsChannel& channel, const jsoncons::json& jsonT
 // update a metadata in tree, which will only do one-level-deep shallow merge/update.
 // If deep merge/update are expected, use `updateJsonTree` instead.
 void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, const jsoncons::json& metadata){
-  bool haveAccess = accessValidator_->checkMetaDataWriteAccess(channel);
-  if (!haveAccess) {
+  if (! channel.authorizedToModifyTree()) {
      stringstream msg;
      msg << "do not have write access for updating MetaData or is invalid";
      throw noPermissionException(msg.str());

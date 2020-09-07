@@ -13,18 +13,20 @@ How does this work? First the access rights are describe in JSON, an example tok
   "admin": true,
   "iat": 1516239022,
   "exp": 1606239022,
+  "modifyTree": true,
   "kuksa-vss":  {
      "*": "rw"
   }
 }
 ``` 
 
-This are the rules to create  a valid kuksa.val token
+This are the rules to create a valid kuksa.val token
 
 1. The JWT Token should contain a "kuksa-vss" claim.
 2. Under the "kuksa-vss" claim the permissions can be granted using key value pair. The key should be the path in the signal tree and the value should be strings with "r" for READ-ONLY, "w" for WRITE-ONLY and "rw" or "wr" for READ-AND-WRITE permission. See the image above.
 3. The permissions can contain wild-cards. For eg "Vehicle.OBD.\*" : "rw" will grant READ-WRITE access to all the signals under Vehicle.OBD.
 4. The permissions can be granted to a branch. For eg "Signal.Vehicle" : "rw" will grant READ-WRITE access to all the signals under Signal.Vehicle branch.
+5. Optionally, you can also define the permissions for modifying tree using the `modifyTree` key. Set it to `true` to enable the modificationthe VSS tree and metadata in runtime.
 
  This is an example of another token that allows read access to OBD signals and write access to a single leaf
 
@@ -35,6 +37,7 @@ This are the rules to create  a valid kuksa.val token
   "admin": true,
   "iat": 1516239022,
   "exp": 1696239022,
+  "modifyTree": false,
   "kuksa-vss":  {
      "Vehicle.Drivetrain.Transmission.DriveType": "rw",
      "Vehicle.OBD.*": "r"
