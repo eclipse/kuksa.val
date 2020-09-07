@@ -77,8 +77,8 @@ class VSSTestClient(Cmd):
 
     ap_getValue = argparse.ArgumentParser()
     ap_getValue.add_argument("Parameter", help="Parameter whose metadata is to be read", completer_method=path_completer)
-    ap_getMetadata = argparse.ArgumentParser()
-    ap_getMetadata.add_argument("Parameter", help="Parameter whose metadata is to be read", completer_method=path_completer)
+    ap_getMetaData = argparse.ArgumentParser()
+    ap_getMetaData.add_argument("Parameter", help="Parameter whose metadata is to be read", completer_method=path_completer)
     ap_updateMetaData = argparse.ArgumentParser()
     ap_updateMetaData.add_argument("Parameter", help="Parameter whose MetaData is to update", completer_method=path_completer)
     ap_updateMetaData.add_argument("Json", help="MetaData to update. Note, only attributes can be update, if update children or the whole vss tree, use `updateVSSTree` instead.")
@@ -165,11 +165,11 @@ class VSSTestClient(Cmd):
         sys.exit(0)
 
     def getMetaData(self, path):
-        """Get Metadata of the parameter"""
+        """Get MetaData of the parameter"""
         if hasattr(self, "commThread") and self.commThread.wsConnected:
             req = {}
             req["requestId"] = 1236
-            req["action"]= "getMetadata"
+            req["action"]= "getMetaData"
             req["path"] = path 
             jsonDump = json.dumps(req)
             self.sendMsgQueue.put(jsonDump)
