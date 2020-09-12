@@ -22,6 +22,7 @@
 #include <boost/make_unique.hpp>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include <string>
 #include <thread>
