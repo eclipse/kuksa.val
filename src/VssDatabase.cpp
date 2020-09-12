@@ -179,13 +179,13 @@ namespace {
                     jsoncons::json& dest,
                     jsoncons::json& source,
                     string key) {
-    if (!source.has_key("type")) {
+    if (!source.contains("type")) {
       string msg = "Unknown type for signal found at " + key;
       logger->Log(LogLevel::ERROR, "VssDatabase::setJsonValue : " + msg);
 
       throw genException(msg);
     }
-    dest[key] = source["value"];
+    dest[key] = source["value"].as<string>();
   }
 }
 
@@ -283,9 +283,9 @@ string VssDatabase::getVSSSpecificPath(const string &path, bool& isBranch,
   try {
     jsoncons::json res = jsonpath::json_query(tree, format_path);
     string type = "";
-    if ((res.is_array() && res.size() > 0) && res[0].has_key("type")) {
+    if ((res.is_array() && res.size() > 0) && res[0].contains("type")) {
       type = res[0]["type"].as<string>();
-    } else if (res.has_key("type")) {
+    } else if (res.contains("type")) {
       type = res["type"].as<string>();
     }
     if (type != "" && type == "branch") {
@@ -338,8 +338,8 @@ list<string> VssDatabase::getPathForGet(const string &path, bool& isBranch) {
       continue;
     }
     jsoncons::json result = resArray[0];
-    if (!result.has_key("id") &&
-        (result.has_key("type") && result["type"].as<string>() == "branch")) {
+    if (!result.contains("id") &&
+        (result.contains("type") && result["type"].as<string>() == "branch")) {
       bool dummy = true;
       paths.merge(getPathForGet(getReadablePath(jPath) + ".*", dummy));
       continue;
@@ -384,7 +384,7 @@ void VssDatabase::HandleSet(jsoncons::json & setValues) {
     rwMutex_.unlock();
     if (resArray.is_array() && resArray.size() == 1) {
       jsoncons::json resJson = resArray[0];
-      if (resJson.has_key("datatype")) {
+      if (resJson.contains("datatype")) {
         string value_type = resJson["datatype"].as<string>();
         json val = item["value"];
         checkTypeAndBound(logger_, value_type, val);
@@ -548,12 +548,12 @@ jsoncons::json VssDatabase::getMetaData(const std::string &path) {
 
     if (resArray.is_array() && resArray.size() == 1) {
       resJson = resArray[0];
-      if (resJson.has_key("description")) {
+      if (resJson.contains("description")) {
         resJson.insert_or_assign("description",
                                  resJson["description"].as<string>());
       }
 
-      if (resJson.has_key("type")) {
+      if (resJson.contains("type")) {
         string type = resJson["type"].as<string>();
         resJson.insert_or_assign("type", type);
       }
@@ -638,7 +638,7 @@ jsoncons::json VssDatabase::getPathForSet(const string &path, jsoncons::json val
       }
 
       pathValue["path"] = absolutePath;
-      pathValue["value"] = value[replaceString];
+      pathValue["value"] = value[replaceString].as<string>();
       setValues[i] = pathValue;
     }
   } else {
@@ -754,7 +754,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
         rwMutex_.unlock();
         jPaths.pop_back();
         jsoncons::json result = resArray[0];
-        if (result.has_key("value")) {
+        if (result.contains("value")) {
           setJsonValue(logger_, value, result, getReadablePath(jPath));
         } else {
           value[getReadablePath(jPath)] = "---";
@@ -777,7 +777,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
     jsoncons::json answer;
     answer["path"] = getReadablePath(jPath);
     jsoncons::json result = resArray[0];
-    if (result.has_key("value")) {
+    if (result.contains("value")) {
       setJsonValue(logger_, answer, result, "value");
       return answer;
     } else {
@@ -810,7 +810,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
       rwMutex_.unlock();
       jPaths.pop_back();
       jsoncons::json result = resArray[0];
-      if (result.has_key("value")) {
+      if (result.contains("value")) {
         setJsonValue(logger_, value, result, getReadablePath(jPath));
       } else {
         value[getReadablePath(jPath)] = "---";
