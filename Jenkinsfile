@@ -9,7 +9,7 @@
 **/
 
 node('docker') {
-    checkout scm(extensions: [[$class: 'CloneOption', noTags: false, reference: '', shallow: true], ])
+		checkout scm
     	def buildImage = docker.build("my-image:${env.BUILD_ID}", "-f docker/Dockerfile-Jenkins-Build-Env .")
         buildImage.inside(" -v /var/run/docker.sock:/var/run/docker.sock " ){
         stage('Prepare') {
