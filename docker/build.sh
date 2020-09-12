@@ -10,7 +10,7 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 
-VERSION="0.1.2"
+VERSION="0.1.3"
 NAME="kuksa-val"
 
 if [ -z "$VERSION" ]; then
