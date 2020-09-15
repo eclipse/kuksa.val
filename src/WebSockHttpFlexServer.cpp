@@ -1290,8 +1290,6 @@ WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil
 }
 
 WebSockHttpFlexServer::~WebSockHttpFlexServer() {
-  ioc->stop(); // stop execution of io runner
-
   // wait to finish
   for(auto& thread : iocRunners) {
     thread.join();
