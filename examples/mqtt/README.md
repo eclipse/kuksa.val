@@ -5,3 +5,6 @@ After installing [node-red](https://nodered.org/) and [node-red-dashboard](https
 ![screenshot](./node-red-screenshot.png)
 
 *Note*: Do not forget to config your kuksa-val-server to publish the needed topics using the option `--mqtt.publish`.
+
+### TODO
+It is also possible to use node-red as websocket client, it is also configured in the json file, but it does not work jet
