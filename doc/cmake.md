@@ -61,3 +61,69 @@ cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_UNIT_TEST=ON ..
 ```
 
 
+
+## Coverage
+_Warning:_ Information in this section may be outdated
+
+Coverage information will be generated automatically for W3C-Server core library sources When _CMAKE_BUILD_TYPE_ is set to *Coverage* and GCC or Clang are used as compilers.
+
+While coverage information will be generated, generation of reports are left to be handled by the user and its tool preferences.
+
+Example of way for generating reports for different compilers is shown below.
+We will use unit tests to generate coverage information.
+Setting up build correctly, depending on compiler
+
+### GCC compiler
+
+For GCC compiler, as an example, we can use [_gcovr_](https://gcovr.com/en/stable/) tool to generate reports for generated coverage information.
+
+```
+# Make or goto out-of-source build Directory
+
+# Configure build
+CXX=g++ CC=gcc  cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
+
+# make everything needed
+make -j8
+
+# goto and run unit-tests
+cd unit-test
+./w3c-unit-test
+
+# goto build root
+cd ..
+
+# generate coverage information with gcovr
+gcovr -v --html -r ../src/ src/  -o coverage.html
+```
+
+After executing, _coverage.html_ file will be generated with detailed coverage information for core sources.
+
+### Clang compiler
+
+For Clang compiler, as an example, we can use [llvm-cov](https://llvm.org/docs/CommandGuide/llvm-cov.html) tool to generate reports for generated coverage information.
+
+```
+# Make or goto out-of-source build Directory
+
+# Configure build
+CXX=clang++ CC=clang  cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
+
+# make everything needed
+make -j8
+
+# goto and run unit-tests
+cd unit-test
+./w3c-unit-test
+
+# convert raw coverage data to indexed
+llvm-profdata merge -sparse default.profraw -o default.profdata
+
+# generate coverage information with llvm-cov
+llvm-cov show  --format=html ../src/libkuksa-val-server-core.so -instr-profile=default.profdata > coverage.html
+```
+After executing, _coverage.html_ file will be generated with detailed coverage information for core sources.
+
+
+
+
