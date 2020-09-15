@@ -296,13 +296,13 @@ string VssDatabase::getVSSSpecificPath(const string &path, bool& isBranch,
       isBranch = false;
       logger_->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath : Path "
                   + format_path + " is invalid or is an empty tag!");
-      return "";
+      return "$";
     }
   } catch (exception& e) {
     logger_->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath :Exception \""
          + string(e.what()) + "\" occured while querying JSON. Check Path!");
     isBranch = false;
-    return "";
+    return "$";
   }
   return format_path;
 }
