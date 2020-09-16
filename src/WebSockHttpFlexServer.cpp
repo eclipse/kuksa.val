@@ -22,6 +22,7 @@
 #include <boost/make_unique.hpp>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include <string>
 #include <thread>
@@ -190,7 +191,6 @@ namespace {
   // Boost.Beast helper state variables
   ConnectionHandler                        connHandler;
   std::shared_ptr<BeastListener>           connListener;
-  std::shared_ptr<boost::asio::io_context> ioc;
   ssl::context                             ctx{ssl::context::sslv23};
   std::vector<std::thread>                 iocRunners;
 
@@ -1283,13 +1283,16 @@ const std::string WebSockHttpFlexServer::serverKeyFilename_  = "Server.key";
 WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil,
                                              std::shared_ptr<IRestHandler> restHandlerUtil)
  : logger_(loggerUtil),
-   restHandler_(restHandlerUtil) {
+  restHandler_(restHandlerUtil),
+  ioc(NumOfThreads)
+   {
   logger = logger_;
   restHandler = restHandler_;
+
 }
 
 WebSockHttpFlexServer::~WebSockHttpFlexServer() {
-  ioc->stop(); // stop execution of io runner
+  ioc.stop(); // stop execution of io runner
 
   // wait to finish
   for(auto& thread : iocRunners) {
@@ -1307,10 +1310,9 @@ void WebSockHttpFlexServer::Initialize(std::string host,
 
     allowInsecureConns = allowInsecure;
 
-    ioc = std::make_shared<boost::asio::io_context>(NumOfThreads);
     ctx.set_options(ssl::context::default_workarounds);
 
-    boost::asio::ip::tcp::resolver resolver{*ioc};
+    boost::asio::ip::tcp::resolver resolver{ioc};
     boost::asio::ip::tcp::resolver::query query(host, to_string(port));
     boost::asio::ip::tcp::resolver::iterator resolvedHost = resolver.resolve(query);
 
@@ -1325,7 +1327,7 @@ void WebSockHttpFlexServer::Initialize(std::string host,
 
     // create listener for handling incoming connections
     connListener = std::make_shared<BeastListener>(
-      *ioc,
+      ioc,
       ctx,
       resolvedHost->endpoint(),
       std::move(docRoot_),
@@ -1516,10 +1518,10 @@ void WebSockHttpFlexServer::Start() {
   iocRunners.reserve(NumOfThreads);
   for(auto i = 0; i < NumOfThreads; ++i) {
     iocRunners.emplace_back(
-      []
+      [this]
       {
         boost::system::error_code ec;
-        ioc->run(ec);
+        ioc.run(ec);
       });
   }
 }

@@ -78,7 +78,7 @@ string VssCommandProcessor::processGet(WsChannel &channel,
     return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
   }
 
-  if (!res.has_key("value")) {
+  if (!res.contains("value")) {
     return JsonResponses::pathNotFound(request_id, "get", path);
   } else {
     res["action"] = "get";
@@ -353,7 +353,7 @@ string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
     return ss.str();
   }
   int ttl = -1;
-  if (response.has_key("token") && response.has_key("pubkey")) {
+  if (response.contains("token") && response.contains("pubkey")) {
      try {
         tokenValidator->updatePubKey(response["pubkey"].as<string>());
         ttl = tokenValidator->validate(channel, response["token"].as<string>());
@@ -498,7 +498,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
         return JsonResponses::malFormedRequest("Unknown action requested");
       }
     }
-  } catch (jsoncons::json_parse_exception &e) {
+  } catch (jsoncons::ser_error &e) {
     logger->Log(LogLevel::ERROR, "JSON parse error");
     return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::key_not_found &e) {

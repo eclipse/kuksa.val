@@ -1,0 +1,6 @@
+[submodule "3rd-party-libs/jsoncons"]
+	path = 3rd-party-libs/jsoncons
+	url = https://github.com/danielaparker/jsoncons.git
+[submodule "3rd-party-libs/jwt-cpp"]
+	path = 3rd-party-libs/jwt-cpp
+	url = https://github.com/Thalhammer/jwt-cpp.git
