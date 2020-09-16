@@ -28,9 +28,9 @@ node('docker') {
         }
         stage('Collect') {
 			sh '''
-            sudo docker save $(sudo docker images --filter "reference=amd64/kuksa-val*"  --format "{{.Repository}}:{{.Tag}}" | head -1) | bzip2 -9 > artifacts/kuksa-val-amd64.tar.bz2
-			sudo docker save $(sudo docker images --filter "reference=arm64/kuksa-val*"  --format "{{.Repository}}:{{.Tag}}" | head -1) | bzip2 -9 > artifacts/kuksa-val-arm64.tar.bz2
-			sudo docker save kuksa-val-dev:ubuntu20.04 | bzip2 -9 > artifacts/kuksa-val-dev-ubuntu20.04.tar.bz2
+            sudo docker save $(sudo docker images --filter "reference=amd64/kuksa-val*"  --format "{{.Repository}}:{{.Tag}}" | head -1) | xz -T 0 > artifacts/kuksa-val-amd64.tar.xz
+			sudo docker save $(sudo docker images --filter "reference=arm64/kuksa-val*"  --format "{{.Repository}}:{{.Tag}}" | head -1) | xz -T 0 > artifacts/kuksa-val-arm64.tar.xz
+			sudo docker save kuksa-val-dev:ubuntu20.04 | xz -T 0 > artifacts/kuksa-val-dev-ubuntu20.04.tar.xz
             '''
         }
         stage ('Archive') {
