@@ -34,7 +34,7 @@ node('docker') {
             '''
         }
         stage ('Archive') {
-            archiveArtifacts artifacts: 'artifacts/*.bz2' 
+            archiveArtifacts artifacts: 'artifacts/*.xz' 
         }
     }
 }
