@@ -8,7 +8,7 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
-
+import configparser
 import argparse, json, sys
 from typing import Dict, List
 import queue, time, os
@@ -150,6 +150,7 @@ class VSSTestClient(Cmd):
         req["action"]= "get"
         req["path"] = args.Parameter
         jsonDump = json.dumps(req)
+        print(jsonDump)
         self.sendMsgQueue.put(jsonDump)
         resp = self.recvMsgQueue.get()
         print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
@@ -236,7 +237,11 @@ class VSSTestClient(Cmd):
                 self.commThread = None
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
-        self.commThread = VSSClientComm(self.serverIP, self.serverPort, self.sendMsgQueue, self.recvMsgQueue, insecure)
+        config = {'ip':self.serverIP,
+        'port': self.serverPort,
+        'insecure' : False
+        }
+        self.commThread = VSSClientComm(self.sendMsgQueue, self.recvMsgQueue, config)
         self.commThread.start()
 
         pollIndex = 10
