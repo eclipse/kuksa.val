@@ -139,11 +139,11 @@ void Authenticator::resolvePermissions(WsChannel& channel) {
   }
 
   json permissions;
-  if (claims.has_key("modifyTree") && claims["modifyTree"].as<bool>()) {
+  if (claims.contains("modifyTree") && claims["modifyTree"].as<bool>()) {
     channel.enableModifyTree();
   }
 
-  if (claims.has_key("kuksa-vss")) {
+  if (claims.contains("kuksa-vss")) {
     json tokenPermJson = claims["kuksa-vss"];
     for (auto permission : tokenPermJson.object_range()) {
       // TODO use regex to check
