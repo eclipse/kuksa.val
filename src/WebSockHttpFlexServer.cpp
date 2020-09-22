@@ -1304,11 +1304,15 @@ void WebSockHttpFlexServer::Initialize(std::string host,
                                        std::string && docRoot,
                                        std::string certPath,
                                        bool allowInsecure) {
-    logger_->Log(LogLevel::INFO, "Initializing Boost.Beast web-socket and http server on port "+std::to_string(port));
+    logger_->Log(LogLevel::INFO, "Initializing Boost.Beast web-socket and http server on " + host + ":" +std::to_string(port));
 
     docRoot_ = docRoot;
 
     allowInsecureConns = allowInsecure;
+    if(allowInsecureConns){
+        logger_->Log(LogLevel::INFO, "Attention! Insecure connection are allowed! Do not use this in production!");
+    
+    }
 
     ctx.set_options(ssl::context::default_workarounds);
 
