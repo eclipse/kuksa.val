@@ -151,6 +151,7 @@ class VSSTestClient(Cmd):
         req["action"]= "get"
         req["path"] = args.Parameter
         jsonDump = json.dumps(req)
+        print(jsonDump)
         self.sendMsgQueue.put(jsonDump)
         resp = self.recvMsgQueue.get()
         print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
@@ -173,6 +174,7 @@ class VSSTestClient(Cmd):
             req["action"]= "getMetaData"
             req["path"] = path 
             jsonDump = json.dumps(req)
+            print(jsonDump)
             self.sendMsgQueue.put(jsonDump)
             resp = self.recvMsgQueue.get()
             return resp
