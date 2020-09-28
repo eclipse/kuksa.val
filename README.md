@@ -100,6 +100,9 @@ Once the testclient is up, you can start exploring the VSS structure and datapoi
 
 Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](./doc/liveUpdateVSSTree.md).
 
+### Examples
+
+In the [examples](./examples) folder, you can find applications based on kuksa-val-server
 
 
 ## Other topics

@@ -305,7 +305,7 @@ int main(int argc, const char *argv[]) {
     // initialize server
 
     auto port = variables["port"].as<int>();
-    auto secure = !variables.count("insecure");
+    auto insecure = variables.count("insecure");
     auto vss_path = variables["vss"].as<boost::filesystem::path>();
 
     if (variables.count("use-keycloak")) {
@@ -411,7 +411,7 @@ int main(int argc, const char *argv[]) {
     httpServer->AddListener(ObserverType::ALL, cmdProcessor);
     httpServer->Initialize(variables["address"].as<string>(), port,
                            std::move(docRoot),
-                           variables["cert-path"].as<boost::filesystem::path>().string(), !secure);
+                           variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
     httpServer->Start();
 
     while (1) {
