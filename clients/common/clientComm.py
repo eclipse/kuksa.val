@@ -10,7 +10,7 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 
-import sys, threading, queue, ssl
+import os, sys, threading, queue, ssl
 import asyncio, websockets, pathlib
 
 class VSSClientComm(threading.Thread):
@@ -20,13 +20,17 @@ class VSSClientComm(threading.Thread):
         super(VSSClientComm, self).__init__()
         self.sendMsgQueue = sendMsgQueue
         self.recvMsgQueue = recvMsgQueue
+        scriptDir= os.path.dirname(os.path.realpath(__file__))
+        certDir = os.path.join(scriptDir, "../../certificates/")
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
-        self.insecure = config.getboolean('insecure', False)
-        self.interval=config.getint('interval',1)
-        self.cacertificate = config.get('cacertificate', "CA.pem")
-        self.certificate = config.get('certificate', "Client.pem")
-        self.keyfile = config.get('key', "Client.key")
+        try:
+            self.insecure = config.getboolean('insecure', False)
+        except AttributeError:
+            self.insecure = config.get('insecure', False)
+        self.cacertificate = config.get('cacertificate', os.path.join(certDir, "CA.pem"))
+        self.certificate = config.get('certificate', os.path.join(scriptDir, "Client.pem"))
+        self.keyfile = config.get('key', os.path.join(scriptDir, "Client.key"))
         self.runComm = True
         self.wsConnected = False
 
