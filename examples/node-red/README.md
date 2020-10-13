@@ -5,12 +5,13 @@ After installing [node-red](https://nodered.org/) and [node-red-dashboard](https
 ## MQTT
 [mqtt-examples.json](./mqtt-examples.json) subscribes some mqtt topics, which will published by kuksa-val-server
 
-![screenshot](./node-red-screenshot.png)
 *Note*: Do not forget to config your kuksa-val-server to publish the needed topics using the option `--mqtt.publish`.
 
 ## Websocket
 - [websocket-subscription.json](./websocket-subscription.json) do the same like the mqtt example above via websocket subscription feature.
 - [websocket-advanced.json](./websocket-advanced.json) implements a test client and uses secure connection with server
+
+![screenshot](./node-red-screenshot.png)
 
 ### TODO
 It is also possible to use node-red as websocket client, it is also configured in the json file, but it does not work jet
