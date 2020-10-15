@@ -106,6 +106,20 @@ Once the testclient is up, you can start exploring the VSS structure and datapoi
 Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](./doc/liveUpdateVSSTree.md).
 
 
+### Feeder
+
+We provider currently the following feeders:
+- [DBC feeder](./clients/feeder/dbc2val)
+- [GPS feeder](./clients/feeder/gps2val)
+
+
+### Node-red example flows
+
+You can also use node-red to talk with kuksa-val-server, either via MQTT or via Websocket.
+
+Check the [readme](./clients/node-red/README.md) for more details.
+
+
 ## Other topics
 
  * Experimental [D-Bus](doc/dbus.md) connector
