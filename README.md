@@ -81,7 +81,11 @@ Setting log level to `ALL` gives you some more information about what is going o
 For more information check [usage](doc/usage.md).
 
 
-## Using KUKSA.val
+## Clients
+
+In the [clients](./clients) folder, you can find differents clients for kuksa-val-server
+
+### Python test client
 
 You can use the [testclient](./clients/vss-testclient/) to test basic functions like _getMetaData_, _getValue_ and _setValue_ requests.
 
@@ -100,10 +104,6 @@ Once the testclient is up, you can start exploring the VSS structure and datapoi
 ![Alt text](./doc/pictures/testclient_basic.gif "test client usage")
 
 Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](./doc/liveUpdateVSSTree.md).
-
-### Examples
-
-In the [examples](./examples) folder, you can find applications based on kuksa-val-server
 
 
 ## Other topics
