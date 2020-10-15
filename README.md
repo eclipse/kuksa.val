@@ -12,7 +12,7 @@ the [W3C Vehicle Information Service Specification](https://www.w3.org/TR/2018/C
  - [Fine-grained authorisation](doc/jwt.md) based on JSON Webtokens (RFC 7519)
  - Optional [JSON signing](doc/json-signing.md) of messages
  - Built-in MQTT publisher 
- - [VSS testclient](vss-testclient) to interactively explore and modify the VSS data points and data structure
+ - [VSS testclient](./clients/vss-testclient) to interactively explore and modify the VSS data points and data structure
 
 ## Quick start
 
@@ -83,16 +83,17 @@ For more information check [usage](doc/usage.md).
 
 ## Using KUKSA.val
 
-You can use the [testclient](./vss-testclient/) to test basic functions like _getMetaData_, _getValue_ and _setValue_ requests.
+You can use the [testclient](./clients/vss-testclient/) to test basic functions like _getMetaData_, _getValue_ and _setValue_ requests.
 
 After starting the kuksa server using `./kuksa-val-server` command. You can start the testclient as follows:
 
 ```bash
+cd clients/vss-testclient
 pipenv sync
 pipenv run python testclient.py
 ```
 
-Check the [testclient readme](vss-testclient/README.md) for more detailled installaton instruction.
+Check the [testclient readme](./clients/vss-testclient/README.md) for more detailled installaton instruction.
 
 Once the testclient is up, you can start exploring the VSS structure and datapoints:
 
