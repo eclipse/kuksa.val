@@ -78,7 +78,7 @@
         "id": "e618236f.e8e708",
         "type": "inject",
         "z": "753b87c3.ecf3c",
-        "name": "subscribe Vehicle.OBD.Speed",
+        "name": "subscribe Vehicle.Speed",
         "props": [
             {
                 "p": "payload"
@@ -93,7 +93,7 @@
         "once": true,
         "onceDelay": "0.2",
         "topic": "",
-        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.OBD.Speed\",\"requestId\":2}",
+        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Speed\",\"requestId\":2}",
         "payloadType": "json",
         "x": 230,
         "y": 120,

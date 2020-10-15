@@ -1,9 +1,14 @@
 # Flow for node-red dashboard
 
-After installing [node-red](https://nodered.org/) and [node-red-dashboard](https://flows.nodered.org/node/node-red-dashboard), you can import the json file to provide a node-red server. Then you can use the dashboard feature to view data from kuksa-val-server.
+After installing [node-red](https://nodered.org/), you can import the json file to receive data from kuksa-val-server. Then you can use the node-red dashboard feature to view data.
+
+## Dependencies
+The following node red extensions are used in the example flows:
+- [node-red-dashboard](https://flows.nodered.org/node/node-red-dashboard)
+- [node-red-contrib-web-worldmap](https://flows.nodered.org/node/node-red-contrib-web-worldmap)
 
 ## MQTT
-[mqtt-examples.json](./mqtt-examples.json) subscribes some mqtt topics, which will published by kuksa-val-server
+[mqtt-examples.json](./mqtt-examples.json) subscribes some mqtt topics, which will be published by kuksa-val-server
 
 *Note*: Do not forget to config your kuksa-val-server to publish the needed topics using the option `--mqtt.publish`.
 
@@ -13,5 +18,3 @@ After installing [node-red](https://nodered.org/) and [node-red-dashboard](https
 
 ![screenshot](./node-red-screenshot.png)
 
-### TODO
-It is also possible to use node-red as websocket client, it is also configured in the json file, but it does not work jet
