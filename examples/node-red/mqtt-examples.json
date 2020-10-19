@@ -1,262 +1,73 @@
 [
     {
-        "id": "b3530491.3bf708",
+        "id": "3a93bfa4.83653",
         "type": "tab",
-        "label": "Flow 1",
+        "label": "mqtt",
         "disabled": false,
         "info": ""
     },
     {
-        "id": "a07005c9.d3b4d8",
-        "type": "mqtt-broker",
-        "z": "",
-        "name": "vss",
-        "broker": "localhost",
-        "port": "1883",
-        "clientid": "",
-        "usetls": false,
-        "compatmode": false,
-        "keepalive": "60",
-        "cleansession": true,
-        "birthTopic": "",
-        "birthQos": "0",
-        "birthPayload": "",
-        "closeTopic": "",
-        "closeQos": "0",
-        "closePayload": "",
-        "willTopic": "",
-        "willQos": "0",
-        "willPayload": ""
-    },
-    {
-        "id": "d122198f.7ac6d",
-        "type": "ui_tab",
-        "z": "",
-        "name": "VSS",
-        "icon": "dashboard",
-        "disabled": false,
-        "hidden": false
-    },
-    {
-        "id": "4d1e91f4.3481e",
-        "type": "ui_group",
-        "z": "",
-        "name": "Grafik",
-        "tab": "d122198f.7ac6d",
-        "order": 2,
-        "disp": false,
-        "width": "12",
-        "collapse": false
-    },
-    {
-        "id": "99353bbb.93b13",
-        "type": "ui_base",
-        "theme": {
-            "name": "theme-light",
-            "lightTheme": {
-                "default": "#0094CE",
-                "baseColor": "#0094CE",
-                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
-                "edited": true,
-                "reset": false
-            },
-            "darkTheme": {
-                "default": "#097479",
-                "baseColor": "#097479",
-                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
-                "edited": false
-            },
-            "customTheme": {
-                "name": "Untitled Theme 1",
-                "default": "#4B7930",
-                "baseColor": "#4B7930",
-                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
-            },
-            "themeState": {
-                "base-color": {
-                    "default": "#0094CE",
-                    "value": "#0094CE",
-                    "edited": false
-                },
-                "page-titlebar-backgroundColor": {
-                    "value": "#0094CE",
-                    "edited": false
-                },
-                "page-backgroundColor": {
-                    "value": "#fafafa",
-                    "edited": false
-                },
-                "page-sidebar-backgroundColor": {
-                    "value": "#ffffff",
-                    "edited": false
-                },
-                "group-textColor": {
-                    "value": "#1bbfff",
-                    "edited": false
-                },
-                "group-borderColor": {
-                    "value": "#ffffff",
-                    "edited": false
-                },
-                "group-backgroundColor": {
-                    "value": "#ffffff",
-                    "edited": false
-                },
-                "widget-textColor": {
-                    "value": "#111111",
-                    "edited": false
-                },
-                "widget-backgroundColor": {
-                    "value": "#0094ce",
-                    "edited": false
-                },
-                "widget-borderColor": {
-                    "value": "#ffffff",
-                    "edited": false
-                },
-                "base-font": {
-                    "value": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
-                }
-            },
-            "angularTheme": {
-                "primary": "indigo",
-                "accents": "blue",
-                "warn": "red",
-                "background": "grey"
-            }
-        },
-        "site": {
-            "name": "Node-RED Dashboard",
-            "hideToolbar": "false",
-            "allowSwipe": "false",
-            "lockMenu": "false",
-            "allowTempTheme": "true",
-            "dateFormat": "DD/MM/YYYY",
-            "sizes": {
-                "sx": 48,
-                "sy": 48,
-                "gx": 6,
-                "gy": 6,
-                "cx": 6,
-                "cy": 6,
-                "px": 0,
-                "py": 0
-            }
-        }
-    },
-    {
-        "id": "65a18b2a.4cb3b4",
-        "type": "websocket-client",
-        "z": "",
-        "path": "wss://localhost:8090",
-        "tls": "384867a2.f463f",
-        "wholemsg": "false"
-    },
-    {
-        "id": "90f01902.cf6fb",
-        "type": "ui_group",
-        "z": "",
-        "name": "Basic",
-        "tab": "d122198f.7ac6d",
-        "order": 1,
-        "disp": false,
-        "width": "6",
-        "collapse": false
-    },
-    {
-        "id": "384867a2.f463f",
-        "type": "tls-config",
-        "z": "",
-        "name": "",
-        "cert": "",
-        "key": "",
-        "ca": "",
-        "certname": "Client.pem",
-        "keyname": "Client.key",
-        "caname": "CA.pem",
-        "servername": "",
-        "verifyservercert": true
-    },
-    {
-        "id": "d94eb012.c27f48",
-        "type": "ui_spacer",
-        "name": "spacer",
-        "group": "aefea893.d14918",
-        "order": 3,
-        "width": 1,
-        "height": 1
-    },
-    {
-        "id": "93d9d39e.fe4958",
-        "type": "ui_spacer",
-        "name": "spacer",
-        "group": "90f01902.cf6fb",
-        "order": 5,
-        "width": 1,
-        "height": 1
-    },
-    {
-        "id": "7b6dfd5a.fd7194",
+        "id": "6250dbae.d68ce4",
         "type": "mqtt in",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
         "topic": "vss/Vehicle/Speed",
         "qos": "2",
         "datatype": "auto",
-        "broker": "a07005c9.d3b4d8",
+        "broker": "1c0ed5b2.eb6cd2",
         "x": 190,
         "y": 240,
         "wires": [
             [
-                "77a0d0ea.95999"
+                "e133e074.983e08"
             ]
         ]
     },
     {
-        "id": "2f9f5ad4.a7926e",
+        "id": "dd58caac.952898",
         "type": "mqtt in",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
         "topic": "vss/Vehicle/emissionsCO2",
         "qos": "2",
         "datatype": "auto",
-        "broker": "a07005c9.d3b4d8",
+        "broker": "1c0ed5b2.eb6cd2",
         "x": 190,
         "y": 600,
         "wires": [
             [
-                "c7027c8c.70637"
+                "980f2980.f5617"
             ]
         ]
     },
     {
-        "id": "eb68704e.0c2f68",
+        "id": "705f5e32.c7f1d",
         "type": "mqtt in",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
         "topic": "vss/Vehicle/OBD/FuelLevel",
         "qos": "2",
         "datatype": "auto",
-        "broker": "a07005c9.d3b4d8",
+        "broker": "1c0ed5b2.eb6cd2",
         "x": 210,
         "y": 520,
         "wires": [
             [
-                "bd715009.4fcce8"
+                "7088d1ce.faa8c"
             ]
         ]
     },
     {
-        "id": "77a0d0ea.95999",
+        "id": "e133e074.983e08",
         "type": "ui_gauge",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
-        "group": "90f01902.cf6fb",
-        "order": 7,
+        "group": "2e4b5aa8.f5e826",
+        "order": 12,
         "width": 0,
         "height": 0,
         "gtype": "gage",
-        "title": "Spped",
+        "title": "Speed",
         "label": "km/h",
         "format": "{{value}}",
         "min": "-250",
@@ -273,11 +84,11 @@
         "wires": []
     },
     {
-        "id": "c7027c8c.70637",
+        "id": "980f2980.f5617",
         "type": "ui_chart",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
-        "group": "4d1e91f4.3481e",
+        "group": "412ed4b3.5566bc",
         "order": 2,
         "width": 0,
         "height": 0,
@@ -316,12 +127,12 @@
         ]
     },
     {
-        "id": "bd715009.4fcce8",
+        "id": "7088d1ce.faa8c",
         "type": "ui_gauge",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
-        "group": "90f01902.cf6fb",
-        "order": 6,
+        "group": "2e4b5aa8.f5e826",
+        "order": 8,
         "width": 0,
         "height": 0,
         "gtype": "wave",
@@ -342,27 +153,27 @@
         "wires": []
     },
     {
-        "id": "c2effc7b.97abe8",
+        "id": "1883106d.e2a2f",
         "type": "mqtt in",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
         "topic": "vss/Vehicle/TravelledDistance",
         "qos": "2",
         "datatype": "auto",
-        "broker": "a07005c9.d3b4d8",
+        "broker": "1c0ed5b2.eb6cd2",
         "x": 180,
         "y": 360,
         "wires": [
             [
-                "e78da493.076ec"
+                "8f23fa67.825238"
             ]
         ]
     },
     {
-        "id": "e78da493.076ec",
+        "id": "8f23fa67.825238",
         "type": "ui_text",
-        "z": "b3530491.3bf708",
-        "group": "90f01902.cf6fb",
+        "z": "3a93bfa4.83653",
+        "group": "2e4b5aa8.f5e826",
         "order": 1,
         "width": 0,
         "height": 0,
@@ -375,73 +186,28 @@
         "wires": []
     },
     {
-        "id": "e1197de2.373bb8",
-        "type": "websocket out",
-        "z": "b3530491.3bf708",
-        "name": "",
-        "server": "",
-        "client": "65a18b2a.4cb3b4",
-        "x": 510,
-        "y": 120,
-        "wires": []
-    },
-    {
-        "id": "39f7f157.0d9896",
-        "type": "file in",
-        "z": "b3530491.3bf708",
-        "name": "",
-        "filename": "tokenfile",
-        "format": "utf8",
-        "chunk": false,
-        "sendError": false,
-        "encoding": "none",
-        "x": 100,
-        "y": 160,
-        "wires": [
-            [
-                "c559b37d.2746d8"
-            ]
-        ]
-    },
-    {
-        "id": "c559b37d.2746d8",
-        "type": "json",
-        "z": "b3530491.3bf708",
-        "name": "",
-        "property": "payload",
-        "action": "str",
-        "pretty": true,
-        "x": 320,
-        "y": 180,
-        "wires": [
-            [
-                "e1197de2.373bb8"
-            ]
-        ]
-    },
-    {
-        "id": "dfca4acf.277298",
+        "id": "47532736.a366d",
         "type": "mqtt in",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
         "topic": "vss/Vehicle/OBD/OilTemperature",
         "qos": "2",
         "datatype": "auto",
-        "broker": "a07005c9.d3b4d8",
+        "broker": "1c0ed5b2.eb6cd2",
         "x": 210,
         "y": 720,
         "wires": [
             [
-                "ff08e073.e73c"
+                "9625a6d6.041a4"
             ]
         ]
     },
     {
-        "id": "ff08e073.e73c",
+        "id": "9625a6d6.041a4",
         "type": "ui_chart",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
-        "group": "4d1e91f4.3481e",
+        "group": "412ed4b3.5566bc",
         "order": 1,
         "width": 0,
         "height": 0,
@@ -480,28 +246,28 @@
         ]
     },
     {
-        "id": "ae4bf5f7.cebf",
+        "id": "e45cc990.68b918",
         "type": "mqtt in",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
         "topic": "vss/Vehicle/DriveTime",
         "qos": "2",
         "datatype": "auto",
-        "broker": "a07005c9.d3b4d8",
+        "broker": "1c0ed5b2.eb6cd2",
         "x": 200,
         "y": 300,
         "wires": [
             [
-                "ae6e9cc8.2cc97"
+                "b7a8b819.7d1668"
             ]
         ]
     },
     {
-        "id": "ae6e9cc8.2cc97",
+        "id": "b7a8b819.7d1668",
         "type": "ui_text",
-        "z": "b3530491.3bf708",
-        "group": "90f01902.cf6fb",
-        "order": 2,
+        "z": "3a93bfa4.83653",
+        "group": "2e4b5aa8.f5e826",
+        "order": 3,
         "width": 0,
         "height": 0,
         "name": "",
@@ -513,26 +279,26 @@
         "wires": []
     },
     {
-        "id": "d6e89caa.d11138",
+        "id": "fc86d921.34d488",
         "type": "mqtt in",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
         "topic": "vss/Vehicle/IsMoving",
         "qos": "2",
         "datatype": "auto",
-        "broker": "a07005c9.d3b4d8",
+        "broker": "1c0ed5b2.eb6cd2",
         "x": 210,
         "y": 420,
         "wires": [
             [
-                "e3bd3499.586b08"
+                "355c5cb0.635ab4"
             ]
         ]
     },
     {
-        "id": "e3bd3499.586b08",
+        "id": "355c5cb0.635ab4",
         "type": "function",
-        "z": "b3530491.3bf708",
+        "z": "3a93bfa4.83653",
         "name": "",
         "func": "msg.color = (JSON.parse(msg.payload.toLowerCase()))?\"green\":\"red\"\nmsg.payload = msg.color\nreturn msg;",
         "outputs": 1,
@@ -543,17 +309,17 @@
         "y": 440,
         "wires": [
             [
-                "77a82c7b.2a4634"
+                "4e9f2749.c3cb8"
             ]
         ]
     },
     {
-        "id": "77a82c7b.2a4634",
+        "id": "4e9f2749.c3cb8",
         "type": "ui_template",
-        "z": "b3530491.3bf708",
-        "group": "90f01902.cf6fb",
+        "z": "3a93bfa4.83653",
+        "group": "2e4b5aa8.f5e826",
         "name": "Moving",
-        "order": 3,
+        "order": 5,
         "width": 0,
         "height": 0,
         "format": "<p class=\"label ng-binding\">Moving\n<svg  width=32px height=32px style=\"margin-left: 200px;\">\n    <circle id=\"circle1\" cx=\"20\" cy=\"20\" r=\"10\" stroke={{msg.color}} fill=\"transparent\" stroke-width=\"5\"/>\n</svg>\n</p>",
@@ -566,5 +332,58 @@
         "wires": [
             []
         ]
+    },
+    {
+        "id": "1c0ed5b2.eb6cd2",
+        "type": "mqtt-broker",
+        "z": "",
+        "name": "vss",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": false,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "2e4b5aa8.f5e826",
+        "type": "ui_group",
+        "z": "",
+        "name": "Basic",
+        "tab": "155b6500.dae29b",
+        "order": 1,
+        "disp": false,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "412ed4b3.5566bc",
+        "type": "ui_group",
+        "z": "",
+        "name": "Grafik",
+        "tab": "155b6500.dae29b",
+        "order": 2,
+        "disp": false,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "155b6500.dae29b",
+        "type": "ui_tab",
+        "z": "",
+        "name": "VSS",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
     }
 ]
