@@ -10,21 +10,29 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 
-import threading, queue, ssl
+import os, sys, threading, queue, ssl
 import asyncio, websockets, pathlib
 
 class VSSClientComm(threading.Thread):
 
     # Constructor
-    def __init__(self, ip, port, sendMsgQueue, recvMsgQueue, insecure):
+    def __init__(self, sendMsgQueue, recvMsgQueue, config):
         super(VSSClientComm, self).__init__()
-        self.serverIP = ip
-        self.serverPort = port
         self.sendMsgQueue = sendMsgQueue
         self.recvMsgQueue = recvMsgQueue
+        scriptDir= os.path.dirname(os.path.realpath(__file__))
+        certDir = os.path.join(scriptDir, "../../certificates/")
+        self.serverIP = config.get('ip', "127.0.0.1")
+        self.serverPort = config.get('port', 8090)
+        try:
+            self.insecure = config.getboolean('insecure', False)
+        except AttributeError:
+            self.insecure = config.get('insecure', False)
+        self.cacertificate = config.get('cacertificate', os.path.join(certDir, "CA.pem"))
+        self.certificate = config.get('certificate', os.path.join(scriptDir, "Client.pem"))
+        self.keyfile = config.get('key', os.path.join(scriptDir, "Client.key"))
         self.runComm = True
         self.wsConnected = False
-        self.insecure = insecure
 
     def stopComm(self):
         self.runComm = False
@@ -43,25 +51,28 @@ class VSSClientComm(threading.Thread):
     async def mainLoop(self):
         if not self.insecure:
             context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-            context.load_cert_chain(certfile="Client.pem", keyfile="Client.key")
-            context.load_verify_locations(cafile="CA.pem")
+            context.load_cert_chain(certfile=self.certificate, keyfile=self.keyfile)
+            context.load_verify_locations(cafile=self.cacertificate)
             try:
+                print("connect to wss://"+self.serverIP+":"+str(self.serverPort))
                 async with websockets.connect("wss://"+self.serverIP+":"+str(self.serverPort), ssl=context) as ws:
                     self.wsConnected = True
                     await self.msgHandler(ws)
             except OSError as e:
-                print("Disconnected!!" + str(e))
+                print("Disconnected!! " + str(e))
                 pass
         else:
             try:
+                print("connect to ws://"+self.serverIP+":"+str(self.serverPort))
                 async with websockets.connect("ws://"+self.serverIP+":"+str(self.serverPort)) as ws:
                     self.wsConnected = True
                     await self.msgHandler(ws)
-            except OSError:
+            except OSError as e:
+                print("Disconnected!! " + str(e))
                 pass
 
     # Thread function: Start the asyncio loop
     def run(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.mainLoop())
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_until_complete(self.mainLoop())

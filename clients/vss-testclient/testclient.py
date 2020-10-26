@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python
 ########################################################################
 # Copyright (c) 2020 Robert Bosch GmbH
 #
@@ -8,17 +8,20 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
-
+import configparser
 import argparse, json, sys
 from typing import Dict, List
 import queue, time, os
-from clientComm import VSSClientComm
 from pygments import highlight, lexers, formatters
 from cmd2 import Cmd, with_argparser, with_category, Cmd2ArgumentParser, CompletionItem
 from cmd2.utils import CompletionError, basic_complete
 import functools
 DEFAULT_SERVER_ADDR = "localhost"
 DEFAULT_SERVER_PORT = 8090
+
+scriptDir= os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(scriptDir, "../common/"))
+from clientComm import VSSClientComm
 
 class VSSTestClient(Cmd):
     def get_childtree(self, pathText):
@@ -122,7 +125,7 @@ class VSSTestClient(Cmd):
         req["action"]= "authorize"
         req["tokens"] = token
         jsonDump = json.dumps(req)
-        print(highlight(jsonDump, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        #print(highlight(jsonDump, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.sendMsgQueue.put(jsonDump)
         resp = self.recvMsgQueue.get()
         print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
@@ -151,7 +154,6 @@ class VSSTestClient(Cmd):
         req["action"]= "get"
         req["path"] = args.Parameter
         jsonDump = json.dumps(req)
-        print(jsonDump)
         self.sendMsgQueue.put(jsonDump)
         resp = self.recvMsgQueue.get()
         print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
@@ -174,7 +176,6 @@ class VSSTestClient(Cmd):
             req["action"]= "getMetaData"
             req["path"] = path 
             jsonDump = json.dumps(req)
-            print(jsonDump)
             self.sendMsgQueue.put(jsonDump)
             resp = self.recvMsgQueue.get()
             return resp
@@ -239,7 +240,11 @@ class VSSTestClient(Cmd):
                 self.commThread = None
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
-        self.commThread = VSSClientComm(self.serverIP, self.serverPort, self.sendMsgQueue, self.recvMsgQueue, insecure)
+        config = {'ip':self.serverIP,
+        'port': self.serverPort,
+        'insecure' : False
+        }
+        self.commThread = VSSClientComm(self.sendMsgQueue, self.recvMsgQueue, config)
         self.commThread.start()
 
         pollIndex = 10

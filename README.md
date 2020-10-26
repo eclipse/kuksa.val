@@ -12,7 +12,7 @@ the [W3C Vehicle Information Service Specification](https://www.w3.org/TR/2018/C
  - [Fine-grained authorisation](doc/jwt.md) based on JSON Webtokens (RFC 7519)
  - Optional [JSON signing](doc/json-signing.md) of messages
  - Built-in MQTT publisher 
- - [VSS testclient](vss-testclient) to interactively explore and modify the VSS data points and data structure
+ - [VSS testclient](./clients/vss-testclient) to interactively explore and modify the VSS data points and data structure
 
 ## Quick start
 
@@ -81,18 +81,23 @@ Setting log level to `ALL` gives you some more information about what is going o
 For more information check [usage](doc/usage.md).
 
 
-## Using KUKSA.val
+## Clients
 
-You can use the [testclient](./vss-testclient/) to test basic functions like _getMetaData_, _getValue_ and _setValue_ requests.
+In the [clients](./clients) folder, you can find differents clients for kuksa-val-server
+
+### Python test client
+
+You can use the [testclient](./clients/vss-testclient/) to test basic functions like _getMetaData_, _getValue_ and _setValue_ requests.
 
 After starting the kuksa server using `./kuksa-val-server` command. You can start the testclient as follows:
 
 ```bash
+cd clients/vss-testclient
 pipenv sync
 pipenv run python testclient.py
 ```
 
-Check the [testclient readme](vss-testclient/README.md) for more detailled installaton instruction.
+Check the [testclient readme](./clients/vss-testclient/README.md) for more detailled installaton instruction.
 
 Once the testclient is up, you can start exploring the VSS structure and datapoints:
 
@@ -100,9 +105,19 @@ Once the testclient is up, you can start exploring the VSS structure and datapoi
 
 Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](./doc/liveUpdateVSSTree.md).
 
-### Examples
 
-In the [examples](./examples) folder, you can find applications based on kuksa-val-server
+### Feeder
+
+We provider currently the following feeders:
+- [DBC feeder](./clients/feeder/dbc2val)
+- [GPS feeder](./clients/feeder/gps2val)
+
+
+### Node-red example flows
+
+You can also use node-red to talk with kuksa-val-server, either via MQTT or via Websocket.
+
+Check the [readme](./clients/node-red/README.md) for more details.
 
 
 ## Other topics
