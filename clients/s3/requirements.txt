@@ -1,0 +1,4 @@
+boto3
+websockets
+pyarrow
+awswrangler
