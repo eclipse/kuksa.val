@@ -25,6 +25,8 @@ import numpy as np
 import awswrangler as wr
 import pandas as pd
 from datetime import date
+from datetime import datetime
+import pyarrow_mapping
 
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
@@ -53,14 +55,17 @@ class S3_Client():
         s3 = fs.S3FileSystem(endpoint_override='http://localhost:4566')
         table = pa.table({'col1': range(3), 'col2': np.random.randn(3)})
         print(table.schema)
-        parquet.write_table(table, "test.parquet")
-        self.client.upload_file("test.parquet", bucket,"test")
+        parquet.write_table(table, "test.parquet", coerce_timestamps='ms', allow_truncated_timestamps = True)
+        parquet.write_to_dataset(table, root_path="test", coerce_timestamps='ms', allow_truncated_timestamps=True)
+        #self.client.upload_file("test.parquet", bucket,"test")
         #parquet.write_table(table, "test/data.parquet", filesystem=s3)
-        f = s3.open_input_stream(f'{bucket}/test')
-        print(parquet.read_table(f'{bucket}/test', filesystem=s3))
+        #print(parquet.read_table(f'{bucket}/test', filesystem=s3))
         with s3.open_output_stream(f'{bucket}/test2') as file:
            with parquet.ParquetWriter(file, table.schema) as writer:
               writer.write_table(table)
+              #writer.write_to_dataset(table)
+        f = s3.open_input_stream(f'{bucket}/test2')
+        print(f.readall())
         print('Existing buckets:')
         for b in response['Buckets']:
             print(f'  {b["Name"]}')
@@ -94,103 +99,98 @@ class Kuksa_Client():
         self.client = VSSClientComm(self.sendMsgQueue, self.recvMsgQueue, provider_config)
         self.client.start()
         self.token = provider_config.get('token', "token.json")
-        self.authorize()
+        self.client.authorize(self.token)
+        self.dataset = {}
         
-    def authorize(self):
-        if os.path.isfile(self.token):
-            with open(self.token, "r") as f:
-                self.token = f.readline()
+    def getMetaData(self, path):
+        return json.loads(self.client.getMetaData(path))["metadata"]
 
-        req = {}
-        req["requestId"] = 1238
-        req["action"]= "authorize"
-        req["tokens"] = self.token
-        jsonDump = json.dumps(req)
-        self.sendMsgQueue.put(jsonDump)
-        #print(req)
-        resp = self.recvMsgQueue.get(timeout = 1)
-        #print(resp)
+    def getValue(self, path):
+        dataset = json.loads(self.client.getValue(path))["value"]
+        if not isinstance(dataset, dict):
+            return {path: [dataset]}
+        return dataset
 
     def shutdown(self):
         self.client.stopComm()
 
-    def setValue(self, path, value):
-        if 'nan' == value:
-            print(path + " has an invalid value " + str(value))
-            return
-        req = {}
-        req["requestId"] = 1235
-        req["action"]= "set"
-        req["path"] = path
-        req["value"] = value
-        jsonDump = json.dumps(req)
-        #print(jsonDump)
-        self.sendMsgQueue.put(jsonDump)
-        resp = self.recvMsgQueue.get(timeout = 1)
-        #print(resp)
         
-    def setPosition(self, position):
-        self.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Altitude', position['alt'])
-        self.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Latitude', position["lat"])
-        self.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Longitude', position["lon"])
-        self.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Accuracy', position["hdop"])
-        self.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Speed', position["speed"])
-
 class Parquet_Packer():
-    def __init__(self, config, consumer):
+    def __init__(self, config, dataprovider):
         print("Init parquet packer...")
         if "parquet" not in config:
             print("parquet section missing from configuration, exiting")
             sys.exit(-1)
         
-        self.consumer = consumer
-        provider_config=config['gpsd']
-        gpsd_host=provider_config.get('host','127.0.0.1')
-        gpsd_port=provider_config.get('port','2947')
-
-        print("Trying to connect gpsd at "+str(gpsd_host)+" port "+str(gpsd_port))
-
-
-        self.position = {"lat":"0", "lon":"0", "alt":"0", "hdop":"0", "speed":"0" }
+        self.provider = dataprovider
+        config=config['parquet']
+        self.path = config.get('path', "")
+        self.interval = config.getint('interval', 1)
+        
+        self.schema = self.genSchema(self.provider.getMetaData(self.path))
         self.running = True
 
-        self.thread = threading.Thread(target=self.loop, args=(gpsd,))
+        self.thread = threading.Thread(target=self.loop, args=())
         self.thread.start()
 
-    def loop(self, gpsd):
-        print("gpsd receive loop started")
+    def get_childtree(self, vssTree, pathText):
+        childVssTree = vssTree
+        if "." in pathText:
+            paths = pathText.split(".")
+            for path in paths:
+                if path in childVssTree:
+                    childVssTree = childVssTree[path]
+                elif 'children' in childVssTree and path in childVssTree['children']:
+                    childVssTree = childVssTree['children'][path]
+            if 'children' in childVssTree:
+                childVssTree = childVssTree['children']
+        return childVssTree
+
+    def genSchema(self, metadata, prefix = ""):
+        fields = [pa.field("timestamp", pa.timestamp('us'))]
+        # TODO only first considered
+        for key in metadata:
+            #print("key is " + key)
+            if "children" in metadata[key]:
+                prefix += key + "."
+                return self.genSchema(metadata[key]["children"], prefix)
+            else:
+                #print("prefix is " + prefix)
+                datatype = pyarrow_mapping.KUKSA_TO_PYARROW_MAPPING[metadata[key]["datatype"]]()
+                #print("datatype is " + str(datatype))
+                fields.append(pa.field(prefix+key, datatype))
+            
+
+        return pa.schema(fields)
+
+
+
+
+    def loop(self):
+        print("receive loop started")
         while self.running:
-            try:
-                df = pd.DataFrame({'one': [-1, np.nan, 2.5],
+            time.sleep(self.interval) 
+            break
 
-                   'two': ['foo', 'bar', 'baz'],
-
-                   'three': [True, False, True]},
-
-                   index=list('abc'))
-                if report['class'] == 'TPV':
-
-                    self.position['lat']= getattr(report,'lat',0.0)
-                    self.position['lon']= getattr(report,'lon',0.0)
-                    self.position['alt']= getattr(report,'alt', 'nan')
-                    self.position['speed']= getattr(report,'speed',0.0)
-                    print(getattr(report,'time', "-"))
-                    print(self.position)
-                
-            except Exception as e:
-                print("Get exceptions: ")
-                print(e)
-                self.shutdown()
-                return
-
-            self.consumer.setPosition(self.position)
-     
-            time.sleep(1) 
+        data=self.provider.getValue(self.path)
+        print(data)
+        table = pa.Table.from_pydict(data)
+        table = table.add_column(0, "timestamp", [[datetime.now()]])
+        print(table.columns)
+        table = table.cast(self.schema)
+        try:
+            table_origin = parquet.read_table(self.path+'.parquet')
+            table = pa.concat_tables([table_origin, table])
+        except FileNotFoundError:
+            pass
+        print(table.columns)
+        print(table)
+        parquet.write_table(table,self.path+'.parquet', coerce_timestamps='us', allow_truncated_timestamps = True)
 
 
     def shutdown(self):
         self.running=False
-        self.consumer.shutdown()
+        self.provider.shutdown()
         self.thread.join()
 
         
@@ -206,11 +206,13 @@ if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read(configfile)
     
-    client = S3_Client(config)
+    packer = Parquet_Packer(config, Kuksa_Client(config))
+    #client = S3_Client(config)
 
     def terminationSignalreceived(signalNumber, frame):
         print("Received termination signal. Shutting down")
-        client.shutdown()
+        packer.shutdown()
+        #client.shutdown()
     signal.signal(signal.SIGINT, terminationSignalreceived)
     signal.signal(signal.SIGQUIT, terminationSignalreceived)
     signal.signal(signal.SIGTERM, terminationSignalreceived)
