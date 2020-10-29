@@ -111,37 +111,14 @@ class VSSTestClient(Cmd):
     @with_argparser(ap_authorize)
     def do_authorize(self, args):
         """Authorize the client to interact with the server"""
-        tokenOrFile = args.Token
-        token = None
-        # Check if the token is passed in as a text or file path
-        if os.path.isfile(tokenOrFile):
-            with open(tokenOrFile, "r") as f:
-                token = f.readline()
-        else:
-            token = tokenOrFile
-
-        req = {}
-        req["requestId"] = 1238
-        req["action"]= "authorize"
-        req["tokens"] = token
-        jsonDump = json.dumps(req)
-        #print(highlight(jsonDump, lexers.JsonLexer(), formatters.TerminalFormatter()))
-        self.sendMsgQueue.put(jsonDump)
-        resp = self.recvMsgQueue.get()
+        resp = self.commThread.authorize(args.Token)
         print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_setValue)
     def do_setValue(self, args):
         """Set the value of a parameter"""
-        req = {}
-        req["requestId"] = 1235
-        req["action"]= "set"
-        req["path"] = args.Parameter
-        req["value"] = args.Value
-        jsonDump = json.dumps(req)
-        self.sendMsgQueue.put(jsonDump)
-        resp = self.recvMsgQueue.get()
+        resp = self.commThread.setValue(args.Parameter, args.Value)
         print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -149,13 +126,7 @@ class VSSTestClient(Cmd):
     @with_argparser(ap_getValue)
     def do_getValue(self, args):
         """Get the value of a parameter"""
-        req = {}
-        req["requestId"] = 1234
-        req["action"]= "get"
-        req["path"] = args.Parameter
-        jsonDump = json.dumps(req)
-        self.sendMsgQueue.put(jsonDump)
-        resp = self.recvMsgQueue.get()
+        resp = self.commThread.getValue(args.Parameter, args.Value)
         print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -171,14 +142,7 @@ class VSSTestClient(Cmd):
     def getMetaData(self, path):
         """Get MetaData of the parameter"""
         if hasattr(self, "commThread") and self.commThread.wsConnected:
-            req = {}
-            req["requestId"] = 1236
-            req["action"]= "getMetaData"
-            req["path"] = path 
-            jsonDump = json.dumps(req)
-            self.sendMsgQueue.put(jsonDump)
-            resp = self.recvMsgQueue.get()
-            return resp
+            return self.commThread.getMetaData()
         else:
             return "{}"
 

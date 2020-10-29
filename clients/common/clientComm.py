@@ -10,7 +10,7 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 
-import os, sys, threading, queue, ssl
+import os, sys, threading, queue, ssl, json
 import asyncio, websockets, pathlib
 
 class VSSClientComm(threading.Thread):
@@ -36,6 +36,62 @@ class VSSClientComm(threading.Thread):
     def stopComm(self):
         self.runComm = False
         self.wsConnected = False
+
+    def authorize(self, token, timeout = 1):
+        if os.path.isfile(token):
+            with open(token, "r") as f:
+                token = f.readline()
+
+        req = {}
+        req["requestId"] = 1238
+        req["action"]= "authorize"
+        req["tokens"] = token
+        jsonDump = json.dumps(req)
+        self.sendMsgQueue.put(jsonDump)
+        #print(req)
+        resp = self.recvMsgQueue.get(timeout = timeout)
+        #print(resp)
+        return resp
+    
+    def getMetaData(self, path, timeout = 1):
+        """Get MetaData of the parameter"""
+        req = {}
+        req["requestId"] = 1236
+        req["action"]= "getMetaData"
+        req["path"] = path 
+        jsonDump = json.dumps(req)
+        self.sendMsgQueue.put(jsonDump)
+        resp = self.recvMsgQueue.get(timeout = timeout)
+        return resp
+
+    def setValue(self, path, value, timeout = 1):
+        if 'nan' == value:
+            print(path + " has an invalid value " + str(value))
+            return
+        req = {}
+        req["requestId"] = 1235
+        req["action"]= "set"
+        req["path"] = path
+        req["value"] = value
+        jsonDump = json.dumps(req)
+        #print(jsonDump)
+        self.sendMsgQueue.put(jsonDump)
+        resp = self.recvMsgQueue.get(timeout = timeout)
+        #print(resp)
+        return resp
+
+
+    def getValue(self, path, timeout = 1):
+        req = {}
+        req["requestId"] = 1234
+        req["action"]= "get"
+        req["path"] = path
+        jsonDump = json.dumps(req)
+        #print(jsonDump)
+        self.sendMsgQueue.put(jsonDump)
+        resp = self.recvMsgQueue.get(timeout = timeout)
+        #print(resp)
+        return resp
 
     async def msgHandler(self, webSocket):
         while self.runComm:
