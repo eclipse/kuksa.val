@@ -1,6 +1,5 @@
 boto3
 websockets
 pyarrow
-awswrangler
-dataclasses
 parquet-tools
+dataclasses # dependencies of parquet tools, which is sometimes necessary
