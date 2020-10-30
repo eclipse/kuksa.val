@@ -48,6 +48,12 @@ KUKSA.val uses the cmake build system. First install the required packages. On U
 sudo apt install cmake  libboost1.67-all-dev   libssl-dev libglib2.0-dev
 ```
 
+When fetching the source, make sure you also get the needed submodules, e.g. by using the `--recursive` flag
+
+```
+git clone --recursive https://github.com/eclipse/kuksa.val.git
+```
+
 Then create a build folder inside the kuksa.val folder and execute cmake
 
 ```
