@@ -12,3 +12,5 @@ buildinfo.h
 __pycache__
 .venv
 .vssclient_history
+*.parquet
+*.downloaded

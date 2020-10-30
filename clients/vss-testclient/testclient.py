@@ -126,7 +126,7 @@ class VSSTestClient(Cmd):
     @with_argparser(ap_getValue)
     def do_getValue(self, args):
         """Get the value of a parameter"""
-        resp = self.commThread.getValue(args.Parameter, args.Value)
+        resp = self.commThread.getValue(args.Parameter)
         print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -142,7 +142,7 @@ class VSSTestClient(Cmd):
     def getMetaData(self, path):
         """Get MetaData of the parameter"""
         if hasattr(self, "commThread") and self.commThread.wsConnected:
-            return self.commThread.getMetaData()
+            return self.commThread.getMetaData(path)
         else:
             return "{}"
 
