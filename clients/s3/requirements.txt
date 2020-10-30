@@ -2,3 +2,5 @@ boto3
 websockets
 pyarrow
 awswrangler
+dataclasses
+parquet-tools

@@ -1,11 +1,13 @@
-# GPS Feeder
-consumes gpsd as datasource and pushes location to kuksa.val server
+# S3 uploader
+This client receive data from kuksa_val and pack the configured data into [parquet format](https://parquet.apache.org/documentation/latest/) and upload it to a s3 server
 
-For testing, you can use [gpsfake](https://gpsd.gitlab.io/gpsd/gpsfake.html) to playback a gps logs in e.g. nmea format.
-```
-gpsfake -P 2947 simplelog_example.nmea
-```
+Check [config.ini](./config.ini) file for the configuration of this client.
 
-There are several tools for generating nmea log files:
-- [nmea-gps logger](https://www.npmjs.com/package/nmea-gps-logger)
-- [nmeagen](https://nmeagen.org/)
+## Parquet file
+You can use the python command line tool [parquet-tools](https://pypi.org/project/parquet-tools/) to view generated parquet files:
+
+```
+    parquet-tools show s3://bucket-name/prefix/*
+    parquet-tools show kuksa.parquet
+
+```

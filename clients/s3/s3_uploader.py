@@ -42,46 +42,60 @@ class S3_Client():
             print("s3 section missing from configuration, exiting")
             sys.exit(-1)
         s3_config=config['s3']
+        endpoint_url = s3_config.get("endpoint_url", None)
+        access_key = s3_config.get("access_key_id", None)
+        secret_key = s3_config.get("secret_access_key", None)
+        verify = s3_config.getboolean("verify", False)
+        region_name = s3_config.get("region_name", None)
+        api_version = s3_config.get("api_version", None)
+        use_ssl = s3_config.getboolean("use_ssl", True)
+        token = s3_config.get("session_token", None)
         self.client = boto3.client('s3',
-            endpoint_url="http://localhost:4566",
-            aws_access_key_id='accesskey',
-            aws_secret_access_key='secretkey',
-            verify=False)
-        bucket = s3_config.get('bucket', "testbucket")
-        self.client.create_bucket(Bucket= bucket)
-        response = self.client.list_buckets()
+            endpoint_url = endpoint_url,
+            aws_access_key_id = access_key,
+            aws_secret_access_key = secret_key,
+            verify = verify,
+            region_name = region_name,
+            api_version = api_version,
+            use_ssl = use_ssl,
+            aws_session_token = token
+            )
 
-        # Output the bucket names
-        s3 = fs.S3FileSystem(endpoint_override='http://localhost:4566')
-        table = pa.table({'col1': range(3), 'col2': np.random.randn(3)})
-        print(table.schema)
-        parquet.write_table(table, "test.parquet", coerce_timestamps='ms', allow_truncated_timestamps = True)
-        parquet.write_to_dataset(table, root_path="test", coerce_timestamps='ms', allow_truncated_timestamps=True)
-        #self.client.upload_file("test.parquet", bucket,"test")
-        #parquet.write_table(table, "test/data.parquet", filesystem=s3)
-        #print(parquet.read_table(f'{bucket}/test', filesystem=s3))
-        with s3.open_output_stream(f'{bucket}/test2') as file:
-           with parquet.ParquetWriter(file, table.schema) as writer:
-              writer.write_table(table)
-              #writer.write_to_dataset(table)
-        f = s3.open_input_stream(f'{bucket}/test2')
-        print(f.readall())
+        # Create bucket if does not exist
+        self.bucket = s3_config.get('bucket', "testbucket")
+        bucket_exists = False
+        response = self.client.list_buckets()
         print('Existing buckets:')
         for b in response['Buckets']:
             print(f'  {b["Name"]}')
+            if self.bucket == b["Name"]:
+                bucket_exists = True
+        if not bucket_exists:
+            print("create bucket " + self.bucket)
+            self.client.create_bucket(Bucket= self.bucket)
 
-        #df = pd.DataFrame({
-        #    "id": [3],
-        #    "value": ["bar"],
-        #    "date": [date(2020, 1, 3)]
-        #})
+        self.file = fs.S3FileSystem(endpoint_override='http://localhost:4566')
 
-        #wr.s3.to_parquet(
-        #    df=df,
-        #    path="test.parquet",
-        #    dataset=True,
-        #    mode="append"
-        #)
+
+    def upload(self, srcFile, dstFile):
+
+        # Output the bucket names
+        self.client.upload_file(srcFile, self.bucket, dstFile)
+        # TODO upload file as stream does not work with localstack
+        # try it out with really aws cloud
+        # OSError: When initiating multiple part upload for key 'test' in bucket 'kuksa': AWS Error [code 16]:  with address : ::1 with address : ::1
+        #with s3.open_output_stream(f'{bucket}/test') as file:
+        #   with parquet.ParquetWriter(file, table.schema) as writer:
+        #      writer.write_table(table)
+        #      #writer.write_to_dataset(table)
+
+        # read uploaded file for debugging
+        print(f'update file {srcFile} to s3://{self.bucket}/{dstFile}')
+        print(parquet.read_table(f'{self.bucket}/{dstFile}', filesystem=self.file))
+        try:
+            self.client.download_file(self.bucket, dstFile, srcFile + ".downloaded")
+        except Exception as e:
+            print("The object does not exist." + str(e))
 
 
 
@@ -103,57 +117,62 @@ class Kuksa_Client():
         self.dataset = {}
         
     def getMetaData(self, path):
-        return json.loads(self.client.getMetaData(path))["metadata"]
+        metadata = (json.loads(self.client.getMetaData(path))["metadata"])
+        #print(metadata)
+
+        return metadata
 
     def getValue(self, path):
         dataset = json.loads(self.client.getValue(path))["value"]
+        # convert to strings to Arrays, which is required by pyarrow.from_pydict
         if not isinstance(dataset, dict):
-            return {path: [dataset]}
-        return dataset
+            dataset= {path: [dataset]}
+        else:
+            for key in dataset:
+                dataset[key] = [dataset[key]]
+        return (dataset)
 
     def shutdown(self):
         self.client.stopComm()
 
         
 class Parquet_Packer():
-    def __init__(self, config, dataprovider):
+    def __init__(self, config):
         print("Init parquet packer...")
         if "parquet" not in config:
             print("parquet section missing from configuration, exiting")
             sys.exit(-1)
         
-        self.provider = dataprovider
+        self.dataprovider = Kuksa_Client(config)
+        self.uploader = S3_Client(config)
         config=config['parquet']
         self.path = config.get('path', "")
-        self.interval = config.getint('interval', 1)
+        self.path = self.path.replace(" ", "").split(",")
+        self.interval = config.getint('sample_interval', 1)
+        self.max_num_rows = config.getint('max_num_rows', -1)
         
-        self.schema = self.genSchema(self.provider.getMetaData(self.path))
+        self.schema = self.genSchema(self.path)
+        self.createNewParquet()
         self.running = True
 
         self.thread = threading.Thread(target=self.loop, args=())
         self.thread.start()
 
-    def get_childtree(self, vssTree, pathText):
-        childVssTree = vssTree
-        if "." in pathText:
-            paths = pathText.split(".")
-            for path in paths:
-                if path in childVssTree:
-                    childVssTree = childVssTree[path]
-                elif 'children' in childVssTree and path in childVssTree['children']:
-                    childVssTree = childVssTree['children'][path]
-            if 'children' in childVssTree:
-                childVssTree = childVssTree['children']
-        return childVssTree
+    def createNewParquet(self):
+        currTime = datetime.now().strftime("%Y-%b-%d_%H:%M:%S.%f")
+        self.pqfile = 'kuksa_' + currTime +'.parquet'
+        self.pqwriter = parquet.ParquetWriter(self.pqfile, self.schema)
+        self.num_rows = 0
 
-    def genSchema(self, metadata, prefix = ""):
-        fields = [pa.field("timestamp", pa.timestamp('us'))]
-        # TODO only first considered
+
+    def genFields(self, metadata, prefix = ""):
+        fields = []
+        # Note: only first children is considered, which mapped the vss tree structure
         for key in metadata:
             #print("key is " + key)
             if "children" in metadata[key]:
                 prefix += key + "."
-                return self.genSchema(metadata[key]["children"], prefix)
+                return self.genFields(metadata[key]["children"], prefix)
             else:
                 #print("prefix is " + prefix)
                 datatype = pyarrow_mapping.KUKSA_TO_PYARROW_MAPPING[metadata[key]["datatype"]]()
@@ -161,36 +180,53 @@ class Parquet_Packer():
                 fields.append(pa.field(prefix+key, datatype))
             
 
+        return fields
+
+    def genSchema(self, path):
+        fields = [pa.field("timestamp", pa.timestamp('us'))]
+        for p in path:
+            metadata = self.dataprovider.getMetaData(p)
+            fields += (self.genFields(metadata))
+
+        
         return pa.schema(fields)
 
 
+    def writeTable(self, data):
+        table = pa.Table.from_pydict(data)
+        table = table.add_column(0, "timestamp", [[datetime.now()]])
+        try:
+            table = table.cast(self.schema)
+            self.pqwriter.write_table(table)
+            self.num_rows += 1
+        except pa.lib.ArrowInvalid as e:
+            print("ERROR: " + str(e))
+            print("The following data can not be written into parquet file:")
+            print(data)
+
+        if self.max_num_rows > 0 and self.num_rows >= self.max_num_rows:
+            self.pqwriter.close()
+            self.uploader.upload(self.pqfile, self.pqfile )
+            self.createNewParquet()
 
 
     def loop(self):
         print("receive loop started")
         while self.running:
+
+            data = {}
+            for p in self.path:
+                data.update(self.dataprovider.getValue(p))
+
+            self.writeTable(data)
+            
             time.sleep(self.interval) 
-            break
-
-        data=self.provider.getValue(self.path)
-        print(data)
-        table = pa.Table.from_pydict(data)
-        table = table.add_column(0, "timestamp", [[datetime.now()]])
-        print(table.columns)
-        table = table.cast(self.schema)
-        try:
-            table_origin = parquet.read_table(self.path+'.parquet')
-            table = pa.concat_tables([table_origin, table])
-        except FileNotFoundError:
-            pass
-        print(table.columns)
-        print(table)
-        parquet.write_table(table,self.path+'.parquet', coerce_timestamps='us', allow_truncated_timestamps = True)
-
 
     def shutdown(self):
+
         self.running=False
-        self.provider.shutdown()
+        self.dataprovider.shutdown()
+        self.pqwriter.close()
         self.thread.join()
 
         
@@ -206,13 +242,11 @@ if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read(configfile)
     
-    packer = Parquet_Packer(config, Kuksa_Client(config))
-    #client = S3_Client(config)
+    client = Parquet_Packer(config)
 
     def terminationSignalreceived(signalNumber, frame):
         print("Received termination signal. Shutting down")
-        packer.shutdown()
-        #client.shutdown()
+        client.shutdown()
     signal.signal(signal.SIGINT, terminationSignalreceived)
     signal.signal(signal.SIGQUIT, terminationSignalreceived)
     signal.signal(signal.SIGTERM, terminationSignalreceived)
