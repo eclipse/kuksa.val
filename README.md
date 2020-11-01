@@ -45,7 +45,7 @@ If this is succesful you can skip to [using KUKSA.val](#Using-kuksaval).
 KUKSA.val uses the cmake build system. First install the required packages. On Ubuntu 20.04 this can be achieved by
 
 ```
-sudo apt install cmake  libboost1.67-all-dev   libssl-dev libglib2.0-dev
+sudo apt install cmake libboost1.67-all-dev libssl-dev libglib2.0-dev libmosquitto-dev
 ```
 
 When fetching the source, make sure you also get the needed submodules, e.g. by using the `--recursive` flag
