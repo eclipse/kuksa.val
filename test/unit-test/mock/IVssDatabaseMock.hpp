@@ -21,6 +21,8 @@
 MOCK_BASE_CLASS( IVssDatabaseMock, IVssDatabase )
 {
   MOCK_METHOD(initJsonTree, 1)
+  MOCK_METHOD(updateJsonTree, 2)
+  MOCK_METHOD(updateMetaData, 3)
   MOCK_METHOD(getMetaData, 1)
   MOCK_METHOD(setSignal, 3)
   MOCK_METHOD(getSignal, 2)

@@ -79,7 +79,6 @@ namespace {
 
     // common resources for tests
   std::shared_ptr<ILoggerMock> logMock;
-  std::shared_ptr<IVssDatabaseMock> dbMock;
 
   std::unique_ptr<Authenticator> auth;
 
@@ -87,14 +86,11 @@ namespace {
   struct TestSuiteFixture {
     TestSuiteFixture() {
       logMock = std::make_shared<ILoggerMock>();
-      dbMock = std::make_shared<IVssDatabaseMock>();
-
 
       auth = std::make_unique<Authenticator>(logMock, std::string(""), std::string("RS256"));
     }
     ~TestSuiteFixture() {
       logMock.reset();
-      dbMock.reset();
       auth.reset();
     }
   };
@@ -114,15 +110,6 @@ BOOST_AUTO_TEST_CASE(Given_GoodToken_When_Validate_Shall_ValidateTokenSuccessful
 
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
-
-  MOCK_EXPECT(dbMock->getPathForGet)
-    .once()
-    .with(mock::equal("Vehicle.Drivetrain.*"), mock::assign(true))
-    .returns(retDbListWider);
-  MOCK_EXPECT(dbMock->getPathForGet)
-    .once()
-    .with(mock::equal("Vehicle.Drivetrain.Transmission.*"), mock::assign(true))
-    .returns(retDbListNarrower);
 
   picojson::value picoJson;
   picojson::parse(picoJson,
@@ -149,7 +136,7 @@ BOOST_AUTO_TEST_CASE(Given_GoodToken_When_Validate_Shall_ValidateTokenSuccessful
   // execute
 
   auth->updatePubKey(validPubKey);
-  auto res = auth->validate(channel, dbMock, token);
+  auto res = auth->validate(channel, token);
 
   // verify
 
@@ -168,15 +155,6 @@ BOOST_AUTO_TEST_CASE(Given_BadPathInToken_When_Validate_Shall_ThrowException)
 
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
-
-  MOCK_EXPECT(dbMock->getPathForGet)
-    .once()
-    .with(mock::equal("Vehicle.Drivetrain.*"), mock::assign(true))
-    .returns(retDbListWider);
-  MOCK_EXPECT(dbMock->getPathForGet)
-    .once()
-    .with(mock::equal("Vehicle.Drivetrain.Transmission.*"), mock::assign(true))
-    .throws(noPathFoundonTree(""));
 
   picojson::value picoJson;
   picojson::parse(picoJson,
@@ -205,7 +183,7 @@ BOOST_AUTO_TEST_CASE(Given_BadPathInToken_When_Validate_Shall_ThrowException)
   // verify
 
   // path in token is not found, so expect exception to be thrown
-  BOOST_CHECK_EXCEPTION(auth->validate(channel, dbMock, token),
+  BOOST_CHECK_EXCEPTION(auth->validate(channel, token),
                         noPathFoundonTree,
                         [](noPathFoundonTree const& e){boost::ignore_unused(e); return true;});
 }
@@ -249,7 +227,7 @@ BOOST_AUTO_TEST_CASE(Given_BadToken_When_Validate_Shall_ReturnError)
   // change something in token so it fails verification
   token[10] = 'a';
 
-  auto res = auth->validate(channel, dbMock, token);
+  auto res = auth->validate(channel, token);
 
   // verify
 

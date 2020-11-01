@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2019 Robert Bosch GmbH.
+ * Copyright (c) 2020 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -16,12 +16,9 @@
 
 #include <turtle/mock.hpp>
 
-#include "IAuthenticator.hpp"
+#include "IClient.hpp"
 
-MOCK_BASE_CLASS( IAuthenticatorMock, IAuthenticator )
+MOCK_BASE_CLASS( IClientMock, IClient )
 {
-  MOCK_METHOD(validate, 2)
-  MOCK_METHOD(updatePubKey, 1)
-  MOCK_METHOD(isStillValid, 1)
-  MOCK_METHOD(resolvePermissions, 1)
+  MOCK_METHOD(sendPathValue, 2)
 };
