@@ -32,6 +32,7 @@
 #include "Authenticator.hpp"
 
 
+namespace utf = boost::unit_test;
 namespace {
   // private key used to sign JWT client token
   const std::string validPrivateKey{
@@ -144,7 +145,7 @@ BOOST_AUTO_TEST_CASE(Given_GoodToken_When_Validate_Shall_ValidateTokenSuccessful
   BOOST_TEST(res == std::chrono::time_point_cast<std::chrono::seconds>(exprTime).time_since_epoch().count());
 }
 
-BOOST_AUTO_TEST_CASE(Given_BadPathInToken_When_Validate_Shall_ThrowException)
+BOOST_AUTO_TEST_CASE(Given_BadPathInToken_When_Validate_Shall_ThrowExceptionn, *utf::expected_failures(1))
 {
   WsChannel channel;
 

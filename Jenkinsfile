@@ -9,9 +9,9 @@
 **/
 
 node('docker') {
-		checkout scm
-    	def buildImage = docker.build("my-image:${env.BUILD_ID}", "-f docker/Dockerfile-Jenkins-Build-Env .")
-        buildImage.inside(" -v /var/run/docker.sock:/var/run/docker.sock " ){
+    checkout scm
+    def buildImage = docker.build("my-image:${env.BUILD_ID}", "-f docker/Dockerfile-Jenkins-Build-Env .")
+    buildImage.inside(" -v /var/run/docker.sock:/var/run/docker.sock " ){
         stage('Prepare') {
         sh '''
             git submodule update --init
@@ -37,4 +37,12 @@ node('docker') {
             archiveArtifacts artifacts: 'artifacts/*.xz' 
         }
     }
+    docker.image('kuksa-val-dev:ubuntu20.04').inside("-v /var/run/docker.sock:/var/run/docker.sock"){ 
+        stage('Test') {
+            sh '''
+                cd /kuksa.val/build
+                cmake .. -DBUILD_UNIT_TEST=ON
+                ctest --build-config Debug --output-on-failure --parallel 8
+            '''
+        }
 }
