@@ -45,4 +45,5 @@ node('docker') {
                 ctest --build-config Debug --output-on-failure --parallel 8
             '''
         }
+    }
 }
