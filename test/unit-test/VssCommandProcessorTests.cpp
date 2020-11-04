@@ -221,8 +221,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonSignalValue["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonSignalValue);
 }
 
@@ -268,7 +268,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
   BOOST_TEST(res == jsonPathNotFound);
 }
 
@@ -320,7 +320,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
   BOOST_TEST(res == jsonPathNotFound);
 }
 
@@ -369,7 +369,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
   BOOST_TEST(res == jsonValueOutOfBound);
 }
 
@@ -418,7 +418,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
   BOOST_TEST(res == jsonNoAccess);
 }
 
@@ -467,7 +467,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
   BOOST_TEST(res == jsonMalformedReq);
 }
 
@@ -513,8 +513,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonSignalValue["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonSignalValue);
 }
 
@@ -562,8 +562,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonSignalValue["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonSignalValue);
 }
 
@@ -611,8 +611,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonSignalValue["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonSignalValue);
 }
 
@@ -653,8 +653,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonNoAccess["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonNoAccess["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonNoAccess);
 }
 
@@ -695,8 +695,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonPathNotFound["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonPathNotFound["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonPathNotFound);
 }
 
@@ -737,8 +737,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonOutOfBound["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonOutOfBound["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonOutOfBound);
 }
 
@@ -779,8 +779,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonMalformedReq["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonMalformedReq["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonMalformedReq);
 }
 
@@ -827,8 +827,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonSignalValue["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonSignalValue);
 }
 
@@ -875,8 +875,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonSignalValue["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonSignalValue);
 }
 
@@ -925,8 +925,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonValue["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonValue["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonValue);
 }
 
@@ -966,7 +966,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
   
   MOCK_EXPECT(authMock->validate)
     .once()
-    .with(mock::any, dbMock, dummyToken)
+    .with(mock::any, dummyToken)
     .returns(ttl);
 
   // run UUT
@@ -976,8 +976,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonValue["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonValue["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonValue);
 }
 
@@ -1017,7 +1017,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
   
   MOCK_EXPECT(authMock->validate)
     .once()
-    .with(mock::any, dbMock, dummyToken)
+    .with(mock::any, dummyToken)
     .returns(ttl);
 
   // run UUT
@@ -1026,9 +1026,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonValue["timestamp"]; // ignoring timestamp difference for response
+  // // timestamp must not be zero
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonValue["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonValue);
 }
 
@@ -1059,8 +1059,8 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   auto res = json::parse(resStr);
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonExpected["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonExpected["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
@@ -1073,8 +1073,8 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonExpected["error"] = jsonValueErr;
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonExpected["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonExpected["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
@@ -1087,8 +1087,8 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonExpected["error"] = jsonValueErr;
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonExpected["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonExpected["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
@@ -1101,8 +1101,8 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonExpected["error"] = jsonValueErr;
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonExpected["timestamp"]; // ignoring timestamp difference for response
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonExpected["timestamp"].as<int>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
@@ -1114,9 +1114,9 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonExpected["error"] = jsonValueErr;
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonExpected["timestamp"]; // ignoring timestamp difference for response
-  res["error"] = jsonExpected["error"];     // ignoring error content
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonExpected["timestamp"].as<int>(); // ignoring timestamp difference for response
+  res["error"] = jsonExpected["error"].as<json>();     // ignoring error content
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
@@ -1128,9 +1128,9 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonExpected["error"] = jsonValueErr;
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonExpected["timestamp"]; // ignoring timestamp difference for response
-  res["error"] = jsonExpected["error"];     // ignoring error content
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonExpected["timestamp"].as<int>(); // ignoring timestamp difference for response
+  res["error"] = jsonExpected["error"].as<json>();     // ignoring error content
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
@@ -1142,9 +1142,9 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonExpected["error"] = jsonValueErr;
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as_int() > 0);
-  res["timestamp"] = jsonExpected["timestamp"]; // ignoring timestamp difference for response
-  res["error"] = jsonExpected["error"];     // ignoring error content
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  res["timestamp"] = jsonExpected["timestamp"].as<int>(); // ignoring timestamp difference for response
+  res["error"] = jsonExpected["error"].as<json>();     // ignoring error content
   BOOST_TEST(res == jsonExpected);
 }
 

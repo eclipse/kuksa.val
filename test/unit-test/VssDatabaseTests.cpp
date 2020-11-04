@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   BOOST_CHECK_NO_THROW(db->setSignal(channel, signalPath, setValue));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
-  BOOST_TEST(returnJson["value"] == 10);
+  BOOST_TEST(returnJson["value"].as<int>() == 10);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPath_Shall_ThrowError) {
@@ -309,7 +309,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
-  BOOST_TEST(returnJson["value"] == 10);
+  BOOST_TEST(returnJson["value"].as<int>() == 10);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPathNoChannel_Shall_ThrowError) {

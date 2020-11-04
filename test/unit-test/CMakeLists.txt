@@ -43,13 +43,16 @@ if(BUILD_UNIT_TEST)
   target_compile_options(${UNITTEST_EXE_NAME} PRIVATE -Wno-noexcept-type)
 
   # using shared library as it allows us to re-use test runner to verify different library versions, if needed
-  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE "kuksa-val-core")
+  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE "kuksa-val-server-core-static")
 
   target_include_directories(${UNITTEST_EXE_NAME} PRIVATE mock)
+  target_include_directories(${UNITTEST_EXE_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
+  target_include_directories(${UNITTEST_EXE_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../include/interface)
 
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE turtle)
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
+  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE jsoncons jwt-cpp)
 
   configure_file(test_vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Resources/jwt.pub.key ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
