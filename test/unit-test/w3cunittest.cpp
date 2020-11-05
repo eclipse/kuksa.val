@@ -1100,7 +1100,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 		"action": "set",
 		"path": "Vehicle.OBD.EngineSpeed",
 		"requestId": "8750",
-                "value" : 2345
+                "value" : 2345.0
 	})");
 
    string set_response = commandProc->processQuery(set_request,channel);
@@ -1135,7 +1135,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "value": 2345.0
     })");
 
    json response_json = json::parse(response);
