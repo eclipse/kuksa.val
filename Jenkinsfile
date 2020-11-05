@@ -41,9 +41,7 @@ node('docker') {
         stage('Test') {
             sh '''
                 cd /kuksa.val/build
-                cmake .. -DBUILD_UNIT_TEST=ON
-                make -j8
-                # TODO ctest --build-config Debug --output-on-failure --parallel 8
+                ctest --build-config Debug --output-on-failure --parallel 8
             '''
         }
     }

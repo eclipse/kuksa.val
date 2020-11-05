@@ -11,7 +11,7 @@
 #      Robert Bosch GmbH - initial API and functionality
 # *****************************************************************************
 
-project(w3c-unit-test)
+project(kuksa-val-unit-test)
 enable_testing()
 include(CTest)
 
