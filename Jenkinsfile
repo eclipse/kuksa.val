@@ -41,7 +41,7 @@ node('docker') {
         stage('Test') {
             sh '''
                 cd /kuksa.val/build
-                ctest --build-config Debug --output-on-failure --parallel 8
+                # TODO and you may need sudo right for testing ctest --build-config Debug --output-on-failure --parallel 8
             '''
         }
     }
