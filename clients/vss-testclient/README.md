@@ -20,7 +20,7 @@ pipenv run python testclient.py
 ### Without Pipenv
 Ensure all the dependencies are installed.
 ```sh
-pip3 install websockets cmd2 pygments
+pip3 install -r requirements.txt
 python3 testclient.py
 ```
 

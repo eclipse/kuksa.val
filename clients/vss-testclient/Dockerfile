@@ -7,7 +7,7 @@
 #
 
 # This dockerfile needs to be executed one lelvel above to have access to common
-# and it expects a topken folder (where you can preload some security tokens)
+# and it expects a token folder (where you can preload some security tokens)
 # see build.sh for an example how to run this
 
 FROM python:3.8-alpine AS build-env
@@ -16,10 +16,12 @@ FROM python:3.8-alpine AS build-env
 RUN mkdir /app
 RUN mkdir /app/vssclient
 COPY vss-testclient/testclient.py /app/vssclient/
+COPY vss-testclient/requirements.txt /app/vssclient/
 ADD vss-testclient/tokens /app/vssclient/tokens
 ADD common /app/common
 WORKDIR /app/vssclient
-RUN pip install --target=./ --no-cache-dir websockets cmd2 pygments
+RUN pip install --target=./ --no-cache-dir -r requirements.txt
+RUN rm requirements.txt
 
 
 FROM python:3.8-alpine
