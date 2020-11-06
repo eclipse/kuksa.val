@@ -22,7 +22,6 @@ from pyarrow import fs
 import boto3
 import pyarrow as pa
 import numpy as np 
-import awswrangler as wr
 import pandas as pd
 from datetime import date
 from datetime import datetime
