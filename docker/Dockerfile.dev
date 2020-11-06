@@ -32,7 +32,7 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
 ADD . /kuksa.val
 RUN  rm -rf /kuksa.val/build  && mkdir  /kuksa.val/build 
 WORKDIR /kuksa.val/build
-RUN cmake ..
+RUN cmake .. -DBUILD_UNIT_TEST=ON
 RUN make -j8
 
 CMD ./src/kuksa-val-server -c src/config.ini 

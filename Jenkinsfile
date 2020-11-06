@@ -9,9 +9,9 @@
 **/
 
 node('docker') {
-		checkout scm
-    	def buildImage = docker.build("my-image:${env.BUILD_ID}", "-f docker/Dockerfile-Jenkins-Build-Env .")
-        buildImage.inside(" -v /var/run/docker.sock:/var/run/docker.sock " ){
+    checkout scm
+    def buildImage = docker.build("my-image:${env.BUILD_ID}", "-f docker/Dockerfile-Jenkins-Build-Env .")
+    buildImage.inside(" -v /var/run/docker.sock:/var/run/docker.sock " ){
         stage('Prepare') {
         sh '''
             git submodule update --init
@@ -35,6 +35,14 @@ node('docker') {
         }
         stage ('Archive') {
             archiveArtifacts artifacts: 'artifacts/*.xz' 
+        }
+    }
+    docker.image('kuksa-val-dev:ubuntu20.04').inside("-v /var/run/docker.sock:/var/run/docker.sock"){ 
+        stage('Test') {
+            sh '''
+                cd /kuksa.val/build
+                # TODO and you may need sudo right for testing ctest --build-config Debug --output-on-failure --parallel 8
+            '''
         }
     }
 }

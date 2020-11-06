@@ -6,17 +6,21 @@ Copy the vss signal tree json manually from [here](https://github.com/GENIVI/veh
 
 Enable set(UNIT_TEST ON) in CMakeLists.txt under w3v-visserver-api folder.
 
+```
+
 mkdir build
 
 cd build
 
-cmake ..
+cmake .. -DBUILD_UNIT_TEST=ON
 
 make
 
-
+```
 you can execute using
 
+```
 ./w3c-unit-test
+```
 
 Obviously, there should be no errors :)

@@ -11,8 +11,9 @@
 #      Robert Bosch GmbH - initial API and functionality
 # *****************************************************************************
 
-project(w3c-unit-test)
+project(kuksa-val-unit-test)
 enable_testing()
+include(CTest)
 
 ######
 # CMake configuration responsible for building kuksa-val optional unit tests based on core library
@@ -37,6 +38,8 @@ if(BUILD_UNIT_TEST)
     w3cunittest.cpp
   )
 
+  # declares a test with our executable
+  add_test(NAME ${UNITTEST_EXE_NAME} COMMAND $<TARGET_FILE:${UNITTEST_EXE_NAME}> WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   target_compile_features(${UNITTEST_EXE_NAME} PRIVATE cxx_std_14)
 
   # disable warning, as we are not going to link unit-test library with anyone
