@@ -73,24 +73,14 @@ class S3_Client():
             print("create bucket " + self.bucket)
             self.client.create_bucket(Bucket= self.bucket)
 
-        self.file = fs.S3FileSystem(endpoint_override='http://localhost:4566')
-
 
     def upload(self, srcFile, dstFile):
 
         # Output the bucket names
         self.client.upload_file(srcFile, self.bucket, dstFile)
-        # TODO upload file as stream does not work with localstack
-        # try it out with really aws cloud
-        # OSError: When initiating multiple part upload for key 'test' in bucket 'kuksa': AWS Error [code 16]:  with address : ::1 with address : ::1
-        #with s3.open_output_stream(f'{bucket}/test') as file:
-        #   with parquet.ParquetWriter(file, table.schema) as writer:
-        #      writer.write_table(table)
-        #      #writer.write_to_dataset(table)
 
         # read uploaded file for debugging
         print(f'update file {srcFile} to s3://{self.bucket}/{dstFile}')
-        print(parquet.read_table(f'{self.bucket}/{dstFile}', filesystem=self.file))
         try:
             self.client.download_file(self.bucket, dstFile, srcFile + ".downloaded")
         except Exception as e:
