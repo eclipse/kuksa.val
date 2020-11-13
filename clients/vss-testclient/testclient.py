@@ -16,7 +16,7 @@ from pygments import highlight, lexers, formatters
 from cmd2 import Cmd, with_argparser, with_category, Cmd2ArgumentParser, CompletionItem
 from cmd2.utils import CompletionError, basic_complete
 import functools
-DEFAULT_SERVER_ADDR = "localhost"
+DEFAULT_SERVER_ADDR = "127.0.0.1"
 DEFAULT_SERVER_PORT = 8090
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
