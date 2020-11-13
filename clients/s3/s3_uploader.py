@@ -148,7 +148,7 @@ class Parquet_Packer():
         self.thread.start()
 
     def createNewParquet(self):
-        currTime = datetime.now().strftime("%Y-%b-%d_%H:%M:%S.%f")
+        currTime = datetime.now().strftime("%Y-%b-%d_%H_%M_%S.%f")
         self.pqfile = 'kuksa_' + currTime +'.parquet'
         self.pqwriter = parquet.ParquetWriter(self.pqfile, self.schema)
         self.num_rows = 0
