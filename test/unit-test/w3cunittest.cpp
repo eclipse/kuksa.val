@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(test_get_random)
 
     list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
 
-    BOOST_TEST(paths.size() == 0u);
+    BOOST_TEST(paths.size() == 1u);
     BOOST_TEST(isBranch == false);
 
 }
@@ -247,8 +247,8 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_invalid_values)
 
     BOOST_TEST(paths.size() == 2u);
 
-    BOOST_TEST(paths[0]["path"].as_string() == "");
-    BOOST_TEST(paths[1]["path"].as_string() == "");
+    BOOST_TEST(paths[0]["path"].as_string() == "$");
+    BOOST_TEST(paths[1]["path"].as_string() == "$");
 
 }
 
@@ -269,7 +269,7 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_one_valid_value)
     BOOST_TEST(paths.size() == 2u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
-    BOOST_TEST(paths[1]["path"].as_string() == "");
+    BOOST_TEST(paths[1]["path"].as_string() == "$");
 
 }
 
@@ -289,8 +289,8 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_invalid_path_valid_values)
 
     BOOST_TEST(paths.size() == 2u);
 
-    BOOST_TEST(paths[0]["path"].as_string() == "");
-    BOOST_TEST(paths[1]["path"].as_string() == "");
+    BOOST_TEST(paths[0]["path"].as_string() == "$");
+    BOOST_TEST(paths[1]["path"].as_string() == "$");
 
 }
 
@@ -347,8 +347,8 @@ BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_invalid_values)
 
     BOOST_TEST(paths.size() == 2u);
 
-    BOOST_TEST(paths[0]["path"].as_string() == "");
-    BOOST_TEST(paths[1]["path"].as_string() == "");
+    BOOST_TEST(paths[0]["path"].as_string() == "$");
+    BOOST_TEST(paths[1]["path"].as_string() == "$");
 
 }
 
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_one_invalid_value)
     BOOST_TEST(paths.size() == 2u);
 
     BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['Cabin']['children']['HVAC']['children']['Row2']['children']['Left']['children']['Temperature']");
-    BOOST_TEST(paths[1]["path"].as_string() == "");
+    BOOST_TEST(paths[1]["path"].as_string() == "$");
 
 }
 
@@ -884,7 +884,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(channel,test_path_boolean, test_value_bool_false);
     result = database->getSignal(channel,test_path_boolean);
 
-    BOOST_TEST(result["value"].as<std::string>() == test_value_bool_false);
+    BOOST_TEST(result["value"].as<bool>() == test_value_bool_false);
 
     json test_value_bool_true;
     test_value_bool_true = true;
@@ -892,7 +892,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(channel,test_path_boolean, test_value_bool_true);
     result = database->getSignal(channel,test_path_boolean);
 
-    BOOST_TEST(result["value"].as<std::string>() == test_value_bool_true);
+    BOOST_TEST(result["value"].as<bool>() == test_value_bool_true);
 }
 
 
@@ -906,7 +906,7 @@ BOOST_AUTO_TEST_CASE(test_set_random)
 
     BOOST_TEST(paths.size() == 1u);
 
-    BOOST_TEST(paths[0]["path"].as_string() == "");
+    BOOST_TEST(paths[0]["path"].as_string() == "$");
 }
 
 // -------------------------------- Metadata test ----------------------------------
