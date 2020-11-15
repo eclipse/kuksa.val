@@ -79,7 +79,7 @@
               }, 
               "EngineStopStartEnabled": {
                 "description": "Indicates whether eco start stop is currently enabled", 
-                "datatype": "boolean", 
+                "datatype": "boolean",
                 "type": "sensor", 
                 "uuid": "0e2775a0bbc15cb2ab1ac830b574a2b6"
               }, 
@@ -109,7 +109,7 @@
               }, 
               "LowFuelLevel": {
                 "description": "Indicates that the fuel level is low (e.g. <50km range)", 
-                "datatype": "boolean", 
+                "datatype": "boolean",
                 "type": "sensor", 
                 "uuid": "71e455a6a688587cb6b4c3940cf4088a"
               }, 
@@ -459,7 +459,7 @@
               }, 
               "LowBatteryLevel": {
                 "description": "Indicates that the battery level is low", 
-                "datatype": "Boolean", 
+                "datatype": "boolean",
                 "type": "sensor", 
                 "uuid": "8fd64a09cc1d51dbb50f4f9f1b8a8ac0"
               }
@@ -599,13 +599,13 @@
                     "children": {
                       "IsChildLockActive": {
                         "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "sensor", 
                         "uuid": "cdde633796e35eaf8ec8b1c738238e74"
                       }, 
                       "IsLocked": {
                         "description": "Is door locked or unlocked. True = Locked. False = Unlocked.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "705dd6dce5b05aa693bed8192a98be15"
                       }, 
@@ -654,7 +654,7 @@
                           }, 
                           "ChildLock": {
                             "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "40156ef737385948b1fc2a7ee09a5254"
                           }, 
@@ -673,7 +673,7 @@
                           }, 
                           "isOpen": {
                             "description": "Is door open or closed", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "eb3d4e7c097156d4857ba4a83ab41384"
                           }
@@ -681,7 +681,7 @@
                       }, 
                       "IsOpen": {
                         "description": "Is door open or closed", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "37b669115f4b5ef385e291c4c63cd379"
                       }
@@ -694,13 +694,13 @@
                     "children": {
                       "IsChildLockActive": {
                         "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "sensor", 
                         "uuid": "fb82ad2ee8715b318609a3d5a447ca95"
                       }, 
                       "IsLocked": {
                         "description": "Is door locked or unlocked. True = Locked. False = Unlocked.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "46d4f2a286df5ed8a322286786153bbc"
                       }, 
@@ -749,7 +749,7 @@
                           }, 
                           "ChildLock": {
                             "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "5c2d56b68c995beba19555e3cf561fe2"
                           }, 
@@ -768,7 +768,7 @@
                           }, 
                           "isOpen": {
                             "description": "Is door open or closed", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "693a761c83be5ee78f2983ca23b3de76"
                           }
@@ -776,7 +776,7 @@
                       }, 
                       "IsOpen": {
                         "description": "Is door open or closed", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "9ba75ef2c8ca565db21916669b638b95"
                       }
@@ -795,13 +795,13 @@
                     "children": {
                       "IsChildLockActive": {
                         "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "sensor", 
                         "uuid": "60233baf6af4508aae126a9060d17a0a"
                       }, 
                       "IsLocked": {
                         "description": "Is door locked or unlocked. True = Locked. False = Unlocked.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "42c2846551815419a9fb4234cb4d4bae"
                       }, 
@@ -850,7 +850,7 @@
                           }, 
                           "ChildLock": {
                             "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "06a1863081785b84812fc048bca0e7b0"
                           }, 
@@ -869,7 +869,7 @@
                           }, 
                           "isOpen": {
                             "description": "Is door open or closed", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "45a3642d7df0560bb45316796a948317"
                           }
@@ -877,7 +877,7 @@
                       }, 
                       "IsOpen": {
                         "description": "Is door open or closed", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "0261b96ab48551b2bd086885251ede5c"
                       }
@@ -889,13 +889,13 @@
                     "children": {
                       "IsChildLockActive": {
                         "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "sensor", 
                         "uuid": "799d221ebdd95f89bf07736e30fe560c"
                       }, 
                       "IsLocked": {
                         "description": "Is door locked or unlocked. True = Locked. False = Unlocked.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "fc6e70f126d15a9d8f047f10e824cd3e"
                       }, 
@@ -944,7 +944,7 @@
                           }, 
                           "ChildLock": {
                             "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "ad1226372c31599cbf06c6133e5dcb2d"
                           }, 
@@ -963,7 +963,7 @@
                           }, 
                           "isOpen": {
                             "description": "Is door open or closed", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "51e3a1d5ae3a52e8af83152c798da539"
                           }
@@ -971,7 +971,7 @@
                       }, 
                       "IsOpen": {
                         "description": "Is door open or closed", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "61abb6434b0155558be4861fffd35f40"
                       }
@@ -993,13 +993,13 @@
                     "children": {
                       "IsChildLockActive": {
                         "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "sensor", 
                         "uuid": "347f238149265e328403300d48460273"
                       }, 
                       "IsLocked": {
                         "description": "Is door locked or unlocked. True = Locked. False = Unlocked.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "ff7496a81cfa509789455faae41224f7"
                       }, 
@@ -1048,7 +1048,7 @@
                           }, 
                           "ChildLock": {
                             "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "14b74b209199538996585d3acb6c7374"
                           }, 
@@ -1067,7 +1067,7 @@
                           }, 
                           "isOpen": {
                             "description": "Is door open or closed", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "847c4e363477585897a33bf108259c5d"
                           }
@@ -1075,7 +1075,7 @@
                       }, 
                       "IsOpen": {
                         "description": "Is door open or closed", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "e7056a978bbb521aa2d9fd18cc87c6c3"
                       }
@@ -1088,13 +1088,13 @@
                     "children": {
                       "IsChildLockActive": {
                         "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "sensor", 
                         "uuid": "714fddbd855957d5aa930939792e5e54"
                       }, 
                       "IsLocked": {
                         "description": "Is door locked or unlocked. True = Locked. False = Unlocked.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "812328589f1b588e93254fd0bfee086e"
                       }, 
@@ -1143,7 +1143,7 @@
                           }, 
                           "ChildLock": {
                             "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "add0d57b0ea950c58022cbb6b64c6ec9"
                           }, 
@@ -1162,7 +1162,7 @@
                           }, 
                           "isOpen": {
                             "description": "Is door open or closed", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "1e9aa070f93056a583e530a67e1d3f60"
                           }
@@ -1170,7 +1170,7 @@
                       }, 
                       "IsOpen": {
                         "description": "Is door open or closed", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "212be242cf0759e2967aaf29765af2b4"
                       }
@@ -1190,13 +1190,13 @@
                     "children": {
                       "IsChildLockActive": {
                         "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "sensor", 
                         "uuid": "aff556436430572dbba10715044b0f10"
                       }, 
                       "IsLocked": {
                         "description": "Is door locked or unlocked. True = Locked. False = Unlocked.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "190adc54d13e5aa9b0b14dbfebd09df1"
                       }, 
@@ -1245,7 +1245,7 @@
                           }, 
                           "ChildLock": {
                             "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "f10d0cf5978c578ba7f598919fbbe021"
                           }, 
@@ -1264,7 +1264,7 @@
                           }, 
                           "isOpen": {
                             "description": "Is door open or closed", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "a3be8a0428fd55e0977005cc40a77f72"
                           }
@@ -1272,7 +1272,7 @@
                       }, 
                       "IsOpen": {
                         "description": "Is door open or closed", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "75008998af6155aeb4b34f74475f9211"
                       }
@@ -1284,13 +1284,13 @@
                     "children": {
                       "IsChildLockActive": {
                         "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "sensor", 
                         "uuid": "f6c8a1b9057f594c9855934f65516006"
                       }, 
                       "IsLocked": {
                         "description": "Is door locked or unlocked. True = Locked. False = Unlocked.", 
-                        "datatype": "boolean", 
+                        "datatype": "boolean",
                         "type": "actuator", 
                         "uuid": "2392129f103359abbf392c31c2b9c2a8"
                       }, 
@@ -1339,7 +1339,7 @@
                           }, 
                           "ChildLock": {
                             "description": "Is door child lock engaged. True = Engaged. False = Disengaged.", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "a786629fe86152deb3325d50fcaddfdf"
                           }, 
@@ -1358,7 +1358,7 @@
                           }, 
                           "isOpen": {
                             "description": "Is door open or closed", 
-                            "datatype": "boolean", 
+                            "datatype": "boolean",
                             "type": "sensor", 
                             "uuid": "de7074f54ea2546e81494ea09e1a3777"
                           }
@@ -1841,7 +1841,7 @@
                   "CurrentLocation": {
                     "children": {
                       "Altitude": {
-                        "datatype": "Double", 
+                        "datatype": "double", 
                         "type": "sensor", 
                         "uuid": "45424523425154e9b37b517b6bf0ebf2", 
                         "unit": "m", 
@@ -1850,7 +1850,7 @@
                       "Longitude": {
                         "description": "Current longitude of vehicle, as reported by GPS.", 
                         "min": -180, 
-                        "datatype": "Double", 
+                        "datatype": "double", 
                         "max": 180, 
                         "uuid": "e359b0a214f15565830caf544f3e4152", 
                         "type": "sensor", 
@@ -1859,7 +1859,7 @@
                       "Latitude": {
                         "description": "Current latitude of vehicle, as reported by GPS.", 
                         "min": -90, 
-                        "datatype": "Double", 
+                        "datatype": "double", 
                         "max": 90, 
                         "uuid": "03620ff62c92545c8fff1b58a7638b0b", 
                         "type": "sensor", 
@@ -1877,7 +1877,7 @@
                       "Heading": {
                         "description": "Current magnetic compass heading, in degrees.", 
                         "min": 0, 
-                        "datatype": "Double", 
+                        "datatype": "double", 
                         "max": 360, 
                         "uuid": "a13fc558e122509c81855a28d515de2b", 
                         "type": "sensor", 
@@ -1885,7 +1885,7 @@
                       }, 
                       "Accuracy": {
                         "description": "Accuracy level of the latitude and longitude coordinates in meters.", 
-                        "datatype": "Double", 
+                        "datatype": "double", 
                         "type": "sensor", 
                         "uuid": "c3d36ecf4c185d96978a07fd5ab28672", 
                         "unit": "m"
@@ -1901,7 +1901,7 @@
                       "Latitude": {
                         "description": "Latitude of destination", 
                         "min": -90, 
-                        "datatype": "Double", 
+                        "datatype": "double",
                         "max": 90, 
                         "uuid": "69b23c9ed52c55e49989b6a3d447fb86", 
                         "type": "actuator", 
@@ -1910,7 +1910,7 @@
                       "Longitude": {
                         "description": "Longitude of destination", 
                         "min": -180, 
-                        "datatype": "Double", 
+                        "datatype": "double", 
                         "max": 180, 
                         "uuid": "f8d66e58947f5e4c80b92de72b2e3d3e", 
                         "type": "actuator", 
@@ -2028,7 +2028,7 @@
               "Position": {
                 "description": "Sunroof position. 0 = Fully closed 100 = Fully opened. -100 = Fully tilted", 
                 "min": -100, 
-                "datatype": "Int8", 
+                "datatype": "int8", 
                 "max": 100, 
                 "uuid": "54af66e3a8485a58b6b91cbdcdc001c1", 
                 "type": "sensor"
