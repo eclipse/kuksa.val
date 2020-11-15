@@ -898,13 +898,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
   channel.setAuthorized(true);
   channel.setConnID(1);
 
-  jsonGetMetaRequest["action"] = "getMetadata";
+  jsonGetMetaRequest["action"] = "getMetaData";
   jsonGetMetaRequest["requestId"] = requestId;
   jsonGetMetaRequest["path"] = path;
 
   jsonMetadata = json::parse("{\"Vehicle\": {\"children\": { \"Drivetrain\": {\"children\": {\"Transmission\": { \"children\": {\"TravelledDistance\": {\"datatype\": \"float\",\"description\": \"Odometer reading\",\"type\": \"sensor\",\"unit\": \"km\",\"uuid\": \"d0e3b50d81a1521da0fbf5cbd1cab95c\"} }, \"description\": \"Transmission-specific data, stopping at the drive shafts.\", \"type\": \"branch\", \"uuid\": \"e198a8805b345c8c818558bc79b0ce25\"}},\"description\": \"Drivetrain data for internal combustion engines, transmissions, electric motors, etc.\",\"type\": \"branch\",\"uuid\": \"8876a6c501b658688843d3d5566e4963\" }},\"description\": \"High-level vehicle data.\",\"type\": \"branch\",\"uuid\": \"1c72453e738511e9b29ad46a6a4b77e9\"} }");
 
-  jsonValue["action"] = "getMetadata";
+  jsonValue["action"] = "getMetaData";
   jsonValue["requestId"] = requestId;
   jsonValue["timestamp"] = 11111111;
   jsonValue["metadata"] = jsonMetadata;
