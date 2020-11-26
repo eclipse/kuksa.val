@@ -3,7 +3,7 @@
   "iss": "Eclipse KUKSA Dev",
   "admin": true,
   "iat": 1516239022,
-  "exp": 1606239022,
+  "exp": 1767225599,
   "kuksa-vss":  {
      "*": "rw"
   }
