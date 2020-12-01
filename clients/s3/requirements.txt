@@ -1,5 +1,3 @@
-boto3
-websockets
-pyarrow
-parquet-tools
-dataclasses # dependencies of parquet tools, which is sometimes necessary
+boto3~=1.16.5
+websockets~=8.1
+pyarrow~=1.0.1
