@@ -17,14 +17,19 @@ node('docker') {
             rm -rf ./artifacts/*
             '''
         }
+        def versiontag=sh(returnStdout: true, script: "git tag --contains | head -n 1").trim()
+        if (tag == "") { //not tagged, using commit
+            versiontag = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+        }
+        echo "Using versionstring ${versiontag} for images";
     stage('Build') {
-        sh 'docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:0.1.3 --output type=docker,dest=./artifacts/kuksa-val-amd64.tar .'
-        sh 'docker buildx build --platform=linux/arm64 -f ./docker/Dockerfile -t amd64/kuksa-val:0.1.3 --output type=docker,dest=./artifacts/kuksa-val-arm64.tar .'
+        sh "docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:$versionstring --output type=docker,dest=./artifacts/kuksa-val-$versionstring-amd64.tar ."
+        sh "docker buildx build --platform=linux/arm64 -f ./docker/Dockerfile -t arm64/kuksa-val:$versionstring --output type=docker,dest=./artifacts/kuksa-val-$versionstring-arm64.tar ."
     	//	sh 'sudo docker build -t kuksa-val-dev:ubuntu20.04 -f docker/Dockerfile.dev .'
     }
         stage('Compress') {
             sh 'ls artifacts'
-            sh 'cd artifacts && xz -T 0./*.tar'
+            sh 'cd artifacts && xz -T 0 ./*.tar'
 			/*sh '''
             sudo docker save $(sudo docker images --filter "reference=amd64/kuksa-val*"  --format "{{.Repository}}:{{.Tag}}" | head -1) | xz -T 0 > artifacts/kuksa-val-amd64.tar.xz
 			sudo docker save $(sudo docker images --filter "reference=arm64/kuksa-val*"  --format "{{.Repository}}:{{.Tag}}" | head -1) | xz -T 0 > artifacts/kuksa-val-arm64.tar.xz
