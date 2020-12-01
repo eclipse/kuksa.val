@@ -18,7 +18,7 @@ node('docker') {
             '''
         }
     stage('Build') {
-        sh ' sudo docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:0.1.3 --output type=docker,dest=./artifacts'
+        sh 'docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:0.1.3 --output type=docker,local=./artifacts/'
     	//	sh 'sudo docker build -t kuksa-val-dev:ubuntu20.04 -f docker/Dockerfile.dev .'
     }
         stage('Collect') {
