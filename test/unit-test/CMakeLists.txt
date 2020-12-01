@@ -11,8 +11,9 @@
 #      Robert Bosch GmbH - initial API and functionality
 # *****************************************************************************
 
-project(w3c-unit-test)
+project(kuksa-val-unit-test)
 enable_testing()
+include(CTest)
 
 ######
 # CMake configuration responsible for building kuksa-val optional unit tests based on core library
@@ -37,19 +38,24 @@ if(BUILD_UNIT_TEST)
     w3cunittest.cpp
   )
 
+  # declares a test with our executable
+  add_test(NAME ${UNITTEST_EXE_NAME} COMMAND $<TARGET_FILE:${UNITTEST_EXE_NAME}> WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   target_compile_features(${UNITTEST_EXE_NAME} PRIVATE cxx_std_14)
 
   # disable warning, as we are not going to link unit-test library with anyone
   target_compile_options(${UNITTEST_EXE_NAME} PRIVATE -Wno-noexcept-type)
 
   # using shared library as it allows us to re-use test runner to verify different library versions, if needed
-  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE "kuksa-val-core")
+  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE "kuksa-val-server-core-static")
 
   target_include_directories(${UNITTEST_EXE_NAME} PRIVATE mock)
+  target_include_directories(${UNITTEST_EXE_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
+  target_include_directories(${UNITTEST_EXE_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../include/interface)
 
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE turtle)
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
+  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE jsoncons jwt-cpp)
 
   configure_file(test_vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Resources/jwt.pub.key ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)

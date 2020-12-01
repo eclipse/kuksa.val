@@ -96,5 +96,7 @@ target_include_directories(turtle SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3
 # Add project subdirectories to build
 
 add_subdirectory(src)
+enable_testing()
+include(CTest)
 add_subdirectory(test)
 add_subdirectory(test/unit-test)

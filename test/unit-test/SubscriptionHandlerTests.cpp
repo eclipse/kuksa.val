@@ -27,6 +27,7 @@
 #include "ILoggerMock.hpp"
 #include "IVssDatabaseMock.hpp"
 #include "IServerMock.hpp"
+#include "IClientMock.hpp"
 #include "IAuthenticatorMock.hpp"
 #include "IAccessCheckerMock.hpp"
 
@@ -38,6 +39,7 @@ namespace {
   std::shared_ptr<ILoggerMock> logMock;
   std::shared_ptr<IVssDatabaseMock> dbMock;
   std::shared_ptr<IServerMock> serverMock;
+  std::shared_ptr<IClient> clientMock;
   std::shared_ptr<IAuthenticatorMock> authMock;
   std::shared_ptr<IAccessCheckerMock> accCheckMock;
 
@@ -49,11 +51,12 @@ namespace {
       logMock = std::make_shared<ILoggerMock>();
       dbMock = std::make_shared<IVssDatabaseMock>();
       serverMock = std::make_shared<IServerMock>();
+      clientMock = std::make_shared<IClientMock>();
       authMock = std::make_shared<IAuthenticatorMock>();
       accCheckMock = std::make_shared<IAccessCheckerMock>();
 
       MOCK_EXPECT(logMock->Log).at_least(0); // ignore log events
-      subHandler = std::make_unique<SubscriptionHandler>(logMock, serverMock, authMock, accCheckMock);
+      subHandler = std::make_unique<SubscriptionHandler>(logMock, serverMock, clientMock, authMock, accCheckMock);
     }
     ~TestSuiteFixture() {
       subHandler.reset();
@@ -88,7 +91,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
   // load data tree
   // TODO: remove when this implicit dependency is removed
   std::ifstream is("test_vss_rel_2.0.json");
-  is >> dbMock->data_tree;
+  is >> dbMock->data_tree__;
 
   // verify
 
@@ -130,7 +133,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
   // load data tree
   // TODO: remove when this implicit dependency is removed
   std::ifstream is("test_vss_rel_2.0.json");
-  is >> dbMock->data_tree;
+  is >> dbMock->data_tree__;
 
   // verify
 
@@ -181,7 +184,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
   // load data tree
   // TODO: remove when this implicit dependency is removed
   std::ifstream is("test_vss_rel_2.0.json");
-  is >> dbMock->data_tree;
+  is >> dbMock->data_tree__;
 
   // verify
 
@@ -240,7 +243,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
   // load data tree
   // TODO: remove when this implicit dependency is removed
   std::ifstream is("test_vss_rel_2.0.json");
-  is >> dbMock->data_tree;
+  is >> dbMock->data_tree__;
 
   // verify
 
@@ -291,7 +294,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
   // load data tree
   // TODO: remove when this implicit dependency is removed
   std::ifstream is("test_vss_rel_2.0.json");
-  is >> dbMock->data_tree;
+  is >> dbMock->data_tree__;
 
   // verify
 
@@ -346,7 +349,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
   // load data tree
   // TODO: remove when this implicit dependency is removed
   std::ifstream is("test_vss_rel_2.0.json");
-  is >> dbMock->data_tree;
+  is >> dbMock->data_tree__;
 
   // verify
 
@@ -404,7 +407,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
   // load data tree
   // TODO: remove when this implicit dependency is removed
   std::ifstream is("test_vss_rel_2.0.json");
-  is >> dbMock->data_tree;
+  is >> dbMock->data_tree__;
 
   // verify
 
@@ -488,7 +491,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   // load data tree
   // TODO: remove when this implicit dependency is removed
   std::ifstream is("test_vss_rel_2.0.json");
-  is >> dbMock->data_tree;
+  is >> dbMock->data_tree__;
 
   // verify
 
@@ -519,8 +522,8 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     }
 
     if (ret) {
-      auto subId = response["subscriptionId"].as_uinteger();
-      auto value = response["value"].as_uinteger();
+      auto subId = response["subscriptionId"].as<uint64_t>();
+      auto value = response["value"].as<uint64_t>();
       // check if value match for given subscription id
       ret = (resMap[subId] == value);
     }
@@ -595,8 +598,8 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     }
 
     if (ret) {
-      auto subId = response["subscriptionId"].as_uinteger();
-      auto value = response["value"].as_uinteger();
+      auto subId = response["subscriptionId"].as<uint64_t>();
+      auto value = response["value"].as<uint64_t>();
 
       // check if value match for given subscription id
       BOOST_TEST(ret = (resMap[subId] == value));
@@ -614,7 +617,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   // load data tree
   // TODO: remove when this implicit dependency is removed
   std::ifstream is("test_vss_rel_2.0.json");
-  is >> dbMock->data_tree;
+  is >> dbMock->data_tree__;
 
   // verify
 
