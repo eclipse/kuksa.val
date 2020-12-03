@@ -23,14 +23,16 @@ node('docker') {
         }
         echo "Using versiontag ${versiontag} for images";
     stage('Build') {
-        parallel {
-            stage('arm64') {
+        parallel arm64: {
+                stage('arm64') {
                 sh "docker buildx build --platform=linux/arm64 -f ./docker/Dockerfile -t arm64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-arm64.tar ."
-    	
             }
-            stage('amd64') {
+            }, 
+                amd64: {
+                stage('amd64') {
                 sh "docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-amd64.tar ."
                 sh "docker build -t kuksa-val-dev-ubuntu20.04:${versiontag} -f docker/Dockerfile.dev ."
+                sh "docker save kuksa-val-dev-ubuntu20.04:${versiontag}  > artifacts/kuksa-val-dev-ubuntu20.04:${versiontag}.tar"
             }
         }
     }
