@@ -18,13 +18,13 @@ node('docker') {
             '''
         }
         def versiontag=sh(returnStdout: true, script: "git tag --contains | head -n 1").trim()
-        if (tag == "") { //not tagged, using commit
+        if (versiontag == "") { //not tagged, using commit
             versiontag = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
         }
-        echo "Using versionstring ${versiontag} for images";
+        echo "Using versiontag ${versiontag} for images";
     stage('Build') {
-        sh "docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:$versionstring --output type=docker,dest=./artifacts/kuksa-val-$versionstring-amd64.tar ."
-        sh "docker buildx build --platform=linux/arm64 -f ./docker/Dockerfile -t arm64/kuksa-val:$versionstring --output type=docker,dest=./artifacts/kuksa-val-$versionstring-arm64.tar ."
+        sh "docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-amd64.tar ."
+        sh "docker buildx build --platform=linux/arm64 -f ./docker/Dockerfile -t arm64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-arm64.tar ."
     	//	sh 'sudo docker build -t kuksa-val-dev:ubuntu20.04 -f docker/Dockerfile.dev .'
     }
         stage('Compress') {
