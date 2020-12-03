@@ -11,17 +11,14 @@
 node('docker') {
     checkout scm
     stage('Prepare') {
-        sh '''
-            git submodule update --init
-            mkdir -p artifacts
-            rm -rf ./artifacts/*
-            '''
-        }
+        sh 'git submodule update --init'
+        sh 'mkdir -p artifacts && rm -rf ./artifacts/*'
         def versiontag=sh(returnStdout: true, script: "git tag --contains | head -n 1").trim()
         if (versiontag == "") { //not tagged, using commit
             versiontag = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
         }
         echo "Using versiontag ${versiontag} for images";
+    }
     stage('Build') {
         //Prepare for building test-client with default tokens
         sh "mkdir -p ./clients/vss-testclient/tokens && rm -rf ./clients/vss-testclient/tokens/*"
@@ -45,26 +42,11 @@ node('docker') {
             }
         }
     }
-        stage('Compress') {
-            sh 'ls artifacts'
-            sh 'cd artifacts && xz -T 0 ./*.tar'
-			/*sh '''
-            sudo docker save $(sudo docker images --filter "reference=amd64/kuksa-val*"  --format "{{.Repository}}:{{.Tag}}" | head -1) | xz -T 0 > artifacts/kuksa-val-amd64.tar.xz
-			sudo docker save $(sudo docker images --filter "reference=arm64/kuksa-val*"  --format "{{.Repository}}:{{.Tag}}" | head -1) | xz -T 0 > artifacts/kuksa-val-arm64.tar.xz
-			sudo docker save kuksa-val-dev:ubuntu20.04 | xz -T 0 > artifacts/kuksa-val-dev-ubuntu20.04.tar.xz
-            '''*/
-        }
-        stage ('Archive') {
-            archiveArtifacts artifacts: 'artifacts/*.xz' 
-        }
-    
-    /*
-    docker.image('kuksa-val-dev:ubuntu20.04').inside("-v /var/run/docker.sock:/var/run/docker.sock"){ 
-        stage('Test') {
-            sh '''
-                cd /kuksa.val/build
-                # TODO and you may need sudo right for testing ctest --build-config Debug --output-on-failure --parallel 8
-            '''
-        }
-    }*/
+    stage('Compress') {
+        sh 'ls artifacts'
+        sh 'cd artifacts && xz -T 0 ./*.tar'
+    }
+    stage ('Archive') {
+        archiveArtifacts artifacts: 'artifacts/*.xz' 
+    }
 }
