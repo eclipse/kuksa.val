@@ -21,14 +21,13 @@ class VSSClientComm(threading.Thread):
         self.sendMsgQueue = sendMsgQueue
         self.recvMsgQueue = recvMsgQueue
         scriptDir= os.path.dirname(os.path.realpath(__file__))
-        certDir = os.path.join(scriptDir, "../../certificates/")
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
         try:
             self.insecure = config.getboolean('insecure', False)
         except AttributeError:
             self.insecure = config.get('insecure', False)
-        self.cacertificate = config.get('cacertificate', os.path.join(certDir, "CA.pem"))
+        self.cacertificate = config.get('cacertificate', os.path.join(scriptDir, "CA.pem"))
         self.certificate = config.get('certificate', os.path.join(scriptDir, "Client.pem"))
         self.keyfile = config.get('key', os.path.join(scriptDir, "Client.key"))
         self.runComm = True
