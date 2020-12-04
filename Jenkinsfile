@@ -10,10 +10,11 @@
 
 node('docker') {
     checkout scm
+    def versiontag="unknown"
     stage('Prepare') {
         sh 'git submodule update --init'
         sh 'mkdir -p artifacts && rm -rf ./artifacts/*'
-        def versiontag=sh(returnStdout: true, script: "git tag --contains | head -n 1").trim()
+        versiontag=sh(returnStdout: true, script: "git tag --contains | head -n 1").trim()
         if (versiontag == "") { //not tagged, using commit
             versiontag = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
         }
