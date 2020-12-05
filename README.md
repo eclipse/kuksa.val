@@ -99,13 +99,20 @@ In the [clients](./clients) folder, you can find differents clients for kuksa-va
 
 You can use the [testclient](./clients/vss-testclient/) to test basic functions like _getMetaData_, _getValue_ and _setValue_ requests.
 
-After starting the kuksa server using `./kuksa-val-server` command. You can start the testclient as follows:
+After starting the kuksa server using `./kuksa-val-server` command. For testing you can downlaod and load the the testclient docker image similarly to the main server and start it like this
+
+```bash
+docker run -it --rm --net=host amd64/kuksa-vssclient:b3084b9
+```
+
+or you can start the testclient as follows:
 
 ```bash
 cd clients/vss-testclient
 pipenv sync
 pipenv run python testclient.py
 ```
+
 
 Check the [testclient readme](./clients/vss-testclient/README.md) for more detailled installaton instruction.
 
