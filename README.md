@@ -23,16 +23,20 @@ Download a current docker image from our CI server:
 
 https://ci.eclipse.org/kuksa/job/kuksa.val/job/master/
 
+The container images should work with any OCI compliant container runtime, in this document we assume you are using docker
+
 Import the docker image
 
 ```
-sudo docker load -i kuksa-val-amd64.tar.bz2
+docker load -i kuksa-val-b3084b9-amd64.tar.xz 
 ```
+
+Your build tag may vary, and for ARM machines you need to choose an arm64 images.
 
 Prepare an empty directory `$HOME/kuksaval.config`.  Run the docker image using the tag reported by `docker load`:
 
 ```bash
-sudo docker run -it --rm -v $HOME/kuksaval.config:/config  -p 127.0.0.1:8090:8090 -e LOG_LEVEL=ALL amd64/kuksa-val:0.1.1
+docker run -it --rm -v $HOME/kuksaval.config:/config  -p 127.0.0.1:8090:8090 -e LOG_LEVEL=ALL amd64/kuksa-val:b3084b9
 ```
 
 More information on using the docker images can be found [here](doc/run-docker.md).
