@@ -127,7 +127,7 @@ if cfg['can.port'] == "elmcan":
 
 
 with open(cfg['vss.jwttoken'], 'r') as f:
-    token = f.read()
+    token = f.readline().rstrip('\n')
 
 mapping = dbc2vssmapper.mapper(cfg['vss.mapping'])
 

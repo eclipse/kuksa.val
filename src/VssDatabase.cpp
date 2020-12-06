@@ -185,7 +185,30 @@ namespace {
 
       throw genException(msg);
     }
-    dest[key] = source["value"].as<string>();
+    if (source["datatype"] == "uint8")
+      dest[key] = source["value"].as<uint8_t>();
+    else if (source["datatype"] == "int8")
+      dest[key] = source["value"].as<int8_t>();
+    else if (source["datatype"] == "uint16")
+      dest[key] = source["value"].as<uint16_t>();
+    else if (source["datatype"] == "int16")
+      dest[key] = source["value"].as<int16_t>();
+    else if (source["datatype"] == "uint32")
+      dest[key] = source["value"].as<uint32_t>();
+    else if (source["datatype"] == "int32")
+      dest[key] = source["value"].as<int32_t>();
+    else if (source["datatype"] == "uint64")
+      dest[key] = source["value"].as<uint64_t>();
+    else if (source["datatype"] == "int64")
+      dest[key] = source["value"].as<int64_t>();
+    else if (source["datatype"] == "boolean")
+      dest[key] = source["value"].as<bool>();
+    else if (source["datatype"] == "float")
+      dest[key] = source["value"].as<float>();
+    else if (source["datatype"] == "double")
+      dest[key] = source["value"].as<double>();
+    else if (source["datatype"] == "string")
+      dest[key] = source["value"].as<std::string>();
   }
 }
 

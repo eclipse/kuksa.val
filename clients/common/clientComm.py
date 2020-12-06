@@ -10,7 +10,7 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 
-import os, sys, threading, queue, ssl
+import os, sys, threading, queue, ssl, json
 import asyncio, websockets, pathlib
 
 class VSSClientComm(threading.Thread):
@@ -21,14 +21,13 @@ class VSSClientComm(threading.Thread):
         self.sendMsgQueue = sendMsgQueue
         self.recvMsgQueue = recvMsgQueue
         scriptDir= os.path.dirname(os.path.realpath(__file__))
-        certDir = os.path.join(scriptDir, "../../certificates/")
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
         try:
             self.insecure = config.getboolean('insecure', False)
         except AttributeError:
             self.insecure = config.get('insecure', False)
-        self.cacertificate = config.get('cacertificate', os.path.join(certDir, "CA.pem"))
+        self.cacertificate = config.get('cacertificate', os.path.join(scriptDir, "CA.pem"))
         self.certificate = config.get('certificate', os.path.join(scriptDir, "Client.pem"))
         self.keyfile = config.get('key', os.path.join(scriptDir, "Client.key"))
         self.runComm = True
@@ -37,6 +36,58 @@ class VSSClientComm(threading.Thread):
     def stopComm(self):
         self.runComm = False
         self.wsConnected = False
+
+
+    def sendReceiveMsg(self, req, timeout): 
+        jsonDump = json.dumps(req)
+        self.sendMsgQueue.put(jsonDump)
+        while True:
+            try:
+                resp = self.recvMsgQueue.get(timeout = timeout)
+                respJson =  json.loads(resp) 
+                if str(req["requestId"]) == str(respJson["requestId"]):
+                    return resp
+            except queue.Empty:
+                req["error"] =  "timeout"
+                return json.dumps(req, indent=2) 
+
+    def authorize(self, token, timeout = None):
+        if os.path.isfile(token):
+            with open(token, "r") as f:
+                token = f.readline()
+
+        req = {}
+        req["requestId"] = 1238
+        req["action"]= "authorize"
+        req["tokens"] = token
+        return self.sendReceiveMsg(req, timeout)
+
+    def getMetaData(self, path, timeout = 1):
+        """Get MetaData of the parameter"""
+        req = {}
+        req["requestId"] = 1236
+        req["action"]= "getMetaData"
+        req["path"] = path 
+        return self.sendReceiveMsg(req, timeout)
+
+    def setValue(self, path, value, timeout = 1):
+        if 'nan' == value:
+            print(path + " has an invalid value " + str(value))
+            return
+        req = {}
+        req["requestId"] = 1235
+        req["action"]= "set"
+        req["path"] = path
+        req["value"] = value
+        return self.sendReceiveMsg(req, timeout)
+
+
+    def getValue(self, path, timeout = 5):
+        req = {}
+        req["requestId"] = 1234
+        req["action"]= "get"
+        req["path"] = path
+        return self.sendReceiveMsg(req, timeout)
 
     async def msgHandler(self, webSocket):
         while self.runComm:

@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForInvalidPath_Shall
   // verify
 
   BOOST_CHECK_NO_THROW(returnJson = db->getMetaData(signalPath));
-  BOOST_TEST(returnJson == 0);
+  BOOST_TEST(returnJson == jsoncons::json());
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSignal_Shall_ReturnSignal) {
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   jsoncons::json setValue, returnJson;
   setValue = 10;
 
-  MOCK_EXPECT(accCheckMock->checkPathWriteAccess)
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
     .returns(true);
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .returns(true);
@@ -228,7 +228,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
     .at_least(1)
     .with(mock::any, 10)
     .returns(0);
-
+  MOCK_EXPECT(subHandlerMock->updateByPath)
+    .at_least(1)
+    .with(signalPath, 10)
+    .returns(0);
   // verify
 
   BOOST_CHECK_NO_THROW(db->setSignal(channel, signalPath, setValue));
@@ -252,7 +255,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPath_Sha
   jsoncons::json setValue, returnJson;
   setValue = 10;
 
-  MOCK_EXPECT(accCheckMock->checkPathWriteAccess)
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
     .returns(true);
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .returns(true);
@@ -277,7 +280,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_SetPath_
   jsoncons::json setValue, returnJson;
   setValue = 10;
 
-  MOCK_EXPECT(accCheckMock->checkPathWriteAccess)
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
     .returns(false);
 
   // verify
@@ -303,7 +306,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
     .at_least(1)
     .with(mock::any, 10)
     .returns(0);
-
+  MOCK_EXPECT(subHandlerMock->updateByPath)
+    .at_least(1)
+    .with(signalPath, 10)
+    .returns(0);
   // verify
 
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));

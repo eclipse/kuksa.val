@@ -220,7 +220,7 @@ int main(int argc, const char *argv[]) {
       "[mandatory] Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. ")
     ("insecure", "By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.")
     ("use-keycloak", "Use KeyCloak for permission management")
-    ("address", program_options::value<string>()->default_value("localhost"),
+    ("address", program_options::value<string>()->default_value("127.0.0.1"),
       "If provided, W3C-Server shall use different server address than default _'localhost'_")
     ("port", program_options::value<int>()->default_value(8090),
         "If provided, W3C-Server shall use different server port than default '8090' value")
