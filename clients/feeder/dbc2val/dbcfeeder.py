@@ -18,6 +18,7 @@ import queue
 
 import dbc2vssmapper
 import dbcreader
+import j1939reader
 import websocketconnector
 import elm2canbridge
 
@@ -48,6 +49,7 @@ def getConfig():
     parser.add_argument("-s", "--server", help="VSS server", type=str)
     parser.add_argument("-j", "--jwt", help="JWT security token file", type=str)
     parser.add_argument("--mapping", help="VSS mapping file", type=str)
+    parser.add_argument("--j1939", default=False, action='store_true', help="Enable SAE-J1939 Mode. Normal_Mode: ignore, J1939_Mode: \'--j1939\' (No argument needed after)")
 
     args = parser.parse_args()
 
@@ -90,6 +92,8 @@ def getConfig():
         cfg['elm.canspeed'] = args.obdcanspeed
 
     cfg['elm.canack'] = elmcfg.getboolean("canack", False)
+
+    cfg['j1939'] = args.j1939
 
     # Can override CAN ACK setting from commandline. Safe choice, no ack, is dominant
     if args.canack_override:
@@ -134,13 +138,24 @@ mapping = dbc2vssmapper.mapper(cfg['vss.mapping'])
 vss = websocketconnector.vssclient(cfg['vss.server'], token)
 canQueue = queue.Queue()
 
-dbcR = dbcreader.DBCReader(cfg,canQueue,mapping)
+if cfg['j1939']:
+    j1939R = j1939reader.J1939Reader(cfg,canQueue,mapping)
 
-if cfg['can.port'] == 'elmcan':
-    print("Using elmcan. Trying to set up elm2can bridge")
-    elmbr=elm2canbridge.elm2canbridge(cfg, dbcR.canidwl)
+    if cfg['can.port'] == 'elmcan':
+        print("Using elmcan. Trying to set up elm2can bridge")
+        elmbr=elm2canbridge.elm2canbridge(cfg, j1939R.canidwl)
 
-dbcR.start_listening()
+    j1939R.start_listening()
+    print("\n--- SAE J1939 Mode Enabled ---\n")
+
+else:
+    dbcR = dbcreader.DBCReader(cfg,canQueue,mapping)
+
+    if cfg['can.port'] == 'elmcan':
+        print("Using elmcan. Trying to set up elm2can bridge")
+        elmbr=elm2canbridge.elm2canbridge(cfg, dbcR.canidwl)
+
+    dbcR.start_listening()
 
 while True:
     signal, value=canQueue.get()
