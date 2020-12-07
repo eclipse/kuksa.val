@@ -334,6 +334,10 @@ string VssDatabase::getVSSSpecificPath(const string &path, bool& isBranch,
 // metadata request.
 string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
   string format_path = getVSSSpecificPath(path, isBranch, meta_tree__);
+  /* json_query aserts with empty string, so when path is not found return empty string immediately */
+  if (format_path == "") {
+    return "";
+  }
   jsoncons::json pathRes = jsonpath::json_query(meta_tree__, format_path, jsonpath::result_type::path);
   if (pathRes.size() > 0) {
     string jPath = pathRes[0].as<string>();
