@@ -283,7 +283,7 @@ string VssDatabase::getReadablePath(string jsonpath) {
 }
 
 // Appends the internally used "children" tag to the path. And also formats the
-// path in JSONPath querry format.
+// path in JSONPath query format.
 // Eg: path = Signal.OBD.RPM
 // The method returns $['Signal']['children']['OBD']['children']['RPM'] and
 // updates isBranch to false.
@@ -319,13 +319,13 @@ string VssDatabase::getVSSSpecificPath(const string &path, bool& isBranch,
       isBranch = false;
       logger_->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath : Path "
                   + format_path + " is invalid or is an empty tag!");
-      return "$";
+      return "";
     }
   } catch (exception& e) {
     logger_->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath :Exception \""
          + string(e.what()) + "\" occured while querying JSON. Check Path!");
     isBranch = false;
-    return "$";
+    return "";
   }
   return format_path;
 }
@@ -352,10 +352,17 @@ string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
 list<string> VssDatabase::getPathForGet(const string &path, bool& isBranch) {
   list<string> paths;
   string format_path = getVSSSpecificPath(path, isBranch, data_tree__);
+
+  /* In case string is empty, signal was not found in VSS DB. json_query would assert with empty query
+   * string, so we return our empty list directly */
+  if (format_path == "") {
+    return paths;
+  }
   jsoncons::json pathRes = jsonpath::json_query(data_tree__, format_path, jsonpath::result_type::path);
 
   for (size_t i = 0; i < pathRes.size(); i++) {
     string jPath = pathRes[i].as<string>();
+
     jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
     if (resArray.size() == 0) {
       continue;
