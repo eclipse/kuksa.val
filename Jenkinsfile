@@ -10,39 +10,44 @@
 
 node('docker') {
     checkout scm
-    def buildImage = docker.build("my-image:${env.BUILD_ID}", "-f docker/Dockerfile-Jenkins-Build-Env .")
-    buildImage.inside(" -v /var/run/docker.sock:/var/run/docker.sock " ){
-        stage('Prepare') {
-        sh '''
-            git submodule update --init
-            mkdir -p artifacts
-            rm -f artifacts/*
-            '''
+    def versiontag="unknown"
+    stage('Prepare') {
+        sh 'git submodule update --init'
+        sh 'mkdir -p artifacts && rm -rf ./artifacts/*'
+        versiontag=sh(returnStdout: true, script: "git tag --contains | head -n 1").trim()
+        if (versiontag == "") { //not tagged, using commit
+            versiontag = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
         }
-        stage('Build') {
-			sh '''
-			 ./docker/build.sh amd64
-            '''
-            sh './docker/build.sh arm64'
-            sh 'sudo docker build -t kuksa-val-dev:ubuntu20.04 -f docker/Dockerfile.dev .'
-        }
-        stage('Collect') {
-			sh '''
-            sudo docker save $(sudo docker images --filter "reference=amd64/kuksa-val*"  --format "{{.Repository}}:{{.Tag}}" | head -1) | xz -T 0 > artifacts/kuksa-val-amd64.tar.xz
-			sudo docker save $(sudo docker images --filter "reference=arm64/kuksa-val*"  --format "{{.Repository}}:{{.Tag}}" | head -1) | xz -T 0 > artifacts/kuksa-val-arm64.tar.xz
-			sudo docker save kuksa-val-dev:ubuntu20.04 | xz -T 0 > artifacts/kuksa-val-dev-ubuntu20.04.tar.xz
-            '''
-        }
-        stage ('Archive') {
-            archiveArtifacts artifacts: 'artifacts/*.xz' 
+        echo "Using versiontag ${versiontag} for images";
+    }
+    stage('Build') {
+        //Prepare for building test-client with default tokens
+        sh "mkdir -p ./clients/vss-testclient/tokens && rm -rf ./clients/vss-testclient/tokens/*"
+        parallel arm64: {
+                stage('arm64') {
+                    sh "docker buildx build --platform=linux/arm64 -f ./docker/Dockerfile -t arm64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-arm64.tar ."
+
+                    sh "docker buildx build --platform=linux/arm64 -f ./clients/vss-testclient/Dockerfile -t arm64/kuksa-vssclient:${versiontag} --output type=docker,dest=./artifacts/kuksa-vssclient-${versiontag}-arm64.tar ./clients/"
+                }
+                }, 
+                amd64: {
+                stage('amd64') {
+                    sh "docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-amd64.tar ."
+                    
+                    sh "docker buildx build --platform=linux/arm64 -f ./clients/vss-testclient/Dockerfile -t amd64/kuksa-vssclient:${versiontag} --output type=docker,dest=./artifacts/kuksa-vssclient-${versiontag}-amd64.tar ./clients/"
+
+                    sh "docker build -t kuksa-val-dev-ubuntu20.04:${versiontag} -f docker/Dockerfile.dev ."
+                    sh "docker save kuksa-val-dev-ubuntu20.04:${versiontag}  > artifacts/kuksa-val-dev-ubuntu20.04:${versiontag}.tar"
+
+
+            }
         }
     }
-    docker.image('kuksa-val-dev:ubuntu20.04').inside("-v /var/run/docker.sock:/var/run/docker.sock"){ 
-        stage('Test') {
-            sh '''
-                cd /kuksa.val/build
-                # TODO and you may need sudo right for testing ctest --build-config Debug --output-on-failure --parallel 8
-            '''
-        }
+    stage('Compress') {
+        sh 'ls artifacts'
+        sh 'cd artifacts && xz -T 0 ./*.tar'
+    }
+    stage ('Archive') {
+        archiveArtifacts artifacts: 'artifacts/*.xz' 
     }
 }

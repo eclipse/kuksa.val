@@ -5,12 +5,11 @@
 # accompanies this distribution, and is available at
 # http://www.eclipse.org/org/documents/edl-v10.php
 
-FROM arm64v8/alpine:3.11 as build
+FROM alpine:3.11 as build
 
 LABEL maintainer="Sebastian Schildt <sebastian.schildt@de.bosch.com>"
 
 
-COPY docker/qemu-aarch64-static /usr/bin/qemu-aarch64-static
 
 RUN apk update && apk add cmake wget alpine-sdk glib-dev openssl-dev libstdc++ mosquitto-dev
 
@@ -34,7 +33,7 @@ RUN ls
 RUN /kuksa.val/docker/collect-deployment-artifacts.sh
 
 
-FROM arm64v8/alpine:3.11
+FROM alpine:3.11
 
 COPY --from=build /deploy /kuksa.val
 WORKDIR /kuksa.val
