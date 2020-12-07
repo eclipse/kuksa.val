@@ -111,23 +111,26 @@ class VSSTestClient(Cmd):
     @with_argparser(ap_authorize)
     def do_authorize(self, args):
         """Authorize the client to interact with the server"""
-        resp = self.commThread.authorize(args.Token)
-        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        if self.checkConnection():
+            resp = self.commThread.authorize(args.Token)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_setValue)
     def do_setValue(self, args):
         """Set the value of a parameter"""
-        resp = self.commThread.setValue(args.Parameter, args.Value)
-        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        if self.checkConnection():
+            resp = self.commThread.setValue(args.Parameter, args.Value)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_getValue)
     def do_getValue(self, args):
         """Get the value of a parameter"""
-        resp = self.commThread.getValue(args.Parameter)
-        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        if self.checkConnection():
+            resp = self.commThread.getValue(args.Parameter)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
 
@@ -141,7 +144,7 @@ class VSSTestClient(Cmd):
 
     def getMetaData(self, path):
         """Get MetaData of the parameter"""
-        if hasattr(self, "commThread") and self.commThread.wsConnected:
+        if self.checkConnection():
             return self.commThread.getMetaData(path)
         else:
             return "{}"
@@ -149,33 +152,16 @@ class VSSTestClient(Cmd):
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_updateVSSTree)
     def do_updateVSSTree(self, args):
-        """Set the value of a parameter"""
-        req = {}
-        req["requestId"] = 1233
-        req["action"]= "updateVSSTree"
-        if os.path.isfile(args.Json):
-            with open(args.Json, "r") as f:
-                req["metadata"] = json.load(f)
-        else:
-            req["metadata"] = json.loads(args.Json) 
-        jsonDump = json.dumps(req)
-        self.sendMsgQueue.put(jsonDump)
-        resp = self.recvMsgQueue.get()
-        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        if self.checkConnection():
+            resp =  self.commThread.updateVSSTree(args.Json)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_updateMetaData)
     def do_updateMetaData(self, args):
-        """Set the value of a parameter"""
-        req = {}
-        req["requestId"] = 1237
-        req["action"]= "updateMetaData"
-        req["path"] = args.Parameter
-        req["metadata"] = json.loads(args.Json) 
-        jsonDump = json.dumps(req)
-        self.sendMsgQueue.put(jsonDump)
-        resp = self.recvMsgQueue.get()
-        print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        if self.checkConnection():
+            resp =  self.commThread.updateMetaData(args.Parameter, args.Json)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_getMetaData)
@@ -195,6 +181,12 @@ class VSSTestClient(Cmd):
                 self.commThread.stopComm()
                 self.commThread = None
             print("Websocket disconnected!!")
+
+    def checkConnection(self):
+        if None == self.commThread or not self.commThread.wsConnected: 
+            self.connect()
+        return self.commThread.wsConnected
+
 
     def connect(self, insecure=False):
         """Connect to the VSS Server"""
