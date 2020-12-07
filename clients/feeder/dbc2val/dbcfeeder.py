@@ -49,7 +49,7 @@ def getConfig():
     parser.add_argument("-s", "--server", help="VSS server", type=str)
     parser.add_argument("-j", "--jwt", help="JWT security token file", type=str)
     parser.add_argument("--mapping", help="VSS mapping file", type=str)
-    parser.add_argument("--j1939", default=False, action='store_true', help="Enable SAE-J1939 Mode. Normal_Mode: ignore, J1939_Mode: \'--j1939\' (No argument needed after)")
+    parser.add_argument("--j1939", action='store_true', help="(Optional) Enable SAE-J1939 Mode. Normal_Mode: ignore, J1939_Mode: \'--j1939\' (No argument needed after)")
 
     args = parser.parse_args()
 
@@ -78,6 +78,10 @@ def getConfig():
     if args.device:
         cfg['can.port'] = args.device
 
+    cfg['can.j1939'] = cancfg.getboolean("j1939", False)
+    if args.j1939:
+    	cfg['can.j1939'] = args.j1939
+
     elmcfg = config['elmcan']
     cfg['elm.port'] = elmcfg.get("port", "/dev/ttyS0")
     if args.obdport:
@@ -92,8 +96,6 @@ def getConfig():
         cfg['elm.canspeed'] = args.obdcanspeed
 
     cfg['elm.canack'] = elmcfg.getboolean("canack", False)
-
-    cfg['j1939'] = args.j1939
 
     # Can override CAN ACK setting from commandline. Safe choice, no ack, is dominant
     if args.canack_override:
@@ -138,7 +140,7 @@ mapping = dbc2vssmapper.mapper(cfg['vss.mapping'])
 vss = websocketconnector.vssclient(cfg['vss.server'], token)
 canQueue = queue.Queue()
 
-if cfg['j1939']:
+if cfg['can.j1939']:
     j1939R = j1939reader.J1939Reader(cfg,canQueue,mapping)
 
     if cfg['can.port'] == 'elmcan':
