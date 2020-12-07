@@ -247,8 +247,8 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_invalid_values)
 
     BOOST_TEST(paths.size() == 2u);
 
-    BOOST_TEST(paths[0]["path"].as_string() == "$");
-    BOOST_TEST(paths[1]["path"].as_string() == "$");
+    BOOST_TEST(paths[0]["path"].as_string() == "");
+    BOOST_TEST(paths[1]["path"].as_string() == "");
 
 }
 
