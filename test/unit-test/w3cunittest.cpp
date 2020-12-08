@@ -1618,7 +1618,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
    commandProc->processQuery(authReqJson.as_string(),channel);
    string request(R"({
 		"action": "get",
-		"path": "Vehicle.OBD",
+		"path": "Vehicle.VehicleIdentification",
 		"requestId": "8756"
 	})");
 
@@ -1627,7 +1627,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
    json expected = json::parse(R"({
                    "action":"get",
                    "requestId":"8756",
-                   "value":{"Vehicle.OBD.EngineSpeed":2345}
+                   "value":{"Vehicle.VehicleIdentification.ACRISSCode":"---","Vehicle.VehicleIdentification.Brand":"---","Vehicle.VehicleIdentification.Model":"---","Vehicle.VehicleIdentification.VIN":"---","Vehicle.VehicleIdentification.WMI":"---","Vehicle.VehicleIdentification.Year":"---","Vehicle.VehicleIdentification.bodyType":"---","Vehicle.VehicleIdentification.dateVehicleFirstRegistered":"---","Vehicle.VehicleIdentification.knownVehicleDamages":"---","Vehicle.VehicleIdentification.meetsEmissionStandard":"---","Vehicle.VehicleIdentification.productionDate":"---","Vehicle.VehicleIdentification.purchaseDate":"---","Vehicle.VehicleIdentification.vehicleConfiguration":"---","Vehicle.VehicleIdentification.vehicleModelDate":"---","Vehicle.VehicleIdentification.vehicleSeatingCapacity":"---","Vehicle.VehicleIdentification.vehicleSpecialUsage":"---","Vehicle.VehicleIdentification.vehicleinteriorColor":"---","Vehicle.VehicleIdentification.vehicleinteriorType":"---"}
         })");
 
    json response_json = json::parse(response);
