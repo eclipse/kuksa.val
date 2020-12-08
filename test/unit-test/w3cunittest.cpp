@@ -1566,7 +1566,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
    commandProc->processQuery(authReqJson.as_string(),channel);
    string request(R"({
 		"action": "get",
-		"path": "Vehicle.OBD.*",
+		"path": "Vehicle.VehicleIdentification.*",
 		"requestId": "8756"
 	})");
 
@@ -1575,7 +1575,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
    json expected = json::parse(R"({
     "action": "get",
     "requestId": "8756",
-    "value": [{"Vehicle.OBD.EngineSpeed":2345}]
+    "value": [{"Vehicle.VehicleIdentification.vehicleinteriorType":"---"},{"Vehicle.VehicleIdentification.vehicleinteriorColor":"---"},{"Vehicle.VehicleIdentification.vehicleSpecialUsage":"---"},{"Vehicle.VehicleIdentification.vehicleSeatingCapacity":"---"},{"Vehicle.VehicleIdentification.vehicleModelDate":"---"},{"Vehicle.VehicleIdentification.vehicleConfiguration":"---"},{"Vehicle.VehicleIdentification.purchaseDate":"---"},{"Vehicle.VehicleIdentification.productionDate":"---"},{"Vehicle.VehicleIdentification.meetsEmissionStandard":"---"},{"Vehicle.VehicleIdentification.knownVehicleDamages":"---"},{"Vehicle.VehicleIdentification.dateVehicleFirstRegistered":"---"},{"Vehicle.VehicleIdentification.bodyType":"---"},{"Vehicle.VehicleIdentification.Year":"---"},{"Vehicle.VehicleIdentification.WMI":"---"},{"Vehicle.VehicleIdentification.VIN":"---"},{"Vehicle.VehicleIdentification.Model":"---"},{"Vehicle.VehicleIdentification.Brand":"---"},{"Vehicle.VehicleIdentification.ACRISSCode":"---"}]
     })");
 
    json response_json = json::parse(response);
