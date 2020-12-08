@@ -125,6 +125,7 @@ print("JWT token file       : {}".format(cfg['vss.jwttoken']))
 print("DBC  file            : {}".format(cfg['vss.dbcfile']))
 print("VSS mapping file     : {}".format(cfg['vss.mapping']))
 print("CAN port             : {}".format(cfg['can.port']))
+print("J1939 mode           : {}".format(cfg['can.j1939']))
 if cfg['can.port'] == "elmcan":
     print("ELM serial port     : {}".format(cfg['elm.port']))
     print("ELM serial baudrate : {}".format(cfg['elm.baudrate']))
@@ -148,7 +149,6 @@ if cfg['can.j1939']:
         elmbr=elm2canbridge.elm2canbridge(cfg, j1939R.canidwl)
 
     j1939R.start_listening()
-    print("\n--- SAE J1939 Mode Enabled ---\n")
 
 else:
     dbcR = dbcreader.DBCReader(cfg,canQueue,mapping)
