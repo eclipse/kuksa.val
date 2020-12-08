@@ -243,13 +243,8 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_invalid_values)
     test_value_array[0] = test_value1;
     test_value_array[1] = test_value2;
 
-    json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
-
-    BOOST_TEST(paths.size() == 2u);
-
-    BOOST_TEST(paths[0]["path"].as_string() == "");
-    BOOST_TEST(paths[1]["path"].as_string() == "");
-
+    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
+    
 }
 
 BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_one_valid_value)
@@ -264,12 +259,8 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_one_valid_value)
     test_value_array[0] = test_value1;
     test_value_array[1] = test_value2;
 
-    json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
-
-    BOOST_TEST(paths.size() == 2u);
-
-    BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
-    BOOST_TEST(paths[1]["path"].as_string() == "");
+    
+    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
 
 }
 
@@ -285,12 +276,8 @@ BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_invalid_path_valid_values)
     test_value_array[0] = test_value1;
     test_value_array[1] = test_value2;
 
-    json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
 
-    BOOST_TEST(paths.size() == 2u);
-
-    BOOST_TEST(paths[0]["path"].as_string() == "");
-    BOOST_TEST(paths[1]["path"].as_string() == "");
+    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
 
 }
 
@@ -337,19 +324,13 @@ BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_invalid_values)
 
     json test_value_array = json::make_array(2);
     json test_value1, test_value2;
-    test_value1["Left.NotTemperature"] = 24;
-    test_value2["Right.NotTemperature"] = 25;
+    test_value1["Left.NotTemperature"] = 24;  //Invalid leaf
+    test_value2["Right.NotTemperature"] = 25; //Invalid leaf
 
     test_value_array[0] = test_value1;
     test_value_array[1] = test_value2;
 
-    json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
-
-    BOOST_TEST(paths.size() == 2u);
-
-    BOOST_TEST(paths[0]["path"].as_string() == "");
-    BOOST_TEST(paths[1]["path"].as_string() == "");
-
+    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
 }
 
 BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_one_invalid_value)
@@ -359,18 +340,17 @@ BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_one_invalid_value)
     json test_value_array = json::make_array(2);
     json test_value1, test_value2;
     test_value1["Left.Temperature"] = true;
-    test_value2["Right.NotTemperature"] = false;
+    test_value2["Right.NotTemperature"] = false; //invalid leaf. Leads to fail
 
     test_value_array[0] = test_value1;
     test_value_array[1] = test_value2;
     MOCK_EXPECT(accesshandler->checkReadAccess).returns(true);
 
-    json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
+    
+    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
 
-    BOOST_TEST(paths.size() == 2u);
-
-    BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['Cabin']['children']['HVAC']['children']['Row2']['children']['Left']['children']['Temperature']");
-    BOOST_TEST(paths[1]["path"].as_string() == "");
+    //Old conditon before it was atomic    
+    //BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['Cabin']['children']['HVAC']['children']['Row2']['children']['Left']['children']['Temperature']");  
 
 }
 
@@ -902,11 +882,7 @@ BOOST_AUTO_TEST_CASE(test_set_invalid_path)
     json test_value;
     test_value["value"] = 123;
 
-    json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value);
-
-    BOOST_TEST(paths.size() == 1u);
-
-    BOOST_TEST(paths[0]["path"].as_string() == "");
+    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value);}, noPathFoundonTree );
 }
 
 // -------------------------------- Metadata test ----------------------------------
@@ -1330,7 +1306,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_withwildcard_invalid)
 
    json expected = json::parse(R"({
                               "action":"set",
-                              "error":{"message":"Path(s) in set request do not have write access or is invalid","number":403,"reason":"Forbidden"},
+                              "error":{"message":"I can not find Signal.OBD.* in my db","number":404,"reason":"Path not found"},
                               "requestId":"8756"
                               })");
 
@@ -1344,6 +1320,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_withwildcard_invalid)
    BOOST_TEST(response_json == expected);
 }
 
+///HERE
 BOOST_AUTO_TEST_CASE(process_query_set_invalid_value, *utf::expected_failures(1))
 {
    WsChannel channel;
