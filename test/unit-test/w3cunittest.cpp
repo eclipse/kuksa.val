@@ -95,8 +95,6 @@ w3cunittest::w3cunittest() {
   database->initJsonTree("test_vss_rel_2.0.json");
 
    //we can not mock for testing authentication
-   //auto authhandler_real =
-   //     std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
    auto accesshandler_real = std::make_shared<AccessChecker>(authhandler);
    auto subhandler_auth = std::make_shared<SubscriptionHandler>(logger, httpServer, mqttClient, authhandler, accesshandler_real);
    auto database_auth = std::make_shared<VssDatabase>(logger, subhandler_auth, accesshandler_real);
@@ -1337,7 +1335,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_withwildcard_invalid)
 }
 
 ///HERE
-BOOST_AUTO_TEST_CASE(process_query_set_invalid_value, *utf::expected_failures(1))
+BOOST_AUTO_TEST_CASE(process_query_set_invalid_value)
 {
    WsChannel channel;
    channel.setConnID(1234);
@@ -1373,7 +1371,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_invalid_value, *utf::expected_failures(1)
    BOOST_TEST(response_json == expected);
 }
 
-BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value, *utf::expected_failures(1))
+BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
 {
    WsChannel channel;
    channel.setConnID(1234);
@@ -2347,10 +2345,20 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
    string response = commandProc_auth->processQuery(request,channel);
 
+/*
   json expected = json::parse(R"({
     "action":"set",
     "requestId":"8756"
     })");
+    */
+   //Current (12/2020) in server is, that "branch" node permission does not grant the right to modify
+   //childs. So we test accordingly 
+   json expected = json::parse(R"({
+    "action":"set",
+    "error":{"message":"Path(s) in set request do not have write access or is invalid","number":403,"reason":"Forbidden"},
+    "requestId":"8756"
+    })");
+    
 
    json response_json = json::parse(response);
 
@@ -2363,18 +2371,21 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
    // verify with a get request
 
-    string get_request(R"({
+   string get_request(R"({
 		"action": "get",
 		"path": "Vehicle.OBD.Speed",
-		"requestId": "8756"
+		"requestId": "8757"
 	})");
-
-   string get_response = commandProc->processQuery(get_request,channel);
+   
+   string get_response = commandProc_auth->processQuery(get_request,channel);
   // because only write access in the token.
+  // Also: Current (12/2020) in server is, that "branch" node permission does not grant the right to modify
+  // childs. So we test accordingly 
+
   json get_expected = json::parse(R"({
     "action": "get",
     "error":{"message":"No read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
-    "requestId": "8756"
+    "requestId": "8757"
     })");
 
    json get_response_json = json::parse(get_response);
@@ -2386,56 +2397,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
    get_response_json.erase("timestamp");
    BOOST_TEST(get_response_json == get_expected);
 
-   // Now try to read with a valid token.
-
-/*
-   GET_AUTH_TOKEN looks like this
-
-   {
-  "sub": "Example JWT",
-  "iss": "Eclipse kuksa",
-  "admin": true,
-  "iat": 1516239022,
-  "exp": 1609372800,
-  "kuksa-vss": {
-    "Vehicle.OBD.Speed": "r"
-  }
-}
-*/
-    string GET_AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuU3BlZWQiOiJyIn19.d9SFeuz9_GPIlFCJNdeHMZMQzDmRMv9AtAl7H4AjTfKC4P_ivqWoH3WSfYvyrSwobjQH5EZwR8QEn0MHjOppVm0IR4nGL0Zy9KWeCTdrt97hn_Dx_dsK0FMgBgBN7KhMQmf1FKD58DDFQpkikryJCiUZ1NUHoJabWbCdOeqg0cPai2wuqd5gXwmegGb8-e4x4QB7Qvx3e2PV7bzzVI3HoDdgiNcpi1aovgqVUxY9glIP66823JzVA0dRNuooMS-pNBp26dPzxna35dWQkJ4Ps5faY1QIVTx_6LYdaN8odyWoEeeVG63RvLZPpIaMJdUUhCkJwaXXz1cZduxi6XjqdLDIK5EJjAWXyimGECLc4DoRzdlIa2Zl3Jr1u4MtZyTdl2QknWmxul9memCSxXIBq9UK0GHbhE-c8xcGY7QwvEY9l5Z5Lfd9nJVnOHGrdf24wpHKXEWCuJV5m3Bb2WzHlTttvAWrPsWMFGPnd5YmA2jio6NTPIvpbRsNcHMVWfoX4jmvdVH6XLsoGhfnFojLNSdzCQ942qO5Gg0o78hBdGCxRwlnIoqP6dMtgxS31lqs9Fct6wBS8ObngbiV7YghAKioVX7ldchJfQhWPD_xESj4YC_fs5wunCoWy-xqGFJltOC-RHS93F_5HSmBnwXaEkQwSeImyw8sVrjqHu1eOos";
-
-   WsChannel get_channel;
-   get_channel.setConnID(1234);
-   string get_authReq(R"({
-		"action": "authorize",
-		"requestId": "87568"
-	})");
-   json get_authReqJson = json::parse(get_authReq);
-   get_authReqJson["tokens"] = GET_AUTH_TOKEN;
-   commandProc->processQuery(get_authReqJson.as_string(),get_channel);
-   string get_request_2(R"({
-		"action": "get",
-		"path": "Vehicle.OBD.Speed",
-		"requestId": "8756"
-	})");
-
-   string get_response_2 = commandProc->processQuery(get_request_2, get_channel);
-
-   json get_expected_2 = json::parse(R"({
-    "action": "get",
-    "path": "Vehicle.OBD.Speed",
-    "requestId": "8756",
-    "value": 345
-    })");
-
-   json get_response_json_2 = json::parse(get_response_2);
-
-
-   BOOST_TEST(get_response_json_2.contains("timestamp") == true);
-
-   // remove timestamp to match
-   get_response_json_2.erase("timestamp");
-   BOOST_TEST(get_response_json_2 == get_expected_2);
 }
 
 
@@ -2518,7 +2479,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_permitted_path)
 }
 
 
-BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path, *utf::expected_failures(1))
+BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path)
 {
 /*
     Token looks like this.
@@ -2528,13 +2489,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path, *
   "iss": "Eclipse kuksa",
   "admin": true,
   "iat": 1516239022,
-  "exp": 1609372800,
+  "exp": 1924948800,
   "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "wr"    ("wr" or "rw" both work!)
   }
 }
 */
-   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciJ9fQ.a7qIqBsDEcBfGRGaXvmk6f8Bg3T7DkBJEnJf9iLLiney6F6XDKk-Q_5pk1vhGEKfkNpVj908JRu2Hqx7e9-Dd6XpkUtr85YztXA7bJYMelsn4ANCipcZp36xLVLYRXqSbafSbQ08BKHa9Omd1j2k7hbldd0-QhU7trdxmnbhHE7QVdE6q1CB8ogt5QRenrax4q0AjaZ49LalDU9tsxWyu2Da2_OO7M-k-LysDAL7JKabApX10sxVGhXiToxL7kYCwUAXfNSXR_wHreWhnm47h-346URjBn-kX5FeC8p2t08IkGKv-ecKEHNhmKMRQ52PLpvuVgQhASCWX8q11VomdEMZHKWJxknd535h9AS4g7aAlbquGMGi1NRWkJc1eBR9DBicA2B1kjME35Tr3Xc954W5zatN3FJCbSQJtSpcHipJUsPzmV231PMfIZJOGSeAreJTtS3F2NqMhJiafem0JkxVgMFkCOv3vHPV2-hJJ-nKwfE7TFFvjfbl3X2GVj3s-tbEelYZZyfdCHaAHmPa4W4sK5WYKUqlSnJN9_l7sLYqzziCxSR8tTeNHBddjPXx6UoZm7D8U_K1HdJcWeDkZfCIkMGYaiBMj8WPVkTym2iQxkc9pgpXs-N1SRL9Zp84FNzXZ1qGfCicceZhkTWlzOm4_SD4te3LVD14RpXaF18";
+   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIn19.O43MpewKMaYLyR0v_1c8STIiGt8fZMfkELda57RmVQxurdtOugT4iObXYF4xIDe68OOJPTk5KY4bYfCjHpYHuh9Cx1AeBAEya3x99KqIJsUhvzLuzvFO2iKbqgZOBt9miVPUC33tYuITNy3avUfzd12uC7a3fSGMlSoidtOfyBaUaxZJav-kGimgvhCUZvb4uHrjQW8ixDlXHgVtKddSmFj3F4fViJ2C0yFx_38c5F_sne5z55Y5zkDaXHVPRmskRZ5YyGpO4IF5KP5LgKR45iFU4_Pm3SmKfI3gpeF4AifyVT5zoE96Woj3KIvfnHG9Jog3ip-Kl4ikVkx_hyuSsvANGWaKx2xfmtrJ0GYQZqitMGBdW_VsCShInDJAkadSHzft6Efi8p0ysvKr5KvLUDb5vu28jSoAbMQs9ufOgUPNZvnTsYdVqaof-7Z7VEo_hJV3nQH5tFlvoMGrqQH2mGQTjDhHpNTWPotq3rMzDl8WbUjrJbDkFikKMByU-xv9pUWSWZ-ndxk45yLbpWUShZVsueoTDRO65kJvxuXPgmt68fiDSNJp4ZnmjeuC3TApv7UrqqPYKGUwpkz9gQF3_MLg2glEJUry5w9P-gEBObQ0mY5nM4W_5fMY_nDy1j1qUY4SsKi-0Xu45Dej3k-cqWoqWVwFEh3CiI4v7wQR_hY";
 
    WsChannel channel;
    channel.setConnID(1234);
@@ -2544,7 +2505,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path, *
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   commandProc->processQuery(authReqJson.as_string(),channel);
+   commandProc_auth->processQuery(authReqJson.as_string(),channel);
    string request(R"({
 		"action": "set",
 		"path": "Vehicle.OBD.*",
@@ -2552,7 +2513,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path, *
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   string response = commandProc_auth->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"set",
@@ -2577,13 +2538,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path, *
 		"requestId": "8756"
 	})");
 
-   string get_response = commandProc->processQuery(get_request,channel);
+   string get_response = commandProc_auth->processQuery(get_request,channel);
 
   json get_expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 50
+    "value": "---"
     })");
 
    json get_response_json = json::parse(get_response);
@@ -2777,7 +2738,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
    BOOST_TEST(unsub_response_json == expected_unsub);
 }
 
-BOOST_AUTO_TEST_CASE(subscription_test_no_permission, *utf::expected_failures(1))
+BOOST_AUTO_TEST_CASE(subscription_test_no_permission)
 {
 /*
     Token looks like this.
@@ -2787,14 +2748,14 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission, *utf::expected_failures(1)
   "iss": "Eclipse kuksa",
   "admin": true,
   "iat": 1516239022,
-  "exp": 1609372800,
+  "exp": 1924948800,
   "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "wr",                     ("wr" or "rw" both work!)
     "Vehicle.OBD.Speed": "w"
   }
 }
 */
-   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
+   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIiwiVmVoaWNsZS5PQkQuU3BlZWQiOiJ3In19.ob9r5oT8R5TEtQ1ZULw2jJZpplv3-hMSd9rgFqU0CUTg-G4zhMLwegTmNDgY2EAyhOQ2LSNXK46b-ftCiVINWfnOIlNAwTmXoRNNqJ5F81aVpt8ub1aMUt0B8iKHH1Vy9sNMDrdjbB8qnNK-9SodsEafxvHAN816b81FZplA8z4S5F1gRjiCeK_tI_ZltiGYHp5FKcu25WuQosasZOUiGS7i_WFLftSn59S4lb2cBgpYIVxsGYjsnDKxc_mTNJRaCF5W5kF9zMaOR2x0sXJaZRWQnl5ioCu6tbneUF9Sb5ri1hR5m720WdNuu9iBaWbYno8QtjS8Di5L6KoIRNAcvGkAXuhLhmhSTd4ANYd9Ccc2xU6v4YWiKR4Sq3PXRvSfI-RUBuniOGi_v4Bpe8571B6EBZ3sPI3lkdgekusjqo_Man0WUc-h56ZttWsaqPVFyrSBz7uVtlcRHCwXrLaTwF-7rvNKwR5n3tIy-QG2YCQqQVr7-2934-NSADY8yTuKg-7bvv0DQv0pvNwwPjXE0Y6DSXGsk2PdujD8qai2aW5bZd9LI2WNxFqftm_t-cdicKgipzZVCzwwK9kTbpPq5KesVUymc8TIhmJynrh7lIVh-1EfvEY8T-v374kVppQ-k6aZmPphMvcWNF04x07_rw1DWxKoLIX4tTBvXiApSWo";
 
    WsChannel channel;
    channel.setConnID(1234);
@@ -2804,7 +2765,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission, *utf::expected_failures(1)
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   commandProc->processQuery(authReqJson.as_string(),channel);
+   commandProc_auth->processQuery(authReqJson.as_string(),channel);
 
 
    string request(R"({
@@ -2813,12 +2774,12 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission, *utf::expected_failures(1)
 		"requestId": "8778"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   string response = commandProc_auth->processQuery(request,channel);
    json response_json = json::parse(response);
 
    json expected = json::parse(R"({
                    "action":"subscribe",
-                   "error":{"message":"no permission to subscribe to path","number":403,"reason":"Forbidden"},
+                   "error":{"message":"no permission to subscribe to path Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
                    "requestId":"8778"
                    })");
 
@@ -2830,7 +2791,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission, *utf::expected_failures(1)
 }
 
 
-BOOST_AUTO_TEST_CASE(subscription_test_invalidpath, *utf::expected_failures(1))
+BOOST_AUTO_TEST_CASE(subscription_test_invalidpath)
 {
 /*
     Token looks like this.
@@ -2840,14 +2801,14 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath, *utf::expected_failures(1))
   "iss": "Eclipse kuksa",
   "admin": true,
   "iat": 1516239022,
-  "exp": 1609372800,
+  "exp": 1924948800,
   "kuksa-vss": {
     "Vehicle.OBD.EngineSpeed": "wr",                     ("wr" or "rw" both work!)
     "Vehicle.OBD.Speed": "w"
   }
 }
 */
-   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
+   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIiwiVmVoaWNsZS5PQkQuU3BlZWQiOiJ3In19.ob9r5oT8R5TEtQ1ZULw2jJZpplv3-hMSd9rgFqU0CUTg-G4zhMLwegTmNDgY2EAyhOQ2LSNXK46b-ftCiVINWfnOIlNAwTmXoRNNqJ5F81aVpt8ub1aMUt0B8iKHH1Vy9sNMDrdjbB8qnNK-9SodsEafxvHAN816b81FZplA8z4S5F1gRjiCeK_tI_ZltiGYHp5FKcu25WuQosasZOUiGS7i_WFLftSn59S4lb2cBgpYIVxsGYjsnDKxc_mTNJRaCF5W5kF9zMaOR2x0sXJaZRWQnl5ioCu6tbneUF9Sb5ri1hR5m720WdNuu9iBaWbYno8QtjS8Di5L6KoIRNAcvGkAXuhLhmhSTd4ANYd9Ccc2xU6v4YWiKR4Sq3PXRvSfI-RUBuniOGi_v4Bpe8571B6EBZ3sPI3lkdgekusjqo_Man0WUc-h56ZttWsaqPVFyrSBz7uVtlcRHCwXrLaTwF-7rvNKwR5n3tIy-QG2YCQqQVr7-2934-NSADY8yTuKg-7bvv0DQv0pvNwwPjXE0Y6DSXGsk2PdujD8qai2aW5bZd9LI2WNxFqftm_t-cdicKgipzZVCzwwK9kTbpPq5KesVUymc8TIhmJynrh7lIVh-1EfvEY8T-v374kVppQ-k6aZmPphMvcWNF04x07_rw1DWxKoLIX4tTBvXiApSWo";
 
    WsChannel channel;
    channel.setConnID(1234);
@@ -2857,7 +2818,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath, *utf::expected_failures(1))
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   commandProc->processQuery(authReqJson.as_string(),channel);
+   commandProc_auth->processQuery(authReqJson.as_string(),channel);
 
 
    string request(R"({
@@ -2866,7 +2827,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath, *utf::expected_failures(1))
 		"requestId": "8778"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   string response = commandProc_auth->processQuery(request,channel);
    json response_json = json::parse(response);
 
    json expected = json::parse(R"({
@@ -2885,9 +2846,23 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath, *utf::expected_failures(1))
 // SUBSCRIBE Test
 BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
 {
-   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
+   /* token is 
+   {
+  "sub": "Example JWT",
+  "iss": "Eclipse kuksa",
+  "admin": true,
+  "iat": 1516239022,
+  "exp": 1924948800,
+  "kuksa-vss": {
+    "Vehicle.OBD.EngineSpeed": "wr",                     ("wr" or "rw" both work!)
+    "Vehicle.OBD.Speed": "w"
+  }
+}*/
+   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIiwiVmVoaWNsZS5PQkQuU3BlZWQiOiJ3In19.ob9r5oT8R5TEtQ1ZULw2jJZpplv3-hMSd9rgFqU0CUTg-G4zhMLwegTmNDgY2EAyhOQ2LSNXK46b-ftCiVINWfnOIlNAwTmXoRNNqJ5F81aVpt8ub1aMUt0B8iKHH1Vy9sNMDrdjbB8qnNK-9SodsEafxvHAN816b81FZplA8z4S5F1gRjiCeK_tI_ZltiGYHp5FKcu25WuQosasZOUiGS7i_WFLftSn59S4lb2cBgpYIVxsGYjsnDKxc_mTNJRaCF5W5kF9zMaOR2x0sXJaZRWQnl5ioCu6tbneUF9Sb5ri1hR5m720WdNuu9iBaWbYno8QtjS8Di5L6KoIRNAcvGkAXuhLhmhSTd4ANYd9Ccc2xU6v4YWiKR4Sq3PXRvSfI-RUBuniOGi_v4Bpe8571B6EBZ3sPI3lkdgekusjqo_Man0WUc-h56ZttWsaqPVFyrSBz7uVtlcRHCwXrLaTwF-7rvNKwR5n3tIy-QG2YCQqQVr7-2934-NSADY8yTuKg-7bvv0DQv0pvNwwPjXE0Y6DSXGsk2PdujD8qai2aW5bZd9LI2WNxFqftm_t-cdicKgipzZVCzwwK9kTbpPq5KesVUymc8TIhmJynrh7lIVh-1EfvEY8T-v374kVppQ-k6aZmPphMvcWNF04x07_rw1DWxKoLIX4tTBvXiApSWo";
 
-    json perm = json::parse(R"({"$['Vehicle']['children'][*]['children']['EngineSpeed']" : "wr"})");
+   //json perm = json::parse(R"({"$['Vehicle']['children'][*]['children']['EngineSpeed']" : "wr"})");
+   json perm = json::parse(R"({"Vehicle.*.EngineSpeed" : "wr"})");
+
     WsChannel channel;
     channel.setConnID(1234);
     channel.setAuthorized(true);
@@ -2899,8 +2874,8 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
                    "requestId": "8778"
                    })");
 
-    string response = commandProc->processQuery(request,channel);
-
+   string response = commandProc_auth->processQuery(request,channel);
+   
     json expected = json::parse(R"({
                                 "action": "subscribe",
                                 "requestId": "8778"
@@ -2923,7 +2898,19 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
 
 BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
 {
-string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
+ /* token is 
+   {
+  "sub": "Example JWT",
+  "iss": "Eclipse kuksa",
+  "admin": true,
+  "iat": 1516239022,
+  "exp": 1924948800,
+  "kuksa-vss": {
+    "Vehicle.OBD.EngineSpeed": "wr",                     ("wr" or "rw" both work!)
+    "Vehicle.OBD.Speed": "w"
+  }
+}*/
+   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIiwiVmVoaWNsZS5PQkQuU3BlZWQiOiJ3In19.ob9r5oT8R5TEtQ1ZULw2jJZpplv3-hMSd9rgFqU0CUTg-G4zhMLwegTmNDgY2EAyhOQ2LSNXK46b-ftCiVINWfnOIlNAwTmXoRNNqJ5F81aVpt8ub1aMUt0B8iKHH1Vy9sNMDrdjbB8qnNK-9SodsEafxvHAN816b81FZplA8z4S5F1gRjiCeK_tI_ZltiGYHp5FKcu25WuQosasZOUiGS7i_WFLftSn59S4lb2cBgpYIVxsGYjsnDKxc_mTNJRaCF5W5kF9zMaOR2x0sXJaZRWQnl5ioCu6tbneUF9Sb5ri1hR5m720WdNuu9iBaWbYno8QtjS8Di5L6KoIRNAcvGkAXuhLhmhSTd4ANYd9Ccc2xU6v4YWiKR4Sq3PXRvSfI-RUBuniOGi_v4Bpe8571B6EBZ3sPI3lkdgekusjqo_Man0WUc-h56ZttWsaqPVFyrSBz7uVtlcRHCwXrLaTwF-7rvNKwR5n3tIy-QG2YCQqQVr7-2934-NSADY8yTuKg-7bvv0DQv0pvNwwPjXE0Y6DSXGsk2PdujD8qai2aW5bZd9LI2WNxFqftm_t-cdicKgipzZVCzwwK9kTbpPq5KesVUymc8TIhmJynrh7lIVh-1EfvEY8T-v374kVppQ-k6aZmPphMvcWNF04x07_rw1DWxKoLIX4tTBvXiApSWo";
 
    WsChannel channel;
    channel.setConnID(1234);
@@ -2934,7 +2921,7 @@ string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIE
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   commandProc->processQuery(authReqJson.as_string(),channel);
+   string res=commandProc_auth->processQuery(authReqJson.as_string(),channel);
 
     string request(R"({
                    "action": "subscribe",
@@ -2942,8 +2929,8 @@ string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIE
                    "requestId": "4243"
                    })");
 
-    string response = commandProc->processQuery(request,channel);
-
+    string response = commandProc_auth->processQuery(request,channel);
+  
     json expected = json::parse(R"({
                                 "action": "subscribe",
                                 "requestId": "4243"
@@ -2967,7 +2954,7 @@ string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIE
     BOOST_TEST(response_json == expected);
 }
 
-BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard, *utf::expected_failures(1))
+BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard)
 {
     /*
      Token looks like this.
