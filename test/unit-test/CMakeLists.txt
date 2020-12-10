@@ -20,7 +20,7 @@ include(CTest)
 
 ###
 # Setup target names
-set(UNITTEST_EXE_NAME "w3c-unit-test" )
+set(UNITTEST_EXE_NAME "kuksaval-unit-test" )
 
 set(BUILD_UNIT_TEST OFF CACHE BOOL "Build unit tests")
 
@@ -35,7 +35,7 @@ if(BUILD_UNIT_TEST)
     SubscriptionHandlerTests.cpp
     VssCommandProcessorTests.cpp
     VssDatabaseTests.cpp
-    w3cunittest.cpp
+    KuksavalUnitTest.cpp
   )
 
   # declares a test with our executable
