@@ -799,7 +799,6 @@ void VssDatabase::setSignal(const string &path,
     logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal Excpetion unlock: " + string(e.what()));
   }
 
-  logger_->Log(LogLevel::ERROR, "UNLOCK FCKING MUTEX " );
   rwMutex_.unlock();
 
   if (setValues.is_array()) {
