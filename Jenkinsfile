@@ -38,10 +38,11 @@ node('docker') {
 
                     sh "docker build -t kuksa-val-dev-ubuntu20.04:${versiontag} -f docker/Dockerfile.dev ."
                     sh "docker save kuksa-val-dev-ubuntu20.04:${versiontag}  > artifacts/kuksa-val-dev-ubuntu20.04:${versiontag}.tar"
-
-
             }
         }
+    }
+    stage('Test') {
+        sh "docker run --rm -v ${env.WORKSPACE}/artifacts:/out kuksa-val-dev-ubuntu20.04:${versiontag}  /kuksaval-unit-test  --log_format=XML --log_sink=/out/results.xml --log_level=all --report_level=no --result_code=no"
     }
     stage('Compress') {
         sh 'ls artifacts'
