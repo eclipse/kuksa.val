@@ -47,6 +47,22 @@ namespace {
     }
   }
 
+
+/** Some functions expect JSON data in the "value" member of a request. This is usually the string.
+ *  This function tries to parse it as JSON returning a new json object containign the decompostion
+ *  if this fails, the original JSON is returend
+ * This important for functions such as "is_array", becasue a "value":"[1,2,3]", is of type string
+ * as the inner JSON is nor parsed normally */ 
+jsoncons::json tryParse(jsoncons::json val) {
+  try {
+    jsoncons::json innerJson=jsoncons::json::parse(val.as_string_view());
+    return innerJson;
+  }
+  catch (std::exception &e) {
+    return val;
+  }
+}
+
     // Check the value type and if the value is within the range
   void checkTypeAndBound(std::shared_ptr<ILogger> logger, string value_type, jsoncons::json val) {
     bool typeValid = false;
@@ -283,7 +299,7 @@ string VssDatabase::getReadablePath(string jsonpath) {
 }
 
 // Appends the internally used "children" tag to the path. And also formats the
-// path in JSONPath querry format.
+// path in JSONPath query format.
 // Eg: path = Signal.OBD.RPM
 // The method returns $['Signal']['children']['OBD']['children']['RPM'] and
 // updates isBranch to false.
@@ -319,13 +335,13 @@ string VssDatabase::getVSSSpecificPath(const string &path, bool& isBranch,
       isBranch = false;
       logger_->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath : Path "
                   + format_path + " is invalid or is an empty tag!");
-      return "$";
+      return "";
     }
   } catch (exception& e) {
     logger_->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath :Exception \""
          + string(e.what()) + "\" occured while querying JSON. Check Path!");
     isBranch = false;
-    return "$";
+    return "";
   }
   return format_path;
 }
@@ -334,6 +350,10 @@ string VssDatabase::getVSSSpecificPath(const string &path, bool& isBranch,
 // metadata request.
 string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
   string format_path = getVSSSpecificPath(path, isBranch, meta_tree__);
+  /* json_query aserts with empty string, so when path is not found return empty string immediately */
+  if (format_path == "") {
+    return "";
+  }
   jsoncons::json pathRes = jsonpath::json_query(meta_tree__, format_path, jsonpath::result_type::path);
   if (pathRes.size() > 0) {
     string jPath = pathRes[0].as<string>();
@@ -352,10 +372,17 @@ string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
 list<string> VssDatabase::getPathForGet(const string &path, bool& isBranch) {
   list<string> paths;
   string format_path = getVSSSpecificPath(path, isBranch, data_tree__);
+
+  /* In case string is empty, signal was not found in VSS DB. json_query would assert with empty query
+   * string, so we return our empty list directly */
+  if (format_path == "") {
+    return paths;
+  }
   jsoncons::json pathRes = jsonpath::json_query(data_tree__, format_path, jsonpath::result_type::path);
 
   for (size_t i = 0; i < pathRes.size(); i++) {
     string jPath = pathRes[i].as<string>();
+
     jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
     if (resArray.size() == 0) {
       continue;
@@ -399,7 +426,7 @@ void VssDatabase::HandleSet(jsoncons::json & setValues) {
     jsoncons::json item = setValues[i];
     string jPath = item["path"].as<string>();
 
-    logger_->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: path found = " + jPath);
+    logger_->Log(LogLevel::VERBOSE, "vssdatabase::HandleSet path found = " + jPath);
     logger_->Log(LogLevel::VERBOSE, "value to set asstring = " + item["value"].as<string>());
 
     rwMutex_.lock();
@@ -623,6 +650,11 @@ jsoncons::json VssDatabase::getPathForSet(const string &path, jsoncons::json val
   jsoncons::json setValues;
   string updatedPath = path;
 
+  logger_->Log(LogLevel::VERBOSE, "VssDatabase::getPathForSet for path " + path+ " with values " + values.as_string());
+
+  values=tryParse(values);
+  //std::string s = "[1,2,3]";
+  //values = json::parse(s);
   if (values.is_array()) {
     std::size_t found = updatedPath.find("*");
     if (found == std::string::npos) {
@@ -634,20 +666,28 @@ jsoncons::json VssDatabase::getPathForSet(const string &path, jsoncons::json val
       jsoncons::json value = values[i];
       string readablePath = updatedPath;
       string replaceString;
-      auto iter = value.object_range();
 
-      int size = std::distance(iter.begin(), iter.end());
-
-      if (size == 1) {
-        for (const auto& member : iter) {
-          replaceString = string(member.key());
+      int size;
+      try {
+        auto iter = value.object_range();
+        size = std::distance(iter.begin(), iter.end());
+        if (size == 1) {
+          for (const auto& member : iter) {
+            replaceString = string(member.key());
+          }
+        } else {
+          stringstream msg;
+          msg << "More than 1 signal found while setting for path = " << updatedPath
+              << " with values " << pretty_print(values);
+          throw genException(msg.str());
         }
-      } else {
+      }
+      catch (std::exception &e) {
         stringstream msg;
-        msg << "More than 1 signal found while setting for path = " << updatedPath
-            << " with values " << pretty_print(values);
+        msg << "Invalid JSON for multi-set. " << e.what();
         throw genException(msg.str());
       }
+
       readablePath.replace(found, readablePath.length(), replaceString);
       jsoncons::json pathValue;
       bool isBranch = false;
@@ -655,9 +695,15 @@ jsoncons::json VssDatabase::getPathForSet(const string &path, jsoncons::json val
           getVSSSpecificPath(readablePath, isBranch, data_tree__);
       if (isBranch) {
         stringstream msg;
-        msg << "Path = " << updatedPath << " with values " << pretty_print(values)
+        msg << "Path = " << updatedPath << " with values " << value
             << " points to a branch. Needs to point to a signal";
         throw genException(msg.str());
+      }
+      if ( absolutePath == "" ) {
+        stringstream msg;
+        msg << "Path = " << readablePath << " with values " << value
+            << " points to an invalid path. Needs to point to a signal";
+        throw noPathFoundonTree(msg.str());
       }
 
       pathValue["path"] = absolutePath;
@@ -671,10 +717,16 @@ jsoncons::json VssDatabase::getPathForSet(const string &path, jsoncons::json val
     string absolutePath = getVSSSpecificPath(updatedPath, isBranch, data_tree__);
     if (isBranch) {
       stringstream msg;
-      msg << "Path = " << updatedPath << " with values " << pretty_print(values)
+      msg << "Path = " << updatedPath << " with values " << pretty_print(setValues)
           << " points to a branch. Needs to point to a signal";
       throw genException(msg.str());
     }
+    if ( absolutePath == "" ) {
+        stringstream msg;
+        msg << "Path = " << updatedPath << " with values " << pretty_print(values)
+            << " points to an invalid path. Needs to point to valid a signal.";
+        throw noPathFoundonTree(msg.str());
+      }
     pathValue["path"] = absolutePath;
     pathValue["value"] = values;
     setValues[0] = pathValue;
@@ -701,8 +753,22 @@ void VssDatabase::setSignal(WsChannel& channel,
     throw genException(msg);
   }
   checkSetPermission(channel, path);
+  
+  jsoncons::json setValues;
+
   rwMutex_.lock();
-  jsoncons::json setValues = getPathForSet(path, valueJson);
+  try {
+      setValues = getPathForSet(path, valueJson);
+  }
+  catch( noPathFoundonTree& e) {
+    rwMutex_.unlock();
+    throw e;
+  }
+  catch ( genException &e) {
+    logger_->Log(LogLevel::ERROR, "Exception VssDatabase::setSignal: " + string(e.what()));
+    rwMutex_.unlock();
+    throw e;
+  }
   rwMutex_.unlock();
 
   if (setValues.is_array()) {
@@ -720,8 +786,19 @@ void VssDatabase::setSignal(const string &path,
     string msg = "Path is empty while setting";
     throw genException(msg);
   }
+  
+      logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal  LOCK:");
+
   rwMutex_.lock();
-  jsoncons::json setValues = getPathForSet(path, valueJson);
+  jsoncons::json setValues;
+
+  try {
+      setValues = getPathForSet(path, valueJson);
+  }
+  catch( genException& e) {
+    logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal Excpetion unlock: " + string(e.what()));
+  }
+
   rwMutex_.unlock();
 
   if (setValues.is_array()) {

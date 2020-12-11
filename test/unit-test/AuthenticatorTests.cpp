@@ -144,49 +144,6 @@ BOOST_AUTO_TEST_CASE(Given_GoodToken_When_Validate_Shall_ValidateTokenSuccessful
   BOOST_TEST(res == std::chrono::time_point_cast<std::chrono::seconds>(exprTime).time_since_epoch().count());
 }
 
-BOOST_AUTO_TEST_CASE(Given_BadPathInToken_When_Validate_Shall_ThrowException)
-{
-  WsChannel channel;
-
-  // expectations
-
-  // validate that at least one log event was processed
-  MOCK_EXPECT(logMock->Log).at_least( 1 );
-
-  std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
-  std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
-
-  picojson::value picoJson;
-  picojson::parse(picoJson,
-                  R"({"Vehicle.Drivetrain.*" : "r", "Vehicle.Drivetrain.Transmission.*" : "rw"})");
-
-  // create valid token
-  auto token = jwt::create()
-    // header
-    .set_type("JWT")
-    .set_algorithm("RS256")
-    // payload
-    .set_subject("Example JWT")
-    .set_issuer("Eclipse KUKSA")
-    .set_issued_at(std::chrono::system_clock::now())
-    .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours(24))
-
-    .set_payload_claim("kuksa-vss", jwt::claim(picoJson))
-
-    // signature
-    .sign(jwt::algorithm::rs256{validPubKey, validPrivateKey});
-
-  // execute
-
-  auth->updatePubKey(validPubKey);
-
-  // verify
-
-  // path in token is not found, so expect exception to be thrown
-  BOOST_CHECK_EXCEPTION(auth->validate(channel, token),
-                        noPathFoundonTree,
-                        [](noPathFoundonTree const& e){boost::ignore_unused(e); return true;});
-}
 
 BOOST_AUTO_TEST_CASE(Given_BadToken_When_Validate_Shall_ReturnError)
 {

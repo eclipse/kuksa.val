@@ -38,10 +38,15 @@ node('docker') {
 
                     sh "docker build -t kuksa-val-dev-ubuntu20.04:${versiontag} -f docker/Dockerfile.dev ."
                     sh "docker save kuksa-val-dev-ubuntu20.04:${versiontag}  > artifacts/kuksa-val-dev-ubuntu20.04:${versiontag}.tar"
-
-
             }
         }
+    }
+    stage('Test') {
+        sh "docker run --rm -w /kuksa.val/build/test/unit-test -v ${env.WORKSPACE}/artifacts:/out kuksa-val-dev-ubuntu20.04:${versiontag}  ./kuksaval-unit-test  --log_format=XML --log_sink=/out/results.xml --log_level=all --report_level=no --result_code=no"
+        step([$class: 'XUnitPublisher',
+                thresholds: [ skipped(failureThreshold: '0'), failed(failureThreshold: '0') ],
+                tools: [ BoostTest(pattern: 'artifacts/*.xml') ]]
+        )
     }
     stage('Compress') {
         sh 'ls artifacts'

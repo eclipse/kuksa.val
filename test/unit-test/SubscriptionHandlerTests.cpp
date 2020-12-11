@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
     .returns(retDbListWider.front());
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .once()
-    .with(mock::any, retDbListWider.front())
+    .with(mock::any, path)
     .returns(true);
 
   // load data tree
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
       .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, retDbListWider[index])
+      .with(mock::any, path[index])
       .returns(true);
   }
 
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
     .returns(retDbListWider.front());
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
-    .with(mock::any, retDbListWider.front())
+    .with(mock::any, path)
     .returns(true);
 
   // load data tree
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
       .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, retDbListWider[index])
+      .with(mock::any, path[index])
       .returns(true);
   }
 
@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
       .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, retDbListWider[index])
+      .with(mock::any, path[index])
       .returns(true);
   }
 
@@ -343,7 +343,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
     .returns(retDbListWider.front());
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
-    .with(mock::any, retDbListWider.front())
+    .with(mock::any, path)
     .returns(true);
 
   // load data tree
@@ -400,7 +400,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
       .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, retDbListWider[index])
+      .with(mock::any, path[index])
       .returns(true);
   }
 
@@ -484,7 +484,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
       .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
-      .with(mock::any, retDbListWider[index])
+      .with(mock::any, path[index])
       .returns(true);
   }
 
@@ -580,7 +580,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
       .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
-      .with(mock::any, retDbListWider[index])
+      .with(mock::any, path[index])
       .returns(true);
   }
 

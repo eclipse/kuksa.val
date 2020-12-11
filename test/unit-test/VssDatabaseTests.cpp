@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForInvalidPath_Shall
   // verify
 
   BOOST_CHECK_NO_THROW(returnJson = db->getMetaData(signalPath));
-  BOOST_TEST(returnJson == jsoncons::json());
+  BOOST_TEST(returnJson == NULL);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSignal_Shall_ReturnSignal) {
