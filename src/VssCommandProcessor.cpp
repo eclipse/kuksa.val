@@ -33,6 +33,8 @@
 #include "IAuthenticator.hpp"
 #include "ISubscriptionHandler.hpp"
 
+#include "VssCommandGet.hpp"
+
 #ifdef JSON_SIGNING_ON
 #include "SigningHandler.hpp"
 #endif
@@ -469,7 +471,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
       if (action == "get") {
         logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: get query  for " + path
                     + " with request id " + request_id);
-
+        processGet2(channel, root);
         response = processGet(channel, request_id, path);
 #ifdef JSON_SIGNING_ON
         response = signer->sign(response);

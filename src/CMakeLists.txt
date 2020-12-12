@@ -45,7 +45,9 @@ set(LIB_SOURCES
    RestV1ApiHandler.cpp
    SigningHandler.cpp
    SubscriptionHandler.cpp
+   VSSRequestValidator.cpp
    VssCommandProcessor.cpp
+   VssCommandGet.cpp
    VssDatabase.cpp
    WebSockHttpFlexServer.cpp
    MQTTClient.cpp
