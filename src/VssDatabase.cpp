@@ -452,6 +452,7 @@ list<string> VssDatabase::getJSONPaths(const string &path) {
     first=false;
   }
 
+  //If this is a branch, recures
   jsoncons::json pathRes;
   try {
     pathRes = jsonpath::json_query(data_tree__, jsonpath.str(), jsonpath::result_type::path);
@@ -470,7 +471,7 @@ list<string> VssDatabase::getJSONPaths(const string &path) {
 
     //recurse if branch
     if (resArray[0].contains("type") && resArray[0]["type"].as<string>() == "branch") {
-      paths.merge(getJSONPaths(getVSSPathFromJSONPath(jpath.as<string>()) + ".*"));
+      paths.merge(getJSONPaths(getVSSPathFromJSONPath(jpath.as<string>()) + "/*"));
       continue;
     }
     else {
