@@ -1026,7 +1026,7 @@ jsoncons::json VssDatabase::getSignal2(class WsChannel& channel, const string &p
    if (pathsFound == 1) {
     string jPath = jPaths.back();
     // check Read access here.
-    if (!accessValidator_->checkReadAccess(channel, TEMPORARY_convert_gen2_to_gen1_path((jPath)))) {
+    if (!accessValidator_->checkReadAccess(channel, TEMPORARY_convert_gen2_to_gen1_path((getVSSPathFromJSONPath(jPath))))) {
       stringstream msg;
       msg << "No read access to " << getReadablePath(jPath);
       throw noPermissionException(msg.str());
