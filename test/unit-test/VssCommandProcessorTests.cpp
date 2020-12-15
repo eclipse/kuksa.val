@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::pathNotFound(requestId, "get", path, jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "get", path2, jsonPathNotFound);
 
   // expectations
 
@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["timestamp"] = 11111111;
 
-  JsonResponses::pathNotFound(requestId, "get", path, jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "get", path2, jsonPathNotFound);
 
   // expectations
 
@@ -1056,7 +1056,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   jsonValueErr["number"] = 400;
   jsonValueErr["reason"] = "Bad Request";
-  jsonValueErr["message"] = "Key 'action' not found";
+  jsonValueErr["message"] = "Key not found: 'action'";
   jsonExpected["error"] = jsonValueErr;
   jsonExpected["timestamp"] = 123;
 
@@ -1076,7 +1076,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   resStr = processor->processQuery(jsonRequest.as_string(), channel);
   res = json::parse(resStr);
 
-  jsonValueErr["message"] = "Key 'path' not found";
+  jsonValueErr["message"] = "Key not found: 'path'";
   jsonExpected["error"] = jsonValueErr;
 
   // timestamp must not be zero
@@ -1090,7 +1090,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   resStr = processor->processQuery(jsonRequest.as_string(), channel);
   res = json::parse(resStr);
 
-  jsonValueErr["message"] = "Key 'requestId' not found";
+  jsonValueErr["message"] = "Key not found: 'requestId'";
   jsonExpected["error"] = jsonValueErr;
 
   // timestamp must not be zero
