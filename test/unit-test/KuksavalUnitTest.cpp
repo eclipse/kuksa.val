@@ -1284,7 +1284,7 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 
    json expected = json::parse(R"({
                          "action":"get",
-                         "error":{"message":"I can not find Signal.*.RPM1 in my db","number":404,"reason":"Path not found"},
+                         "error":{"message":"I can not find Signal/*/RPM1 in my db","number":404,"reason":"Path not found"},
                          "requestId":"8756"
                          })");
 
