@@ -41,6 +41,8 @@ class VssDatabase : public IVssDatabase {
 
   std::string getPathForMetadata(std::string path, bool& isBranch);
   std::string getReadablePath(std::string jsonpath);
+  std::string getVSSPathFromJSONPath(std::string jsonpath); //Gen2 repalcement for getReadablePath
+
   void checkSetPermission(WsChannel& channel, const std::string& path);
   void HandleSet(jsoncons::json & setValues);
 
@@ -60,7 +62,12 @@ class VssDatabase : public IVssDatabase {
   void setSignal(const std::string &path, jsoncons::json value);
   jsoncons::json getSignal(WsChannel& channel, const std::string &path) override;
 
+  jsoncons::json getSignal2(WsChannel& channel, const std::string &path) override; //Gen2 version
+
+
   std::list<std::string> getPathForGet(const std::string &path, bool& isBranch) override;
+  std::list<std::string> getJSONPaths(const std::string &path);
+
   std::string getVSSSpecificPath(const std::string &path, bool& isBranch,
                                  jsoncons::json& tree) override;
   jsoncons::json getPathForSet(const std::string &path, jsoncons::json value) override;
