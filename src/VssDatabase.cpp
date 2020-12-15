@@ -1115,7 +1115,7 @@ jsoncons::json VssDatabase::getSignal2(class WsChannel& channel, const string &p
       if (result.contains("value")) {
         setJsonValue(logger_, value, result, path);
       } else {
-        value[getReadablePath(path)] = "---";
+        value[path] = "---";
       }
       valueArray.insert(valueArray.array_range().end(), value);
     }
