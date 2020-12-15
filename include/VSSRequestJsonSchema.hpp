@@ -8,7 +8,7 @@
  * https://www.eclipse.org/org/documents/epl-2.0/index.php
  *
  *  Contributors:
- *      Robert Bosch GmbH 
+ *      Robert Bosch GmbH
  * *****************************************************************************
  */
 
@@ -19,7 +19,10 @@
 
 using jsoncons::json;
 
-json VSS_JSON_SCHEMA_GET = json::parse(R"(
+namespace VSS_JSON {
+
+
+static const char* SCHEMA_GET=R"(
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Get Request",
@@ -39,11 +42,10 @@ json VSS_JSON_SCHEMA_GET = json::parse(R"(
         }
     }
 }
-)");
+)";
 
 
-
-json VSS_JSON_SCHEMA = json::parse(R"(
+static const char* SCHEMA = (R"(
 {
     "definitions": {
         "action": {
@@ -124,5 +126,6 @@ json VSS_JSON_SCHEMA = json::parse(R"(
 }
 )");
 
+}  // namespace VSS_JSON
 
 #endif
