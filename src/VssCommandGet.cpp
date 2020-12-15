@@ -24,9 +24,7 @@
  * compatibility **/
 std::string VssCommandProcessor::processGet2(WsChannel &channel,
                                              jsoncons::json &request) {
-  auto use = channel;
-  VSSRequestValidator *val = new VSSRequestValidator();
-  val->validateGet(request);
+  requestValidator->validateGet(request);
 
   bool  gen1_compat_mode=false;
   string path = getPathFromRequest(request,&gen1_compat_mode);

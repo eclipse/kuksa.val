@@ -24,32 +24,10 @@
 #include <string>
 
 
-json local = json::parse(R"(
-{
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Get Request",
-    "description": "Get the value of one or more vehicle signals and data attributes",
-    "type": "object",
-    "required": ["action", "path", "requestId" ],
-    "properties": {
-        "action": {
-            "enum": [ "get" ],
-            "description": "The identifier for the get request"
-        },
-        "path": {
-             "$ref": "viss#/definitions/path"
-        },
-        "requestId": {
-            "$ref": "viss#/definitions/requestId"
-        }
-    }
-}
-)");
-
 
 json vss_resolver(const jsoncons::uri& uri) {
     if ( std::string(uri.path()) == std::string("/viss" )) {
-        return vss_schema;
+        return VSS_JSON_SCHEMA;
     }
     else {
         throw  jsonschema::schema_error("Could not open " + std::string(uri.base()) + " for schema loading\n");
@@ -57,10 +35,9 @@ json vss_resolver(const jsoncons::uri& uri) {
 }
 
 
-VSSRequestValidator::VSSRequestValidator() {
-    std::string s;
-    local.dump(s);
-    this->getSchema = jsoncons::jsonschema::make_schema(local, vss_resolver);
+VSSRequestValidator::VSSRequestValidator(std::shared_ptr<ILogger> loggerUtil) {
+    this->logger=loggerUtil;  
+    this->getSchema = jsoncons::jsonschema::make_schema(VSS_JSON_SCHEMA_GET, vss_resolver);
     this->getValidator =  new jsonschema::json_validator<json>(this->getSchema);
 }
 

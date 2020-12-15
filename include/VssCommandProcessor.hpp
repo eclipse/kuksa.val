@@ -20,6 +20,7 @@
 #include <jsoncons/json.hpp>
 
 #include "IVssCommandProcessor.hpp"
+#include "VSSRequestValidator.hpp"
 #include "WsChannel.hpp"
 
 class IVssDatabase;
@@ -37,6 +38,7 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::shared_ptr<ISubscriptionHandler> subHandler;
   std::shared_ptr<IAuthenticator> tokenValidator;
   std::shared_ptr<IAccessChecker> accessValidator;
+  VSSRequestValidator *requestValidator;
 #ifdef JSON_SIGNING_ON
   std::shared_ptr<SigningHandler> signer;
 #endif

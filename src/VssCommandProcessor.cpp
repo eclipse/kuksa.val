@@ -50,6 +50,7 @@ VssCommandProcessor::VssCommandProcessor(
   subHandler = subhandler;
   // TODO: add accessValidator as dependency
   accessValidator = std::make_shared<AccessChecker>(tokenValidator);
+  requestValidator = new VSSRequestValidator(logger);
 #ifdef JSON_SIGNING_ON
   // TODO: add signer as dependency
   signer = std::make_shared<SigningHandler>();
@@ -58,6 +59,7 @@ VssCommandProcessor::VssCommandProcessor(
 
 VssCommandProcessor::~VssCommandProcessor() {
   accessValidator.reset();
+  delete requestValidator;
 #ifdef JSON_SIGNING_ON
   signer.reset();
 #endif

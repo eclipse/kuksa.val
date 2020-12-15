@@ -22,18 +22,22 @@
 
 #include <jsoncons/json.hpp>
 #include <jsoncons_ext/jsonschema/jsonschema.hpp>
+
+#include "ILogger.hpp"
+
 using jsoncons::json;
 namespace jsonschema = jsoncons::jsonschema; 
 
 class VSSRequestValidator {
     public:
-        VSSRequestValidator(void);        
+        VSSRequestValidator(std::shared_ptr<ILogger> loggerUtil);        
         ~VSSRequestValidator();
 
         void validateGet(jsoncons::json &request);
     private:
         std::shared_ptr<jsonschema::json_schema<json>> getSchema;
         jsonschema::json_validator<json> *getValidator;
+        std::shared_ptr<ILogger> logger;
 };
 
 #endif

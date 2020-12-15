@@ -19,7 +19,7 @@
 
 using jsoncons::json;
 
-json get_schema = json::parse(R"(
+json VSS_JSON_SCHEMA_GET = json::parse(R"(
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Get Request",
@@ -43,7 +43,7 @@ json get_schema = json::parse(R"(
 
 
 
-json vss_schema = json::parse(R"(
+json VSS_JSON_SCHEMA = json::parse(R"(
 {
     "definitions": {
         "action": {
