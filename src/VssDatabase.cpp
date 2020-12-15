@@ -1009,7 +1009,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
 
 // Returns response JSON for get request, checking authorization.
 jsoncons::json VssDatabase::getSignal2(class WsChannel& channel, const string &path, bool gen1_compat_mode) {
-  bool isBranch = false;
+  //bool isBranch = false;
 
   rwMutex_.lock();
   list<string> jPaths = getJSONPaths(path);
@@ -1022,49 +1022,8 @@ jsoncons::json VssDatabase::getSignal2(class WsChannel& channel, const string &p
 
   logger_->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + to_string(pathsFound)
               + " signals found under path = \"" + path + "\"");
-  if (isBranch) {
-    jsoncons::json answer;
-    logger_->Log(LogLevel::VERBOSE, " VssDatabase::getSignal : \"" + path + "\" is a Branch.");
-
-    if (pathsFound == 0) {
-      throw noPathFoundonTree(path);
-    } else {
-      jsoncons::json value;
-
-      for (int i = 0; i < pathsFound; i++) {
-        string jPath = jPaths.back();
-        // check Read access here.
-        //TODO: we are converting to GEN1 path for access checking. 
-        //This is becasue currently tokens use "." notation, as in "Vehicle.Speed
-        //Once all methods are migrated, will change token format
-        if (!accessValidator_->checkReadAccess(channel, TEMPORARY_convert_gen2_to_gen1_path(getVSSPathFromJSONPath(jPath)))) {
-          // Allow the permitted signals to return. If exception is enable here,
-          // then say only "Signal.OBD.RPM" is permitted and get request is made
-          // for a branch like "Signal.OBD" then
-          // an error would be returned. By disabling the exception the value
-          // for Signal.OBD.RPM (only) will be returned.
-          /*stringstream msg;
-          msg << "No read access to  " << getReadablePath(jPath);
-          throw genException (msg.str());*/
-          jPaths.pop_back();
-          continue;
-        }
-        rwMutex_.lock();
-        jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
-        rwMutex_.unlock();
-        jPaths.pop_back();
-        jsoncons::json result = resArray[0];
-        string path = gen1_compat_mode? TEMPORARY_convert_gen2_to_gen1_path(getVSSPathFromJSONPath(jPath)) : getVSSPathFromJSONPath(jPath);
-        if (result.contains("value")) {
-          setJsonValue(logger_, value, result, path);
-        } else {
-          value[path] = "---";
-        }
-      }
-      answer["value"] = value;
-    }
-    return answer;
-  } else if (pathsFound == 1) {
+ 
+   if (pathsFound == 1) {
     string jPath = jPaths.back();
     // check Read access here.
     if (!accessValidator_->checkReadAccess(channel, TEMPORARY_convert_gen2_to_gen1_path((jPath)))) {
