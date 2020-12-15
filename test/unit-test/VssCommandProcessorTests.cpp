@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 
   MOCK_EXPECT(dbMock->getSignal2)
     .once()
-    .with(mock::any, path2)
+    .with(mock::any, path2,true)
     .returns(jsonPathNotFound);
 
   // run UUT
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
   MOCK_EXPECT(dbMock->getSignal2)
     .once()
-    .with(mock::any, path2)
+    .with(mock::any, path2, true)
     .throws(std::exception());
 
   // run UUT
@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(dbMock->getSignal2)
-    .with(mock::any, path2)
+    .with(mock::any, path2, true)
     .throws(noPermissionException("No read access to " + path));
 
   // run UUT
@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(dbMock->getSignal2)
-    .with(mock::any, path2)
+    .with(mock::any, path2, true)
     .returns(jsonSignalValue);
 
   // run UUT
@@ -265,7 +265,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(dbMock->getSignal2)
-    .with(mock::any, path2)
+    .with(mock::any, path2, true)
     .returns(jsonSignalValue);
 
   // run UUT

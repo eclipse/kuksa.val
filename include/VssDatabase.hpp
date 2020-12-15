@@ -62,7 +62,7 @@ class VssDatabase : public IVssDatabase {
   void setSignal(const std::string &path, jsoncons::json value);
   jsoncons::json getSignal(WsChannel& channel, const std::string &path) override;
 
-  jsoncons::json getSignal2(WsChannel& channel, const std::string &path) override; //Gen2 version
+  jsoncons::json getSignal2(WsChannel& channel, const std::string &path, bool gen1_compat) override; //Gen2 version
 
 
   std::list<std::string> getPathForGet(const std::string &path, bool& isBranch) override;

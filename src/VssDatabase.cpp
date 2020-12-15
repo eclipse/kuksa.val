@@ -191,7 +191,7 @@ jsoncons::json tryParse(jsoncons::json val) {
 
   std::string TEMPORARY_convert_gen2_to_gen1_path(std::string path) {
     std::string gen1path=path;
-    gen1path.replace(gen1path.begin(),gen1path.end(),'/','.');
+    std::replace(gen1path.begin(),gen1path.end(),'/','.');
     return gen1path;
   }
 
@@ -1007,7 +1007,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
 }
 
 // Returns response JSON for get request, checking authorization.
-jsoncons::json VssDatabase::getSignal2(class WsChannel& channel, const string &path) {
+jsoncons::json VssDatabase::getSignal2(class WsChannel& channel, const string &path, bool gen1_compat_mode) {
   bool isBranch = false;
 
   rwMutex_.lock();
@@ -1053,10 +1053,11 @@ jsoncons::json VssDatabase::getSignal2(class WsChannel& channel, const string &p
         rwMutex_.unlock();
         jPaths.pop_back();
         jsoncons::json result = resArray[0];
+        string path = gen1_compat_mode? TEMPORARY_convert_gen2_to_gen1_path(getVSSPathFromJSONPath(jPath)) : getVSSPathFromJSONPath(jPath);
         if (result.contains("value")) {
-          setJsonValue(logger_, value, result, getVSSPathFromJSONPath(jPath));
+          setJsonValue(logger_, value, result, path);
         } else {
-          value[getVSSPathFromJSONPath(jPath)] = "---";
+          value[path] = "---";
         }
       }
       answer["value"] = value;
@@ -1109,10 +1110,12 @@ jsoncons::json VssDatabase::getSignal2(class WsChannel& channel, const string &p
       rwMutex_.unlock();
       jPaths.pop_back();
       jsoncons::json result = resArray[0];
+      
+      string path = gen1_compat_mode? TEMPORARY_convert_gen2_to_gen1_path(getVSSPathFromJSONPath(jPath)) : getVSSPathFromJSONPath(jPath);
       if (result.contains("value")) {
-        setJsonValue(logger_, value, result, getVSSPathFromJSONPath(jPath));
+        setJsonValue(logger_, value, result, path);
       } else {
-        value[getReadablePath(jPath)] = "---";
+        value[getReadablePath(path)] = "---";
       }
       valueArray.insert(valueArray.array_range().end(), value);
     }

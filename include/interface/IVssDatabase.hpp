@@ -33,7 +33,7 @@ class IVssDatabase {
                            const std::string &path,
                            jsoncons::json value) = 0;
     virtual jsoncons::json getSignal(WsChannel& channel, const std::string &path) = 0;
-    virtual jsoncons::json getSignal2(WsChannel& channel, const std::string &path) = 0;
+    virtual jsoncons::json getSignal2(WsChannel& channel, const std::string &path, bool gen1_compat) = 0;
 
 
     // TODO: temporary added while components are refactored

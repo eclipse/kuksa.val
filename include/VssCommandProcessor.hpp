@@ -54,7 +54,7 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::string processAuthorizeWithPermManager(WsChannel &channel, const std::string & request_id,
                                  const std::string & client, const std::string& clientSecret);
 
-  std::string getPathFromRequest(const jsoncons::json &req);
+  std::string getPathFromRequest(const jsoncons::json &req, bool *gen1_compat);
   std::string processGet2(WsChannel &channel, jsoncons::json &request);
 
  public:

@@ -28,7 +28,8 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   VSSRequestValidator *val = new VSSRequestValidator();
   val->validateGet(request);
 
-  string path = getPathFromRequest(request);
+  bool  gen1_compat_mode=false;
+  string path = getPathFromRequest(request,&gen1_compat_mode);
   string requestId = request["requestId"].as_string();
   logger->Log(LogLevel::VERBOSE,
               "Get request with id " + requestId + " for path: " + path);
@@ -36,7 +37,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   //-------------------------------------
   jsoncons::json res;
   try {
-    res = database->getSignal2(channel, path);
+    res = database->getSignal2(channel, path, gen1_compat_mode);
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
     return JsonResponses::noAccess(requestId, "get", nopermission.what());
