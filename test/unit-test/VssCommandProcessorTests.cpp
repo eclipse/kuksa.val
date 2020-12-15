@@ -71,6 +71,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  std::string path2{"Signal/OBD/DTC1"};
 
   // setup
 
@@ -88,9 +89,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
+  MOCK_EXPECT(dbMock->getSignal2)
     .once()
-    .with(mock::any, path)
+    .with(mock::any, path2)
     .returns(jsonPathNotFound);
 
   // run UUT
@@ -111,6 +112,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  std::string path2{"Signal/OBD/DTC1"};
+
 
   // setup
 
@@ -128,9 +131,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
+  MOCK_EXPECT(dbMock->getSignal2)
     .once()
-    .with(mock::any, path)
+    .with(mock::any, path2)
     .throws(std::exception());
 
   // run UUT
@@ -151,6 +154,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  std::string path2{"Signal/OBD/DTC1"};
 
   // setup
 
@@ -168,8 +172,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
-    .with(mock::any, path)
+  MOCK_EXPECT(dbMock->getSignal2)
+    .with(mock::any, path2)
     .throws(noPermissionException("No read access to " + path));
 
   // run UUT
@@ -190,6 +194,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  std::string path2{"Signal/OBD/DTC1"}; //Internal code working with Gen2 paths
 
   // setup
 
@@ -210,8 +215,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
-    .with(mock::any, path)
+  MOCK_EXPECT(dbMock->getSignal2)
+    .with(mock::any, path2)
     .returns(jsonSignalValue);
 
   // run UUT
@@ -236,6 +241,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  std::string path2{"Signal/OBD/DTC1"};
+
 
   // setup
 
@@ -257,8 +264,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
-    .with(mock::any, path)
+  MOCK_EXPECT(dbMock->getSignal2)
+    .with(mock::any, path2)
     .returns(jsonSignalValue);
 
   // run UUT
