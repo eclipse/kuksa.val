@@ -1016,7 +1016,7 @@ jsoncons::json VssDatabase::getSignal2(class WsChannel& channel, const VSSPath& 
     jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
     rwMutex_.unlock();
     jsoncons::json answer;
-    answer["path"] = getReadablePath(jPath);
+    answer["path"] = gen1_compat_mode? path.getVSSGen1Path() : path.getVSSPath();
     jsoncons::json result = resArray[0];
     if (result.contains("value")) {
       setJsonValue(logger_, answer, result, "value");
