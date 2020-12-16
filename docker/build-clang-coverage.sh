@@ -16,8 +16,7 @@ make -j8
 mkdir -p coverage-report
 
 # goto and run unit-tests
-cd unit-test
-./w3c-unit-test || true
+ctest
 
 # convert raw coverage data to indexed
 llvm-profdata merge -sparse default.profraw -o default.profdata

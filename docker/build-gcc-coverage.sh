@@ -4,8 +4,8 @@
 # Build and generate coverage based on unit-tests by default
 
 # Make or goto out-of-source build Directory
-mkdir -p build
-cd build
+mkdir -p build_test
+cd build_test
 
 # Configure build
 CC=gcc CXX=g++ cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
@@ -14,10 +14,8 @@ CC=gcc CXX=g++ cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
 make -j8
 
 # goto and run unit-tests
-cd unit-test
-./w3c-unit-test
+ctest
 
-cd ..
 mkdir -p coverage-report
 
 # generate coverage information with gcovr

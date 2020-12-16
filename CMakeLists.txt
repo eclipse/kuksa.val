@@ -95,11 +95,6 @@ target_include_directories(turtle SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3
 ###
 # Add project subdirectories to build
 
-set(BUILD_TEST_CLIENT ON CACHE BOOL "Build test client")
-if(BUILD_TEST_CLIENT)
-    include(coverage.cmake)
-	setup_coverage()
-endif(BUILD_TEST_CLIENT)
 add_subdirectory(src)
 enable_testing()
 include(CTest)
