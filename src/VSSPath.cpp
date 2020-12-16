@@ -24,13 +24,13 @@
 VSSPath::VSSPath(std::string vss, std::string vssgen1, std::string jsonpath, bool gen1origin)
     : vsspath(vss), vssgen1path(vssgen1), jsonpath(jsonpath), gen1(gen1origin) {}
 
-std::string VSSPath::getVSSPath() { return this->vsspath; }
+std::string VSSPath::getVSSPath() const { return this->vsspath; }
 
-std::string VSSPath::getVSSGen1Path() { return this->vssgen1path; }
+std::string VSSPath::getVSSGen1Path() const  { return this->vssgen1path; }
 
-std::string VSSPath::getJSONPath() { return this->jsonpath; }
+std::string VSSPath::getJSONPath() const { return this->jsonpath; }
 
-bool VSSPath::isGen1Origin() { return this->gen1;}
+bool VSSPath::isGen1Origin() const { return this->gen1;}
 
 VSSPath VSSPath::fromVSSAuto(std::string input) {
   bool gen1=false;
