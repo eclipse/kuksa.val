@@ -23,7 +23,6 @@ set(TESTCLIENT_EXE_NAME "testclient" )
 ###
 # Setup command-line options
 
-set(BUILD_TEST_CLIENT ON CACHE BOOL "Build test client")
 
 ###
 # Setup targets
@@ -41,4 +40,5 @@ if(BUILD_TEST_CLIENT)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Client.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Client.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/CA.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+
 endif(BUILD_TEST_CLIENT)

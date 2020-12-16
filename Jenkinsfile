@@ -42,11 +42,13 @@ node('docker') {
         }
     }
     stage('Test') {
-        sh "docker run --rm -w /kuksa.val/build/test/unit-test -v ${env.WORKSPACE}/artifacts:/out kuksa-val-dev-ubuntu20.04:${versiontag}  ./kuksaval-unit-test  --log_format=XML --log_sink=/out/results.xml --log_level=all --report_level=no --result_code=no"
+        sh "docker run --rm -v ${env.WORKSPACE}/artifacts:/out kuksa-val-dev-ubuntu20.04:${versiontag}  ./run_test.sh build /out"
         step([$class: 'XUnitPublisher',
                 thresholds: [ skipped(failureThreshold: '0'), failed(failureThreshold: '0') ],
-                tools: [ BoostTest(pattern: 'artifacts/*.xml') ]]
+                tools: [ BoostTest(pattern: 'artifacts/results.xml') ]]
         )
+        cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'artifacts/coverage.xml', conditionalCoverageTargets: '70, 0, 0', enableNewApi: true, failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'artifacts/coverage', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: 'coverage'])
     }
     stage('Compress') {
         sh 'ls artifacts'
