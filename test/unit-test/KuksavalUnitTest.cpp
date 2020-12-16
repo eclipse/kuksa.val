@@ -358,7 +358,7 @@ BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_one_invalid_value)
 
     test_value_array[0] = test_value1;
     test_value_array[1] = test_value2;
-    MOCK_EXPECT(accesshandler->checkReadAccess).returns(true);
+    MOCK_EXPECT(accesshandler->checkReadDeprecated).returns(true);
 
     
     BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
@@ -382,7 +382,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     string test_path_string = "Vehicle.Cabin.Infotainment.Media.Played.URI";
 
     MOCK_EXPECT(accesshandler->checkWriteAccess).returns(true);
-    MOCK_EXPECT(accesshandler->checkReadAccess).returns(true);
+    MOCK_EXPECT(accesshandler->checkReadNew).returns(true);
     MOCK_EXPECT(mqttClient->sendPathValue).returns(true);
     json result;
     WsChannel channel;

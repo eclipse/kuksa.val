@@ -23,6 +23,8 @@
 #include "IAuthenticatorMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
 
+#include "VSSPath.hpp"
+
 #include "exception.hpp"
 #include "JsonResponses.hpp"
 #include "VssCommandProcessor.hpp"
@@ -71,8 +73,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
-  std::string path2{"Signal/OBD/DTC1"};
-
+  const VSSPath path2 = VSSPath::fromVSSGen1(path);
+  
   // setup
 
   channel.setAuthorized(false);
@@ -82,7 +84,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::pathNotFound(requestId, "get", path2, jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "get", path2.getVSSPath(), jsonPathNotFound);
 
   // expectations
 
@@ -91,7 +93,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 
   MOCK_EXPECT(dbMock->getSignal2)
     .once()
-    .with(mock::any, path2,true)
+    .with(mock::any, mock::equal(path2) ,true)
     .returns(jsonPathNotFound);
 
   // run UUT
@@ -103,6 +105,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   BOOST_TEST(res == jsonPathNotFound);
 }
 
+
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall_ReturnError)
 {
   WsChannel channel;
@@ -112,7 +115,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
-  std::string path2{"Signal/OBD/DTC1"};
+  VSSPath path2 = VSSPath::fromVSSGen1(path);
 
 
   // setup
@@ -154,7 +157,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
-  std::string path2{"Signal/OBD/DTC1"};
+  VSSPath path2 = VSSPath::fromVSSGen1(path);
 
   // setup
 
@@ -194,7 +197,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
-  std::string path2{"Signal/OBD/DTC1"}; //Internal code working with Gen2 paths
+  VSSPath path2 = VSSPath::fromVSSGen1(path);
 
   // setup
 
@@ -241,7 +244,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
-  std::string path2{"Signal/OBD/DTC1"};
+  VSSPath path2 = VSSPath::fromVSSGen1(path);
 
 
   // setup
@@ -257,7 +260,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["timestamp"] = 11111111;
 
-  JsonResponses::pathNotFound(requestId, "get", path2, jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "get", path2.getVSSPath(), jsonPathNotFound);
 
   // expectations
 

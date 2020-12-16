@@ -15,6 +15,7 @@
 #include "JsonResponses.hpp"
 #include "VSSRequestValidator.hpp"
 #include "VssCommandProcessor.hpp"
+#include "VSSPath.hpp"
 #include "exception.hpp"
 
 #include "ILogger.hpp"
@@ -26,11 +27,12 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
                                              jsoncons::json &request) {
   requestValidator->validateGet(request);
 
-  bool  gen1_compat_mode=false;
-  string path = getPathFromRequest(request,&gen1_compat_mode);
+  VSSPath path=VSSPath::fromVSSAuto(request["path"].as_string());
+  bool  gen1_compat_mode=path.isGen1Origin();
+
   string requestId = request["requestId"].as_string();
   logger->Log(LogLevel::VERBOSE,
-              "Get request with id " + requestId + " for path: " + path);
+              "Get request with id " + requestId + " for path: " + path.getVSSPath());
 
   //-------------------------------------
   jsoncons::json res;
@@ -46,7 +48,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   }
 
   if (!res.contains("value")) {
-    return JsonResponses::pathNotFound(requestId, "get", path);
+    return JsonResponses::pathNotFound(requestId, "get", path.getVSSPath());
   } else {
     res["action"] = "get";
     res["requestId"] = requestId;

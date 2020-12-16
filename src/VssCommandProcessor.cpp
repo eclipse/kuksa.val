@@ -517,7 +517,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
 }
 
 
-std::string VssCommandProcessor::getPathFromRequest(const jsoncons::json &req, bool *gen1_compat_mode) {
+/*std::string VssCommandProcessor::getPathFromRequest(const jsoncons::json &req, bool *gen1_compat_mode) {
   string path=req["path"].as_string();
   if (path.find(".") == std::string::npos ) { //If no "." in we assume a GEN2 "/" seperated path
     *gen1_compat_mode=false;
@@ -527,4 +527,4 @@ std::string VssCommandProcessor::getPathFromRequest(const jsoncons::json &req, b
   std::replace(path.begin(),path.end(),'.','/');
   *gen1_compat_mode=true;
   return path;
-}
+}*/
