@@ -46,6 +46,7 @@ set(LIB_SOURCES
    SigningHandler.cpp
    SubscriptionHandler.cpp
    VSSRequestValidator.cpp
+   VSSPath.cpp
    VssCommandProcessor.cpp
    VssCommandGet.cpp
    VssDatabase.cpp

@@ -35,6 +35,7 @@ if(BUILD_UNIT_TEST)
     SubscriptionHandlerTests.cpp
     VssCommandProcessorTests.cpp
     VssDatabaseTests.cpp
+    VSSPathTests.cpp
     KuksavalUnitTest.cpp
   )
 
