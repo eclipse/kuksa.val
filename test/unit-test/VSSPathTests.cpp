@@ -24,6 +24,7 @@ BOOST_AUTO_TEST_CASE(From_Gen1_Creation_Simple) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children']['Speed']");
+    BOOST_TEST(p.isGen1Origin() == true);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen1_Creation_Wildcard_End) {
@@ -31,6 +32,7 @@ BOOST_AUTO_TEST_CASE(From_Gen1_Creation_Wildcard_End) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]");
+    BOOST_TEST(p.isGen1Origin() == true);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen1_Creation_Wildcard_Middle) {
@@ -38,6 +40,7 @@ BOOST_AUTO_TEST_CASE(From_Gen1_Creation_Wildcard_Middle) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]['children']['Speed']");
+    BOOST_TEST(p.isGen1Origin() == true);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen1_Empty) {
@@ -45,6 +48,7 @@ BOOST_AUTO_TEST_CASE(From_Gen1_Empty) {
     BOOST_TEST(p.getVSSGen1Path() == "");
     BOOST_TEST(p.getVSSPath() == "");
     BOOST_TEST(p.getJSONPath() == "$['']");
+    BOOST_TEST(p.isGen1Origin() == true);
 }
 
 
@@ -53,6 +57,7 @@ BOOST_AUTO_TEST_CASE(From_Gen2_Creation_Simple) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children']['Speed']");
+    BOOST_TEST(p.isGen1Origin() == false);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen2_Creation_Wildcard_End) {
@@ -67,6 +72,7 @@ BOOST_AUTO_TEST_CASE(From_Gen2_Creation_Wildcard_Middle) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]['children']['Speed']");
+    BOOST_TEST(p.isGen1Origin() == false);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen2_Empty) {
@@ -74,6 +80,7 @@ BOOST_AUTO_TEST_CASE(From_Gen2_Empty) {
     BOOST_TEST(p.getVSSGen1Path() == "");
     BOOST_TEST(p.getVSSPath() == "");
     BOOST_TEST(p.getJSONPath() == "$['']");
+    BOOST_TEST(p.isGen1Origin() == false);
 }
 
 
@@ -82,6 +89,7 @@ BOOST_AUTO_TEST_CASE(From_Json_Creation_Simple) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children']['Speed']");
+    BOOST_TEST(p.isGen1Origin() == false);
 }
 
 BOOST_AUTO_TEST_CASE(From_Json_Creation_Wildcard_End) {
@@ -89,6 +97,7 @@ BOOST_AUTO_TEST_CASE(From_Json_Creation_Wildcard_End) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]");
+    BOOST_TEST(p.isGen1Origin() == false);
 }
 
 BOOST_AUTO_TEST_CASE(From_Json_Creation_Wildcard_Middle) {
@@ -96,6 +105,7 @@ BOOST_AUTO_TEST_CASE(From_Json_Creation_Wildcard_Middle) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]['children']['Speed']");
+    BOOST_TEST(p.isGen1Origin() == false);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen1Auto_Creation_Simple) {
@@ -103,6 +113,7 @@ BOOST_AUTO_TEST_CASE(From_Gen1Auto_Creation_Simple) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children']['Speed']");
+    BOOST_TEST(p.isGen1Origin() == true);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen1Auto_Creation_Wildcard_End) {
@@ -110,6 +121,7 @@ BOOST_AUTO_TEST_CASE(From_Gen1Auto_Creation_Wildcard_End) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]");
+    BOOST_TEST(p.isGen1Origin() == true);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen1Auto_Creation_Wildcard_Middle) {
@@ -117,6 +129,7 @@ BOOST_AUTO_TEST_CASE(From_Gen1Auto_Creation_Wildcard_Middle) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]['children']['Speed']");
+    BOOST_TEST(p.isGen1Origin() == true);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen2Auto_Creation_Simple) {
@@ -124,6 +137,7 @@ BOOST_AUTO_TEST_CASE(From_Gen2Auto_Creation_Simple) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children']['Speed']");
+    BOOST_TEST(p.isGen1Origin() == false);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen2Auto_Creation_Wildcard_End) {
@@ -131,6 +145,7 @@ BOOST_AUTO_TEST_CASE(From_Gen2Auto_Creation_Wildcard_End) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]");
+    BOOST_TEST(p.isGen1Origin() == false);
 }
 
 BOOST_AUTO_TEST_CASE(From_Gen2Auto_Creation_Wildcard_Middle) {
@@ -138,6 +153,7 @@ BOOST_AUTO_TEST_CASE(From_Gen2Auto_Creation_Wildcard_Middle) {
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]['children']['Speed']");
+    BOOST_TEST(p.isGen1Origin() == false);
 }
 
 BOOST_AUTO_TEST_CASE(From_Auto_Empty) {
@@ -145,8 +161,8 @@ BOOST_AUTO_TEST_CASE(From_Auto_Empty) {
     BOOST_TEST(p.getVSSGen1Path() == "");
     BOOST_TEST(p.getVSSPath() == "");
     BOOST_TEST(p.getJSONPath() == "$['']");
+    BOOST_TEST(p.isGen1Origin() == false);
 }
-
 
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -21,8 +21,8 @@
 
 #include <boost/algorithm/string.hpp>
 
-VSSPath::VSSPath(std::string vss, std::string vssgen1, std::string jsonpath)
-    : vsspath(vss), vssgen1path(vssgen1), jsonpath(jsonpath) {}
+VSSPath::VSSPath(std::string vss, std::string vssgen1, std::string jsonpath, bool gen1origin)
+    : vsspath(vss), vssgen1path(vssgen1), jsonpath(jsonpath), gen1(gen1origin) {}
 
 std::string VSSPath::getVSSPath() { return this->vsspath; }
 
@@ -30,18 +30,22 @@ std::string VSSPath::getVSSGen1Path() { return this->vssgen1path; }
 
 std::string VSSPath::getJSONPath() { return this->jsonpath; }
 
+bool VSSPath::isGen1Origin() { return this->gen1;}
+
 VSSPath VSSPath::fromVSSAuto(std::string input) {
+  bool gen1=false;
   std::string vss, vssgen1, jsonpath;
   if (input.find(".") == std::string::npos) {  // If no "." in we assume a GEN2 "/" seperated path
     vss = input;
     vssgen1 = VSSPath::gen2togen1(vss);
   } else {
     vssgen1 = input;
+    gen1=true;
     vss = VSSPath::gen1togen2(vssgen1);
   }
 
   jsonpath = VSSPath::gen2tojson(vss);
-  return VSSPath(vss, vssgen1, jsonpath);
+  return VSSPath(vss, vssgen1, jsonpath,gen1);
 }
 
 std::string VSSPath::gen1togen2(std::string input) {
@@ -89,15 +93,15 @@ std::string VSSPath::jsontogen2(std::string input) {
 }
 
 VSSPath VSSPath::fromVSS(std::string input) {
-  return VSSPath(input, gen2togen1(input), gen2tojson(input));
+  return VSSPath(input, gen2togen1(input), gen2tojson(input),false);
 }
 
 VSSPath VSSPath::fromVSSGen1(std::string input) {
   std::string vss = gen1togen2(input);
-  return VSSPath(vss, input, gen2tojson(vss));
+  return VSSPath(vss, input, gen2tojson(vss),true);
 }
 
 VSSPath VSSPath::fromJSON(std::string input) {
   std::string vss = VSSPath::jsontogen2(input);
-  return VSSPath(vss, VSSPath::gen2togen1(vss), input);
+  return VSSPath(vss, VSSPath::gen2togen1(vss), input,false);
 }

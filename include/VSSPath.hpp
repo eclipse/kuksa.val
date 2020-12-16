@@ -29,6 +29,7 @@ class VSSPath {
         std::string getVSSPath();
         std::string getVSSGen1Path();
         std::string getJSONPath();
+        bool isGen1Origin();
         static VSSPath fromVSS(std::string vss); //Expect Gen2 path
         static VSSPath fromVSSGen1(std::string vssgen1); //Expect Gen1 path
         static VSSPath fromJSON(std::string json); //Expect json path
@@ -38,6 +39,7 @@ class VSSPath {
         std::string vsspath;
         std::string vssgen1path;
         std::string jsonpath;
+        bool gen1;
 
         static std::string gen1togen2(std::string input);
         static std::string gen2togen1(std::string input);
@@ -45,7 +47,7 @@ class VSSPath {
         static std::string jsontogen2(std::string input);
         
 
-        VSSPath(std::string vss, std::string vssgen1, std::string jsonpath);
+        VSSPath(std::string vss, std::string vssgen1, std::string jsonpath, bool gen1origin);
 };
 
 #endif
