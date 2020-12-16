@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2019 Robert Bosch GmbH.
+ * Copyright (c) 2019-2020 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -8,11 +8,11 @@
  * https://www.eclipse.org/org/documents/epl-2.0/index.php
  *
  *  Contributors:
- *      Robert Bosch GmbH - initial API and functionality
-	Expleo Germany - further tests and assertion checks
+ *    Robert Bosch GmbH - initial API and functionality
+ *	   Expleo Germany - further tests and assertion checks
  * *****************************************************************************
  */
-#define BOOST_TEST_MODULE w3c-unit-test
+#define BOOST_TEST_MODULE kuksaval-unit-test
 #include <boost/test/included/unit_test.hpp>
 
 #include <string>
@@ -76,9 +76,9 @@ std::shared_ptr<IClientMock> mqttClient;
 std::shared_ptr<VssCommandProcessor> commandProc_auth;
 
 
-w3cunittest unittestObj;
+kuksavalunittest unittestObj;
 
-w3cunittest::w3cunittest() {
+kuksavalunittest::kuksavalunittest() {
   std::string docRoot{"/vss/api/v1/"};
 
   logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::NONE));
@@ -105,14 +105,14 @@ w3cunittest::w3cunittest() {
 
 }
 
-w3cunittest::~w3cunittest() {
+kuksavalunittest::~kuksavalunittest() {
 }
 
-list<string> w3cunittest::test_wrap_getPathForGet(string path , bool &isBranch) {
+list<string> kuksavalunittest::test_wrap_getPathForGet(string path , bool &isBranch) {
     return database->getPathForGet(path , isBranch);
 }
 
-json w3cunittest::test_wrap_getPathForSet(string path,  json value) {
+json kuksavalunittest::test_wrap_getPathForSet(string path,  json value) {
     return database->getPathForSet(path , value);
 }
 

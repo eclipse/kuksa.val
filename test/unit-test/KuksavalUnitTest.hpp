@@ -31,12 +31,12 @@
 // using namespace jsoncons::jsonpath;
 // using jsoncons::json;
 
-class w3cunittest {
+class kuksavalunittest {
 
  public:
 
-    w3cunittest();
-    ~w3cunittest();
+    kuksavalunittest();
+    ~kuksavalunittest();
     std::list<std::string> test_wrap_getPathForGet(std::string path , bool &isBranch);
     jsoncons::json test_wrap_getPathForSet(std::string path,  jsoncons::json value);
 };
