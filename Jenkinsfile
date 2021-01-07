@@ -13,7 +13,8 @@ node('docker') {
     def versiontag="unknown"
     stage('Prepare') {
         sh 'git submodule update --init'
-        sh 'mkdir -p artifacts && sudo rm -rf ./artifacts/*'
+        sh 'git clean -fdx'
+        sh 'mkdir -p artifacts'
         versiontag=sh(returnStdout: true, script: "git tag --contains | head -n 1").trim()
         if (versiontag == "") { //not tagged, using commit
             versiontag = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
