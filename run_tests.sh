@@ -1,16 +1,35 @@
-#!/bin/sh
+#!/bin/bash
 basepath=`pwd`
 
-if [ $# -lt 1 ]
+scriptName=${0}
+function printUsage {
+  echo "Usage:"
+  echo "    ${scriptName} <builddir> [artifactdir]"
+  exit 1
+}
+
+while getopts ":b:a:h" opt; do
+  case ${opt} in
+    b ) builddir=$OPTARG
+      ;;
+    a ) artifactdir=$OPTARG
+      ;;
+    h|\? ) printUsage 
+      ;;
+  esac
+done
+
+if [ -z "${builddir}" ]
+then
+    builddir=build
+    echo "Use default build director ${builddir}"
+fi
+if [ ! -d "${builddir}" ] 
 then
   echo "ERROR: Please name the build directory as the first parameter."
-  echo "Usage:"
-  echo "    ./run_test.sh <builddir> [artifactdir]"
-  exit 1
+  printUsage
 fi
-
-builddir=${1}
-artifactdir=${2}
+echo "Go to build directory ${builddir}"
 cd ${builddir}
 
 cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
