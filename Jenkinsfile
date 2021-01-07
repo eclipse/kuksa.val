@@ -12,6 +12,7 @@ node('docker') {
     checkout scm
     def versiontag="unknown"
     stage('Prepare') {
+        sh 'ls -al artifacts'
         sh 'git submodule update --init'
         sh 'git clean -fdx || true'
         sh 'mkdir -p artifacts'
