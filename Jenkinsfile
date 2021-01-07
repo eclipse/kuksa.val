@@ -49,7 +49,6 @@ node('docker') {
                 tools: [ BoostTest(pattern: 'artifacts/results.xml') ]]
         )
         cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'artifacts/coverage.xml', conditionalCoverageTargets: '70, 0, 0', enableNewApi: true, failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
-        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'artifacts/coverage', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: 'test Coverage'])
     }
     stage('Compress') {
         sh 'ls -al artifacts'
