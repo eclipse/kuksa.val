@@ -34,7 +34,8 @@ cd ${builddir}
 
 cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
 
-rm -rf coverage
+rm -rf test/unit-test/results.xml
+rm -rf coverage.xml
 
 ctest 
 gcovr -r ..  --branches -e ../test/ -e ../3rd-party-libs/ --xml -o coverage.xml
