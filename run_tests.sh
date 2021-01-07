@@ -50,6 +50,7 @@ gcovr -r ..  --branches -e ../test/ -e ../3rd-party-libs/ --xml -o coverage.xml
 
 if [ -d "${artifactdir}" ] 
 then
+echo "archive artifacts under ${artifactdir}"
 cd ${basepath}
 cp ${builddir}/test/unit-test/results.xml ${artifactdir}/
 cp ${builddir}/coverage.xml ${artifactdir}/

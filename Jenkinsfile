@@ -13,7 +13,7 @@ node('docker') {
     def versiontag="unknown"
     stage('Prepare') {
         sh 'git submodule update --init'
-        sh 'mkdir -p artifacts && rm -rf ./artifacts/*'
+        sh 'mkdir -p artifacts && sudo rm -rf ./artifacts/*'
         versiontag=sh(returnStdout: true, script: "git tag --contains | head -n 1").trim()
         if (versiontag == "") { //not tagged, using commit
             versiontag = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
@@ -42,7 +42,7 @@ node('docker') {
         }
     }
     stage('Test') {
-        sh "docker run --rm  -w /kuksa.val -v ${env.WORKSPACE}/artifacts:/out kuksa-val-dev-ubuntu20.04:${versiontag}  ./run_tests.sh build /out"
+        sh "docker run --rm  -w /kuksa.val -v ${env.WORKSPACE}/artifacts:/out kuksa-val-dev-ubuntu20.04:${versiontag}  ./run_tests.sh -a /out"
         step([$class: 'XUnitPublisher',
                 thresholds: [ skipped(failureThreshold: '0'), failed(failureThreshold: '0') ],
                 tools: [ BoostTest(pattern: 'artifacts/results.xml') ]]
