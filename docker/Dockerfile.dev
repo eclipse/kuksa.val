@@ -30,7 +30,6 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
                         libmosquitto-dev
 RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install  \
                         # workaround, because a lot of packages above does not exists any more
-                        lcov \
                         gcovr
 
 ADD . /kuksa.val
