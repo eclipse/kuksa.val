@@ -42,7 +42,7 @@ node('docker') {
         }
     }
     stage('Test') {
-        sh "docker run --rm -v ${env.WORKSPACE}/artifacts:/out kuksa-val-dev-ubuntu20.04:${versiontag}  ./run_test.sh build /out"
+        sh "docker run --rm -v ${env.WORKSPACE}/artifacts:/out kuksa-val-dev-ubuntu20.04:${versiontag}  ./run_tests.sh build /out"
         step([$class: 'XUnitPublisher',
                 thresholds: [ skipped(failureThreshold: '0'), failed(failureThreshold: '0') ],
                 tools: [ BoostTest(pattern: 'artifacts/results.xml') ]]
