@@ -52,7 +52,7 @@ node('docker') {
         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'artifacts/coverage', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: 'test Coverage'])
     }
     stage('Compress') {
-        sh 'ls artifacts'
+        sh 'ls -al artifacts'
         sh 'cd artifacts && xz -T 0 ./*.tar'
     }
     stage ('Archive') {
