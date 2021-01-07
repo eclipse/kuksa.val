@@ -27,8 +27,10 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
                         libboost-system1.67-dev\
                         libboost-thread1.67-dev\
                         libboost-test1.67-dev\
-                        libmosquitto-dev\
-                        lcov \
+                        libmosquitto-dev
+RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install  \
+                        lcov 
+RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install  \
                         gcovr
 
 ADD . /kuksa.val
