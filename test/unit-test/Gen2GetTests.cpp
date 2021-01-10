@@ -66,8 +66,6 @@ struct TestSuiteFixture {
     db = std::make_shared<VssDatabase>(logMock, subHandlerMock, accCheckMock);
     db->initJsonTree(vss_file);
 
-    //    processor = std::make_unique<VssCommandProcessor>(logMock, dbMock,
-    //    authMock, subHandlerMock);
     processor = std::make_unique<VssCommandProcessor>(logMock, db, authMock,
                                                       subHandlerMock);
 
@@ -86,10 +84,6 @@ struct TestSuiteFixture {
 // handling
 BOOST_FIXTURE_TEST_SUITE(Gen2GetTests, TestSuiteFixture);
 
-// getBRanch
-// getWildcard End
-// getWildcardMiddle
-// getNonExistingWildcardMiddle
 
 BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   WsChannel channel;
@@ -135,7 +129,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
 
   BOOST_TEST(res == expectedJson);
 }
-
 
 
 BOOST_AUTO_TEST_CASE(Gen2_Get_NonExistingPath) {
@@ -251,7 +244,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
-  MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_path).returns(true);
+  //it needs to check all elements in subtree. Expect one example explicitely, and allow for others
+  auto vss_access_path = VSSPath::fromVSS("Vehicle/VehicleIdentification/Brand");
+  MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_access_path).returns(true);
   MOCK_EXPECT(accCheckMock->checkReadNew).with(mock::any,mock::any).returns(true);
 
 
@@ -268,5 +263,141 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
 
   BOOST_TEST(res == expectedJson);
 }
+
+
+BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
+  WsChannel channel;
+
+  jsoncons::json jsonGetRequestForSignal;
+  jsoncons::json jsonPathNotFound;
+
+  string requestId = "1";
+  std::string path{"Vehicle/VehicleIdentification/*"};
+  const VSSPath vss_path = VSSPath::fromVSS(path);
+
+  // setup
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsonGetRequestForSignal["action"] = "get";
+  jsonGetRequestForSignal["path"] = path;
+  jsonGetRequestForSignal["requestId"] = requestId;
+
+  std::string expectedJsonString{R"(
+     {
+    "action": "get", 
+    "requestId": "1", 
+    "value": [
+        {
+            "Vehicle/VehicleIdentification/vehicleinteriorType": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/vehicleinteriorColor": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/vehicleSpecialUsage": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/vehicleSeatingCapacity": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/vehicleModelDate": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/vehicleConfiguration": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/purchaseDate": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/productionDate": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/meetsEmissionStandard": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/knownVehicleDamages": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/dateVehicleFirstRegistered": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/bodyType": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/Year": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/WMI": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/VIN": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/Model": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/Brand": "---"
+        }, 
+        {
+            "Vehicle/VehicleIdentification/ACRISSCode": "---"
+        }
+    ]
+}
+      )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  //it needs to check all elements in subtree. Expect one example explicitely, and allow for others
+  auto vss_access_path = VSSPath::fromVSS("Vehicle/VehicleIdentification/Brand");
+  MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_access_path).returns(true);
+  MOCK_EXPECT(accCheckMock->checkReadNew).with(mock::any,mock::any).returns(true);
+
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // Does result have a timestamp?
+  BOOST_TEST(res["timestamp"].as<int>() > 0);
+
+  // Remove timestamp for comparision purposes
+  expectedJson["timestamp"] = res["timestamp"].as<int>();
+
+  BOOST_TEST(res == expectedJson);
+}
+
+
+BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
+  WsChannel channel;
+
+  jsoncons::json jsonGetRequestForSignal;
+  jsoncons::json jsonPathNotFound;
+
+  string requestId = "1";
+  std::string path{"Vehicle/*/FluxCapacitorCharge"};
+  const VSSPath vss_path = VSSPath::fromVSS(path);
+
+  // setup
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsonGetRequestForSignal["action"] = "get";
+  jsonGetRequestForSignal["path"] = path;
+  jsonGetRequestForSignal["requestId"] = requestId;
+
+  JsonResponses::pathNotFound(requestId, "get", path, jsonPathNotFound);
+
+  
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+  BOOST_TEST(res == jsonPathNotFound);
+}
+
+
+
 
 }
