@@ -8,8 +8,7 @@
 
 FROM ubuntu:20.04 as build
 
-RUN apt-get  update 
-RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
+RUN apt-get  update && DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
                         libglib2.0-dev \
                         pkg-config \
                         build-essential \
