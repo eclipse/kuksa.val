@@ -27,9 +27,7 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
                         libboost-system1.67-dev\
                         libboost-thread1.67-dev\
                         libboost-test1.67-dev\
-                        libmosquitto-dev
-RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install  \
-                        # workaround, because a lot of packages above does not exists any more
+                        libmosquitto-dev \
                         gcovr
 
 ADD . /kuksa.val
