@@ -43,7 +43,7 @@ class WebSockHttpFlexServer : public IServer {
     std::string docRoot_;
 
     const uint8_t NumOfThreads = 1;
-    boost::asio::io_context ioc;
+    boost::asio::io_context ioc_;
 
     /// Default name for server certificate file
     static const std::string serverCertFilename_;

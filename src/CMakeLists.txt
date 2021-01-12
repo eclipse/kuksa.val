@@ -68,7 +68,7 @@ target_include_directories(${SERVER_OBJ_LIB_NAME}
 )
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=maybe-uninitialized -Wno-error=parentheses)
+  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=unused-parameter -Wno-error=parentheses)
 else(CMAKE_COMPILER_IS_GNUCXX)
   target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=parentheses)
 endif(CMAKE_COMPILER_IS_GNUCXX)

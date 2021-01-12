@@ -19,7 +19,11 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/beast/core/buffers_to_string.hpp>
+#include <boost/asio/ssl/stream.hpp>
 #include <boost/make_unique.hpp>
+#include <boost/logic/tribool.hpp>
+#include <boost/beast/core/detect_ssl.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
@@ -34,7 +38,7 @@
 #include <stdexcept>
 #include <list>
 
-#include "detect_ssl.hpp"
+//#include "detect_ssl.hpp"
 #include "ssl_stream.hpp"
 
 #include "WebSockHttpFlexServer.hpp"
@@ -51,7 +55,6 @@ namespace ssl = boost::asio::ssl;               // from <boost/asio/ssl.hpp>
 namespace http = boost::beast::http;            // from <boost/beast/http.hpp>
 namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.hpp>
 
-namespace {
   // forward declaration for classes that are defined below
   class PlainWebsocketSession;
   class SslWebsocketSession;
@@ -499,7 +502,7 @@ namespace {
     public:
       // Create the session
       explicit PlainWebsocketSession(tcp::socket socket, RequestHandler requestHandler)
-      : WebSocketSession<PlainWebsocketSession>(socket.get_executor().context(), requestHandler),
+      : WebSocketSession<PlainWebsocketSession>(*socket.get_executor().target<boost::asio::io_context>(), requestHandler),
         ws_(std::move(socket)) {
       }
 
@@ -567,9 +570,9 @@ namespace {
       // Create the http_session
       explicit SslWebsocketSession(ssl_stream<tcp::socket> stream, RequestHandler requestHandler)
         : WebSocketSession<SslWebsocketSession>(
-          stream.get_executor().context(), requestHandler)
+          *stream.get_executor().target<boost::asio::io_context>(), requestHandler)
           , ws_(std::move(stream))
-          , strand_(ws_.get_executor()) {
+          , strand_(*ws_.get_executor().target<boost::asio::io_context::executor_type>()) {
       }
 
       // Called by the base class
@@ -951,12 +954,12 @@ namespace {
                        std::string const& doc_root,
                        RequestHandler requestHandler)
         : HttpSession<PlainHttpSession>(
-            socket.get_executor().context(),
+            *socket.get_executor().target<boost::asio::io_context>(),
             std::move(buffer),
             doc_root,
             requestHandler)
             , socket_(std::move(socket))
-            , strand_(socket_.get_executor()) {
+            , strand_(*socket_.get_executor().target<boost::asio::io_context::executor_type>()){
       }
 
       // Called by the base class
@@ -1013,12 +1016,12 @@ namespace {
                      std::string const& doc_root,
                      RequestHandler requestHandler)
         : HttpSession<SslHttpSession>(
-            socket.get_executor().context(),
+            socket.get_executor().target<boost::asio::io_context::executor_type>()->context(),
             std::move(buffer),
             doc_root,
             requestHandler)
             , stream_(std::move(socket), ctx)
-            , strand_(stream_.get_executor()) {
+            , strand_(*stream_.get_executor().target<boost::asio::io_context::executor_type>()) {
       }
 
       // Called by the base class
@@ -1132,7 +1135,7 @@ namespace {
                              RequestHandler requestHandler)
         : socket_(std::move(socket))
         , ctx_(ctx)
-        , strand_(socket_.get_executor())
+        , strand_(*socket_.get_executor().target<boost::asio::io_context::executor_type>())
         , doc_root_(doc_root)
         , requestHandler_(requestHandler) {
       }
@@ -1151,7 +1154,7 @@ namespace {
                     std::placeholders::_2)));
       }
 
-      void onDetect(boost::system::error_code ec, boost::tribool result) {
+      void onDetect(boost::system::error_code ec, boost::logic::tribool result) {
         if(ec)
           return fail(ec, "detect");
 
@@ -1183,7 +1186,7 @@ namespace {
       }
   };
 
-  // Accepts incoming connections and launches the sessions
+  //// Accepts incoming connections and launches the sessions
   class BeastListener : public std::enable_shared_from_this<BeastListener> {
       ssl::context& ctx_;
       tcp::acceptor acceptor_;
@@ -1273,7 +1276,6 @@ namespace {
         doAccept();
       }
   };
-} // end namespace
 
 
 const std::string WebSockHttpFlexServer::serverCertFilename_ = "Server.pem";
@@ -1284,7 +1286,7 @@ WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil
                                              std::shared_ptr<IRestHandler> restHandlerUtil)
  : logger_(loggerUtil),
   restHandler_(restHandlerUtil),
-  ioc(NumOfThreads)
+  ioc_(NumOfThreads)
    {
   logger = logger_;
   restHandler = restHandler_;
@@ -1292,7 +1294,7 @@ WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil
 }
 
 WebSockHttpFlexServer::~WebSockHttpFlexServer() {
-  ioc.stop(); // stop execution of io runner
+  ioc_.stop(); // stop execution of io runner
 
   // wait to finish
   for(auto& thread : iocRunners) {
@@ -1316,7 +1318,7 @@ void WebSockHttpFlexServer::Initialize(std::string host,
 
     ctx.set_options(ssl::context::default_workarounds);
 
-    boost::asio::ip::tcp::resolver resolver{ioc};
+    boost::asio::ip::tcp::resolver resolver{ioc_};
     boost::asio::ip::tcp::resolver::query query(host, to_string(port));
     boost::asio::ip::tcp::resolver::iterator resolvedHost = resolver.resolve(query);
 
@@ -1331,7 +1333,7 @@ void WebSockHttpFlexServer::Initialize(std::string host,
 
     // create listener for handling incoming connections
     connListener = std::make_shared<BeastListener>(
-      ioc,
+      ioc_,
       ctx,
       resolvedHost->endpoint(),
       std::move(docRoot_),
@@ -1525,7 +1527,7 @@ void WebSockHttpFlexServer::Start() {
       [this]
       {
         boost::system::error_code ec;
-        ioc.run(ec);
+        ioc_.run(ec);
       });
   }
 }
