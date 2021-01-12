@@ -502,7 +502,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
     public:
       // Create the session
       explicit PlainWebsocketSession(tcp::socket socket, RequestHandler requestHandler)
-      : WebSocketSession<PlainWebsocketSession>(*socket.get_executor().target<boost::asio::io_context>(), requestHandler),
+      : WebSocketSession<PlainWebsocketSession>(socket.get_executor().target<boost::asio::io_context::executor_type>()->context(), requestHandler),
         ws_(std::move(socket)) {
       }
 
@@ -570,7 +570,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       // Create the http_session
       explicit SslWebsocketSession(ssl_stream<tcp::socket> stream, RequestHandler requestHandler)
         : WebSocketSession<SslWebsocketSession>(
-          *stream.get_executor().target<boost::asio::io_context>(), requestHandler)
+          stream.get_executor().target<boost::asio::io_context::executor_type>()->context(), requestHandler)
           , ws_(std::move(stream))
           , strand_(*ws_.get_executor().target<boost::asio::io_context::executor_type>()) {
       }
@@ -954,7 +954,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
                        std::string const& doc_root,
                        RequestHandler requestHandler)
         : HttpSession<PlainHttpSession>(
-            *socket.get_executor().target<boost::asio::io_context>(),
+            socket.get_executor().target<boost::asio::io_context::executor_type>()->context(),
             std::move(buffer),
             doc_root,
             requestHandler)
