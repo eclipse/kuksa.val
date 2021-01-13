@@ -38,7 +38,6 @@
 #include <stdexcept>
 #include <list>
 
-//#include "detect_ssl.hpp"
 #include "ssl_stream.hpp"
 
 #include "WebSockHttpFlexServer.hpp"
