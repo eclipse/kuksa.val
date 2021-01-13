@@ -8,8 +8,7 @@
 
 FROM ubuntu:20.04 as build
 
-RUN apt-get  update 
-RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
+RUN apt-get  update && DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
                         libglib2.0-dev \
                         pkg-config \
                         build-essential \
@@ -18,7 +17,8 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
                         software-properties-common \
                         git \
                         cmake \
-                        libmosquitto-dev
+                        libmosquitto-dev \
+                        gcovr
 
 #Build Boost 1.75
 RUN mkdir /buildboost
@@ -33,7 +33,7 @@ RUN ./b2 -j 6 install
 ADD . /kuksa.val
 RUN  rm -rf /kuksa.val/build  && mkdir  /kuksa.val/build 
 WORKDIR /kuksa.val/build
-RUN cmake .. -DBUILD_UNIT_TEST=ON
+RUN cmake .. -DBUILD_UNIT_TEST=ON -DCMAKE_BUILD_TYPE=Coverage
 RUN make -j8
 
 CMD ./src/kuksa-val-server -c src/config.ini 

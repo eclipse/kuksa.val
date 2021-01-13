@@ -12,8 +12,10 @@ node('docker') {
     checkout scm
     def versiontag="unknown"
     stage('Prepare') {
+        sh 'ls -al artifacts'
         sh 'git submodule update --init'
-        sh 'mkdir -p artifacts && rm -rf ./artifacts/*'
+        sh 'git clean -fdx || true'
+        sh 'mkdir -p artifacts'
         versiontag=sh(returnStdout: true, script: "git tag --contains | head -n 1").trim()
         if (versiontag == "") { //not tagged, using commit
             versiontag = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
@@ -42,14 +44,15 @@ node('docker') {
         }
     }
     stage('Test') {
-        sh "docker run --rm -w /kuksa.val/build/test/unit-test -v ${env.WORKSPACE}/artifacts:/out kuksa-val-dev-ubuntu20.04:${versiontag}  ./kuksaval-unit-test  --log_format=XML --log_sink=/out/results.xml --log_level=all --report_level=no --result_code=no"
+        sh "docker run --rm  -w /kuksa.val -v ${env.WORKSPACE}/artifacts:/out kuksa-val-dev-ubuntu20.04:${versiontag}  ./run_tests.sh -a /out"
         step([$class: 'XUnitPublisher',
                 thresholds: [ skipped(failureThreshold: '0'), failed(failureThreshold: '0') ],
-                tools: [ BoostTest(pattern: 'artifacts/*.xml') ]]
+                tools: [ BoostTest(pattern: 'artifacts/results.xml') ]]
         )
+        cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'artifacts/coverage.xml', conditionalCoverageTargets: '70, 0, 0', enableNewApi: true, failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
     }
     stage('Compress') {
-        sh 'ls artifacts'
+        sh 'ls -al artifacts'
         sh 'cd artifacts && xz -T 0 ./*.tar'
     }
     stage ('Archive') {
