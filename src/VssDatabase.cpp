@@ -970,7 +970,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
 }
 
 // Returns response JSON for get request, checking authorization.
-jsoncons::json VssDatabase::getSignal2(class WsChannel& channel, const VSSPath& path, bool gen1_compat_mode) {
+jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& path, bool gen1_compat_mode) {
   //bool isBranch = false;
 
   rwMutex_.lock();

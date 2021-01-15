@@ -37,7 +37,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   //-------------------------------------
   jsoncons::json res;
   try {
-    res = database->getSignal2(channel, path, gen1_compat_mode);
+    res = database->getSignal(channel, path, gen1_compat_mode);
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
     return JsonResponses::noAccess(requestId, "get", nopermission.what());

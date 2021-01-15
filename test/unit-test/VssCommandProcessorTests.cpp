@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal2)
+  MOCK_EXPECT(dbMock->getSignalNew)
     .once()
     .with(mock::any, mock::equal(path2) ,true)
     .returns(jsonPathNotFound);
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal2)
+  MOCK_EXPECT(dbMock->getSignalNew)
     .once()
     .with(mock::any, path2, true)
     .throws(std::exception());
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal2)
+  MOCK_EXPECT(dbMock->getSignalNew)
     .with(mock::any, path2, true)
     .throws(noPermissionException("No read access to " + path));
 
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal2)
+  MOCK_EXPECT(dbMock->getSignalNew)
     .with(mock::any, path2, true)
     .returns(jsonSignalValue);
 
@@ -267,7 +267,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal2)
+  MOCK_EXPECT(dbMock->getSignalNew)
     .with(mock::any, path2, true)
     .returns(jsonSignalValue);
 
