@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
 
   string requestId = "1";
   std::string path{"Vehicle/Speed"};
-  const VSSPath vss_path = VSSPath::fromVSS(path);
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
 
   // setup
   channel.setAuthorized(false);
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_NonExistingPath) {
 
   string requestId = "1";
   std::string path{"Vehicle/OBD/FluxCapacitorCharge"};
-  const VSSPath vss_path = VSSPath::fromVSS(path);
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
 
   // setup
   channel.setAuthorized(false);
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
 
   string requestId = "1";
   std::string path{"Vehicle/VehicleIdentification"};
-  const VSSPath vss_path = VSSPath::fromVSS(path);
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
 
   // setup
   channel.setAuthorized(false);
@@ -245,7 +245,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   //it needs to check all elements in subtree. Expect one example explicitely, and allow for others
-  auto vss_access_path = VSSPath::fromVSS("Vehicle/VehicleIdentification/Brand");
+  auto vss_access_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
   MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_access_path).returns(true);
   MOCK_EXPECT(accCheckMock->checkReadNew).with(mock::any,mock::any).returns(true);
 
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
 
   string requestId = "1";
   std::string path{"Vehicle/VehicleIdentification/*"};
-  const VSSPath vss_path = VSSPath::fromVSS(path);
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
 
   // setup
   channel.setAuthorized(false);
@@ -348,7 +348,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   //it needs to check all elements in subtree. Expect one example explicitely, and allow for others
-  auto vss_access_path = VSSPath::fromVSS("Vehicle/VehicleIdentification/Brand");
+  auto vss_access_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
   MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_access_path).returns(true);
   MOCK_EXPECT(accCheckMock->checkReadNew).with(mock::any,mock::any).returns(true);
 
@@ -375,7 +375,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
 
   string requestId = "1";
   std::string path{"Vehicle/*/FluxCapacitorCharge"};
-  const VSSPath vss_path = VSSPath::fromVSS(path);
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
 
   // setup
   channel.setAuthorized(false);

@@ -27,7 +27,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
                                              jsoncons::json &request) {
   requestValidator->validateGet(request);
 
-  VSSPath path=VSSPath::fromVSSAuto(request["path"].as_string());
+  VSSPath path=VSSPath::fromVSS(request["path"].as_string());
   bool  gen1_compat_mode=path.isGen1Origin();
 
   string requestId = request["requestId"].as_string();

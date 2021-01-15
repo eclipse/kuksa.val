@@ -30,10 +30,10 @@ class VSSPath {
         std::string getVSSGen1Path() const;
         std::string getJSONPath() const;
         bool isGen1Origin() const;
-        static VSSPath fromVSS(std::string vss); //Expect Gen2 path
+        static VSSPath fromVSSGen2(std::string vss); //Expect Gen2 path
         static VSSPath fromVSSGen1(std::string vssgen1); //Expect Gen1 path
         static VSSPath fromJSON(std::string json); //Expect json path
-        static VSSPath fromVSSAuto(std::string vss); //Auto decide for Gen1 or Gen2
+        static VSSPath fromVSS(std::string vss); //Auto decide for Gen1 or Gen2
 
     private:
         std::string vsspath;

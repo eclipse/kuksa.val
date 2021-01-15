@@ -32,7 +32,7 @@ std::string VSSPath::getJSONPath() const { return this->jsonpath; }
 
 bool VSSPath::isGen1Origin() const { return this->gen1;}
 
-VSSPath VSSPath::fromVSSAuto(std::string input) {
+VSSPath VSSPath::fromVSS(std::string input) {
   bool gen1=false;
   std::string vss, vssgen1, jsonpath;
   if (input.find(".") == std::string::npos) {  // If no "." in we assume a GEN2 "/" seperated path
@@ -92,7 +92,7 @@ std::string VSSPath::jsontogen2(std::string input) {
     return gen2;
 }
 
-VSSPath VSSPath::fromVSS(std::string input) {
+VSSPath VSSPath::fromVSSGen2(std::string input) {
   return VSSPath(input, gen2togen1(input), gen2tojson(input),false);
 }
 
