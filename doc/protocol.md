@@ -143,6 +143,9 @@ A more interesting example:
     "path": "Vehicle/Cabin/Door/*/*/IsLocked", 
     "requestId": "311508011343524723835336189899358414689",
 ```
+ leads to 
+<details>
+  <summary>Response. Click to expand!</summary>
 
 ```json
 {
@@ -177,6 +180,7 @@ A more interesting example:
     ]
 }
 ```
+</details>
 
 However
 
@@ -188,7 +192,7 @@ However
     "requestId": "45465648527119404680377594999611835141",
 }
 ```
-
+gives 
 ```json
 {
     "action": "get", 
@@ -204,7 +208,7 @@ However
 
 because `*` in  path matches only a single element.
 
-A wildcard at the end of a path, does recurese, i.e.
+A wildcard at the end of a path, does recurse, i.e.
 
 ```json
 {
@@ -213,6 +217,11 @@ A wildcard at the end of a path, does recurese, i.e.
     "requestId": "221484597038784548242607265463583217704",
 }
 ```
+ 
+leads to 
+
+<details>
+  <summary>Response. Click to expand!</summary>
 
 ```json
 {
@@ -443,6 +452,10 @@ A wildcard at the end of a path, does recurese, i.e.
 }
 ```
 
+</details>
+
+
+
 The same effect can be achieved by querying a branch, i.e. the following query yields a similar result
 
 ```json
@@ -500,6 +513,7 @@ While
     "path": "Vehicle/Drivetrain", 
 }
 ````
+ yields a result
 
 ```json
 {
@@ -514,7 +528,7 @@ While
 }
 ```
 
-The following paths would yield the same result
+Wildcard expansion also respects visibility/access rights according to the token. Therefore, with the example token, the following paths would yield the same result
  * `Vehicle/Drivetrain/Transmission/*`
  * `Vehicle/*/*/*` 
  * `Vehicle/*/*/DriveType`
