@@ -13,14 +13,18 @@
  * *****************************************************************************
  */
 #define BOOST_TEST_MODULE kuksaval-unit-test
+
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/test/included/unit_test.hpp>
+//can not undefine here, needs to be on for whole compilation unit to prevent warning
+ 
 
 #include <string>
 #include <memory>
 #include <limits>
 #include "KuksavalUnitTest.hpp"
 #include "exception.hpp"
-// #include <jsoncons/json.hpp>
+
 
 #include "IAccessCheckerMock.hpp"
 #include "Authenticator.hpp"
