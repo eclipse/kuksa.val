@@ -90,7 +90,7 @@ add_library(jwt-cpp INTERFACE)
 target_include_directories(jwt-cpp SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/jwt-cpp/include)
 
 add_library(turtle INTERFACE)
-target_include_directories(turtle SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/turtle)
+target_include_directories(turtle SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/turtle/include)
 
 ###
 # Add project subdirectories to build

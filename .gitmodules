@@ -4,3 +4,6 @@
 [submodule "3rd-party-libs/jwt-cpp"]
 	path = 3rd-party-libs/jwt-cpp
 	url = https://github.com/Thalhammer/jwt-cpp.git
+[submodule "3rd-party-libs/turtle"]
+	path = 3rd-party-libs/turtle
+	url = https://github.com/mat007/turtle.git
