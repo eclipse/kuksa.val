@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // expectations
 
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
     .returns(true);
 
   std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","value":"---"})"};
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   // expectations
 
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
     .returns(true);
 
   std::string expectedJsonString{R"({"value":{"Vehicle.Acceleration.Lateral":"---","Vehicle.Acceleration.Longitudinal":"---","Vehicle.Acceleration.Vertical":"---"}})"};
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_GetSingl
 
   // expectations
 
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
     .returns(false);
 
   // verify
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_GetBranc
 
   // expectations
 
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
     .returns(false);
 
   // verify
@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   MOCK_EXPECT(accCheckMock->checkWriteAccess)
     .returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
     .returns(true);
   MOCK_EXPECT(subHandlerMock->updateByUUID)
     .at_least(1)
@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPath_Sha
 
   MOCK_EXPECT(accCheckMock->checkWriteAccess)
     .returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
     .returns(true);
 
   // verify
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   jsoncons::json setValue, returnJson;
   setValue = 10;
 
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
     .returns(true);
   MOCK_EXPECT(subHandlerMock->updateByUUID)
     .at_least(1)

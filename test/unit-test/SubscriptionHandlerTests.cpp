@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
     .once()
     .with(mock::equal(path), mock::assign(true), mock::any)
     .returns(retDbListWider.front());
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
     .once()
     .with(mock::any, path)
     .returns(true);
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
       .once()
       .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadAccess)
+    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
       .once()
       .with(mock::any, path[index])
       .returns(true);
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
     .exactly(clientNum)
     .with(mock::equal(path), mock::assign(true), mock::any)
     .returns(retDbListWider.front());
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
     .exactly(clientNum)
     .with(mock::any, path)
     .returns(true);
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
       .once()
       .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadAccess)
+    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
       .once()
       .with(mock::any, path[index])
       .returns(true);
@@ -285,7 +285,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
       .once()
       .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadAccess)
+    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
       .once()
       .with(mock::any, path[index])
       .returns(true);
@@ -341,7 +341,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
     .exactly(clientNum)
     .with(mock::equal(path), mock::assign(true), mock::any)
     .returns(retDbListWider.front());
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
     .exactly(clientNum)
     .with(mock::any, path)
     .returns(true);
@@ -398,7 +398,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
       .once()
       .with(mock::equal(path[index]), mock::assign(true), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadAccess)
+    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
       .once()
       .with(mock::any, path[index])
       .returns(true);
@@ -482,7 +482,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
       .exactly(channelCount)
       .with(mock::equal(path[index]), mock::assign(true), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadAccess)
+    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
       .exactly(channelCount)
       .with(mock::any, path[index])
       .returns(true);
@@ -578,7 +578,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
       .exactly(channelCount)
       .with(mock::equal(path[index]), mock::assign(true), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadAccess)
+    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
       .exactly(channelCount)
       .with(mock::any, path[index])
       .returns(true);

@@ -189,7 +189,6 @@ jsoncons::json tryParse(jsoncons::json val) {
     }
   }
 
-
   // Utility method for setting values to JSON.
   void setJsonValue(std::shared_ptr<ILogger> logger,
                     jsoncons::json& dest,
@@ -276,10 +275,17 @@ vector<string> getPathTokens(string path) {
   return tokens;
 }
 
+vector<string> tokenizePath(string path) {
+  vector<string> tokens;
+  boost::split(tokens,path, boost::is_any_of("/"));
+  return tokens;
+}
+
 // Removes the internally used "children" tag and "$" tag and returns a client
 // readable path.
 // Eg: jsonpath = $['Signal']['children']['OBD']['children']['RPM']
 // The method returns Signal.OBD.RPM
+//replaced with getVSSPathFromJSONPath in Gen2
 string VssDatabase::getReadablePath(string jsonpath) {
   stringstream ss;
   // regex to remove special characters from JSONPath and make it VSS
@@ -297,6 +303,8 @@ string VssDatabase::getReadablePath(string jsonpath) {
   readablePath = regex_replace(readablePath, e, "");
   return readablePath;
 }
+
+
 
 // Appends the internally used "children" tag to the path. And also formats the
 // path in JSONPath query format.
@@ -369,6 +377,7 @@ string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
 // For eg : path = Signal.*.RPM
 // The method would return a list containing 1 signal path =
 // $['Signal']['children']['OBD']['children']['RPM']
+//Will be replaced by getJSonPaths for gen2
 list<string> VssDatabase::getPathForGet(const string &path, bool& isBranch) {
   list<string> paths;
   string format_path = getVSSSpecificPath(path, isBranch, data_tree__);
@@ -399,6 +408,43 @@ list<string> VssDatabase::getPathForGet(const string &path, bool& isBranch) {
   }
   return paths;
 }
+
+
+list<string> VssDatabase::getJSONPaths(const VSSPath &path) {
+  list<string> paths;
+
+  //If this is a branch, recures
+  jsoncons::json pathRes;
+  try {
+    pathRes = jsonpath::json_query(data_tree__, path.getJSONPath(), jsonpath::result_type::path);
+  }
+  catch (jsonpath::jsonpath_error &e) { //no valid path, return empty list
+    logger_->Log(LogLevel::VERBOSE, path.getJSONPath() + " is not a a valid path "+e.what());
+    return paths;
+  }
+
+  string json = pathRes.as_string();
+  for (auto jpath : pathRes.array_range()) {
+    jsoncons::json resArray = jsonpath::json_query(data_tree__, jpath.as<string>());
+    if (resArray.size() == 0) {
+      continue;
+    }
+
+    //recurse if branch
+    if (resArray[0].contains("type") && resArray[0]["type"].as<string>() == "branch") {
+      VSSPath recursepath = VSSPath::fromJSON(jpath.as<string>()+"['children'][*]");
+      paths.merge(getJSONPaths(recursepath));
+      continue;
+    }
+    else {
+      paths.push_back(jpath.as<string>());
+    }
+  }
+
+  return paths;
+}
+
+
 
 // Tokenizes the signal path with '[' - ']' as separator for internal
 // processing.
@@ -914,6 +960,86 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
         setJsonValue(logger_, value, result, getReadablePath(jPath));
       } else {
         value[getReadablePath(jPath)] = "---";
+      }
+      valueArray.insert(valueArray.array_range().end(), value);
+    }
+    answer["value"] = valueArray;
+    return answer;
+  }
+  return NULL;
+}
+
+// Returns response JSON for get request, checking authorization.
+jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& path, bool gen1_compat_mode) {
+  //bool isBranch = false;
+
+  rwMutex_.lock();
+  list<string> jPaths = getJSONPaths(path);
+  rwMutex_.unlock();
+  int pathsFound = jPaths.size();
+  if (pathsFound == 0) {
+    jsoncons::json answer;
+    return answer;
+  }
+
+  logger_->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + to_string(pathsFound)
+              + " signals found under path = \"" + path.getVSSPath() + "\"");
+ 
+   if (pathsFound == 1) {
+    string jPath = jPaths.back();
+    VSSPath path=VSSPath::fromJSON(jPath);
+    // check Read access here.
+    if (!accessValidator_->checkReadAccess(channel, path )) {
+      stringstream msg;
+      msg << "No read access to " << getReadablePath(jPath);
+      throw noPermissionException(msg.str());
+    }
+    rwMutex_.lock();
+    jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
+    rwMutex_.unlock();
+    jsoncons::json answer;
+    answer["path"] = gen1_compat_mode? path.getVSSGen1Path() : path.getVSSPath();
+    jsoncons::json result = resArray[0];
+    if (result.contains("value")) {
+      setJsonValue(logger_, answer, result, "value");
+      return answer;
+    } else {
+      answer["value"] = "---";
+      return answer;
+    }
+
+  } else if (pathsFound > 1) {
+    jsoncons::json answer;
+    jsoncons::json valueArray = jsoncons::json::array();
+
+    for (int i = 0; i < pathsFound; i++) {
+      jsoncons::json value;
+      string jPath = jPaths.back();
+      VSSPath path = VSSPath::fromJSON(jPath);
+      // Check access here.
+      if (!accessValidator_->checkReadAccess(channel, path)) {
+        // Allow the permitted signals to return. If exception is enable here,
+        // then say only "Signal.OBD.RPM" is permitted and get request is made
+        // using wildcard like "Signal.OBD.*" then
+        // an error would be returned. By disabling the exception the value for
+        // Signal.OBD.RPM (only) will be returned.
+        /*stringstream msg;
+        msg << "No read access to  " << getReadablePath(jPath);
+        throw genException (msg.str());*/
+        jPaths.pop_back();
+        continue;
+      }
+      rwMutex_.lock();
+      jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
+      rwMutex_.unlock();
+      jPaths.pop_back();
+      jsoncons::json result = resArray[0];
+      
+      string spath = gen1_compat_mode? path.getVSSGen1Path() : path.getVSSPath();
+      if (result.contains("value")) {
+        setJsonValue(logger_, value, result, spath);
+      } else {
+        value[spath] = "---";
       }
       valueArray.insert(valueArray.array_range().end(), value);
     }

@@ -34,7 +34,9 @@ if(BUILD_UNIT_TEST)
     RestV1ApiHandlerTests.cpp
     SubscriptionHandlerTests.cpp
     VssCommandProcessorTests.cpp
+    Gen2GetTests.cpp
     VssDatabaseTests.cpp
+    VSSPathTests.cpp
     KuksavalUnitTest.cpp
   )
 

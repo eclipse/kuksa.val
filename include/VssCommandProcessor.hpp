@@ -20,6 +20,8 @@
 #include <jsoncons/json.hpp>
 
 #include "IVssCommandProcessor.hpp"
+#include "VSSRequestValidator.hpp"
+#include "WsChannel.hpp"
 
 class IVssDatabase;
 class ISubscriptionHandler;
@@ -36,6 +38,7 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::shared_ptr<ISubscriptionHandler> subHandler;
   std::shared_ptr<IAuthenticator> tokenValidator;
   std::shared_ptr<IAccessChecker> accessValidator;
+  VSSRequestValidator *requestValidator;
 #ifdef JSON_SIGNING_ON
   std::shared_ptr<SigningHandler> signer;
 #endif
@@ -52,7 +55,9 @@ class VssCommandProcessor : public IVssCommandProcessor {
                           const std::string & token);
   std::string processAuthorizeWithPermManager(WsChannel &channel, const std::string & request_id,
                                  const std::string & client, const std::string& clientSecret);
-  
+
+  std::string getPathFromRequest(const jsoncons::json &req, bool *gen1_compat);
+  std::string processGet2(WsChannel &channel, jsoncons::json &request);
 
  public:
   VssCommandProcessor(std::shared_ptr<ILogger> loggerUtil,
