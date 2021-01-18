@@ -23,6 +23,8 @@
 #include "IAuthenticatorMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
 
+#include "VSSPath.hpp"
+
 #include "exception.hpp"
 #include "JsonResponses.hpp"
 #include "VssCommandProcessor.hpp"
@@ -71,7 +73,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
-
+  const VSSPath path2 = VSSPath::fromVSSGen1(path);
+  
   // setup
 
   channel.setAuthorized(false);
@@ -81,16 +84,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::pathNotFound(requestId, "get", path, jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "get", path2.getVSSPath(), jsonPathNotFound);
 
   // expectations
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
+  MOCK_EXPECT(dbMock->getSignalNew)
     .once()
-    .with(mock::any, path)
+    .with(mock::any, mock::equal(path2) ,true)
     .returns(jsonPathNotFound);
 
   // run UUT
@@ -102,6 +105,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   BOOST_TEST(res == jsonPathNotFound);
 }
 
+
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall_ReturnError)
 {
   WsChannel channel;
@@ -111,6 +115,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  VSSPath path2 = VSSPath::fromVSSGen1(path);
+
 
   // setup
 
@@ -128,9 +134,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
+  MOCK_EXPECT(dbMock->getSignalNew)
     .once()
-    .with(mock::any, path)
+    .with(mock::any, path2, true)
     .throws(std::exception());
 
   // run UUT
@@ -151,6 +157,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  VSSPath path2 = VSSPath::fromVSSGen1(path);
 
   // setup
 
@@ -168,8 +175,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
-    .with(mock::any, path)
+  MOCK_EXPECT(dbMock->getSignalNew)
+    .with(mock::any, path2, true)
     .throws(noPermissionException("No read access to " + path));
 
   // run UUT
@@ -190,6 +197,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  VSSPath path2 = VSSPath::fromVSSGen1(path);
 
   // setup
 
@@ -210,8 +218,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
-    .with(mock::any, path)
+  MOCK_EXPECT(dbMock->getSignalNew)
+    .with(mock::any, path2, true)
     .returns(jsonSignalValue);
 
   // run UUT
@@ -236,6 +244,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  VSSPath path2 = VSSPath::fromVSSGen1(path);
+
 
   // setup
 
@@ -250,15 +260,15 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["timestamp"] = 11111111;
 
-  JsonResponses::pathNotFound(requestId, "get", path, jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "get", path2.getVSSPath(), jsonPathNotFound);
 
   // expectations
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
-    .with(mock::any, path)
+  MOCK_EXPECT(dbMock->getSignalNew)
+    .with(mock::any, path2, true)
     .returns(jsonSignalValue);
 
   // run UUT
@@ -1049,7 +1059,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   jsonValueErr["number"] = 400;
   jsonValueErr["reason"] = "Bad Request";
-  jsonValueErr["message"] = "Key 'action' not found";
+  jsonValueErr["message"] = "Key not found: 'action'";
   jsonExpected["error"] = jsonValueErr;
   jsonExpected["timestamp"] = 123;
 
@@ -1069,7 +1079,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   resStr = processor->processQuery(jsonRequest.as_string(), channel);
   res = json::parse(resStr);
 
-  jsonValueErr["message"] = "Key 'path' not found";
+  jsonValueErr["message"] = "Key not found: 'path'";
   jsonExpected["error"] = jsonValueErr;
 
   // timestamp must not be zero
@@ -1083,7 +1093,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   resStr = processor->processQuery(jsonRequest.as_string(), channel);
   res = json::parse(resStr);
 
-  jsonValueErr["message"] = "Key 'requestId' not found";
+  jsonValueErr["message"] = "Key not found: 'requestId'";
   jsonExpected["error"] = jsonValueErr;
 
   // timestamp must not be zero

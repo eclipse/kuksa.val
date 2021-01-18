@@ -27,6 +27,8 @@ class AccessChecker : public IAccessChecker {
  public:
   AccessChecker(std::shared_ptr<IAuthenticator> vdator);
   bool checkReadAccess(WsChannel &channel, const std::string &path) override;
+  bool checkReadAccess(WsChannel &channel, const VSSPath &path) override;
+
   bool checkWriteAccess(WsChannel &channel, const std::string &path) override;
   bool checkPathWriteAccess(WsChannel &channel, const jsoncons::json &paths) override;
 };

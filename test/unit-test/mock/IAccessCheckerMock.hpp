@@ -20,7 +20,8 @@
 
 MOCK_BASE_CLASS( IAccessCheckerMock, IAccessChecker )
 {
-  MOCK_METHOD(checkReadAccess, 2)
+  MOCK_METHOD(checkReadAccess, 2, bool(WsChannel&, const std::string& ), checkReadDeprecated)
+  MOCK_METHOD(checkReadAccess, 2, bool(WsChannel&, const VSSPath& ), checkReadNew)
   MOCK_METHOD(checkWriteAccess, 2)
   MOCK_METHOD(checkPathWriteAccess, 2)
 };

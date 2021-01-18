@@ -45,7 +45,10 @@ set(LIB_SOURCES
    RestV1ApiHandler.cpp
    SigningHandler.cpp
    SubscriptionHandler.cpp
+   VSSRequestValidator.cpp
+   VSSPath.cpp
    VssCommandProcessor.cpp
+   VssCommandGet.cpp
    VssDatabase.cpp
    WebSockHttpFlexServer.cpp
    MQTTClient.cpp
@@ -74,7 +77,7 @@ else(CMAKE_COMPILER_IS_GNUCXX)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
-  message(STATUS "this should be deeeeeebuuuuuuuuuuuuuuuuugggggggggggggggggggggggg")
+  message(STATUS "This is a DEBUG build")
   target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -O0)
 ELSEIF(CMAKE_BUILD_TYPE MATCHES Coverage)
   if("${CMAKE_C_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")

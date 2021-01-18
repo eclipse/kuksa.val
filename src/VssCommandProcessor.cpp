@@ -50,6 +50,7 @@ VssCommandProcessor::VssCommandProcessor(
   subHandler = subhandler;
   // TODO: add accessValidator as dependency
   accessValidator = std::make_shared<AccessChecker>(tokenValidator);
+  requestValidator = new VSSRequestValidator(logger);
 #ifdef JSON_SIGNING_ON
   // TODO: add signer as dependency
   signer = std::make_shared<SigningHandler>();
@@ -58,6 +59,7 @@ VssCommandProcessor::VssCommandProcessor(
 
 VssCommandProcessor::~VssCommandProcessor() {
   accessValidator.reset();
+  delete requestValidator;
 #ifdef JSON_SIGNING_ON
   signer.reset();
 #endif
@@ -435,7 +437,14 @@ string VssCommandProcessor::processQuery(const string &req_json,
     string action = root["action"].as<string>();
     logger->Log(LogLevel::VERBOSE, "Receive action: " + action);
 
-    if (action == "authorize") {
+    if (action == "get") {
+        response = processGet2(channel, root);
+        //response = processGet(channel, request_id, path);
+#ifdef JSON_SIGNING_ON
+        response = signer->sign(response);
+#endif  
+    }
+    else if (action == "authorize") {
       string token = root["tokens"].as<string>();
       //string request_id = root["requestId"].as<int>();
       string request_id = root["requestId"].as<string>();
@@ -467,13 +476,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
       string path = root["path"].as<string>();
       string request_id = root["requestId"].as<string>();
       if (action == "get") {
-        logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: get query  for " + path
-                    + " with request id " + request_id);
-
-        response = processGet(channel, request_id, path);
-#ifdef JSON_SIGNING_ON
-        response = signer->sign(response);
-#endif
+       //replaced, handled above
       } else if (action == "set") {
         jsoncons::json value = root["value"];
 
@@ -512,3 +515,16 @@ string VssCommandProcessor::processQuery(const string &req_json,
 
   return response;
 }
+
+
+/*std::string VssCommandProcessor::getPathFromRequest(const jsoncons::json &req, bool *gen1_compat_mode) {
+  string path=req["path"].as_string();
+  if (path.find(".") == std::string::npos ) { //If no "." in we assume a GEN2 "/" seperated path
+    *gen1_compat_mode=false;
+    return path;
+  }
+  logger->Log(LogLevel::WARNING, "Deprecation warning: "+ path +  "looks like a VISS GEN1 path. Converting to GEN2");
+  std::replace(path.begin(),path.end(),'.','/');
+  *gen1_compat_mode=true;
+  return path;
+}*/
