@@ -12,7 +12,10 @@
  * *****************************************************************************
  */
 #include <boost/test/unit_test.hpp>
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <turtle/mock.hpp>
+#undef BOOST_BIND_GLOBAL_PLACEHOLDERS
+
 
 #include <memory>
 #include <string>
