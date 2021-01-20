@@ -32,7 +32,6 @@ logging.getLogger('can').setLevel(logging.DEBUG)
 
 class J1939Reader(j1939.ControllerApplication):
     """CA to produce messages
-
     This CA produces simulated sensor values and cyclically sends them to
     the bus with the PGN 0xFEF6 (Intake Exhaust Conditions 1).
     """
@@ -72,10 +71,8 @@ class J1939Reader(j1939.ControllerApplication):
 
     def timer_callback(self, cookie):
         """Callback for sending the IEC1 message
-
         This callback is registered at the ECU timer event mechanism to be
         executed every 500ms.
-
         :param cookie:
             A cookie registered at 'add_timer'. May be None.
         """
@@ -170,7 +167,7 @@ class J1939Reader(j1939.ControllerApplication):
         if val < signal._minimum:
             val = signal._minimum
         elif val > signal._maximum:
-        	val = signal._maximum
+            val = signal._maximum
         if name in self.mapper:
             rxTime=time.time()
             if self.mapper.minUpdateTimeElapsed(name, rxTime):
@@ -204,25 +201,22 @@ class J1939Reader(j1939.ControllerApplication):
     def decode_byte_array(self, start_bit, num_of_bits, byte_order, scale, offset, data):
         binary_str = ""
         temp_bit_array = []
+        binstr = ''
         # Little Endian - Intel, AMD
         if byte_order == 'little_endian':
-        	data = bytearray(reversed(data))
-        	temp_bit_array = self.byteArr2bitArr(data)
+            for i in range(len(data)):
+                dec = data[i]
+                binstr = binstr + format(dec, '#010b')[2:][::-1]
         # Big Endian (a.k.a Endianness) - Motorola, IBM
         else:
-        	temp_bit_array = self.byteArr2bitArr(data)
-        bit_array = list(reversed(temp_bit_array)) # To call the smallest bit first
+            for i in range(len(data)):
+                dec = data[i]
+                binstr = binstr + format(dec, '#010b')[2:]
+        ##bit_array = list(reversed(temp_bit_array)) # To call the smallest bit first
         for i in range(0, num_of_bits):
-        	binary_str = str(bit_array[start_bit + i]) + binary_str
+            binary_str = binstr[start_bit + i] + binary_str
         binary_str = "0b" + binary_str
         raw_value = int(binary_str, base=2)
         val = offset + raw_value * scale
         return val
-
-    def byteArr2bitArr(self, data):
-        return [self.access_bit(i,data) for i in range(len(data)*8)]
-
-    def access_bit(self, num, data):
-        base = int(num // 8)
-        shift = int(num % 8)
-        return (data[base] & (1<<shift)) >> shift
+        
