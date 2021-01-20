@@ -11,7 +11,7 @@
 ########################################################################
 
 import os, sys, threading, queue, ssl, json
-import uuid
+import shortuuid
 import asyncio, websockets, pathlib
 
 class VSSClientComm(threading.Thread):
@@ -40,7 +40,7 @@ class VSSClientComm(threading.Thread):
 
 
     def sendReceiveMsg(self, req, timeout): 
-        req["requestId"] = uuid.uuid4().int
+        req["requestId"] = shortuuid.uuid()
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         while True:
