@@ -1,4 +1,3 @@
-cmd2~=1.3
+cmd2~=1.4
 websockets~=8.1
 pygments~=2.7
-shortuuid~=1.0

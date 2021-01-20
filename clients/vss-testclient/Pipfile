@@ -9,7 +9,6 @@ verify_ssl = true
 cmd2 = "*"
 websockets = "*"
 pygments = "*"
-shortuuid = "*"
 
 [requires]
 python_version = "3.8"
