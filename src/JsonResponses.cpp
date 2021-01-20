@@ -12,6 +12,7 @@
  * *****************************************************************************
  */
 #include "JsonResponses.hpp"
+#include <chrono>
 
 namespace JsonResponses {
   void malFormedRequest(std::string request_id,
@@ -68,7 +69,7 @@ namespace JsonResponses {
     error["reason"] = "Path not found";
     error["message"] = "I can not find " + path + " in my db";
     jsonResponse["error"] = error;
-    jsonResponse["timestamp"] = time(NULL);
+    jsonResponse["timestamp"] = getTimeStamp();
   }
   std::string pathNotFound(std::string request_id,
                            const std::string action,
@@ -127,5 +128,11 @@ namespace JsonResponses {
     std::stringstream ss;
     ss << pretty_print(answer);
     return ss.str();
+  }
+
+  int64_t getTimeStamp(){
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now().time_since_epoch()
+          ).count();
   }
 }

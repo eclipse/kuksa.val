@@ -60,6 +60,8 @@ namespace JsonResponses {
                         const std::string action,
                         const std::string message,
                         jsoncons::json& jsonResponse);
+
+  int64_t getTimeStamp();
 }
 
 #endif
