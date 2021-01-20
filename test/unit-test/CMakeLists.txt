@@ -20,7 +20,7 @@ include(CTest)
 
 ###
 # Setup target names
-set(UNITTEST_EXE_NAME "w3c-unit-test" )
+set(UNITTEST_EXE_NAME "kuksaval-unit-test" )
 
 set(BUILD_UNIT_TEST OFF CACHE BOOL "Build unit tests")
 
@@ -34,12 +34,17 @@ if(BUILD_UNIT_TEST)
     RestV1ApiHandlerTests.cpp
     SubscriptionHandlerTests.cpp
     VssCommandProcessorTests.cpp
+    Gen2GetTests.cpp
     VssDatabaseTests.cpp
-    w3cunittest.cpp
+    VSSPathTests.cpp
+    KuksavalUnitTest.cpp
   )
 
   # declares a test with our executable
-  add_test(NAME ${UNITTEST_EXE_NAME} COMMAND $<TARGET_FILE:${UNITTEST_EXE_NAME}> WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  add_test(NAME ${UNITTEST_EXE_NAME}
+    COMMAND $<TARGET_FILE:${UNITTEST_EXE_NAME}> --log_format=XML --log_sink=results.xml --log_level=all --report_level=no --result_code=no
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  )
   target_compile_features(${UNITTEST_EXE_NAME} PRIVATE cxx_std_14)
 
   # disable warning, as we are not going to link unit-test library with anyone
@@ -58,9 +63,5 @@ if(BUILD_UNIT_TEST)
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE jsoncons jwt-cpp)
 
   configure_file(test_vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Resources/jwt.pub.key ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Resources/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Resources/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Resources/Client.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Resources/Client.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../certificates/jwt/jwt.key.pub ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 endif(BUILD_UNIT_TEST)

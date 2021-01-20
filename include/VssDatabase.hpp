@@ -22,6 +22,7 @@
 #include <jsoncons/json.hpp>
 
 #include "IVssDatabase.hpp"
+#include "VSSPath.hpp"
 
 class WsChannel;
 class IAccessChecker;
@@ -41,8 +42,13 @@ class VssDatabase : public IVssDatabase {
 
   std::string getPathForMetadata(std::string path, bool& isBranch);
   std::string getReadablePath(std::string jsonpath);
+  std::string getVSSPathFromJSONPath(std::string jsonpath); //Gen2 repalcement for getReadablePath
+
   void checkSetPermission(WsChannel& channel, const std::string& path);
   void HandleSet(jsoncons::json & setValues);
+
+  std::list<std::string> getJSONPaths(const VSSPath& path);
+
 
  public:
   VssDatabase(std::shared_ptr<ILogger> loggerUtil,
@@ -60,7 +66,11 @@ class VssDatabase : public IVssDatabase {
   void setSignal(const std::string &path, jsoncons::json value);
   jsoncons::json getSignal(WsChannel& channel, const std::string &path) override;
 
+  jsoncons::json getSignal(WsChannel& channel, const VSSPath &path, bool gen1_compat) override; //Gen2 version
+
+
   std::list<std::string> getPathForGet(const std::string &path, bool& isBranch) override;
+
   std::string getVSSSpecificPath(const std::string &path, bool& isBranch,
                                  jsoncons::json& tree) override;
   jsoncons::json getPathForSet(const std::string &path, jsoncons::json value) override;

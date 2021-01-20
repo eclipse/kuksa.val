@@ -8,8 +8,7 @@
 
 FROM ubuntu:20.04 as build
 
-RUN apt-get  update 
-RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
+RUN apt-get  update && DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
                         libglib2.0-dev \
                         pkg-config \
                         build-essential \
@@ -18,21 +17,23 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
                         software-properties-common \
                         git \
                         cmake \
-                        libboost1.67-dev \
-                        libboost-atomic1.67-dev\
-                        libboost-date-time1.67-dev\
-                        libboost-chrono1.67-dev\
-                        libboost-filesystem1.67-dev\
-                        libboost-program-options1.67-dev\
-                        libboost-system1.67-dev\
-                        libboost-thread1.67-dev\
-                        libboost-test1.67-dev\
-                        libmosquitto-dev
+                        libmosquitto-dev \
+                        gcovr
+
+#Build Boost 1.75
+RUN mkdir /buildboost
+WORKDIR /buildboost
+RUN wget   https://dl.bintray.com/boostorg/release/1.75.0/source/boost_1_75_0.tar.bz2
+RUN tar xvjf boost_1_75_0.tar.bz2
+WORKDIR /buildboost/boost_1_75_0
+RUN ./bootstrap.sh
+RUN ./b2 -j 6 install
+
 
 ADD . /kuksa.val
 RUN  rm -rf /kuksa.val/build  && mkdir  /kuksa.val/build 
 WORKDIR /kuksa.val/build
-RUN cmake .. -DBUILD_UNIT_TEST=ON
+RUN cmake .. -DBUILD_UNIT_TEST=ON -DCMAKE_BUILD_TYPE=Coverage
 RUN make -j8
 
 CMD ./src/kuksa-val-server -c src/config.ini 

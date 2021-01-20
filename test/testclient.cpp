@@ -19,6 +19,8 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/core/make_printable.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -193,8 +195,8 @@ void StartBeastClient(std::string host, int port, std::string rootDoc) {
     // Read a message into our buffer
     ws.read(b);
 
-    // The buffers() function helps print a ConstBufferSequence
-    std::cout << boost::beast::buffers(b.data()) << std::endl;
+    // The make_printable() function helps print a ConstBufferSequence
+    std::cout << boost::beast::make_printable(b.data()) << std::endl;
   }
 
   // Close the WebSocket connection
@@ -263,8 +265,8 @@ void StartSecuredBeastClient(std::string host, int port, std::string rootDoc) {
     // Read a message into our buffer
     ws.read(b);
 
-    // The buffers() function helps print a ConstBufferSequence
-    std::cout << boost::beast::buffers(b.data()) << std::endl;
+    // The make_printable() function helps print a ConstBufferSequence
+    std::cout << boost::beast::make_printable(b.data()) << std::endl;
   }
 
   // Close the WebSocket connection

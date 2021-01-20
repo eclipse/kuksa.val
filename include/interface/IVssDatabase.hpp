@@ -19,6 +19,8 @@
 #include <jsoncons/json.hpp>
 #include <boost/filesystem.hpp>
 
+#include "VSSPath.hpp"
+
 class WsChannel;
 
 class IVssDatabase {
@@ -32,7 +34,11 @@ class IVssDatabase {
     virtual void setSignal(WsChannel& channel,
                            const std::string &path,
                            jsoncons::json value) = 0;
+                           
+    [[deprecated("Once Gen2 migration is complete, only the getSignal version with gen1_compat flag should be used")]]
     virtual jsoncons::json getSignal(WsChannel& channel, const std::string &path) = 0;
+    virtual jsoncons::json getSignal(WsChannel& channel, const VSSPath& path, bool gen1_compat) = 0;
+
 
     // TODO: temporary added while components are refactored
     jsoncons::json data_tree__;

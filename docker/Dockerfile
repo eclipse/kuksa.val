@@ -5,22 +5,21 @@
 # accompanies this distribution, and is available at
 # http://www.eclipse.org/org/documents/edl-v10.php
 
-FROM arm64v8/alpine:3.11 as build
+FROM alpine:3.11 as build
 
 LABEL maintainer="Sebastian Schildt <sebastian.schildt@de.bosch.com>"
 
 
-COPY docker/qemu-aarch64-static /usr/bin/qemu-aarch64-static
 
 RUN apk update && apk add cmake wget alpine-sdk glib-dev openssl-dev libstdc++ mosquitto-dev
 
 
-#Build Boost 1.67
+#Build Boost 1.75
 RUN mkdir /buildboost
 WORKDIR /buildboost
-RUN wget   https://dl.bintray.com/boostorg/release/1.67.0/source/boost_1_67_0.tar.bz2
-RUN tar xvjf boost_1_67_0.tar.bz2
-WORKDIR /buildboost/boost_1_67_0
+RUN wget   https://dl.bintray.com/boostorg/release/1.75.0/source/boost_1_75_0.tar.bz2
+RUN tar xvjf boost_1_75_0.tar.bz2
+WORKDIR /buildboost/boost_1_75_0
 RUN ./bootstrap.sh
 RUN ./b2 -j 6 install
 
@@ -34,7 +33,7 @@ RUN ls
 RUN /kuksa.val/docker/collect-deployment-artifacts.sh
 
 
-FROM arm64v8/alpine:3.11
+FROM alpine:3.11
 
 COPY --from=build /deploy /kuksa.val
 WORKDIR /kuksa.val

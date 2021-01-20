@@ -1,44 +1,30 @@
 
 # Build Docker image
 
-You can build a docker image for KUKSA.val. You can cross compile an image for other platofrms such as `arm64`. To do this, make sure you have installed docker and qemu-user-static
+You can build a docker image for KUKSA.val go to the root of your working copy and execute
 
 ```
-sudo apt install qemu-user-static
+docker  build  -f ./docker/Dockerfile -t arm64/kuksa-val:myversion  .
 ```
 
-Enable dockers experimental features by creating a `daemon.json`  file in `/etc/docker/` and add
+To build the testclient, it expects some default JWT tokens in the current build context. For details check the vss-client [build.sh script](../clients/vss-testclient/build.sh).
 
-```json
-{
-  "experimental" : true
-}
-```
-After creeating the configuration you need to restart docker
+You can cross compile an image for other platforms such as `arm64` using dockers `buildx` feature. To set up buildx check the official documentation https://docs.docker.com/buildx/working-with-buildx/.
 
-```
-systemctl restart docker
+If you have a running buildx setup you can create an arm64 image using
+
+```bash
+docker buildx build --platform=linux/arm64 -f ./docker/Dockerfile -t arm64/kuksa-val:myversion  .
 ```
 
-To build a docker for an x86/amd64 platform from `kuksa.val` directory do
+
+## Development Docker
+Not optimized at all, just gets  Ubuntu installed and does a first compile. Will drop you to a shell
+
+To build go to kuksa.val main dir and do
 
 ```
-cd docker
-sudo  ./build.sh amd64
-```
-
-To build an arm64 call the build script like this 
-
-```
-sudo  ./build.sh arm64
-```
-
-Beware, that this needs a fast computer as compilation runs through qemu (emulating the target processor in software).
-
-
-In case that network proxy configuration is needed, make sure to export _http_proxy_ and _https_proxy_ environment variables with correct proxy configuration, as shown below:
-```
-sudo docker build . --build-arg  http_proxy=$http_proxy --build-arg https_proxy=$https_proxy -t w3c-server
+docker build -f docker/Dockerfile.dev -t kuksavaltest . 
 ```
 
 

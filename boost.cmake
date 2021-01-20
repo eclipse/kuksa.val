@@ -12,14 +12,14 @@
 # *****************************************************************************
 
 set(Boost_USE_STATIC_LIBS OFF)
-set(BOOST_VER 1.67.0)
+set(BOOST_VER 1.75.0)
 set(BOOST_COMPONENTS atomic date_time chrono filesystem program_options system thread)
 find_package(Boost ${BOOST_VER} EXACT COMPONENTS ${BOOST_COMPONENTS} unit_test_framework)
 
 if(NOT Boost_FOUND)
   string(REPLACE "." "_" BOOST_VER_ ${BOOST_VER}) 
   set(BOOST_URL "https://dl.bintray.com/boostorg/release/${BOOST_VER}/source/boost_${BOOST_VER_}.tar.bz2" CACHE STRING "Boost download URL")
-  set(BOOST_URL_SHA256 "2684c972994ee57fc5632e03bf044746f6eb45d4920c343937a465fd67a5adba" CACHE STRING "Boost download URL SHA256 checksum")
+  set(BOOST_URL_SHA256 "953db31e016db7bb207f11432bef7df100516eeb746843fa0486a222e3fd49cb" CACHE STRING "Boost download URL SHA256 checksum")
   option(BOOST_DISABLE_TESTS "Do not build test targets" OFF)
   include(FetchContent)
   set(FETCHCONTENT_QUIET OFF)
