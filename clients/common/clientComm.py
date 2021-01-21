@@ -113,6 +113,7 @@ class VSSClientComm(threading.Thread):
                 self.recvMsgQueue.put(resp)
             except queue.Empty:
                 pass
+        await webSocket.close()
 
     async def mainLoop(self):
         if not self.insecure:

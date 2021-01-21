@@ -198,7 +198,7 @@ class VSSTestClient(Cmd):
         self.recvMsgQueue = queue.Queue()
         config = {'ip':self.serverIP,
         'port': self.serverPort,
-        'insecure' : False
+        'insecure' : insecure
         }
         self.commThread = VSSClientComm(self.sendMsgQueue, self.recvMsgQueue, config)
         self.commThread.start()
