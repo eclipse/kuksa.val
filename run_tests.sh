@@ -1,4 +1,5 @@
 #!/bin/bash
+set -xe
 basepath=`pwd`
 
 scriptName=${0}
