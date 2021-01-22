@@ -653,7 +653,7 @@ jsoncons::json VssDatabase::getMetaData(const std::string &path) {
     jsoncons::json resArray;
     {
       std::lock_guard<std::mutex> lock_guard(rwMutex_);
-      jsoncons::json resArray = jsonpath::json_query(meta_tree__, format_path);
+      resArray = jsonpath::json_query(meta_tree__, format_path);
     }
 
     if (resArray.is_array() && resArray.size() == 1) {
@@ -1018,7 +1018,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     jsoncons::json resArray;
     {
       std::lock_guard<std::mutex> lock_guard(rwMutex_);
-      jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
+      resArray = jsonpath::json_query(data_tree__, jPath);
     }
     jsoncons::json answer;
     answer["path"] = gen1_compat_mode? path.getVSSGen1Path() : path.getVSSPath();
