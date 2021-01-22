@@ -161,6 +161,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_NonExistingPath) {
   auto res = json::parse(resStr);
 
   // verify
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  res["timestamp"] = jsonPathNotFound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonPathNotFound);
 }
 
@@ -397,6 +399,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
   auto res = json::parse(resStr);
 
   // verify
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  res["timestamp"] = jsonPathNotFound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonPathNotFound);
 }
 
