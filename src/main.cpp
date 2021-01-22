@@ -356,7 +356,7 @@ int main(int argc, const char *argv[]) {
     auto  mqttClient = std::make_shared<MQTTClient>(
             logger, "vss", variables["mqtt.address"].as<string>()
             , variables["mqtt.port"].as<int>()
-            , variables["mqtt.insecure"].as<int>()
+            , variables["mqtt.insecure"].as<bool>()
             , variables["mqtt.keepalive"].as<int>()
             , variables["mqtt.qos"].as<int>()
             , variables["mqtt.retry"].as<int>()
