@@ -475,9 +475,11 @@ void VssDatabase::HandleSet(jsoncons::json & setValues) {
     logger_->Log(LogLevel::VERBOSE, "vssdatabase::HandleSet path found = " + jPath);
     logger_->Log(LogLevel::VERBOSE, "value to set asstring = " + item["value"].as<string>());
 
-    rwMutex_.lock();
-    jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
-    rwMutex_.unlock();
+    jsoncons::json resArray;
+    {
+      std::lock_guard<std::mutex> lock_guard(rwMutex_);
+      resArray = jsonpath::json_query(data_tree__, jPath);
+    }
     if (resArray.is_array() && resArray.size() == 1) {
       jsoncons::json resJson = resArray[0];
       if (resJson.contains("datatype")) {
@@ -487,9 +489,10 @@ void VssDatabase::HandleSet(jsoncons::json & setValues) {
 
         resJson.insert_or_assign("value", val);
 
-        rwMutex_.lock();
-        jsonpath::json_replace(data_tree__, jPath, resJson);
-        rwMutex_.unlock();
+        {
+          std::lock_guard<std::mutex> lock_guard(rwMutex_);
+          jsonpath::json_replace(data_tree__, jPath, resJson);
+        }
 
         logger_->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: new value set at path " + jPath);
 
@@ -517,9 +520,11 @@ void VssDatabase::HandleSet(jsoncons::json & setValues) {
 void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree){
   std::error_code ec;
 
-  rwMutex_.lock();
-  auto patches = jsoncons::jsonpatch::from_diff(sourceTree, jsonTree);
-  rwMutex_.unlock();
+  jsoncons::json patches;
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    patches = jsoncons::jsonpatch::from_diff(sourceTree, jsonTree);
+  }
   jsoncons::json patchArray = jsoncons::json::array();
   //std::cout << pretty_print(patches) << std::endl;
   for(auto& patch: patches.array_range()){
@@ -528,9 +533,10 @@ void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::jso
        
     }
   }
-  rwMutex_.lock();
-  jsonpatch::apply_patch(sourceTree, patchArray, ec);
-  rwMutex_.unlock();
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    jsonpatch::apply_patch(sourceTree, patchArray, ec);
+  }
 
   if(ec){
     std::cout << "error " << ec.message() << std::endl;
@@ -565,21 +571,24 @@ void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, co
   }
   string format_path = "$";
   bool isBranch = false;
-  rwMutex_.lock();
-  string jPath = getPathForMetadata(path, isBranch);
-  rwMutex_.unlock();
+  string jPath;
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    jPath = getPathForMetadata(path, isBranch);
+  }
 
   if (jPath == "") {
     return;
   }
   logger_->Log(LogLevel::VERBOSE, "VssDatabase::updateMetaData: VSS specific path =" + jPath + " , which is " + (isBranch?"":"not ") + "branch");
     
-  jsoncons::json resMetaTree, resDataTree;
+  jsoncons::json resMetaTree, resDataTree, resMetaTreeArray, resDataTreeArray;
     
-  rwMutex_.lock();
-  jsoncons::json resMetaTreeArray= jsonpath::json_query(meta_tree__, jPath);
-  jsoncons::json resDataTreeArray = jsonpath::json_query(data_tree__, jPath);
-  rwMutex_.unlock();
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    resMetaTreeArray= jsonpath::json_query(meta_tree__, jPath);
+    resDataTreeArray = jsonpath::json_query(data_tree__, jPath);
+  }
 
   if (resMetaTreeArray.is_array() && resMetaTreeArray.size() == 1) {
     resMetaTree = resMetaTreeArray[0];
@@ -606,19 +615,22 @@ void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, co
   // Note: merge metadata may cause overwritting existing data values
   resMetaTree.merge_or_update(metadata);
   resDataTree.merge_or_update(metadata);
-  rwMutex_.lock();
-  jsonpath::json_replace(meta_tree__, jPath, resMetaTree);
-  jsonpath::json_replace(data_tree__, jPath, resDataTree);
-  rwMutex_.unlock();
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    jsonpath::json_replace(meta_tree__, jPath, resMetaTree);
+    jsonpath::json_replace(data_tree__, jPath, resDataTree);
+  }
 }
 
 // Returns the response JSON for metadata request.
 jsoncons::json VssDatabase::getMetaData(const std::string &path) {
   string format_path = "$";
   bool isBranch = false;
-  rwMutex_.lock();
-  string jPath = getPathForMetadata(path, isBranch);
-  rwMutex_.unlock();
+  string jPath;
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    jPath = getPathForMetadata(path, isBranch);
+  }
 
   if (jPath == "") {
     return NULL;
@@ -638,9 +650,11 @@ jsoncons::json VssDatabase::getMetaData(const std::string &path) {
     if ((i < tokLength - 1) && (tokens[i] == "children")) {
       continue;
     }
-    rwMutex_.lock();
-    jsoncons::json resArray = jsonpath::json_query(meta_tree__, format_path);
-    rwMutex_.unlock();
+    jsoncons::json resArray;
+    {
+      std::lock_guard<std::mutex> lock_guard(rwMutex_);
+      jsoncons::json resArray = jsonpath::json_query(meta_tree__, format_path);
+    }
 
     if (resArray.is_array() && resArray.size() == 1) {
       resJson = resArray[0];
@@ -802,21 +816,19 @@ void VssDatabase::setSignal(WsChannel& channel,
   
   jsoncons::json setValues;
 
-  rwMutex_.lock();
-  try {
-      setValues = getPathForSet(path, valueJson);
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    try {
+        setValues = getPathForSet(path, valueJson);
+    }
+    catch( noPathFoundonTree& e) {
+      throw e;
+    }
+    catch ( genException &e) {
+      logger_->Log(LogLevel::ERROR, "Exception VssDatabase::setSignal: " + string(e.what()));
+      throw e;
+    }
   }
-  catch( noPathFoundonTree& e) {
-    rwMutex_.unlock();
-    throw e;
-  }
-  catch ( genException &e) {
-    logger_->Log(LogLevel::ERROR, "Exception VssDatabase::setSignal: " + string(e.what()));
-    rwMutex_.unlock();
-    throw e;
-  }
-  rwMutex_.unlock();
-
   if (setValues.is_array()) {
     HandleSet(setValues);
   } else {
@@ -835,17 +847,16 @@ void VssDatabase::setSignal(const string &path,
   
       logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal  LOCK:");
 
-  rwMutex_.lock();
   jsoncons::json setValues;
-
-  try {
-      setValues = getPathForSet(path, valueJson);
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    try {
+        setValues = getPathForSet(path, valueJson);
+    }
+    catch( genException& e) {
+      logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal Excpetion unlock: " + string(e.what()));
+    }
   }
-  catch( genException& e) {
-    logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal Excpetion unlock: " + string(e.what()));
-  }
-
-  rwMutex_.unlock();
 
   if (setValues.is_array()) {
     HandleSet(setValues);
@@ -860,9 +871,11 @@ void VssDatabase::setSignal(const string &path,
 jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &path) {
   bool isBranch = false;
 
-  rwMutex_.lock();
-  list<string> jPaths = getPathForGet(path, isBranch);
-  rwMutex_.unlock();
+  list<string> jPaths;
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    jPaths = getPathForGet(path, isBranch);
+  }
   int pathsFound = jPaths.size();
   if (pathsFound == 0) {
     jsoncons::json answer;
@@ -895,9 +908,11 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
           jPaths.pop_back();
           continue;
         }
-        rwMutex_.lock();
-        jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
-        rwMutex_.unlock();
+        jsoncons::json resArray;
+        {
+          std::lock_guard<std::mutex> lock_guard(rwMutex_);
+          resArray = jsonpath::json_query(data_tree__, jPath);
+        }
         jPaths.pop_back();
         jsoncons::json result = resArray[0];
         if (result.contains("value")) {
@@ -917,9 +932,11 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
       msg << "No read access to " << getReadablePath(jPath);
       throw noPermissionException(msg.str());
     }
-    rwMutex_.lock();
-    jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
-    rwMutex_.unlock();
+    jsoncons::json resArray;
+    {
+      std::lock_guard<std::mutex> lock_guard(rwMutex_);
+      resArray = jsonpath::json_query(data_tree__, jPath);
+    }
     jsoncons::json answer;
     answer["path"] = getReadablePath(jPath);
     jsoncons::json result = resArray[0];
@@ -951,9 +968,11 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
         jPaths.pop_back();
         continue;
       }
-      rwMutex_.lock();
-      jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
-      rwMutex_.unlock();
+      jsoncons::json resArray;
+      {
+        std::lock_guard<std::mutex> lock_guard(rwMutex_);
+        resArray = jsonpath::json_query(data_tree__, jPath);
+      }
       jPaths.pop_back();
       jsoncons::json result = resArray[0];
       if (result.contains("value")) {
@@ -973,9 +992,11 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &pa
 jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& path, bool gen1_compat_mode) {
   //bool isBranch = false;
 
-  rwMutex_.lock();
-  list<string> jPaths = getJSONPaths(path);
-  rwMutex_.unlock();
+  list<string> jPaths;
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    jPaths = getJSONPaths(path);
+  }
   int pathsFound = jPaths.size();
   if (pathsFound == 0) {
     jsoncons::json answer;
@@ -994,9 +1015,11 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
       msg << "No read access to " << getReadablePath(jPath);
       throw noPermissionException(msg.str());
     }
-    rwMutex_.lock();
-    jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
-    rwMutex_.unlock();
+    jsoncons::json resArray;
+    {
+      std::lock_guard<std::mutex> lock_guard(rwMutex_);
+      jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
+    }
     jsoncons::json answer;
     answer["path"] = gen1_compat_mode? path.getVSSGen1Path() : path.getVSSPath();
     jsoncons::json result = resArray[0];
@@ -1029,9 +1052,11 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
         jPaths.pop_back();
         continue;
       }
-      rwMutex_.lock();
-      jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
-      rwMutex_.unlock();
+      jsoncons::json resArray;
+      {
+        std::lock_guard<std::mutex> lock_guard(rwMutex_);
+        resArray = jsonpath::json_query(data_tree__, jPath);
+      }
       jPaths.pop_back();
       jsoncons::json result = resArray[0];
       
