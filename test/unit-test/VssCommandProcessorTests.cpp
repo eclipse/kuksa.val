@@ -149,6 +149,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
   auto res = json::parse(resStr);
 
   // verify
+  // timestamp must not be zero
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  res["timestamp"] = jsonMalformedReq["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
 
   BOOST_TEST(res == jsonMalformedReq);
 }
@@ -189,6 +192,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
   auto res = json::parse(resStr);
 
   // verify
+  // timestamp must not be zero
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  res["timestamp"] = jsonNoAccess["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+
 
   BOOST_TEST(res == jsonNoAccess);
 }
