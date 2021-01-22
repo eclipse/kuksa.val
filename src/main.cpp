@@ -1,4 +1,4 @@
-    /*
+/*
  * ******************************************************************************
  * Copyright (c) 2019-2020 Robert Bosch GmbH.
  *
@@ -218,7 +218,7 @@ int main(int argc, const char *argv[]) {
     ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which W3C-Server shall handle. Sample 'vss_rel_2.0.json' file can be found under [unit-test](./unit-test/vss_rel_2.0.json)")
     ("cert-path", program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
       "[mandatory] Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. ")
-    ("insecure", "By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.")
+    ("insecure", program_options::bool_switch()->default_value(false), "By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.")
     ("use-keycloak", "Use KeyCloak for permission management")
     ("address", program_options::value<string>()->default_value("127.0.0.1"),
       "If provided, W3C-Server shall use different server address than default _'localhost'_")
@@ -231,7 +231,7 @@ int main(int argc, const char *argv[]) {
   // mqtt options 
   program_options::options_description mqtt_desc("MQTT Options");
   mqtt_desc.add_options()
-    ("mqtt.insecure", "Do not check that the server certificate hostname matches the remote hostname. Do not use this option in a production environment")
+    ("mqtt.insecure", program_options::bool_switch()->default_value(false), "Do not check that the server certificate hostname matches the remote hostname. Do not use this option in a production environment")
     ("mqtt.username", program_options::value<string>(), "Provide a mqtt username")
     ("mqtt.password", program_options::value<string>(), "Provide a mqtt password")
     ("mqtt.address", program_options::value<string>()->default_value("localhost"),
@@ -305,7 +305,7 @@ int main(int argc, const char *argv[]) {
     // initialize server
 
     auto port = variables["port"].as<int>();
-    auto insecure = variables.count("insecure");
+    auto insecure = variables[("insecure")].as<bool>();
     auto vss_path = variables["vss"].as<boost::filesystem::path>();
 
     if (variables.count("use-keycloak")) {
@@ -356,7 +356,7 @@ int main(int argc, const char *argv[]) {
     auto  mqttClient = std::make_shared<MQTTClient>(
             logger, "vss", variables["mqtt.address"].as<string>()
             , variables["mqtt.port"].as<int>()
-            , variables.count("mqtt.insecure")
+            , variables["mqtt.insecure"].as<int>()
             , variables["mqtt.keepalive"].as<int>()
             , variables["mqtt.qos"].as<int>()
             , variables["mqtt.retry"].as<int>()
