@@ -25,6 +25,7 @@
 #include "WsChannel.hpp"
 #include "VssDatabase.hpp"
 #include "ILogger.hpp"
+#include "JsonResponses.hpp"
 
 using namespace std;
 using namespace jsoncons::jsonpath;
@@ -185,7 +186,7 @@ void* SubscriptionHandler::subThreadRunner() {
       answer["action"] = "subscribe";
       answer["subscriptionId"] = std::get<0>(newSub);
       answer.insert_or_assign("value", value);
-      answer["timestamp"] = time(NULL);
+      answer["timestamp"] = JsonResponses::getTimeStamp();
 
       stringstream ss;
       ss << pretty_print(answer);

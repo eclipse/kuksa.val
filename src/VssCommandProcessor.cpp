@@ -85,7 +85,7 @@ string VssCommandProcessor::processGet(WsChannel &channel,
   } else {
     res["action"] = "get";
     res["requestId"] = request_id;
-    res["timestamp"] = time(NULL);
+    res["timestamp"] = JsonResponses::getTimeStamp();
     stringstream ss;
     ss << pretty_print(res);
     return ss.str();
@@ -113,7 +113,7 @@ string VssCommandProcessor::processSet(WsChannel &channel,
     error["message"] = e.what();
 
     root["error"] = error;
-    root["timestamp"] = time(NULL);
+    root["timestamp"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(root);
@@ -135,7 +135,7 @@ string VssCommandProcessor::processSet(WsChannel &channel,
   jsoncons::json answer;
   answer["action"] = "set";
   answer["requestId"] = request_id;
-  answer["timestamp"] = time(NULL);
+  answer["timestamp"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   ss << pretty_print(answer);
@@ -170,7 +170,7 @@ string VssCommandProcessor::processSubscribe(WsChannel &channel,
     answer["action"] = "subscribe";
     answer["requestId"] = request_id;
     answer["subscriptionId"] = subId;
-    answer["timestamp"] = time(NULL);
+    answer["timestamp"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(answer);
@@ -187,7 +187,7 @@ string VssCommandProcessor::processSubscribe(WsChannel &channel,
     error["message"] = "Unknown";
 
     root["error"] = error;
-    root["timestamp"] = time(NULL);
+    root["timestamp"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
 
@@ -204,7 +204,7 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
     answer["action"] = "unsubscribe";
     answer["requestId"] = request_id;
     answer["subscriptionId"] = subscribeID;
-    answer["timestamp"] = time(NULL);
+    answer["timestamp"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(answer);
@@ -221,7 +221,7 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
     error["message"] = "Error while unsubscribing";
 
     root["error"] = error;
-    root["timestamp"] = time(NULL);
+    root["timestamp"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(root);
@@ -235,7 +235,7 @@ string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, const strin
   jsoncons::json answer;
   answer["action"] = "updateVSSTree";
   answer["requestId"] = request_id;
-  answer["timestamp"] = time(NULL);
+  answer["timestamp"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   try {
@@ -273,7 +273,7 @@ string VssCommandProcessor::processGetMetaData(const string & request_id,
   result["requestId"] = request_id;
 
   jsoncons::json st = database->getMetaData(path);
-  result["timestamp"] = time(NULL);
+  result["timestamp"] = JsonResponses::getTimeStamp();
   if (0 == st.size()){
     jsoncons::json error;
     error["number"] = 404;
@@ -297,7 +297,7 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, const std:
   jsoncons::json answer;
   answer["action"] = "updateMetaData";
   answer["requestId"] = request_id;
-  answer["timestamp"] = time(NULL);
+  answer["timestamp"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   try {
@@ -348,7 +348,7 @@ string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
     error["message"] = "Check if the permission managemnt daemon is running";
 
     result["error"] = error;
-    result["timestamp"] = time(NULL);
+    result["timestamp"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
@@ -375,7 +375,7 @@ string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
     error["message"] = "Check the JWT token passed";
 
     result["error"] = error;
-    result["timestamp"] = time(NULL);
+    result["timestamp"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
@@ -386,7 +386,7 @@ string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
     result["action"] = "kuksa-authorize";
     result["requestId"] = request_id;
     result["TTL"] = ttl;
-    result["timestamp"] = time(NULL);
+    result["timestamp"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
@@ -409,7 +409,7 @@ string VssCommandProcessor::processAuthorize(WsChannel &channel,
     error["message"] = "Check the JWT token passed";
 
     result["error"] = error;
-    result["timestamp"] = time(NULL);
+    result["timestamp"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
@@ -420,7 +420,7 @@ string VssCommandProcessor::processAuthorize(WsChannel &channel,
     result["action"] = "authorize";
     result["requestId"] = request_id;
     result["TTL"] = ttl;
-    result["timestamp"] = time(NULL);
+    result["timestamp"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
