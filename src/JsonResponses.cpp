@@ -26,7 +26,7 @@ namespace JsonResponses {
     error["reason"] = "Bad Request";
     error["message"] = message;
     jsonResponse["error"] = error;
-    jsonResponse["timestamp"] = time(NULL);
+    jsonResponse["timestamp"] = getTimeStamp();
   }
   std::string malFormedRequest(std::string request_id,
                                const std::string action,
@@ -46,7 +46,7 @@ namespace JsonResponses {
     error["reason"] = "Bad Request";
     error["message"] = message;
     jsonResponse["error"] = error;
-    jsonResponse["timestamp"] = time(NULL);
+    jsonResponse["timestamp"] = getTimeStamp();
   }
   std::string malFormedRequest(std::string message) {
     jsoncons::json answer;
@@ -93,7 +93,7 @@ namespace JsonResponses {
     error["reason"] = "Forbidden";
     error["message"] = message;
     jsonResponse["error"] = error;
-    jsonResponse["timestamp"] = time(NULL);
+    jsonResponse["timestamp"] = getTimeStamp();
   }
   std::string noAccess(std::string request_id,
                        const std::string action,
@@ -117,7 +117,7 @@ namespace JsonResponses {
     error["reason"] = "Value passed is out of bounds";
     error["message"] = message;
     jsonResponse["error"] = error;
-    jsonResponse["timestamp"] = time(NULL);
+    jsonResponse["timestamp"] = getTimeStamp();
   }
   std::string valueOutOfBounds(std::string request_id,
                                const std::string action,

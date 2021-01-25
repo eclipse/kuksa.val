@@ -34,6 +34,7 @@
 #include "IClientMock.hpp"
 #include "IAuthenticatorMock.hpp"
 #include "IAccessCheckerMock.hpp"
+#include "JsonResponses.hpp"
 
 #include "SubscriptionHandler.hpp"
 
@@ -426,7 +427,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
   }
 
   answer["action"] = "subscribe";
-  answer["timestamp"] = time(NULL);
+  answer["timestamp"] = JsonResponses::getTimeStamp();
 
   // verify that each updated signal for which single client is subscribed to is called
   for (unsigned index = 0; index < paths; index++) {
@@ -513,7 +514,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   }
 
   answer["action"] = "subscribe";
-  answer["timestamp"] = time(NULL);
+  answer["timestamp"] = JsonResponses::getTimeStamp();
 
   // custom verifier for returned JSON message
   auto jsonVerify = [&resMap, &answer]( const std::string &actual ) -> bool {
@@ -522,7 +523,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
     ret = (answer["action"] == response["action"]);
     if (ret) {
-      ret = (answer["timestamp"] == response["timestamp"]);
+      ret = (response["timestamp"] >= answer["timestamp"] );
     }
 
     if (ret) {
@@ -646,7 +647,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   }
 
   answer["action"] = "subscribe";
-  answer["timestamp"] = time(NULL);
+  answer["timestamp"] = JsonResponses::getTimeStamp();
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {

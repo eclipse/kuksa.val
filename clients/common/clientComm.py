@@ -40,7 +40,7 @@ class VSSClientComm(threading.Thread):
 
 
     def sendReceiveMsg(self, req, timeout): 
-        req["requestId"] = uuid.uuid4().int
+        req["requestId"] = str(uuid.uuid4())
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         while True:
