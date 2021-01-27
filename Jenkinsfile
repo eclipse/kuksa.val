@@ -36,7 +36,7 @@ node('docker') {
                 stage('amd64') {
                     sh "docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-amd64.tar ."
                     
-                    sh "docker buildx build --platform=linux/arm64 -f ./clients/vss-testclient/Dockerfile -t amd64/kuksa-vssclient:${versiontag} --output type=docker,dest=./artifacts/kuksa-vssclient-${versiontag}-amd64.tar ./clients/"
+                    sh "docker buildx build --platform=linux/amd64 -f ./clients/vss-testclient/Dockerfile -t amd64/kuksa-vssclient:${versiontag} --output type=docker,dest=./artifacts/kuksa-vssclient-${versiontag}-amd64.tar ./clients/"
 
                     sh "docker build -t kuksa-val-dev-ubuntu20.04:${versiontag} -f docker/Dockerfile.dev ."
                     sh "docker save kuksa-val-dev-ubuntu20.04:${versiontag}  > artifacts/kuksa-val-dev-ubuntu20.04:${versiontag}.tar"
@@ -50,6 +50,8 @@ node('docker') {
                 tools: [ BoostTest(pattern: 'artifacts/results.xml') ]]
         )
         cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'artifacts/coverage.xml', conditionalCoverageTargets: '70, 0, 0', enableNewApi: true, failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+        //Cleaning up: After unittest we do not need dev docker in local registry
+        sh "docker rmi kuksa-val-dev-ubuntu20.04:${versiontag}"
     }
     stage('Compress') {
         sh 'ls -al artifacts'
