@@ -15,7 +15,10 @@
 /** This are tests for VIS Gen2-style get request. No access checks */
 
 #include <boost/test/unit_test.hpp>
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <turtle/mock.hpp>
+#undef BOOST_BIND_GLOBAL_PLACEHOLDERS
+
 
 #include <memory>
 #include <string>
@@ -122,10 +125,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
 
   // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int>();
+  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
 
   BOOST_TEST(res == expectedJson);
 }
@@ -158,6 +161,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_NonExistingPath) {
   auto res = json::parse(resStr);
 
   // verify
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  res["timestamp"] = jsonPathNotFound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonPathNotFound);
 }
 
@@ -256,10 +261,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
 
   // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int>();
+  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
 
   BOOST_TEST(res == expectedJson);
 }
@@ -358,10 +363,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int>() > 0);
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
 
   // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int>();
+  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
 
   BOOST_TEST(res == expectedJson);
 }
@@ -394,6 +399,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
   auto res = json::parse(resStr);
 
   // verify
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  res["timestamp"] = jsonPathNotFound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonPathNotFound);
 }
 

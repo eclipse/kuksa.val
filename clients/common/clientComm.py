@@ -40,7 +40,7 @@ class VSSClientComm(threading.Thread):
 
 
     def sendReceiveMsg(self, req, timeout): 
-        req["requestId"] = uuid.uuid4().int
+        req["requestId"] = str(uuid.uuid4())
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         while True:
@@ -113,6 +113,7 @@ class VSSClientComm(threading.Thread):
                 self.recvMsgQueue.put(resp)
             except queue.Empty:
                 pass
+        await webSocket.close()
 
     async def mainLoop(self):
         if not self.insecure:
