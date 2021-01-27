@@ -389,6 +389,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
   // timestamp must not be zero
   BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  jsonValueOutOfBound["timestamp"] = res["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+
   BOOST_TEST(res == jsonValueOutOfBound);
 }
 
@@ -438,6 +440,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   // timestamp must not be zero
   BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  jsonNoAccess["timestamp"] = res["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonNoAccess);
 }
 
@@ -487,6 +490,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
   // timestamp must not be zero
   BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  // Set timestamp for comparision purposes
+  jsonMalformedReq["timestamp"] = res["timestamp"].as<int64_t>();
+
   BOOST_TEST(res == jsonMalformedReq);
 }
 
