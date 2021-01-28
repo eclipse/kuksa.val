@@ -96,7 +96,7 @@ if(BUILD_UNIT_TEST)
 endif(BUILD_UNIT_TEST)
 
 # link library dependencies
-target_link_libraries(${SERVER_OBJ_LIB_NAME} PUBLIC jwt-cpp jsonpath jsoncons)
+target_link_libraries(${SERVER_OBJ_LIB_NAME} PUBLIC jwt-cpp jsonpath jsoncons CMAKE_THREAD_LIBS_INIT)
 
 if ("${ADDRESS_SAN}" STREQUAL "ON" AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -fsanitize=address -fno-omit-frame-pointer)
@@ -130,7 +130,6 @@ if(BUILD_EXE)
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${GIO_LIBRARY_DIRS})
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE gobject-2.0 glib-2.0 gio-2.0)
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
-  target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE "-ldl")
   target_include_directories(${SERVER_EXE_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIR})
