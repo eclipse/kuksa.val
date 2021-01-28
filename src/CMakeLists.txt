@@ -96,7 +96,7 @@ if(BUILD_UNIT_TEST)
 endif(BUILD_UNIT_TEST)
 
 # link library dependencies
-target_link_libraries(${SERVER_OBJ_LIB_NAME} PUBLIC jwt-cpp jsonpath jsoncons CMAKE_THREAD_LIBS_INIT)
+target_link_libraries(${SERVER_OBJ_LIB_NAME} PUBLIC jwt-cpp jsonpath jsoncons ${CMAKE_THREAD_LIBS_INIT})
 
 if ("${ADDRESS_SAN}" STREQUAL "ON" AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -fsanitize=address -fno-omit-frame-pointer)
