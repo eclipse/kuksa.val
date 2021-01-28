@@ -15,6 +15,7 @@
 #include <limits>
 #include <regex>
 #include <stdexcept>
+#include <fstream>
 #include <boost/algorithm/string.hpp>
 #include "jsonpath/json_query.hpp"
 #include "jsoncons_ext/jsonpatch/jsonpatch.hpp"
