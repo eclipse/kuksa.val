@@ -96,7 +96,11 @@ if(BUILD_UNIT_TEST)
 endif(BUILD_UNIT_TEST)
 
 # link library dependencies
-target_link_libraries(${SERVER_OBJ_LIB_NAME} PUBLIC jwt-cpp jsonpath jsoncons ${CMAKE_THREAD_LIBS_INIT})
+# Setting max stack size explicetely to current default value of glibc on Ubuntu, to force MUSL
+# builds using the same max. Otherwise you might have hard to debug differences between MUSL and
+# builds.
+# See also https://wiki.musl-libc.org/functional-differences-from-glibc.html#Thread-stack-size
+target_link_libraries(${SERVER_OBJ_LIB_NAME}  PUBLIC jwt-cpp jsonpath jsoncons ${CMAKE_THREAD_LIBS_INIT} -Wl,-z,stack-size=8388608)
 
 if ("${ADDRESS_SAN}" STREQUAL "ON" AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -fsanitize=address -fno-omit-frame-pointer)
