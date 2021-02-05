@@ -36,52 +36,20 @@ class Kuksa_Client():
             print("kuksa_val section missing from configuration, exiting")
             sys.exit(-1)
         provider_config=config['kuksa_val']
-        self.sendMsgQueue = queue.Queue()
-        self.recvMsgQueue = queue.Queue()
-        self.client = VSSClientComm(self.sendMsgQueue, self.recvMsgQueue, provider_config)
+        self.client = VSSClientComm(provider_config)
         self.client.start()
         self.token = provider_config.get('token', "token.json")
-        self.authorize()
+        self.client.authorize(self.token)
         
-    def authorize(self):
-        if os.path.isfile(self.token):
-            with open(self.token, "r") as f:
-                self.token = f.readline()
-
-        req = {}
-        req["requestId"] = 1238
-        req["action"]= "authorize"
-        req["tokens"] = self.token
-        jsonDump = json.dumps(req)
-        self.sendMsgQueue.put(jsonDump)
-        #print(req)
-        resp = self.recvMsgQueue.get(timeout = 1)
-        #print(resp)
-
     def shutdown(self):
         self.client.stopComm()
 
-    def setValue(self, path, value):
-        if 'nan' == value:
-            print(path + " has an invalid value " + str(value))
-            return
-        req = {}
-        req["requestId"] = 1235
-        req["action"]= "set"
-        req["path"] = path
-        req["value"] = value
-        jsonDump = json.dumps(req)
-        #print(jsonDump)
-        self.sendMsgQueue.put(jsonDump)
-        resp = self.recvMsgQueue.get(timeout = 1)
-        #print(resp)
-        
     def setPosition(self, position):
-        self.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Altitude', position['alt'])
-        self.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Latitude', position["lat"])
-        self.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Longitude', position["lon"])
-        self.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Accuracy', position["hdop"])
-        self.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Speed', position["speed"])
+        self.client.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Altitude', position['alt'])
+        self.client.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Latitude', position["lat"])
+        self.client.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Longitude', position["lon"])
+        self.client.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Accuracy', position["hdop"])
+        self.client.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Speed', position["speed"])
 
 class GPSD_Client():
     def __init__(self, config, consumer):
@@ -122,8 +90,10 @@ class GPSD_Client():
             except Exception as e:
                 print("Get exceptions: ")
                 print(e)
-                self.shutdown()
-                return
+                time.sleep(1) 
+                continue
+                #self.shutdown()
+                #return
 
             self.consumer.setPosition(self.position)
      
