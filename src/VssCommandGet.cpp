@@ -37,6 +37,10 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   } catch (jsoncons::jsonschema::schema_error & e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
     return JsonResponses::malFormedRequest(requestId, "get", string("Schema error: ") + e.what());
+  } catch (std::exception &e) {
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
+    return JsonResponses::malFormedRequest(
+        requestId, "get", string("Unhandled error: ") + e.what());
   }
 
   //-------------------------------------
