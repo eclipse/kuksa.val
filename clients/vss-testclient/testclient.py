@@ -98,8 +98,6 @@ class VSSTestClient(Cmd):
 
         self.prompt = "VSS Client> "
         self.max_completion_items = 20
-        self.sendMsgQueue = queue.Queue()
-        self.recvMsgQueue = queue.Queue()
         self.serverIP = DEFAULT_SERVER_ADDR
         self.serverPort = DEFAULT_SERVER_PORT
         self.vssTree = {}
