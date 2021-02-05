@@ -1,26 +1,26 @@
 [
     {
-        "id": "753b87c3.ecf3c",
+        "id": "cf042400.bafb48",
         "type": "tab",
         "label": "Websocket",
         "disabled": false,
         "info": ""
     },
     {
-        "id": "ad27f2b5.f2375",
+        "id": "d5700f3d.50134",
         "type": "websocket out",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "",
         "server": "",
         "client": "d832fa0b.963258",
         "x": 930,
-        "y": 80,
+        "y": 100,
         "wires": []
     },
     {
-        "id": "a87d9520.c61118",
+        "id": "a480d57e.4565b8",
         "type": "inject",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "authorize",
         "props": [
             {
@@ -32,20 +32,20 @@
         "once": true,
         "onceDelay": 0.1,
         "topic": "",
-        "payload": "{\"action\":\"authorize\",\"tokens\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJrdWtzYS52YWwiLCJpc3MiOiJFY2xpcHNlIEtVS1NBIERldiIsImFkbWluIjp0cnVlLCJtb2RpZnlUcmVlIjp0cnVlLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTYwNjIzOTAyMiwia3Vrc2EtdnNzIjp7IioiOiJydyJ9fQ.XJ51r3dd3S7DX7ekzFDF9kHEss__voK8Fgs7DDeSPa1lw51S8l59TKiYj2isHvc7RxG6zbKGSY12UbYqsJW62CNQMQVJw0IupczpdFkuv9-nesvmhMrV40vupe2YD9ruuY-DK8WgY7ti7us6kJ4DYhbMOjtiB8hYaVwiSOdn4r8uWTghbleF9fc6Lvi_igM-lopZU8VZmQCIB5koFRJ-Z7HFg2ZjaD5SX2mWhE2ZhXE07CKpv0aplqlqtqBCf38zQ7Nk05YliNIijhvT35Ge0OL4B4fqeixXbpRkAUBlhy5f0oypeBnBr3XaM7akJa1W91H8ANj_mdELIATXfEfEzxD9dd8YvQZi43vVF3KYIJLL09EIAGKKccom4l7XJORiTKcQt4EfSh1I2IYhsZSB8uNwIEPx7h8HqUDXp6y_eBdy13W48hnT4hJ5HH0hTfIE5VEPTJPmlPlX1coGgFa8zXmL85uElgHUJwL_3PbFB_O8wqy0fiXayqOa09bjUbX3ux3BGZI6Lji2o0q8JW6OHCW4YilhgyfJC3m4kZAxe1S1IGQVQXBlq0JHmPFkJmf3BClPAhBh1tpPpSwz8ppuGZ85asRnkDH2sYoMWjandO1s_oKskplPESGQ3h1lyU9fLvpp_0yJSlrv07CnzKLeXKS8QYiO30YbkTCdGxlSae8\",\"requestId\":1238}",
+        "payload": "{\"action\":\"authorize\",\"tokens\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJrdWtzYS52YWwiLCJpc3MiOiJFY2xpcHNlIEtVS1NBIERldiIsImFkbWluIjp0cnVlLCJtb2RpZnlUcmVlIjp0cnVlLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTc2NzIyNTU5OSwia3Vrc2EtdnNzIjp7IioiOiJydyJ9fQ.p2cnFGH16QoQ14l6ljPVKggFXZKmD-vrw8G6Vs6DvAokjsUG8FHh-F53cMsE-GDjyZH_1_CrlDCnbGlqjsFbgAylqA7IAJWp9_N6dL5p8DHZTwlZ4IV8L1CtCALs7XVqvcQKHCCzB63Y8PgVDCAqpQSRb79JPVD4pZwkBKpOknfEY5y9wfbswZiRKdgz7o61_oFnd-yywpse-23HD6v0htThVF1SuGL1PuvGJ8p334nt9bpkZO3gaTh1xVD_uJMwHzbuBCF33_f-I5QMZO6bVooXqGfe1zvl3nDrPEjq1aPulvtP8RgREYEqE6b2hB8jouTiC_WpE3qrdMw9sfWGFbm04qC-2Zjoa1yYSXoxmYd0SnliSYHAad9aXoEmFENezQV-of7sc-NX1-2nAXRAEhaqh0IRuJwB4_sG7SvQmnanwkz-sBYxKqkoFpOsZ6hblgPDOPYY2NAsZlYkjvAL2mpiInrsmY_GzGsfwPeAx31iozImX75rao8rm-XucAmCIkRlpBz6MYKCjQgyRz3UtZCJ2DYF4lKqTjphEAgclbYZ7KiCuTn9HualwtEmVzHHFneHMKl7KnRQk-9wjgiyQ5nlsVpCCblg6JKr9of4utuPO3cBvbjhB4_ueQ40cpWVOICcOLS7_w0i3pCq1ZKDEMrYDJfz87r2sU9kw1zeFQk\",\"requestId\":\"1238\"}",
         "payloadType": "json",
         "x": 180,
         "y": 60,
         "wires": [
             [
-                "ad27f2b5.f2375"
+                "d5700f3d.50134"
             ]
         ]
     },
     {
-        "id": "f29a189e.c4811",
+        "id": "2eb26ebf.5665e2",
         "type": "websocket in",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "",
         "server": "",
         "client": "d832fa0b.963258",
@@ -53,14 +53,14 @@
         "y": 620,
         "wires": [
             [
-                "245b09a1.c71c7e"
+                "a4f4807c.2c99b"
             ]
         ]
     },
     {
-        "id": "b8995de.60ae12",
+        "id": "8eedf80a.2f1fb8",
         "type": "debug",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "not an action",
         "active": true,
         "tosidebar": true,
@@ -75,9 +75,9 @@
         "wires": []
     },
     {
-        "id": "e618236f.e8e708",
+        "id": "6a9fdd96.159674",
         "type": "inject",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "subscribe Vehicle.Speed",
         "props": [
             {
@@ -93,20 +93,20 @@
         "once": true,
         "onceDelay": "0.2",
         "topic": "",
-        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Speed\",\"requestId\":2}",
+        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Speed\",\"requestId\":\"2\"}",
         "payloadType": "json",
         "x": 230,
         "y": 120,
         "wires": [
             [
-                "ad27f2b5.f2375"
+                "d5700f3d.50134"
             ]
         ]
     },
     {
-        "id": "fb4214f3.39712",
+        "id": "efc01e17.74d33",
         "type": "ui_gauge",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "",
         "group": "2e4b5aa8.f5e826",
         "order": 9,
@@ -130,9 +130,9 @@
         "wires": []
     },
     {
-        "id": "a123267e.16e4a",
+        "id": "76dc15e7.904dcc",
         "type": "switch",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "handle msg",
         "property": "payload",
         "propertyType": "msg",
@@ -158,20 +158,20 @@
         "y": 680,
         "wires": [
             [
-                "b39725f2.fb177"
+                "9a2f38ba.4f5ad8"
             ],
             [
-                "29405fb6.8e6468"
+                "431f1723.2cb7e8"
             ],
             [
-                "b8995de.60ae12"
+                "8eedf80a.2f1fb8"
             ]
         ]
     },
     {
-        "id": "245b09a1.c71c7e",
+        "id": "a4f4807c.2c99b",
         "type": "json",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "",
         "property": "payload",
         "action": "",
@@ -180,14 +180,14 @@
         "y": 700,
         "wires": [
             [
-                "a123267e.16e4a"
+                "76dc15e7.904dcc"
             ]
         ]
     },
     {
-        "id": "29405fb6.8e6468",
+        "id": "431f1723.2cb7e8",
         "type": "switch",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "handle action",
         "property": "payload[\"action\"]",
         "propertyType": "msg",
@@ -213,20 +213,20 @@
         "y": 640,
         "wires": [
             [
-                "2b51be4d.c8efaa"
+                "171ec5e2.d323ea"
             ],
             [
-                "bb1d8477.5f4348"
+                "c050d3af.89afe"
             ],
             [
-                "f478c70.cc1d738"
+                "d1c55b0b.b78238"
             ]
         ]
     },
     {
-        "id": "2b51be4d.c8efaa",
+        "id": "171ec5e2.d323ea",
         "type": "debug",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "authorized",
         "active": true,
         "tosidebar": true,
@@ -241,9 +241,9 @@
         "wires": []
     },
     {
-        "id": "f478c70.cc1d738",
+        "id": "d1c55b0b.b78238",
         "type": "debug",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "other actions",
         "active": true,
         "tosidebar": true,
@@ -258,9 +258,9 @@
         "wires": []
     },
     {
-        "id": "b39725f2.fb177",
+        "id": "9a2f38ba.4f5ad8",
         "type": "debug",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "print error",
         "active": true,
         "tosidebar": true,
@@ -275,9 +275,9 @@
         "wires": []
     },
     {
-        "id": "20016f1f.dc6228",
+        "id": "a1835f2a.6d886",
         "type": "ui_text",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "group": "2e4b5aa8.f5e826",
         "order": 4,
         "width": 0,
@@ -291,9 +291,9 @@
         "wires": []
     },
     {
-        "id": "59b3cc3b.a8ecb4",
+        "id": "82dc3aaf.5607c8",
         "type": "ui_text",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "group": "2e4b5aa8.f5e826",
         "order": 2,
         "width": 0,
@@ -307,9 +307,9 @@
         "wires": []
     },
     {
-        "id": "abd891d1.6b90c8",
+        "id": "6d9c64c.068ab9c",
         "type": "ui_template",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "group": "2e4b5aa8.f5e826",
         "name": "Moving",
         "order": 6,
@@ -327,9 +327,9 @@
         ]
     },
     {
-        "id": "adc654ce.5ddc2",
+        "id": "67123fc6.c7f",
         "type": "ui_gauge",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "",
         "group": "2e4b5aa8.f5e826",
         "order": 11,
@@ -353,9 +353,9 @@
         "wires": []
     },
     {
-        "id": "17528a13.e347ae",
+        "id": "b54021a9.62919",
         "type": "inject",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "subscribe Vehicle.OBD.FuelLevel",
         "props": [
             {
@@ -371,20 +371,20 @@
         "once": true,
         "onceDelay": "0.2",
         "topic": "",
-        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.OBD.FuelLevel\",\"requestId\":3}",
+        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.OBD.FuelLevel\",\"requestId\":\"3\"}",
         "payloadType": "json",
         "x": 240,
         "y": 180,
         "wires": [
             [
-                "ad27f2b5.f2375"
+                "d5700f3d.50134"
             ]
         ]
     },
     {
-        "id": "d377da5c.81d4e",
+        "id": "eb444072.4129f",
         "type": "inject",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "subscribe Vehicle.DriveTime",
         "props": [
             {
@@ -400,20 +400,20 @@
         "once": true,
         "onceDelay": "0.2",
         "topic": "",
-        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.DriveTime\",\"requestId\":4}",
+        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.DriveTime\",\"requestId\":\"4\"}",
         "payloadType": "json",
         "x": 220,
         "y": 240,
         "wires": [
             [
-                "ad27f2b5.f2375"
+                "d5700f3d.50134"
             ]
         ]
     },
     {
-        "id": "84d0372.8e96ec8",
+        "id": "b1cee1df.e38f9",
         "type": "inject",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "subscribe Vehicle.TravelledDistance",
         "props": [
             {
@@ -429,20 +429,20 @@
         "once": true,
         "onceDelay": "0.2",
         "topic": "",
-        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.TravelledDistance\",\"requestId\":5}",
+        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.TravelledDistance\",\"requestId\":\"5\"}",
         "payloadType": "json",
         "x": 230,
         "y": 300,
         "wires": [
             [
-                "ad27f2b5.f2375"
+                "d5700f3d.50134"
             ]
         ]
     },
     {
-        "id": "1d5c1a1.2bdee66",
+        "id": "a63b39f9.bd2f38",
         "type": "inject",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "subscribe Vehicle.IsMoving",
         "props": [
             {
@@ -458,20 +458,20 @@
         "once": true,
         "onceDelay": "0.2",
         "topic": "",
-        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.IsMoving\",\"requestId\":6}",
+        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.IsMoving\",\"requestId\":\"6\"}",
         "payloadType": "json",
         "x": 240,
         "y": 360,
         "wires": [
             [
-                "ad27f2b5.f2375"
+                "d5700f3d.50134"
             ]
         ]
     },
     {
-        "id": "bb1d8477.5f4348",
+        "id": "c050d3af.89afe",
         "type": "switch",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "handle subscribe",
         "property": "payload",
         "propertyType": "msg",
@@ -497,20 +497,20 @@
         "y": 620,
         "wires": [
             [
-                "8ad0f0b7.9627d8"
+                "dad05835.905838"
             ],
             [
-                "da19329d.2b3ad"
+                "3a9fc58c.fdf5ea"
             ],
             [
-                "b86a5c2b.c503e8"
+                "3cd322b6.35249e"
             ]
         ]
     },
     {
-        "id": "b86a5c2b.c503e8",
+        "id": "3cd322b6.35249e",
         "type": "debug",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "Other subscribe msg",
         "active": true,
         "tosidebar": true,
@@ -525,9 +525,9 @@
         "wires": []
     },
     {
-        "id": "da19329d.2b3ad",
+        "id": "3a9fc58c.fdf5ea",
         "type": "function",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "parse value",
         "func": "var requestId = flow.get(\"s\"+msg.payload[\"subscriptionId\"])\n//msg.payload = { \"value\": msg.payload[\"value\"], \"requestId\" : requestId}\nmsg.topic = requestId\nmsg.payload = msg.payload[\"value\"]\n\nreturn msg;",
         "outputs": 1,
@@ -538,15 +538,15 @@
         "y": 600,
         "wires": [
             [
-                "42409c4a.6a4e94",
-                "53309118.a99948"
+                "72bc48a5.ba1648",
+                "ffe2613a.e8258"
             ]
         ]
     },
     {
-        "id": "42370185.3a3ad",
+        "id": "fafa69f9.722168",
         "type": "debug",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "new flow entry",
         "active": true,
         "tosidebar": true,
@@ -561,9 +561,9 @@
         "wires": []
     },
     {
-        "id": "8ad0f0b7.9627d8",
+        "id": "dad05835.905838",
         "type": "function",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "store subscriptionId",
         "func": "var subscriptionId = \"s\"+msg.payload[\"subscriptionId\"]\nvar requestId = msg.payload[\"requestId\"]\nflow.set(subscriptionId, requestId);\nreturn {\"payload\": {\"subscriptionId\": subscriptionId, \"requestId\": requestId}};",
         "outputs": 1,
@@ -574,14 +574,14 @@
         "y": 400,
         "wires": [
             [
-                "42370185.3a3ad"
+                "fafa69f9.722168"
             ]
         ]
     },
     {
-        "id": "42409c4a.6a4e94",
+        "id": "72bc48a5.ba1648",
         "type": "switch",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "handle value",
         "property": "topic",
         "propertyType": "msg",
@@ -642,39 +642,39 @@
         "y": 520,
         "wires": [
             [
-                "fb4214f3.39712"
+                "efc01e17.74d33"
             ],
             [
-                "adc654ce.5ddc2"
+                "67123fc6.c7f"
             ],
             [
-                "20016f1f.dc6228"
+                "a1835f2a.6d886"
             ],
             [
-                "59b3cc3b.a8ecb4"
+                "82dc3aaf.5607c8"
             ],
             [
-                "abd891d1.6b90c8"
+                "6d9c64c.068ab9c"
             ],
             [],
             [
-                "a087f773.98063"
+                "dc3bfc12.bbb57"
             ],
             [
-                "3fc31e02.d6e2ba"
+                "42f8727a.343abc"
             ],
             [
-                "20eef62a.89943a"
+                "915cc37d.ca142"
             ],
             [
-                "5bbba48.9b271dc"
+                "a5795e1a.84bbe"
             ]
         ]
     },
     {
-        "id": "5bbba48.9b271dc",
+        "id": "a5795e1a.84bbe",
         "type": "debug",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "other value",
         "active": true,
         "tosidebar": true,
@@ -689,9 +689,9 @@
         "wires": []
     },
     {
-        "id": "ed78c5db.a5c818",
+        "id": "e5e2f864.692728",
         "type": "ui_worldmap",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "group": "412ed4b3.5566bc",
         "order": 11,
         "width": 0,
@@ -717,9 +717,9 @@
         "wires": []
     },
     {
-        "id": "f4ca2bc8.f91ef8",
+        "id": "40444402.7f3fcc",
         "type": "inject",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "subscribe Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Altitude",
         "props": [
             {
@@ -735,20 +735,20 @@
         "once": true,
         "onceDelay": "0.2",
         "topic": "",
-        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Altitude\",\"requestId\":7}",
+        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Altitude\",\"requestId\":\"7\"}",
         "payloadType": "json",
         "x": 320,
         "y": 420,
         "wires": [
             [
-                "ad27f2b5.f2375"
+                "d5700f3d.50134"
             ]
         ]
     },
     {
-        "id": "4df4b188.e1e82",
+        "id": "e9cbc898.f080a8",
         "type": "inject",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "subscribe Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Latitude",
         "props": [
             {
@@ -764,20 +764,20 @@
         "once": true,
         "onceDelay": "0.2",
         "topic": "",
-        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Latitude\",\"requestId\":8}",
+        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Latitude\",\"requestId\":\"8\"}",
         "payloadType": "json",
         "x": 320,
         "y": 460,
         "wires": [
             [
-                "ad27f2b5.f2375"
+                "d5700f3d.50134"
             ]
         ]
     },
     {
-        "id": "3acf065e.917d22",
+        "id": "97881c7c.78001",
         "type": "inject",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "subscribe Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Longitude",
         "props": [
             {
@@ -793,20 +793,20 @@
         "once": true,
         "onceDelay": "0.2",
         "topic": "",
-        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Longitude\",\"requestId\":9}",
+        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Longitude\",\"requestId\":\"9\"}",
         "payloadType": "json",
         "x": 330,
         "y": 520,
         "wires": [
             [
-                "ad27f2b5.f2375"
+                "d5700f3d.50134"
             ]
         ]
     },
     {
-        "id": "3fc31e02.d6e2ba",
+        "id": "42f8727a.343abc",
         "type": "function",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "parse lon",
         "func": "flow.set(\"lon\", msg.payload);\nreturn {\n  payload: {\n    lon: msg.payload,\n    name: \"kuksa\",\n    popped: false\n  }\n};",
         "outputs": 1,
@@ -817,14 +817,14 @@
         "y": 880,
         "wires": [
             [
-                "ed78c5db.a5c818"
+                "e5e2f864.692728"
             ]
         ]
     },
     {
-        "id": "a087f773.98063",
+        "id": "dc3bfc12.bbb57",
         "type": "function",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "parse lat",
         "func": "flow.set(\"lat\", msg.payload);\nreturn {\n  payload: {\n    lat: msg.payload,\n    name: \"kuksa\",\n    popped: false\n  }\n};",
         "outputs": 1,
@@ -835,14 +835,14 @@
         "y": 820,
         "wires": [
             [
-                "ed78c5db.a5c818"
+                "e5e2f864.692728"
             ]
         ]
     },
     {
-        "id": "f2be831e.99c198",
+        "id": "f3ca90da.1ed93",
         "type": "inject",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "subscribe Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Speed",
         "props": [
             {
@@ -858,20 +858,20 @@
         "once": true,
         "onceDelay": "0.2",
         "topic": "",
-        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Speed\",\"requestId\":10}",
+        "payload": "{\"action\":\"subscribe\",\"path\":\"Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Speed\",\"requestId\":\"10\"}",
         "payloadType": "json",
         "x": 300,
         "y": 560,
         "wires": [
             [
-                "ad27f2b5.f2375"
+                "d5700f3d.50134"
             ]
         ]
     },
     {
-        "id": "20eef62a.89943a",
+        "id": "915cc37d.ca142",
         "type": "ui_gauge",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "",
         "group": "412ed4b3.5566bc",
         "order": 10,
@@ -895,9 +895,9 @@
         "wires": []
     },
     {
-        "id": "53309118.a99948",
+        "id": "ffe2613a.e8258",
         "type": "debug",
-        "z": "753b87c3.ecf3c",
+        "z": "cf042400.bafb48",
         "name": "",
         "active": true,
         "tosidebar": true,
