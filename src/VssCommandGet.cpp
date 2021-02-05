@@ -25,14 +25,19 @@
  * compatibility **/
 std::string VssCommandProcessor::processGet2(WsChannel &channel,
                                              jsoncons::json &request) {
-  requestValidator->validateGet(request);
-
   VSSPath path=VSSPath::fromVSS(request["path"].as_string());
   bool  gen1_compat_mode=path.isGen1Origin();
 
   string requestId = request["requestId"].as_string();
   logger->Log(LogLevel::VERBOSE,
               "Get request with id " + requestId + " for path: " + path.getVSSPath());
+
+  try {
+    requestValidator->validateGet(request);
+  } catch (jsoncons::jsonschema::schema_error & e) {
+    logger->Log(LogLevel::ERROR, string(e.what()));
+    return JsonResponses::malFormedRequest(requestId, "get", string("Schema error: ") + e.what());
+  }
 
   //-------------------------------------
   jsoncons::json res;
