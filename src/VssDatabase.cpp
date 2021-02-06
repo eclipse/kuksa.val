@@ -201,6 +201,7 @@ jsoncons::json tryParse(jsoncons::json val) {
 
       throw genException(msg);
     }
+
     if (source["datatype"] == "uint8")
       dest[key] = source["value"].as<uint8_t>();
     else if (source["datatype"] == "int8")
@@ -225,6 +226,10 @@ jsoncons::json tryParse(jsoncons::json val) {
       dest[key] = source["value"].as<double>();
     else if (source["datatype"] == "string")
       dest[key] = source["value"].as<std::string>();
+    else {
+      logger->Log(LogLevel::WARNING, "VSSDatabase unknown datatype \"" + source["datatype"].as<std::string>() + "\". Falling back to string" );
+      dest[key] = source["value"].as<std::string>();
+    }
   }
 }
 
