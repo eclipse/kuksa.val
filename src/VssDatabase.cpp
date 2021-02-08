@@ -858,6 +858,12 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
         string value_type = resJson["datatype"].as<string>();
         checkTypeAndBound(logger_, value_type, value);
         resJson.insert_or_assign("value", value);
+        {
+          jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
+        }
+      }
+      else {
+        throw noPathFoundonTree(path.getVSSPath()+ "is invalid for set"); //Todo better error message. (Does not propagate);
       }
     }
   }
