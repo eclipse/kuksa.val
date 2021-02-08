@@ -62,18 +62,14 @@ bool AccessChecker::checkWriteAccess(WsChannel &channel, const VSSPath &path) {
 }
 
 
-// check the permissions json in WsChannel if path has write access
-bool AccessChecker::checkWriteAccess(WsChannel &channel, const string &path) {
-  return checkSignalAccess(channel, path, "w");
-}
-
 // Checks if all the paths have write access.If even 1 path in the list does not
 // have write access, this method returns false.
 bool AccessChecker::checkPathWriteAccess(WsChannel &channel, const json &paths) {
   for (size_t i = 0; i < paths.size(); i++) {
     json item = paths[i];
     string jPath = item["path"].as<string>();
-    if (!checkWriteAccess(channel, jPath)) {
+    VSSPath path = VSSPath::fromVSS(jPath);
+    if (!checkWriteAccess(channel, path)) {
       return false;
     }
   }
