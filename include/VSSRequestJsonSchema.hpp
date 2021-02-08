@@ -87,7 +87,7 @@ static const char* SCHEMA = (R"(
         },
         "value": {
             "description": "The data value returned by the server. This could either be a basic type, or a complex type comprised of nested name/value pairs in JSON format.",
-            "type": "string"
+            "type": ["number", "string"]
         },
         "timestamp": {
             "description": "The Coordinated Universal Time (UTC) time that the server returned the response (expressed as number of milliseconds).",
