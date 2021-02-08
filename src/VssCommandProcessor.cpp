@@ -65,32 +65,6 @@ VssCommandProcessor::~VssCommandProcessor() {
 #endif
 }
 
-string VssCommandProcessor::processGet(WsChannel &channel,
-                                       const string & request_id, 
-                                       const string & path) {
-  logger->Log(LogLevel::VERBOSE, "GET :: path received from client = " + path);
-  jsoncons::json res;
-  try {
-    res = database->getSignal(channel, path);
-  } catch (noPermissionException &nopermission) {
-    logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request_id, "get", nopermission.what());
-  } catch (std::exception &e) {
-    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
-    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
-  }
-
-  if (!res.contains("value")) {
-    return JsonResponses::pathNotFound(request_id, "get", path);
-  } else {
-    res["action"] = "get";
-    res["requestId"] = request_id;
-    res["timestamp"] = JsonResponses::getTimeStamp();
-    stringstream ss;
-    ss << pretty_print(res);
-    return ss.str();
-  }
-}
 
 string VssCommandProcessor::processSet(WsChannel &channel,
                                        const string & request_id, 
@@ -443,6 +417,12 @@ string VssCommandProcessor::processQuery(const string &req_json,
 #ifdef JSON_SIGNING_ON
         response = signer->sign(response);
 #endif  
+    }
+    else if (action == "set") {
+        response = processSet2(channel, root);
+        #ifdef JSON_SIGNING_ON
+        response = signer->sign(response);
+        #endif
     }
     else if (action == "authorize") {
       string token = root["tokens"].as<string>();

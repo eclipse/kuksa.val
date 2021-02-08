@@ -49,6 +49,7 @@ set(LIB_SOURCES
    VSSPath.cpp
    VssCommandProcessor.cpp
    VssCommandGet.cpp
+   VssCommandSet.cpp
    VssDatabase.cpp
    WebSockHttpFlexServer.cpp
    MQTTClient.cpp
