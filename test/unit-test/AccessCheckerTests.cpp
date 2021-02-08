@@ -111,14 +111,13 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotExistent_Shall_Retu
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathAuthorized_Shall_ReturnTrue) {
   WsChannel channel;
   jsoncons::json permissions;
-  std::string path;
-
+  
   // setup
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "rw");
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "rw");
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
 
-  path = "$['Vehicle']['children']['Acceleration']['children']['Vertical']";
+  VSSPath path=VSSPath::fromVSSGen2("Vehicle.Acceleration.Vertical");
 
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -131,14 +130,13 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathAuthorized_Shall_Retu
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotAuthorized_Shall_ReturnFalse) {
   WsChannel channel;
   jsoncons::json permissions;
-  std::string path;
 
   // setup
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "r");
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "rw");
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
 
-  path = "$['Vehicle']['children']['Acceleration']['children']['Vertical']";
+  VSSPath path = VSSPath::fromVSSGen2("Vehicle.Acceleration.Vertical");
 
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -151,14 +149,13 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotAuthorized_Shall_R
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotExistent_Shall_ReturnFalse) {
   WsChannel channel;
   jsoncons::json permissions;
-  std::string path;
 
   // setup
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "w");
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "rw");
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
 
-  path = "$['Vehicle']['children']['Dummy']['children']['Leaf']";
+  VSSPath path = VSSPath::fromVSSGen2("Vehicle.Dummy.Leaf");
 
   channel.setConnID(11);
   channel.setAuthorized(true);
