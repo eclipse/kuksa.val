@@ -213,6 +213,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   // setup
   db->initJsonTree(validFilename);
   std::string signalPath{"Vehicle.Acceleration.Vertical"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(signalPath);
 
   channel.setConnID(11);
   channel.setAuthorized(false);
@@ -236,7 +237,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
     .returns(0);
   // verify
 
-  BOOST_CHECK_NO_THROW(db->setSignal(channel, signalPath, setValue));
+  BOOST_CHECK_NO_THROW(db->setSignal(channel, vsspath, setValue, true));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
   BOOST_TEST(returnJson["value"].as<int>() == 10);
@@ -248,6 +249,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPath_Sha
   // setup
   db->initJsonTree(validFilename);
   std::string signalPath{"Vehicle.Acceleration"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(signalPath);
+
 
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -264,7 +267,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPath_Sha
 
   // verify
 
-  BOOST_CHECK_THROW(db->setSignal(channel, signalPath, setValue), genException);
+  BOOST_CHECK_THROW(db->setSignal(channel, vsspath, setValue, true), genException);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_SetPath_Shall_ThrowError) {
@@ -273,6 +276,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_SetPath_
   // setup
   db->initJsonTree(validFilename);
   std::string signalPath{"Vehicle.Acceleration.Vectical"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(signalPath);
 
   channel.setConnID(11);
   channel.setAuthorized(false);
@@ -287,7 +291,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_SetPath_
 
   // verify
 
-  BOOST_CHECK_THROW(db->setSignal(channel, signalPath, setValue), noPermissionException);
+  BOOST_CHECK_THROW(db->setSignal(channel, vsspath, setValue, true), noPermissionException);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSignalNoChannel_Shall_SetValue) {

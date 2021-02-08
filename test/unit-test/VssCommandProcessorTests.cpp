@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
   string requestId = "1";
   int requestValue = 123;
   std::string path{"Signal.OBD.DTC1"};
-
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
   // setup
 
   channel.setAuthorized(true);
@@ -328,7 +328,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, path, jsonValue)
+    .with(mock::any, vsspath, jsonValue, true)
     .throws(noPathFoundonTree(""));
 
   // run UUT
@@ -354,6 +354,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
   string requestId = "1";
   int requestValue = 123;
   std::string path{"Signal.OBD.DTC1"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
 
   // setup
 
@@ -378,7 +379,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, path, jsonValue)
+    .with(mock::any, vsspath, jsonValue, true)
     .throws(outOfBoundException(""));
 
   // run UUT
@@ -405,6 +406,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
   string requestId = "1";
   int requestValue = 123;
   std::string path{"Signal.OBD.DTC1"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
 
   // setup
 
@@ -429,7 +431,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, path, jsonValue)
+    .with(mock::any, vsspath, jsonValue, true)
     .throws(noPermissionException(""));
 
   // run UUT
@@ -455,6 +457,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
   string requestId = "1";
   int requestValue = 123;
   std::string path{"Signal.OBD.DTC1"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
 
   // setup
 
@@ -479,7 +482,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, path, jsonValue)
+    .with(mock::any, vsspath, jsonValue, true)
     .throws(std::exception());
 
   // run UUT
@@ -507,6 +510,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   string requestId = "1";
   int requestValue = 123;
   std::string path{"Signal.OBD.DTC1"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
 
   // setup
 
@@ -529,7 +533,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, path, jsonValue);
+    .with(mock::any, vsspath, jsonValue, true);
 
   // run UUT
   auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);

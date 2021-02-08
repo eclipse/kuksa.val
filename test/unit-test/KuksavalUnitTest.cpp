@@ -376,15 +376,34 @@ BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_one_invalid_value)
 BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 {
     string test_path_Uint8 = "Vehicle.OBD.AcceleratorPositionE";
+    VSSPath vss_test_path_Uint8 = VSSPath::fromVSSGen1(test_path_Uint8);
+
     string test_path_Uint16 = "Vehicle.OBD.WarmupsSinceDTCClear";
+    VSSPath vss_test_path_Uint16 = VSSPath::fromVSSGen1(test_path_Uint16);
+
     string test_path_Uint32 = "Vehicle.OBD.TimeSinceDTCCleared";
+    VSSPath vss_test_path_Uint32 = VSSPath::fromVSSGen1(test_path_Uint32);
+
     string test_path_int8 = "Vehicle.OBD.ShortTermFuelTrim2";
+    VSSPath vss_test_path_int8 = VSSPath::fromVSSGen1(test_path_int8);
+
     string test_path_int16 = "Vehicle.OBD.FuelInjectionTiming";
+    VSSPath vss_test_path_int16 = VSSPath::fromVSSGen1(test_path_int16);
+
     string test_path_int32 = "Vehicle.Drivetrain.Transmission.Speed";
+    VSSPath vss_test_path_int32 = VSSPath::fromVSSGen1(test_path_int32);
+
     string test_path_boolean = "Vehicle.OBD.Status.MIL";
+    VSSPath vss_test_path_boolean = VSSPath::fromVSSGen1(test_path_boolean);
+
     string test_path_Float = "Vehicle.OBD.FuelRate";
+   VSSPath vss_test_path_Float = VSSPath::fromVSSGen1(test_path_Float);
+
     string test_path_Double =  "Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Latitude";
+    VSSPath vss_test_path_Double = VSSPath::fromVSSGen1(test_path_Double);
+
     string test_path_string = "Vehicle.Cabin.Infotainment.Media.Played.URI";
+    VSSPath vss_test_path_string = VSSPath::fromVSSGen1(test_path_string);
 
     MOCK_EXPECT(accesshandler->checkWriteAccess).returns(true);
     MOCK_EXPECT(accesshandler->checkReadNew).returns(true);
@@ -411,7 +430,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint8_boundary_low;
     test_value_Uint8_boundary_low = numeric_limits<uint8_t>::min();
 
-    database->setSignal(channel,test_path_Uint8, test_value_Uint8_boundary_low);
+    database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_low, true);
     result = database->getSignal(channel, test_path_Uint8);
 
     BOOST_TEST(result["value"].as<uint8_t>() == numeric_limits<uint8_t>::min());
@@ -419,7 +438,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint8_boundary_high;
     test_value_Uint8_boundary_high = numeric_limits<uint8_t>::max();
 
-    database->setSignal(channel,test_path_Uint8, test_value_Uint8_boundary_high);
+    database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_high, true);
     result = database->getSignal(channel, test_path_Uint8);
 
    BOOST_TEST(result["value"].as<uint8_t>() == numeric_limits<uint8_t>::max());
@@ -427,7 +446,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint8_boundary_middle;
     test_value_Uint8_boundary_middle = numeric_limits<uint8_t>::max() / 2;
 
-    database->setSignal(channel,test_path_Uint8, test_value_Uint8_boundary_middle);
+    database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_middle, true);
     result = database->getSignal(channel, test_path_Uint8);
 
     BOOST_TEST(result["value"].as<uint8_t>() == numeric_limits<uint8_t>::max() / 2);
@@ -437,7 +456,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint8_boundary_low_outbound;
     test_value_Uint8_boundary_low_outbound = -1;
     try {
-       database->setSignal(channel,test_path_Uint8, test_value_Uint8_boundary_low_outbound);
+       database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_low_outbound, true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -448,7 +467,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint8_boundary_high_outbound;
     test_value_Uint8_boundary_high_outbound = numeric_limits<uint8_t>::max() + 1;
     try {
-       database->setSignal(channel,test_path_Uint8, test_value_Uint8_boundary_high_outbound);
+       database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_high_outbound, true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -461,7 +480,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint16_boundary_low;
     test_value_Uint16_boundary_low = numeric_limits<uint16_t>::min();
 
-    database->setSignal(channel,test_path_Uint16, test_value_Uint16_boundary_low);
+    database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_low,true);
     result = database->getSignal(channel, test_path_Uint16);
 
     BOOST_TEST(result["value"].as<uint16_t>() == numeric_limits<uint16_t>::min());
@@ -469,7 +488,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint16_boundary_high;
     test_value_Uint16_boundary_high = numeric_limits<uint16_t>::max();
 
-    database->setSignal(channel,test_path_Uint16, test_value_Uint16_boundary_high);
+    database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_high,true);
     result = database->getSignal(channel, test_path_Uint16);
 
     BOOST_TEST(result["value"].as<uint16_t>() == numeric_limits<uint16_t>::max());
@@ -477,7 +496,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint16_boundary_middle;
     test_value_Uint16_boundary_middle = numeric_limits<uint16_t>::max() / 2;
 
-    database->setSignal(channel,test_path_Uint16, test_value_Uint16_boundary_middle);
+    database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_middle,true);
     result = database->getSignal(channel, test_path_Uint16);
 
     BOOST_TEST(result["value"].as<uint16_t>() == numeric_limits<uint16_t>::max() / 2);
@@ -487,7 +506,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint16_boundary_low_outbound;
     test_value_Uint16_boundary_low_outbound = -1;
     try {
-       database->setSignal(channel,test_path_Uint16, test_value_Uint16_boundary_low_outbound);
+       database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_low_outbound,true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -498,7 +517,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint16_boundary_high_outbound;
     test_value_Uint16_boundary_high_outbound = numeric_limits<uint16_t>::max() + 1;
     try {
-       database->setSignal(channel,test_path_Uint16, test_value_Uint16_boundary_high_outbound);
+       database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_high_outbound,true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -511,7 +530,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint32_boundary_low;
     test_value_Uint32_boundary_low = numeric_limits<uint32_t>::min();
 
-    database->setSignal(channel,test_path_Uint32, test_value_Uint32_boundary_low);
+    database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_low,true);
     result = database->getSignal(channel, test_path_Uint32);
 
     BOOST_TEST(result["value"].as<uint32_t>() == numeric_limits<uint32_t>::min());
@@ -519,7 +538,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint32_boundary_high;
     test_value_Uint32_boundary_high = numeric_limits<uint32_t>::max();
 
-    database->setSignal(channel,test_path_Uint32, test_value_Uint32_boundary_high);
+    database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_high,true);
     result = database->getSignal(channel, test_path_Uint32);
 
     BOOST_TEST(result["value"].as<uint32_t>() == numeric_limits<uint32_t>::max());
@@ -527,7 +546,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint32_boundary_middle;
     test_value_Uint32_boundary_middle = numeric_limits<uint32_t>::max() / 2;
 
-    database->setSignal(channel,test_path_Uint32, test_value_Uint32_boundary_middle);
+    database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_middle,true);
     result = database->getSignal(channel, test_path_Uint32);
 
     BOOST_TEST(result["value"].as<uint32_t>() == numeric_limits<uint32_t>::max() / 2);
@@ -537,7 +556,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint32_boundary_low_outbound;
     test_value_Uint32_boundary_low_outbound = -1;
     try {
-       database->setSignal(channel,test_path_Uint32, test_value_Uint32_boundary_low_outbound);
+       database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_low_outbound,true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -549,7 +568,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     uint64_t maxU32_value = numeric_limits<uint32_t>::max();
     test_value_Uint32_boundary_high_outbound = maxU32_value + 1;
     try {
-       database->setSignal(channel,test_path_Uint32, test_value_Uint32_boundary_high_outbound);
+       database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_high_outbound,true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -561,7 +580,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int8_boundary_low;
     test_value_int8_boundary_low = numeric_limits<int8_t>::min();
 
-    database->setSignal(channel,test_path_int8, test_value_int8_boundary_low);
+    database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_low,true);
     result = database->getSignal(channel, test_path_int8);
 
     BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::min());
@@ -569,7 +588,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int8_boundary_high;
     test_value_int8_boundary_high = numeric_limits<int8_t>::max();
 
-    database->setSignal(channel,test_path_int8, test_value_int8_boundary_high);
+    database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_high,true);
     result = database->getSignal(channel, test_path_int8);
 
     BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::max());
@@ -577,7 +596,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int8_boundary_middle;
     test_value_int8_boundary_middle = numeric_limits<int8_t>::max() / 2;
 
-    database->setSignal(channel,test_path_int8, test_value_int8_boundary_middle);
+    database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_middle,true);
     result = database->getSignal(channel, test_path_int8);
 
     BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::max() / 2);
@@ -585,7 +604,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int8_boundary_middle_neg;
     test_value_int8_boundary_middle_neg = numeric_limits<int8_t>::min() / 2;
 
-    database->setSignal(channel,test_path_int8, test_value_int8_boundary_middle_neg);
+    database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_middle_neg,true);
     result = database->getSignal(channel, test_path_int8);
 
     BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::min() / 2);
@@ -595,7 +614,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int8_boundary_low_outbound;
     test_value_int8_boundary_low_outbound = numeric_limits<int8_t>::min() - 1;
     try {
-       database->setSignal(channel,test_path_int8, test_value_int8_boundary_low_outbound);
+       database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_low_outbound,true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -606,7 +625,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int8_boundary_high_outbound;
     test_value_int8_boundary_high_outbound = numeric_limits<int8_t>::max() + 1;
     try {
-       database->setSignal(channel,test_path_int8, test_value_int8_boundary_high_outbound);
+       database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_high_outbound,true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -618,7 +637,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int16_boundary_low;
     test_value_int16_boundary_low = numeric_limits<int16_t>::min();
 
-    database->setSignal(channel,test_path_int16, test_value_int16_boundary_low);
+    database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_low,true);
     result = database->getSignal(channel, test_path_int16);
 
     BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::min());
@@ -626,7 +645,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int16_boundary_high;
     test_value_int16_boundary_high = numeric_limits<int16_t>::max();
 
-    database->setSignal(channel,test_path_int16, test_value_int16_boundary_high);
+    database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_high,true);
     result = database->getSignal(channel, test_path_int16);
 
     BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::max());
@@ -634,7 +653,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int16_boundary_middle;
     test_value_int16_boundary_middle = numeric_limits<int16_t>::max()/2;
 
-    database->setSignal(channel,test_path_int16, test_value_int16_boundary_middle);
+    database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_middle,true);
     result = database->getSignal(channel, test_path_int16);
 
     BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::max()/2);
@@ -642,7 +661,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int16_boundary_middle_neg;
     test_value_int16_boundary_middle_neg = numeric_limits<int16_t>::min()/2;
 
-    database->setSignal(channel,test_path_int16, test_value_int16_boundary_middle_neg);
+    database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_middle_neg,true);
     result = database->getSignal(channel, test_path_int16);
 
     BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::min()/2);
@@ -652,7 +671,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int16_boundary_low_outbound;
     test_value_int16_boundary_low_outbound = numeric_limits<int16_t>::min() - 1;
     try {
-       database->setSignal(channel,test_path_int16, test_value_int16_boundary_low_outbound);
+       database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_low_outbound,true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -663,7 +682,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int16_boundary_high_outbound;
     test_value_int16_boundary_high_outbound = numeric_limits<int16_t>::max() + 1;
     try {
-       database->setSignal(channel,test_path_int16, test_value_int16_boundary_high_outbound);
+       database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_high_outbound,true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -676,7 +695,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int32_boundary_low;
     test_value_int32_boundary_low = numeric_limits<int32_t>::min();
 
-    database->setSignal(channel,test_path_int32, test_value_int32_boundary_low);
+    database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_low,true);
     result = database->getSignal(channel, test_path_int32);
 
     BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::min());
@@ -684,7 +703,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int32_boundary_high;
     test_value_int32_boundary_high = numeric_limits<int32_t>::max() ;
 
-    database->setSignal(channel,test_path_int32, test_value_int32_boundary_high);
+    database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_high,true);
     result = database->getSignal(channel, test_path_int32);
 
     BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::max());
@@ -692,7 +711,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int32_boundary_middle;
     test_value_int32_boundary_middle = numeric_limits<int32_t>::max() / 2;
 
-    database->setSignal(channel,test_path_int32, test_value_int32_boundary_middle);
+    database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_middle,true);
     result = database->getSignal(channel, test_path_int32);
 
     BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::max() / 2);
@@ -700,7 +719,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int32_boundary_middle_neg;
     test_value_int32_boundary_middle_neg = numeric_limits<int32_t>::min() / 2;
 
-    database->setSignal(channel,test_path_int32, test_value_int32_boundary_middle_neg);
+    database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_middle_neg,true);
     result = database->getSignal(channel, test_path_int32);
 
     BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::min() / 2);
@@ -711,7 +730,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     int64_t minInt32_value = numeric_limits<int32_t>::min();
     test_value_int32_boundary_low_outbound = minInt32_value - 1;
     try {
-       database->setSignal(channel,test_path_int32, test_value_int32_boundary_low_outbound);
+       database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_low_outbound,true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -723,7 +742,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     int64_t maxInt32_value = numeric_limits<int32_t>::max();
     test_value_int32_boundary_high_outbound = maxInt32_value + 1;
     try {
-       database->setSignal(channel,test_path_int32, test_value_int32_boundary_high_outbound);
+       database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_high_outbound,true);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -734,7 +753,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Float_boundary_low;
     test_value_Float_boundary_low = std::numeric_limits<float>::min();
 
-    database->setSignal(channel,test_path_Float, test_value_Float_boundary_low);
+    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_low,true);
     result = database->getSignal(channel, test_path_Float);
 
 
@@ -743,7 +762,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Float_boundary_high;
     test_value_Float_boundary_high = std::numeric_limits<float>::max();
 
-    database->setSignal(channel,test_path_Float, test_value_Float_boundary_high);
+    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_high,true);
     result = database->getSignal(channel, test_path_Float);
 
     BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::max());
@@ -752,7 +771,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Float_boundary_low_neg;
     test_value_Float_boundary_low_neg = std::numeric_limits<float>::min() * -1;
 
-    database->setSignal(channel,test_path_Float, test_value_Float_boundary_low_neg);
+    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_low_neg,true);
     result = database->getSignal(channel, test_path_Float);
 
 
@@ -761,7 +780,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Float_boundary_high_neg;
     test_value_Float_boundary_high_neg = std::numeric_limits<float>::max() * -1;
 
-    database->setSignal(channel,test_path_Float, test_value_Float_boundary_high_neg);
+    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_high_neg,true);
     result = database->getSignal(channel, test_path_Float);
 
     BOOST_TEST(result["value"].as<float>() == (std::numeric_limits<float>::max() * -1));
@@ -770,7 +789,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Float_boundary_middle;
     test_value_Float_boundary_middle = std::numeric_limits<float>::max() / 2;
 
-    database->setSignal(channel,test_path_Float, test_value_Float_boundary_middle);
+    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_middle,true);
     result = database->getSignal(channel, test_path_Float);
 
 
@@ -779,7 +798,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Float_boundary_middle_neg;
     test_value_Float_boundary_middle_neg = std::numeric_limits<float>::min() * 2;
 
-    database->setSignal(channel,test_path_Float, test_value_Float_boundary_middle_neg);
+    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_middle_neg,true);
     result = database->getSignal(channel, test_path_Float);
 
     BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::min() * 2);
@@ -791,7 +810,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Double_boundary_low;
     test_value_Double_boundary_low = std::numeric_limits<double>::min();
 
-    database->setSignal(channel,test_path_Double, test_value_Double_boundary_low);
+    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_low,true);
     result = database->getSignal(channel, test_path_Double);
 
     BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::min());
@@ -799,7 +818,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Double_boundary_high;
     test_value_Double_boundary_high = std::numeric_limits<double>::max();
 
-    database->setSignal(channel,test_path_Double, test_value_Double_boundary_high);
+    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_high,true);
     result = database->getSignal(channel, test_path_Double);
 
     BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::max());
@@ -808,7 +827,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Double_boundary_low_neg;
     test_value_Double_boundary_low_neg = std::numeric_limits<double>::min() * -1;
 
-    database->setSignal(channel,test_path_Double, test_value_Double_boundary_low_neg);
+    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_low_neg,true);
     result = database->getSignal(channel, test_path_Double);
 
     BOOST_TEST(result["value"].as<double>() == (std::numeric_limits<double>::min() * -1));
@@ -816,7 +835,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Double_boundary_high_neg;
     test_value_Double_boundary_high_neg = std::numeric_limits<double>::max() * -1;
 
-    database->setSignal(channel,test_path_Double, test_value_Double_boundary_high_neg);
+    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_high_neg,true);
     result = database->getSignal(channel ,test_path_Double);
 
     BOOST_TEST(result["value"].as<double>() == (std::numeric_limits<double>::max() * -1));
@@ -826,7 +845,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Double_boundary_middle;
     test_value_Double_boundary_middle = std::numeric_limits<double>::max() / 2;
 
-    database->setSignal(channel,test_path_Double, test_value_Double_boundary_middle);
+    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_middle,true);
     result = database->getSignal(channel ,test_path_Double);
 
     BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::max() / 2);
@@ -834,7 +853,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Double_boundary_middle_neg;
     test_value_Double_boundary_middle_neg = std::numeric_limits<double>::min() * 2;
 
-    database->setSignal(channel,test_path_Double, test_value_Double_boundary_middle_neg);
+    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_middle_neg,true);
     result = database->getSignal(channel, test_path_Double);
 
     BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::min() * 2);
@@ -847,7 +866,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_String_empty;
     test_value_String_empty = "";
 
-    database->setSignal(channel,test_path_string, test_value_String_empty);
+    database->setSignal(channel,vss_test_path_string, test_value_String_empty,true);
     result = database->getSignal(channel,test_path_string);
 
     BOOST_TEST(result["value"].as<std::string>() == "");
@@ -855,7 +874,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_String_null;
     test_value_String_null = "\0";
 
-    database->setSignal(channel,test_path_string, test_value_String_null);
+    database->setSignal(channel,vss_test_path_string, test_value_String_null,true);
     result = database->getSignal(channel,test_path_string);
 
     BOOST_TEST(result["value"].as<std::string>() == "\0");
@@ -863,7 +882,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_String_long;
     test_value_String_long = "hello to w3c vis server unit test with boost libraries! This is a test string to test string data type without special characters, but this string is pretty long";
 
-    database->setSignal(channel,test_path_string, test_value_String_long);
+    database->setSignal(channel,vss_test_path_string, test_value_String_long,true);
     result = database->getSignal(channel,test_path_string);
 
     BOOST_TEST(result["value"].as<std::string>() == test_value_String_long);
@@ -871,7 +890,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_String_long_with_special_chars;
     test_value_String_long_with_special_chars = "hello to w3c vis server unit test with boost libraries! This is a test string conatains special chars like üö Ä? $ % #";
 
-    database->setSignal(channel,test_path_string, test_value_String_long_with_special_chars);
+    database->setSignal(channel,vss_test_path_string, test_value_String_long_with_special_chars,true);
     result = database->getSignal(channel,test_path_string);
 
     BOOST_TEST(result["value"].as<std::string>() == test_value_String_long_with_special_chars);
@@ -880,7 +899,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_bool_false;
     test_value_bool_false = false;
 
-    database->setSignal(channel,test_path_boolean, test_value_bool_false);
+    database->setSignal(channel,vss_test_path_boolean, test_value_bool_false,true);
     result = database->getSignal(channel,test_path_boolean);
 
     BOOST_TEST(result["value"].as<bool>() == test_value_bool_false);
@@ -888,7 +907,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_bool_true;
     test_value_bool_true = true;
 
-    database->setSignal(channel,test_path_boolean, test_value_bool_true);
+    database->setSignal(channel,vss_test_path_boolean, test_value_bool_true,true);
     result = database->getSignal(channel,test_path_boolean);
 
     BOOST_TEST(result["value"].as<bool>() == test_value_bool_true);
