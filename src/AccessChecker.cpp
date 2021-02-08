@@ -53,12 +53,12 @@ bool AccessChecker::checkReadAccess(WsChannel &channel, const string &path) {
 
 // check the permissions json in WsChannel if path has read access
 bool AccessChecker::checkReadAccess(WsChannel &channel, const VSSPath &path) {
-  return checkSignalAccess(channel, path.getVSSGen1Path(), "r");
+  return checkSignalAccess(channel, path.getJSONPath(), "r");
 }
 
 // check the permissions json in WsChannel if path has read access
 bool AccessChecker::checkWriteAccess(WsChannel &channel, const VSSPath &path) {
-  return checkSignalAccess(channel, path.getVSSGen1Path(), "w");
+  return checkSignalAccess(channel, path.getJSONPath(), "w");
 }
 
 
@@ -68,7 +68,7 @@ bool AccessChecker::checkPathWriteAccess(WsChannel &channel, const json &paths) 
   for (size_t i = 0; i < paths.size(); i++) {
     json item = paths[i];
     string jPath = item["path"].as<string>();
-    VSSPath path = VSSPath::fromVSS(jPath);
+    VSSPath path = VSSPath::fromJSON(jPath);
     if (!checkWriteAccess(channel, path)) {
       return false;
     }
