@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2018 Robert Bosch GmbH.
+ * Copyright (c) 2018-2021 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -499,55 +499,7 @@ vector<string> getVSSTokens(string path) {
 
   return tokens;
 }
-void VssDatabase::HandleSet(jsoncons::json & setValues) {
-  for (size_t i = 0; i < setValues.size(); i++) {
-    jsoncons::json item = setValues[i];
-    string jPath = item["path"].as<string>();
 
-    logger_->Log(LogLevel::VERBOSE, "vssdatabase::HandleSet path found = " + jPath);
-    logger_->Log(LogLevel::VERBOSE, "value to set asstring = " + item["value"].as<string>());
-
-    jsoncons::json resArray;
-    {
-      std::lock_guard<std::mutex> lock_guard(rwMutex_);
-      resArray = jsonpath::json_query(data_tree__, jPath);
-    }
-    if (resArray.is_array() && resArray.size() == 1) {
-      jsoncons::json resJson = resArray[0];
-      if (resJson.contains("datatype")) {
-        string value_type = resJson["datatype"].as<string>();
-        json val = item["value"];
-        checkTypeAndBound(logger_, value_type, val);
-
-        resJson.insert_or_assign("value", val);
-
-        {
-          std::lock_guard<std::mutex> lock_guard(rwMutex_);
-          jsonpath::json_replace(data_tree__, jPath, resJson);
-        }
-
-        logger_->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: new value set at path " + jPath);
-
-        string uuid = resJson["uuid"].as<string>();
-
-        jsoncons::json value = resJson["value"];
-        subHandler_->updateByUUID(uuid, value);
-        subHandler_->updateByPath(getReadablePath(jPath), value);
-      } else {
-        stringstream msg;
-        msg << "Type key not found for " << jPath;
-        throw genException(msg.str());
-      }
-
-    } else if (resArray.is_array()) {
-      stringstream msg;
-      msg << "Path " << jPath << " has " << resArray.size()
-          << " signals, the path needs refinement";
-      logger_->Log(LogLevel::INFO, "vssdatabase::setSignal : " + msg.str());
-      throw genException(msg.str());
-    }
-  }
-}
 
 void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree){
   std::error_code ec;
@@ -826,16 +778,6 @@ jsoncons::json VssDatabase::getPathForSet(const string &path, jsoncons::json val
   return setValues;
 }
 
-void VssDatabase::checkSetPermission(WsChannel& channel, const string & path) {
-    // check if all the paths have write access.
-    bool haveAccess = accessValidator_->checkWriteAccess(channel, path);
-    if (!haveAccess) {
-       stringstream msg;
-       msg << "Path(s) in set request do not have write access or is invalid";
-       throw noPermissionException(msg.str());
-    }
-}
-
 
 jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) {
   jsoncons::json answer;
@@ -871,68 +813,39 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
   return answer;
 }
 
+//Only needed for DBUS currently- 
 // Method for setting values to signals.
-void VssDatabase::setSignal(WsChannel& channel,
-                            const string &path,
-                            jsoncons::json valueJson) {
-  if (path == "") {
+void VssDatabase::setSignal(const string &dbuspath,
+                            jsoncons::json value) {
+                              
+  if (dbuspath == "") {
     string msg = "Path is empty while setting";
     throw genException(msg);
   }
-  checkSetPermission(channel, path);
-  
-  jsoncons::json setValues;
 
+  VSSPath path = VSSPath::fromVSS(dbuspath);
+
+  jsoncons::json res; 
   {
     std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    try {
-        setValues = getPathForSet(path, valueJson);
+    res = jsonpath::json_query(data_tree__, path.getJSONPath());
+    if (res.is_array() && res.size() == 1) {
+    jsoncons::json resJson = res[0];
+      if (resJson.contains("datatype")) {
+        string value_type = resJson["datatype"].as<string>();
+        checkTypeAndBound(logger_, value_type, value);
+        resJson.insert_or_assign("value", value);
+        {
+          jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
+        }
+      }
+      else {
+        throw noPathFoundonTree(path.getVSSPath()+ "is invalid for set"); //Todo better error message. (Does not propagate);
+      }
     }
-    catch( noPathFoundonTree& e) {
-      throw e;
-    }
-    catch ( genException &e) {
-      logger_->Log(LogLevel::ERROR, "Exception VssDatabase::setSignal: " + string(e.what()));
-      throw e;
-    }
-  }
-  if (setValues.is_array()) {
-    HandleSet(setValues);
-  } else {
-    string msg = "Exception occured while setting data for " + path;
-    throw genException(msg);
   }
 }
 
-// Method for setting values to signals.
-void VssDatabase::setSignal(const string &path,
-                            jsoncons::json valueJson) {
-  if (path == "") {
-    string msg = "Path is empty while setting";
-    throw genException(msg);
-  }
-  
-      logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal  LOCK:");
-
-  jsoncons::json setValues;
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    try {
-        setValues = getPathForSet(path, valueJson);
-    }
-    catch( genException& e) {
-      logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal Excpetion unlock: " + string(e.what()));
-    }
-  }
-
-  if (setValues.is_array()) {
-    HandleSet(setValues);
-  } else {
-    string msg = "Exception occurred while setting data for " + path;
-    logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg);
-    throw genException(msg);
-  }
-}
 
 // Returns response JSON for get request.
 jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &path) {

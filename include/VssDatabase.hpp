@@ -42,11 +42,9 @@ class VssDatabase : public IVssDatabase {
 
   std::string getPathForMetadata(std::string path, bool& isBranch);
   std::string getReadablePath(std::string jsonpath);
-  std::string getVSSPathFromJSONPath(std::string jsonpath); //Gen2 repalcement for getReadablePath
+  std::string getVSSPathFromJSONPath(std::string jsonpath); //Gen2 replacement for getReadablePath
 
-  [[deprecated("Use access checker directly")]]
-  void checkSetPermission(WsChannel& channel, const std::string& path);
-  void HandleSet(jsoncons::json & setValues);
+  //void HandleSet(jsoncons::json & setValues);
 
   std::list<std::string> getJSONPaths(const VSSPath& path);
 
@@ -64,10 +62,9 @@ class VssDatabase : public IVssDatabase {
   void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& newTree) override;
   jsoncons::json getMetaData(const std::string &path) override;
 
-  void setSignal(WsChannel& channel, const std::string &path, jsoncons::json value) override;
   void setSignal(const std::string &path, jsoncons::json value);
 
-   jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat); //gen2 version
+  jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat); //gen2 version
 
 
   jsoncons::json getSignal(WsChannel& channel, const std::string &path) override;
