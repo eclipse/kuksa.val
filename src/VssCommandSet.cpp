@@ -25,11 +25,23 @@
  * compatibility **/
 std::string VssCommandProcessor::processSet2(WsChannel &channel,
                                              jsoncons::json &request) {
-  requestValidator->validateSet(request);
+  try {
+    requestValidator->validateSet(request);
+  } catch (jsoncons::jsonschema::schema_error &e) {
+    logger->Log(LogLevel::ERROR, string(e.what()));
+    return JsonResponses::malFormedRequest("UNKNOWN", "set",
+                                           string("Schema error: ") + e.what());
+  } catch (std::exception &e) {
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
+    return JsonResponses::malFormedRequest(
+        "UNKNOWN", "get", string("Unhandled error: ") + e.what());
+  }
+
   VSSPath path = VSSPath::fromVSS(request["path"].as_string());
-  bool  gen1_compat_mode=path.isGen1Origin();
+  bool gen1_compat_mode = path.isGen1Origin();
 
   string requestId = request["requestId"].as_string();
+
   logger->Log(LogLevel::VERBOSE, "Set request with id " + requestId +
                                      " for path: " + path.getVSSPath());
 
@@ -55,18 +67,21 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
     return ss.str();
   } catch (noPathFoundonTree &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
-    return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", path.getVSSPath());
+    return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set",
+                                       path.getVSSPath());
   } catch (outOfBoundException &outofboundExp) {
     logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
-    return JsonResponses::valueOutOfBounds(request["requestId"].as<string>(), "set",
-                                           outofboundExp.what());
+    return JsonResponses::valueOutOfBounds(request["requestId"].as<string>(),
+                                           "set", outofboundExp.what());
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request["requestId"].as<string>(), "set", nopermission.what());
+    return JsonResponses::noAccess(request["requestId"].as<string>(), "set",
+                                   nopermission.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
-        request["requestId"].as<string>(), "get", string("Unhandled error: ") + e.what());
+        request["requestId"].as<string>(), "get",
+        string("Unhandled error: ") + e.what());
   }
 
   jsoncons::json answer;
