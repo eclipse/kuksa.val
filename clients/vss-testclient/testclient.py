@@ -192,13 +192,11 @@ class VSSTestClient(Cmd):
             if self.commThread != None:
                 self.commThread.stopComm()
                 self.commThread = None
-        self.sendMsgQueue = queue.Queue()
-        self.recvMsgQueue = queue.Queue()
         config = {'ip':self.serverIP,
         'port': self.serverPort,
         'insecure' : insecure
         }
-        self.commThread = VSSClientComm(self.sendMsgQueue, self.recvMsgQueue, config)
+        self.commThread = VSSClientComm(config)
         self.commThread.start()
 
         pollIndex = 10
