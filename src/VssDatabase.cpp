@@ -836,6 +836,35 @@ void VssDatabase::checkSetPermission(WsChannel& channel, const string & path) {
     }
 }
 
+
+jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) {
+  jsoncons::json answer;
+  
+  answer["path"] = gen1_compat? path.getVSSGen1Path() : path.getVSSPath();
+
+  if (!accessValidator_->checkWriteAccess(channel, path )) {
+      stringstream msg;
+      msg << "No write  access to " << path.getVSSPath();
+      throw noPermissionException(msg.str());
+  }
+
+  jsoncons::json res; 
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    res = jsonpath::json_query(data_tree__, path.getJSONPath());
+    if (res.is_array() && res.size() == 1) {
+    jsoncons::json resJson = res[0];
+      if (resJson.contains("datatype")) {
+        string value_type = resJson["datatype"].as<string>();
+        checkTypeAndBound(logger_, value_type, value);
+        resJson.insert_or_assign("value", value);
+      }
+    }
+  }
+
+  return answer;
+}
+
 // Method for setting values to signals.
 void VssDatabase::setSignal(WsChannel& channel,
                             const string &path,
