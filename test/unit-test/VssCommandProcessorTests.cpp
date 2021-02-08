@@ -319,7 +319,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
   jsonSetRequestForSignal["value"] = requestValue;
   jsonSetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::pathNotFound(requestId, "set", path, jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "set", vsspath.getVSSPath(), jsonPathNotFound);
 
   // expectations
 
@@ -532,8 +532,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
+  //as db is mocked, this test basically only checks if the command proccesor routes the query accordingly
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, jsonValue, true);
+    .with(mock::any, vsspath, mock::any, true).returns(jsonSignalValue);
 
   // run UUT
   auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);

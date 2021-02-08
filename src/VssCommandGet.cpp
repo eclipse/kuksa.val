@@ -28,20 +28,21 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   VSSPath path=VSSPath::fromVSS(request["path"].as_string());
   bool  gen1_compat_mode=path.isGen1Origin();
 
-  string requestId = request["requestId"].as_string();
-  logger->Log(LogLevel::VERBOSE,
-              "Get request with id " + requestId + " for path: " + path.getVSSPath());
-
   try {
     requestValidator->validateGet(request);
   } catch (jsoncons::jsonschema::schema_error & e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
-    return JsonResponses::malFormedRequest(requestId, "get", string("Schema error: ") + e.what());
+    return JsonResponses::malFormedRequest("UNKNOWN", "get", string("Schema error: ") + e.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
-        requestId, "get", string("Unhandled error: ") + e.what());
+        "UNKNOWN", "get", string("Unhandled error: ") + e.what());
   }
+
+  string requestId = request["requestId"].as_string();
+  
+  logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId + " for path: " + path.getVSSPath());
+
 
   //-------------------------------------
   jsoncons::json res;
