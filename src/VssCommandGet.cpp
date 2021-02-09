@@ -32,11 +32,11 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
     requestValidator->validateGet(request);
   } catch (jsoncons::jsonschema::schema_error & e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
-    return JsonResponses::malFormedRequest("UNKNOWN", "get", string("Schema error: ") + e.what());
+    return JsonResponses::malFormedRequest(requestValidator->tryExtractRequestId(request), "get", string("Schema error: ") + e.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
-        "UNKNOWN", "get", string("Unhandled error: ") + e.what());
+        requestValidator->tryExtractRequestId(request), "get", string("Unhandled error: ") + e.what());
   }
 
   string requestId = request["requestId"].as_string();

@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   //Read access has been checked
-  MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_path).returns(true);
+  MOCK_EXPECT(accCheckMock->checkReadAccess).once().with(mock::any,vss_path).returns(true);
   
   // run UUT
   auto resStr =
@@ -251,8 +251,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
 
   //it needs to check all elements in subtree. Expect one example explicitely, and allow for others
   auto vss_access_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
-  MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_access_path).returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadNew).with(mock::any,mock::any).returns(true);
+  MOCK_EXPECT(accCheckMock->checkReadAccess).once().with(mock::any,vss_access_path).returns(true);
+  MOCK_EXPECT(accCheckMock->checkReadAccess).with(mock::any,mock::any).returns(true);
 
 
   // run UUT
@@ -354,8 +354,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
 
   //it needs to check all elements in subtree. Expect one example explicitely, and allow for others
   auto vss_access_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
-  MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_access_path).returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadNew).with(mock::any,mock::any).returns(true);
+  MOCK_EXPECT(accCheckMock->checkReadAccess).once().with(mock::any,vss_access_path).returns(true);
+  MOCK_EXPECT(accCheckMock->checkReadAccess).with(mock::any,mock::any).returns(true);
 
   // run UUT
   auto resStr =

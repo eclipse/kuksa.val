@@ -61,7 +61,7 @@ SubscriptionId SubscriptionHandler::subscribe(WsChannel& channel,
 
   if (jPath == "") {
     throw noPathFoundonTree(path);
-  } else if (!checkAccess->checkReadAccess(channel, path)) {
+  } else if (!checkAccess->checkReadAccess(channel, VSSPath::fromJSON(jPath))) {
     stringstream msg;
     msg << "no permission to subscribe to path " << path;
     throw noPermissionException(msg.str());

@@ -25,7 +25,6 @@ class IAccessChecker {
 public:
   virtual ~IAccessChecker() {}
 
-  virtual bool checkReadAccess(WsChannel &channel, const std::string &path) = 0;
   virtual bool checkPathWriteAccess(WsChannel &channel, const jsoncons::json &paths) = 0;
   virtual bool checkReadAccess(WsChannel &channel, const VSSPath &path) = 0;
   virtual bool checkWriteAccess(WsChannel &channel, const VSSPath &path) = 0;

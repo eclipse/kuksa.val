@@ -41,10 +41,12 @@ class VssDatabase : public IVssDatabase {
   std::shared_ptr<IAccessChecker> accessValidator_;
 
   std::string getPathForMetadata(std::string path, bool& isBranch);
-  std::string getReadablePath(std::string jsonpath);
-  std::string getVSSPathFromJSONPath(std::string jsonpath); //Gen2 replacement for getReadablePath
 
-  //void HandleSet(jsoncons::json & setValues);
+  [[deprecated("Use VSSPath helper")]]
+  std::string getReadablePath(std::string jsonpath);
+  
+  [[deprecated("Use VSSPath helper")]]
+  std::string getVSSPathFromJSONPath(std::string jsonpath); //Gen2 replacement for getReadablePath
 
   std::list<std::string> getJSONPaths(const VSSPath& path);
 
@@ -67,7 +69,6 @@ class VssDatabase : public IVssDatabase {
   jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat); //gen2 version
 
 
-  jsoncons::json getSignal(WsChannel& channel, const std::string &path) override;
   jsoncons::json getSignal(WsChannel& channel, const VSSPath &path, bool gen1_compat) override; //Gen2 version
 
 

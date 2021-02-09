@@ -805,7 +805,7 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
         }
       }
       else {
-        throw noPathFoundonTree(path.getVSSPath()+ "is invalid for set"); //Todo better error message. (Does not propagate);
+        throw genException(path.getVSSPath()+ "is invalid for set"); //Todo better error message. (Does not propagate);
       }
     }
   }
@@ -844,128 +844,6 @@ void VssDatabase::setSignal(const string &dbuspath,
       }
     }
   }
-}
-
-
-// Returns response JSON for get request.
-jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &path) {
-  bool isBranch = false;
-
-  list<string> jPaths;
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    jPaths = getPathForGet(path, isBranch);
-  }
-  int pathsFound = jPaths.size();
-  if (pathsFound == 0) {
-    jsoncons::json answer;
-    return answer;
-  }
-
-  logger_->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + to_string(pathsFound)
-              + " signals found under path = \"" + path + "\"");
-  if (isBranch) {
-    jsoncons::json answer;
-    logger_->Log(LogLevel::VERBOSE, " VssDatabase::getSignal : \"" + path + "\" is a Branch.");
-
-    if (pathsFound == 0) {
-      throw noPathFoundonTree(path);
-    } else {
-      jsoncons::json value;
-
-      for (int i = 0; i < pathsFound; i++) {
-        string jPath = jPaths.back();
-        // check Read access here.
-        if (!accessValidator_->checkReadAccess(channel, getReadablePath(jPath))) {
-          // Allow the permitted signals to return. If exception is enable here,
-          // then say only "Signal.OBD.RPM" is permitted and get request is made
-          // for a branch like "Signal.OBD" then
-          // an error would be returned. By disabling the exception the value
-          // for Signal.OBD.RPM (only) will be returned.
-          /*stringstream msg;
-          msg << "No read access to  " << getReadablePath(jPath);
-          throw genException (msg.str());*/
-          jPaths.pop_back();
-          continue;
-        }
-        jsoncons::json resArray;
-        {
-          std::lock_guard<std::mutex> lock_guard(rwMutex_);
-          resArray = jsonpath::json_query(data_tree__, jPath);
-        }
-        jPaths.pop_back();
-        jsoncons::json result = resArray[0];
-        if (result.contains("value")) {
-          setJsonValue(logger_, value, result, getReadablePath(jPath));
-        } else {
-          value[getReadablePath(jPath)] = "---";
-        }
-      }
-      answer["value"] = value;
-    }
-    return answer;
-  } else if (pathsFound == 1) {
-    string jPath = jPaths.back();
-    // check Read access here.
-    if (!accessValidator_->checkReadAccess(channel, getReadablePath(jPath))) {
-      stringstream msg;
-      msg << "No read access to " << getReadablePath(jPath);
-      throw noPermissionException(msg.str());
-    }
-    jsoncons::json resArray;
-    {
-      std::lock_guard<std::mutex> lock_guard(rwMutex_);
-      resArray = jsonpath::json_query(data_tree__, jPath);
-    }
-    jsoncons::json answer;
-    answer["path"] = getReadablePath(jPath);
-    jsoncons::json result = resArray[0];
-    if (result.contains("value")) {
-      setJsonValue(logger_, answer, result, "value");
-      return answer;
-    } else {
-      answer["value"] = "---";
-      return answer;
-    }
-
-  } else if (pathsFound > 1) {
-    jsoncons::json answer;
-    jsoncons::json valueArray = jsoncons::json::array();
-
-    for (int i = 0; i < pathsFound; i++) {
-      jsoncons::json value;
-      string jPath = jPaths.back();
-      // Check access here.
-      if (!accessValidator_->checkReadAccess(channel, getReadablePath(jPath))) {
-        // Allow the permitted signals to return. If exception is enable here,
-        // then say only "Signal.OBD.RPM" is permitted and get request is made
-        // using wildcard like "Signal.OBD.*" then
-        // an error would be returned. By disabling the exception the value for
-        // Signal.OBD.RPM (only) will be returned.
-        /*stringstream msg;
-        msg << "No read access to  " << getReadablePath(jPath);
-        throw genException (msg.str());*/
-        jPaths.pop_back();
-        continue;
-      }
-      jsoncons::json resArray;
-      {
-        std::lock_guard<std::mutex> lock_guard(rwMutex_);
-        resArray = jsonpath::json_query(data_tree__, jPath);
-      }
-      jPaths.pop_back();
-      jsoncons::json result = resArray[0];
-      if (result.contains("value")) {
-        setJsonValue(logger_, value, result, getReadablePath(jPath));
-      } else {
-        value[getReadablePath(jPath)] = "---";
-      }
-      valueArray.insert(valueArray.array_range().end(), value);
-    }
-    answer["value"] = valueArray;
-    return answer;
-  }
-  return NULL;
 }
 
 // Returns response JSON for get request, checking authorization.
