@@ -29,12 +29,12 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
     requestValidator->validateSet(request);
   } catch (jsoncons::jsonschema::schema_error &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
-    return JsonResponses::malFormedRequest("UNKNOWN", "set",
+    return JsonResponses::malFormedRequest( requestValidator->tryExtractRequestId(request), "set",
                                            string("Schema error: ") + e.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
-        "UNKNOWN", "get", string("Unhandled error: ") + e.what());
+        requestValidator->tryExtractRequestId(request) , "get", string("Unhandled error: ") + e.what());
   }
 
   VSSPath path = VSSPath::fromVSS(request["path"].as_string());

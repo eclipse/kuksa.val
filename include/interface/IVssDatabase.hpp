@@ -35,10 +35,7 @@ class IVssDatabase {
     virtual jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) = 0; //gen2 version
 
                            
-    [[deprecated("Once Gen2 migration is complete, only the getSignal version with gen1_compat flag should be used")]]
-    virtual jsoncons::json getSignal(WsChannel& channel, const std::string &path) = 0;
     virtual jsoncons::json getSignal(WsChannel& channel, const VSSPath& path, bool gen1_compat) = 0;
-
 
     // TODO: temporary added while components are refactored
     jsoncons::json data_tree__;

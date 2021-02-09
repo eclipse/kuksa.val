@@ -82,3 +82,11 @@ void VSSRequestValidator::validateSet(jsoncons::json &request) {
         throw jsonschema::schema_error("VSS set malformed: "+ss.str());
     }
 }
+
+/* When JSON schema validation fails, we can not be sure if the request contains a request_id 
+ * This hleper tries to extract one in a save way (Helpful in error response), or 
+ * returning "Unknown" if none is present
+ * */
+std::string VSSRequestValidator::tryExtractRequestId(jsoncons::json &request) {
+    return request.get_value_or<std::string>("requestId", "UNKNOWN");;
+}
