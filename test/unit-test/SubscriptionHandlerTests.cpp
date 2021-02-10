@@ -122,6 +122,11 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
                                 "Vehicle.Acceleration.*",
                                 "Vehicle.Media.*",
                                 "Vehicle.Acceleration.Lateral" };
+  std::vector<VSSPath> vss_acces_path{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration"),
+                          VSSPath::fromVSSGen1("Vehicle.Media"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
+  
 
   // expectations
 
@@ -132,7 +137,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
       .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, VSSPath::fromVSSGen1(path[index]))
+      .with(mock::any, vss_acces_path[index])
       .returns(true);
   }
 
@@ -175,7 +180,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
   std::string path{"Vehicle.Drivetrain.*"};
-  VSSPath vsspath = VSSPath::fromVSSGen1(path);
+  VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Drivetrain");
 
   // expectations
 
@@ -233,6 +238,10 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
                                 "Vehicle.Acceleration.*",
                                 "Vehicle.Media.*",
                                 "Vehicle.Acceleration.Lateral" };
+    std::vector<VSSPath> vss_acces_path{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration"),
+                          VSSPath::fromVSSGen1("Vehicle.Media"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
 
   // expectations
 
@@ -243,7 +252,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
       .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, VSSPath::fromVSSGen1(path[index]))
+      .with(mock::any, vss_acces_path[index])
       .returns(true);
   }
 
@@ -284,6 +293,10 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
                                 "Vehicle.Acceleration.*",
                                 "Vehicle.Media.*",
                                 "Vehicle.Acceleration.Lateral" };
+  std::vector<VSSPath> vss_acces_path{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration"),
+                          VSSPath::fromVSSGen1("Vehicle.Media"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
 
   // expectations
 
@@ -294,7 +307,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
       .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, VSSPath::fromVSSGen1(path[index]))
+      .with(mock::any, vss_acces_path[index])
       .returns(true);
   }
 
@@ -341,7 +354,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
   std::string path{"Vehicle.Drivetrain.*"};
-  VSSPath vsspath = VSSPath::fromVSSGen1(path);
+  VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Drivetrain");
   // expectations
 
   MOCK_EXPECT(dbMock->getVSSSpecificPath)
