@@ -92,8 +92,6 @@ class GPSD_Client():
                 print(e)
                 time.sleep(1) 
                 continue
-                #self.shutdown()
-                #return
 
             self.consumer.setPosition(self.position)
      

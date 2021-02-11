@@ -109,6 +109,19 @@ jsoncons::json tryParse(jsoncons::json val) {
 
         throw outOfBoundException(msg.str());
       }
+    } else if (value_type == "uint64") {
+      typeValid = true;
+      long double longDoubleVal;
+      ValidateValue(logger, val, longDoubleVal);
+      if (!((longDoubleVal <= numeric_limits<uint64_t>::max()) &&
+            (longDoubleVal >= numeric_limits<uint64_t>::min()))) {
+        std::stringstream msg;
+        msg << "The type " << value_type << " with value " << val.as<float>()
+            << " is out of bound";
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
+
+        throw outOfBoundException(msg.str());
+      }
     } else if (value_type == "int8") {
       typeValid = true;
       long double longDoubleVal;
@@ -148,7 +161,20 @@ jsoncons::json tryParse(jsoncons::json val) {
 
         throw outOfBoundException(msg.str());
       }
-    } else if (value_type == "float") {
+    } else if (value_type == "int64") {
+      typeValid = true;
+      long double longDoubleVal;
+      ValidateValue(logger, val, longDoubleVal);
+      if (!((longDoubleVal <= numeric_limits<int64_t>::max()) &&
+            (longDoubleVal >= numeric_limits<int64_t>::min()))) {
+        std::stringstream msg;
+        msg << "The type " << value_type << " with value " << val.as<float>()
+            << " is out of bound";
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
+
+        throw outOfBoundException(msg.str());
+      }
+    }  else if (value_type == "float") {
       typeValid = true;
       long double longDoubleVal;
       ValidateValue(logger, val, longDoubleVal);
@@ -201,6 +227,7 @@ jsoncons::json tryParse(jsoncons::json val) {
 
       throw genException(msg);
     }
+
     if (source["datatype"] == "uint8")
       dest[key] = source["value"].as<uint8_t>();
     else if (source["datatype"] == "int8")
@@ -225,6 +252,10 @@ jsoncons::json tryParse(jsoncons::json val) {
       dest[key] = source["value"].as<double>();
     else if (source["datatype"] == "string")
       dest[key] = source["value"].as<std::string>();
+    else {
+      logger->Log(LogLevel::WARNING, "VSSDatabase unknown datatype \"" + source["datatype"].as<std::string>() + "\". Falling back to string" );
+      dest[key] = source["value"].as<std::string>();
+    }
   }
 }
 
