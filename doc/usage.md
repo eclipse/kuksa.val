@@ -3,7 +3,7 @@
 Using `./kuksa-val-server -h`, you can get a list of supported options:
 
 ```
-Usage: ./src/kuksa-val-server OPTIONS
+Usage: ./kuksa-val-server OPTIONS
 Options:
   -h [ --help ]                         Help screen
   -c [ --config-file ] arg (="config.ini")
