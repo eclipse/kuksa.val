@@ -207,7 +207,7 @@ int main(int argc, const char *argv[]) {
   program_options::options_description desc{"Options"};
   desc.add_options()
     ("help,h", "Help screen")
-    ("config-file,cfg", program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"config.ini"}),
+    ("config-file,c", program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"config.ini"}),
       "Configuration file with W3C-Server input parameters."
       "Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup)."
       "Sample of configuration file parameters looks like:\n"
@@ -250,6 +250,7 @@ int main(int argc, const char *argv[]) {
   if (variables.count("config-file")) {
     auto configFile = variables["config-file"].as<boost::filesystem::path>();
     auto configFilePath = boost::filesystem::path(configFile);
+    std::cout << "Read configs from " <<  configFile.string() <<std::endl;
     std::ifstream ifs(configFile.string());
     if (ifs) {
       // update path only, if these options is not defined via command line, but via config file
