@@ -93,6 +93,9 @@ cd src
 ```
 Setting log level to `ALL` gives you some more information about what is going on.
 
+You can also edit [config.ini](./config.ini) file to configure kuksa val server. This file will be copied to the build directory and used als default config,
+if no other config file is specified using the command line option `-c/--config-file`.
+
 For more information check [usage](doc/usage.md).
 
 

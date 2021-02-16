@@ -3,7 +3,7 @@
 Using `./kuksa-val-server -h`, you can get a list of supported options:
 
 ```
-Usage: ./kuksa-val-server OPTIONS
+Usage: ./src/kuksa-val-server OPTIONS
 Options:
   -h [ --help ]                         Help screen
   -c [ --config-file ] arg (="config.ini")
@@ -14,11 +14,12 @@ Options:
                                         configurations can be handled more 
                                         easily (e.g. test and production 
                                         setup).Sample of configuration file 
-                                        parameters is shown below:
+                                        parameters looks like:
                                         vss=vss_rel_2.0.json
                                         cert-path=. 
                                         insecure=true 
                                         log-level=ALL
+                                        
   --vss arg                             [mandatory] Path to VSS data file 
                                         describing VSS data tree structure 
                                         which W3C-Server shall handle. Sample 
@@ -36,7 +37,7 @@ Options:
                                         and also shall not fail connections due
                                         to self-signed certificates.
   --use-keycloak                        Use KeyCloak for permission management
-  --address arg (=localhost)            If provided, W3C-Server shall use 
+  --address arg (=127.0.0.1)            If provided, W3C-Server shall use 
                                         different server address than default 
                                         _'localhost'_
   --port arg (=8090)                    If provided, W3C-Server shall use 
@@ -70,6 +71,7 @@ MQTT Options:
                                         format with `.`) to be published to 
                                         mqtt broker, using ";" to seperate 
                                         multiple path and "*" as wildcard
+
 ```
 
 
