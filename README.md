@@ -1,13 +1,13 @@
 # KUKSA.VAL
 
-This is KUKSA.val, the KUKSA **V**ehicle **A**bstration **L**ayer. 
+This is KUKSA.val, the KUKSA **V**ehicle **A**bstration **L**ayer.
 
 [![Gitter](https://badges.gitter.im/kuksa-val.svg)](https://gitter.im/kuksa-val)
 [![License](https://img.shields.io/badge/License-EPL%202.0-blue.svg)](https://opensource.org/licenses/EPL-2.0)
 [![Build Status](https://ci.eclipse.org/kuksa/buildStatus/icon?job=kuksa.val%2Fmaster)](https://ci.eclipse.org/kuksa/job/kuksa.val/job/master/)
 
 
-KUKSA.val provides a [Genivi VSS data model](https://github.com/GENIVI/vehicle_signal_specification) describing data in a vehicle. This data is provided to applications using a variant based on the W3C VISS Interface. KUKSA.val supports VISS V1 https://www.w3.org/TR/vehicle-information-service/ and extensions as well as parts of the upcomming VISS2 standard (https://raw.githack.com/w3c/automotive/gh-pages/spec/Gen2_Core.html, https://raw.githack.com/w3c/automotive/gh-pages/spec/Gen2_Transport.html), that are applicable to in-vehicle VSS servers. 
+KUKSA.val provides a [Genivi VSS data model](https://github.com/GENIVI/vehicle_signal_specification) describing data in a vehicle. This data is provided to applications using a variant based on the W3C VISS Interface. KUKSA.val supports VISS V1 https://www.w3.org/TR/vehicle-information-service/ and extensions as well as parts of the upcomming VISS2 standard (https://raw.githack.com/w3c/automotive/gh-pages/spec/Gen2_Core.html, https://raw.githack.com/w3c/automotive/gh-pages/spec/Gen2_Transport.html), that are applicable to in-vehicle VSS servers.
 
 See [Supported Protocol](doc/protocol.md) for a detailled overview.
 
@@ -16,7 +16,7 @@ See [Supported Protocol](doc/protocol.md) for a detailled overview.
  - [Experimental REST interface](doc/rest-api.md), TLS-secured or plain
  - [Fine-grained authorisation](doc/jwt.md) based on JSON Webtokens (RFC 7519)
  - Optional [JSON signing](doc/json-signing.md) of messages
- - Built-in MQTT publisher 
+ - Built-in MQTT publisher
  - [VSS testclient](./clients/vss-testclient) to interactively explore and modify the VSS data points and data structure
 
 ## Quick start
@@ -33,7 +33,7 @@ The container images should work with any OCI compliant container runtime, in th
 Import the docker image
 
 ```
-docker load -i kuksa-val-b3084b9-amd64.tar.xz 
+docker load -i kuksa-val-b3084b9-amd64.tar.xz
 ```
 
 Your build tag may vary, and for ARM machines you need to choose an arm64 images.
@@ -54,7 +54,7 @@ If this is succesful you can skip to [using KUKSA.val](#Using-kuksaval).
 KUKSA.val uses the cmake build system. First install the required packages. On Ubuntu 20.04 this can be achieved by
 
 ```
-sudo apt install cmake libboost1.67-all-dev libssl-dev libglib2.0-dev libmosquitto-dev
+sudo apt install cmake build-essential libboost1.67-all-dev libssl-dev libglib2.0-dev libmosquitto-dev 
 ```
 
 When fetching the source, make sure you also get the needed submodules, e.g. by using the `--recursive` flag
