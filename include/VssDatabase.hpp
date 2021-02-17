@@ -64,7 +64,7 @@ class VssDatabase : public IVssDatabase {
   void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& newTree) override;
   jsoncons::json getMetaData(const std::string &path) override;
 
-  void setSignal(const std::string &path, jsoncons::json value);
+  void setSignalDBUS(const std::string &dbuspath, jsoncons::json value);
 
   jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat); //gen2 version
 
