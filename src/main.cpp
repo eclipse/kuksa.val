@@ -211,10 +211,9 @@ int main(int argc, const char *argv[]) {
       "Configuration file with `kuksa-val-server` input parameters."
       "Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup)."
       "Sample of configuration file parameters looks like:\n"
-      "vss=vss_rel_2.0.json\n"
-      "cert-path=. \n"
-      "insecure=true \n"
-      "log-level=ALL\n")
+      "vss = vss_rel_2.0.json\n"
+      "cert-path = . \n"
+      "log-level = ALL\n")
     ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which `kuksa-val-server` shall handle. Sample 'vss_rel_2.0.json' file can be found under [unit-test](./unit-test/vss_rel_2.0.json)")
     ("cert-path", program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
       "[mandatory] Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. ")

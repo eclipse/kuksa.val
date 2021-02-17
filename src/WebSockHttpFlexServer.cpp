@@ -1311,7 +1311,7 @@ void WebSockHttpFlexServer::Initialize(std::string host,
 
     allowInsecureConns = allowInsecure;
     if(allowInsecureConns){
-        logger_->Log(LogLevel::INFO, "Attention! Insecure connection are allowed! Do not use this in production!");
+        logger_->Log(LogLevel::INFO, "Attention! Insecure connection is also allowed now! Do not use this in production!");
     
     }
 
