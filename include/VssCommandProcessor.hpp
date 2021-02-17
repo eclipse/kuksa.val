@@ -43,8 +43,6 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::shared_ptr<SigningHandler> signer;
 #endif
 
-  std::string processSet(WsChannel& channel, const std::string& request_id, const std::string& path,
-                         jsoncons::json value);
   std::string processSubscribe(WsChannel& channel, const std::string& request_id, const std::string& path);
   std::string processUnsubscribe(const std::string & request_id, uint32_t subscribeID);
   std::string processUpdateVSSTree(WsChannel& channel, const std::string& request_id, const jsoncons::json& metadata);
