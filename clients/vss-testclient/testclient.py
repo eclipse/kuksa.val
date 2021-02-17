@@ -8,7 +8,6 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
-import configparser
 import argparse, json, sys
 from typing import Dict, List
 import queue, time, os
