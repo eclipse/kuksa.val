@@ -204,26 +204,26 @@ int main(int argc, const char *argv[]) {
     std::cout << "-dirty";
   std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
 
-  program_options::options_description desc{"Options"};
+  program_options::options_description desc{"OPTIONS"};
   desc.add_options()
     ("help,h", "Help screen")
     ("config-file,c", program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"config.ini"}),
-      "Configuration file with W3C-Server input parameters."
+      "Configuration file with `kuksa-val-server` input parameters."
       "Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup)."
       "Sample of configuration file parameters looks like:\n"
       "vss=vss_rel_2.0.json\n"
       "cert-path=. \n"
       "insecure=true \n"
       "log-level=ALL\n")
-    ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which W3C-Server shall handle. Sample 'vss_rel_2.0.json' file can be found under [unit-test](./unit-test/vss_rel_2.0.json)")
+    ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which `kuksa-val-server` shall handle. Sample 'vss_rel_2.0.json' file can be found under [unit-test](./unit-test/vss_rel_2.0.json)")
     ("cert-path", program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
       "[mandatory] Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. ")
-    ("insecure", program_options::bool_switch()->default_value(false), "By default, W3C-Server shall accept only SSL (TLS) secured connections. If provided, W3C-Server shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.")
+    ("insecure", program_options::bool_switch()->default_value(false), "By default, `kuksa-val-server` shall accept only SSL (TLS) secured connections. If provided, `kuksa-val-server` shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.")
     ("use-keycloak", "Use KeyCloak for permission management")
     ("address", program_options::value<string>()->default_value("127.0.0.1"),
-      "If provided, W3C-Server shall use different server address than default _'localhost'_")
+      "If provided, `kuksa-val-server` shall use different server address than default _'localhost'_")
     ("port", program_options::value<int>()->default_value(8090),
-        "If provided, W3C-Server shall use different server port than default '8090' value")
+        "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
     ("log-level",
       program_options::value<vector<string>>(&logLevels)->composing(),
       "Enable selected log level value. To allow for different log level combinations, parameter can be provided multiple times with different log level values.\n"
