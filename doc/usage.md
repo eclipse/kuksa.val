@@ -17,10 +17,9 @@ OPTIONS:
                                         easily (e.g. test and production 
                                         setup).Sample of configuration file 
                                         parameters looks like:
-                                        vss=vss_rel_2.0.json
-                                        cert-path=. 
-                                        insecure=true 
-                                        log-level=ALL
+                                        vss = vss_rel_2.0.json
+                                        cert-path = . 
+                                        log-level = ALL
                                         
   --vss arg                             [mandatory] Path to VSS data file 
                                         describing VSS data tree structure 
