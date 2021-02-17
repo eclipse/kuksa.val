@@ -4,11 +4,13 @@ Using `./kuksa-val-server -h`, you can get a list of supported options:
 
 ```
 Usage: ./kuksa-val-server OPTIONS
-Options:
+
+OPTIONS:
   -h [ --help ]                         Help screen
   -c [ --config-file ] arg (="config.ini")
-                                        Configuration file with W3C-Server 
-                                        input parameters.Configuration file can
+                                        Configuration file with 
+                                        `kuksa-val-server` input 
+                                        parameters.Configuration file can 
                                         replace command-line parameters and 
                                         through different files multiple 
                                         configurations can be handled more 
@@ -22,26 +24,27 @@ Options:
                                         
   --vss arg                             [mandatory] Path to VSS data file 
                                         describing VSS data tree structure 
-                                        which W3C-Server shall handle. Sample 
-                                        'vss_rel_2.0.json' file can be found 
-                                        under [unit-test](./unit-test/vss_rel_2
-                                        .0.json)
+                                        which `kuksa-val-server` shall handle. 
+                                        Sample 'vss_rel_2.0.json' file can be 
+                                        found under [unit-test](./unit-test/vss
+                                        _rel_2.0.json)
   --cert-path arg (=".")                [mandatory] Directory path where 
                                         'Server.pem', 'Server.key' and 
                                         'jwt.key.pub' are located. 
-  --insecure                            By default, W3C-Server shall accept 
-                                        only SSL (TLS) secured connections. If 
-                                        provided, W3C-Server shall also accept 
+  --insecure                            By default, `kuksa-val-server` shall 
+                                        accept only SSL (TLS) secured 
+                                        connections. If provided, 
+                                        `kuksa-val-server` shall also accept 
                                         plain un-secured connections for 
                                         Web-Socket and REST API connections, 
                                         and also shall not fail connections due
                                         to self-signed certificates.
   --use-keycloak                        Use KeyCloak for permission management
-  --address arg (=127.0.0.1)            If provided, W3C-Server shall use 
-                                        different server address than default 
-                                        _'localhost'_
-  --port arg (=8090)                    If provided, W3C-Server shall use 
-                                        different server port than default 
+  --address arg (=127.0.0.1)            If provided, `kuksa-val-server` shall 
+                                        use different server address than 
+                                        default _'localhost'_
+  --port arg (=8090)                    If provided, `kuksa-val-server` shall 
+                                        use different server port than default 
                                         '8090' value
   --log-level arg                       Enable selected log level value. To 
                                         allow for different log level 
@@ -71,7 +74,6 @@ MQTT Options:
                                         format with `.`) to be published to 
                                         mqtt broker, using ";" to seperate 
                                         multiple path and "*" as wildcard
-
 ```
 
 
