@@ -21,6 +21,7 @@ class VSSClientComm(threading.Thread):
         super(VSSClientComm, self).__init__()
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
+        self.callbacks = {}
         scriptDir= os.path.dirname(os.path.realpath(__file__))
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
@@ -38,20 +39,20 @@ class VSSClientComm(threading.Thread):
         self.runComm = False
         self.wsConnected = False
 
-
-    def sendReceiveMsg(self, req, timeout): 
+    def _sendReceiveMsg(self, req, timeout): 
         req["requestId"] = str(uuid.uuid4())
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         while True:
             try:
-                resp = self.recvMsgQueue.get(timeout = timeout)
-                respJson =  json.loads(resp) 
-                if str(req["requestId"]) == str(respJson["requestId"]):
-                    return resp
+                res = self.recvMsgQueue.get(timeout = timeout)
+                resJson =  json.loads(res) 
+                if "requestId" in res and str(req["requestId"]) == str(resJson["requestId"]):
+                    return res
             except queue.Empty:
                 req["error"] =  "timeout"
                 return json.dumps(req, indent=2) 
+            
 
     def authorize(self, token, timeout = 2):
         if os.path.isfile(token):
@@ -61,7 +62,7 @@ class VSSClientComm(threading.Thread):
         req = {}
         req["action"]= "authorize"
         req["tokens"] = token
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
     def updateVSSTree(self, jsonStr, timeout = 5):
         req = {}
@@ -71,21 +72,21 @@ class VSSClientComm(threading.Thread):
                 req["metadata"] = json.load(f)
         else:
             req["metadata"] = json.loads(jsonStr) 
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
     def updateMetaData(self, path, jsonStr, timeout = 5):
         req = {}
         req["action"]= "updateMetaData"
         req["path"] = path
         req["metadata"] = json.loads(jsonStr) 
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
     def getMetaData(self, path, timeout = 1):
         """Get MetaData of the parameter"""
         req = {}
         req["action"]= "getMetaData"
         req["path"] = path 
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
     def setValue(self, path, value, timeout = 1):
         if 'nan' == value:
@@ -95,24 +96,37 @@ class VSSClientComm(threading.Thread):
         req["action"]= "set"
         req["path"] = path
         req["value"] = value
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
 
     def getValue(self, path, timeout = 5):
         req = {}
         req["action"]= "get"
         req["path"] = path
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
+
+    def subscribe(self, path, callback, timeout = 5):
+        req = {}
+        req["action"]= "subscribe"
+        req["path"] = path
+        res = self._sendReceiveMsg(req, timeout)
+        resJson =  json.loads(res) 
+        self.callbacks[resJson["subscriptionId"]] = callback; 
+        return res;
 
     async def msgHandler(self, webSocket):
         while self.runComm:
             try:
-                req = self.sendMsgQueue.get(timeout=1)
+                req = self.sendMsgQueue.get(timeout=0.1)
                 await webSocket.send(req)
-                resp = await webSocket.recv()
-                self.recvMsgQueue.put(resp)
             except queue.Empty:
                 pass
+            res = await webSocket.recv()
+            resJson =  json.loads(res) 
+            if "subscriptionId" in resJson and resJson["subscriptionId"] in self.callbacks:
+                self.callbacks[resJson["subscriptionId"]](res)
+            else:
+                self.recvMsgQueue.put(res)
         await webSocket.close()
 
     async def mainLoop(self):
