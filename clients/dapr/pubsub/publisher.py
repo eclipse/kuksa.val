@@ -29,6 +29,7 @@ class Kuksa_Client():
         if "kuksa_val" not in config:
             print("kuksa_val section missing from configuration, exiting")
             sys.exit(-1)
+        self.subscriptionMap = {}
         provider_config=config['kuksa_val']
         self.client = VSSClientComm(provider_config)
         self.client.start()
@@ -41,6 +42,9 @@ class Kuksa_Client():
     def subscribe(self, path, callback):
         print("subscribe " + path)
         res = self.client.subscribe(path, callback)
+        res = json.loads(res)
+        if "subscriptionId" in res:
+            self.subscriptionMap[res["subscriptionId"]] = path
         print(res)
 
 class Dapr_Publisher():
@@ -52,29 +56,34 @@ class Dapr_Publisher():
         
         self.producer = producer
         dapr_config=config['dapr']
-        self.topic=dapr_config.get('topic')
-
-        self.producer.subscribe(self.topic, self.publisher)
+        if "topics" not in dapr_config:
+            print("no topics sepcified, exiting")
+            sys.exit(-1)
+        self.topics=dapr_config.get('topics').replace(" ", "").split(',')
+        for topic in self.topics:
+            self.producer.subscribe(topic, self.publisher)
 
         self.daprClient = DaprClient()
 
     def publisher(self, kuksa_message):
-        print("KUKSA: " + kuksa_message)
         jsonMsg = json.loads(kuksa_message) 
+        topic = self.producer.subscriptionMap[jsonMsg["subscriptionId"]]
+        print("KUKSA: " + topic)
+
         req_data = {
             'id': jsonMsg["subscriptionId"],
             'timestamp': jsonMsg["timestamp"],
             'value': jsonMsg["value"],
-            'topic': self.topic
-        }
+            'topic': topic
+            }
 
         # Create a typed message with content type and body
         resp = self.daprClient.publish_event(
             pubsub_name='pubsub',
-            topic_name=self.topic,
+            topic_name=topic,
             data=json.dumps(req_data),
             data_content_type='application/json',
-        )
+            )
 
         # Print the request
         print(req_data, flush=True)

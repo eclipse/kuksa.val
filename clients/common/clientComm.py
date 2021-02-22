@@ -112,7 +112,8 @@ class VSSClientComm(threading.Thread):
         req["path"] = path
         res = self.sendReceiveMsg_(req, timeout)
         resJson =  json.loads(res) 
-        self.callbacks[resJson["subscriptionId"]] = callback; 
+        if "subscriptionId" in resJson:
+            self.callbacks[resJson["subscriptionId"]] = callback; 
         return res;
 
 
@@ -120,10 +121,11 @@ class VSSClientComm(threading.Thread):
         while True:
             message = await webSocket.recv()
             resJson =  json.loads(message) 
-            if "subscriptionId" in resJson and resJson["subscriptionId"] in self.callbacks:
-                self.callbacks[resJson["subscriptionId"]](message)
-            else:
+            if "requestId" in resJson:
                 self.recvMsgQueue.put(message)
+            else:
+                if "subscriptionId" in resJson and resJson["subscriptionId"] in self.callbacks:
+                    self.callbacks[resJson["subscriptionId"]](message)
 
     async def sender_handler_(self, webSocket):
         while True:
