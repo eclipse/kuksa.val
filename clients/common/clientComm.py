@@ -10,7 +10,7 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 
-import os, sys, threading, queue, ssl, json, time
+import os, sys, threading, queue, ssl, json
 import uuid
 import asyncio, websockets, pathlib
 
@@ -21,8 +21,8 @@ class VSSClientComm(threading.Thread):
         super(VSSClientComm, self).__init__()
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
-        self.callbacks = {}
-        self.tasks = []
+        self.subscriptionCallbacks = {}
+        self.handlerTasks = []
         scriptDir= os.path.dirname(os.path.realpath(__file__))
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
@@ -37,7 +37,7 @@ class VSSClientComm(threading.Thread):
 
     def stopComm(self):
         self.wsConnected = False
-        for t in self.tasks:
+        for t in self.handlerTasks:
             t.cancel()
 
     def sendReceiveMsg_(self, req, timeout): 
@@ -113,7 +113,7 @@ class VSSClientComm(threading.Thread):
         res = self.sendReceiveMsg_(req, timeout)
         resJson =  json.loads(res) 
         if "subscriptionId" in resJson:
-            self.callbacks[resJson["subscriptionId"]] = callback; 
+            self.subscriptionCallbacks[resJson["subscriptionId"]] = callback; 
         return res;
 
 
@@ -124,8 +124,8 @@ class VSSClientComm(threading.Thread):
             if "requestId" in resJson:
                 self.recvMsgQueue.put(message)
             else:
-                if "subscriptionId" in resJson and resJson["subscriptionId"] in self.callbacks:
-                    self.callbacks[resJson["subscriptionId"]](message)
+                if "subscriptionId" in resJson and resJson["subscriptionId"] in self.subscriptionCallbacks:
+                    self.subscriptionCallbacks[resJson["subscriptionId"]](message)
 
     async def sender_handler_(self, webSocket):
         while True:
@@ -138,19 +138,19 @@ class VSSClientComm(threading.Thread):
     
     async def msgHandler(self, webSocket):
         self.wsConnected = True
-        self.tasks = [
+        self.handlerTasks= [
             asyncio.ensure_future(self.receiver_handler_(webSocket)),
             asyncio.ensure_future(self.sender_handler_(webSocket))
         ]
 
         try:
             await asyncio.gather(
-                *self.tasks, 
+                *self.handlerTasks, 
                 return_exceptions=False
             )
 
         except asyncio.exceptions.CancelledError as e:
-            print("all tasks canceled")
+            print("all handlerTasks canceled")
 
 
         finally:
