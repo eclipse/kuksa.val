@@ -10,7 +10,7 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 
-import os, sys, threading, queue, ssl, json
+import os, sys, threading, queue, ssl, json, time
 import uuid
 import asyncio, websockets, pathlib
 
@@ -22,6 +22,7 @@ class VSSClientComm(threading.Thread):
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
         self.callbacks = {}
+        self.tasks = []
         scriptDir= os.path.dirname(os.path.realpath(__file__))
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
@@ -32,14 +33,14 @@ class VSSClientComm(threading.Thread):
         self.cacertificate = config.get('cacertificate', os.path.join(scriptDir, "CA.pem"))
         self.certificate = config.get('certificate', os.path.join(scriptDir, "Client.pem"))
         self.keyfile = config.get('key', os.path.join(scriptDir, "Client.key"))
-        self.runComm = True
         self.wsConnected = False
 
     def stopComm(self):
-        self.runComm = False
         self.wsConnected = False
+        for t in self.tasks:
+            t.cancel()
 
-    def _sendReceiveMsg(self, req, timeout): 
+    def sendReceiveMsg_(self, req, timeout): 
         req["requestId"] = str(uuid.uuid4())
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
@@ -62,7 +63,7 @@ class VSSClientComm(threading.Thread):
         req = {}
         req["action"]= "authorize"
         req["tokens"] = token
-        return self._sendReceiveMsg(req, timeout)
+        return self.sendReceiveMsg_(req, timeout)
 
     def updateVSSTree(self, jsonStr, timeout = 5):
         req = {}
@@ -72,21 +73,21 @@ class VSSClientComm(threading.Thread):
                 req["metadata"] = json.load(f)
         else:
             req["metadata"] = json.loads(jsonStr) 
-        return self._sendReceiveMsg(req, timeout)
+        return self.sendReceiveMsg_(req, timeout)
 
     def updateMetaData(self, path, jsonStr, timeout = 5):
         req = {}
         req["action"]= "updateMetaData"
         req["path"] = path
         req["metadata"] = json.loads(jsonStr) 
-        return self._sendReceiveMsg(req, timeout)
+        return self.sendReceiveMsg_(req, timeout)
 
     def getMetaData(self, path, timeout = 1):
         """Get MetaData of the parameter"""
         req = {}
         req["action"]= "getMetaData"
         req["path"] = path 
-        return self._sendReceiveMsg(req, timeout)
+        return self.sendReceiveMsg_(req, timeout)
 
     def setValue(self, path, value, timeout = 1):
         if 'nan' == value:
@@ -96,38 +97,62 @@ class VSSClientComm(threading.Thread):
         req["action"]= "set"
         req["path"] = path
         req["value"] = value
-        return self._sendReceiveMsg(req, timeout)
+        return self.sendReceiveMsg_(req, timeout)
 
 
     def getValue(self, path, timeout = 5):
         req = {}
         req["action"]= "get"
         req["path"] = path
-        return self._sendReceiveMsg(req, timeout)
+        return self.sendReceiveMsg_(req, timeout)
 
     def subscribe(self, path, callback, timeout = 5):
         req = {}
         req["action"]= "subscribe"
         req["path"] = path
-        res = self._sendReceiveMsg(req, timeout)
+        res = self.sendReceiveMsg_(req, timeout)
         resJson =  json.loads(res) 
         self.callbacks[resJson["subscriptionId"]] = callback; 
         return res;
 
-    async def msgHandler(self, webSocket):
-        while self.runComm:
+
+    async def receiver_handler_(self, webSocket):
+        while True:
+            message = await webSocket.recv()
+            resJson =  json.loads(message) 
+            if "subscriptionId" in resJson and resJson["subscriptionId"] in self.callbacks:
+                self.callbacks[resJson["subscriptionId"]](message)
+            else:
+                self.recvMsgQueue.put(message)
+
+    async def sender_handler_(self, webSocket):
+        while True:
             try:
                 req = self.sendMsgQueue.get(timeout=0.1)
                 await webSocket.send(req)
             except queue.Empty:
+                await asyncio.sleep(0.1)
                 pass
-            res = await webSocket.recv()
-            resJson =  json.loads(res) 
-            if "subscriptionId" in resJson and resJson["subscriptionId"] in self.callbacks:
-                self.callbacks[resJson["subscriptionId"]](res)
-            else:
-                self.recvMsgQueue.put(res)
-        await webSocket.close()
+    
+    async def msgHandler(self, webSocket):
+        self.wsConnected = True
+        self.tasks = [
+            asyncio.ensure_future(self.receiver_handler_(webSocket)),
+            asyncio.ensure_future(self.sender_handler_(webSocket))
+        ]
+
+        try:
+            await asyncio.gather(
+                *self.tasks, 
+                return_exceptions=False
+            )
+
+        except asyncio.exceptions.CancelledError as e:
+            print("all tasks canceled")
+
+
+        finally:
+            await webSocket.close()
 
     async def mainLoop(self):
         if not self.insecure:
@@ -137,7 +162,6 @@ class VSSClientComm(threading.Thread):
             try:
                 print("connect to wss://"+self.serverIP+":"+str(self.serverPort))
                 async with websockets.connect("wss://"+self.serverIP+":"+str(self.serverPort), ssl=context) as ws:
-                    self.wsConnected = True
                     await self.msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))
@@ -146,7 +170,6 @@ class VSSClientComm(threading.Thread):
             try:
                 print("connect to ws://"+self.serverIP+":"+str(self.serverPort))
                 async with websockets.connect("ws://"+self.serverIP+":"+str(self.serverPort)) as ws:
-                    self.wsConnected = True
                     await self.msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))
