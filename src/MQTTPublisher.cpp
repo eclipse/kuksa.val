@@ -131,10 +131,6 @@ void MQTTPublisher::addPublishPath(const std::string& path) {
 
 bool MQTTPublisher::sendPathValue(const std::string& topic_path,
                                   const jsoncons::json& value) {
-  logger_->Log(LogLevel::VERBOSE, "MQTTPublisher::sendPathValue: send path " +
-                                      topic_path + " value " +
-                                      value.as_string() + " length " +
-                                      std::to_string(value.as_string().size()));
   for (auto& path : paths_) {
     auto topic_regex = std::regex{
         std::regex_replace(path, std::regex("\\*"), std::string(".*"))};

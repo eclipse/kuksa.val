@@ -845,6 +845,8 @@ void VssDatabase::setSignalDBUS(const string &dbuspath,
       }
     }
   }
+  subHandler_->updateByPath(path.getVSSPath(), value);
+  // TODO missing calling updateByUUID(uuid, value);
 }
 
 // Returns response JSON for get request, checking authorization.
