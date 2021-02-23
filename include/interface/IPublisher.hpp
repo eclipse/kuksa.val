@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2019 Robert Bosch GmbH.
+ * Copyright (c) 2021 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -12,18 +12,17 @@
  * *****************************************************************************
  */
 
-#ifndef __IWSCLIENT_H__
-#define __IWSCLIENT_H__
+#ifndef __IWSPUBLISHER_H__
+#define __IWSPUBLISHER_H__
 
 #include <string>
 #include <memory>
 #include <jsoncons/json.hpp>
 
-class IClient {
+class IPublisher {
   public:
-    virtual ~IClient() {}
+    virtual ~IPublisher() {}
 
     virtual bool sendPathValue(const std::string &path, const jsoncons::json &value) = 0;
 };
 #endif
-
