@@ -37,7 +37,7 @@
 #include "ILogger.hpp"
 #include "BasicLogger.hpp"
 #include "IServerMock.hpp"
-#include "IClientMock.hpp"
+#include "IPublisherMock.hpp"
 
 
 namespace utf = boost::unit_test;
@@ -76,7 +76,7 @@ std::shared_ptr<IVssDatabase> database;
 std::shared_ptr<ISigningHandler> json_signer;
 std::shared_ptr<IVssCommandProcessor> commandProc;
 std::shared_ptr<IServer> httpServer;
-std::shared_ptr<IClientMock> mqttClient;
+std::shared_ptr<IPublisherMock> mqttPublisher;
 
 std::shared_ptr<VssCommandProcessor> commandProc_auth;
 
@@ -89,11 +89,12 @@ kuksavalunittest::kuksavalunittest() {
   logger = std::make_shared<BasicLogger>(static_cast<uint8_t>(LogLevel::NONE));
   // we do not need actual implementation of server, so use mock
   httpServer = std::make_shared<IServerMock>();
-  mqttClient = std::make_shared<IClientMock>();
+  mqttPublisher = std::make_shared<IPublisherMock>();
   string jwtPubkey=Authenticator::getPublicKeyFromFile("jwt.key.pub",logger);
   authhandler = std::make_shared<Authenticator>(logger, jwtPubkey,"RS256");
   accesshandler = std::make_shared<IAccessCheckerMock>();
-  subhandler = std::make_shared<SubscriptionHandler>(logger, httpServer, mqttClient, authhandler, accesshandler);
+  subhandler = std::make_shared<SubscriptionHandler>(logger, httpServer, authhandler, accesshandler);
+  subhandler->addPublisher(mqttPublisher);
   database = std::make_shared<VssDatabase>(logger, subhandler, accesshandler);
   commandProc = std::make_shared<VssCommandProcessor>(logger, database, authhandler , subhandler);
   json_signer = std::make_shared<SigningHandler>(logger);
@@ -101,7 +102,8 @@ kuksavalunittest::kuksavalunittest() {
 
    //we can not mock for testing authentication
    auto accesshandler_real = std::make_shared<AccessChecker>(authhandler);
-   auto subhandler_auth = std::make_shared<SubscriptionHandler>(logger, httpServer, mqttClient, authhandler, accesshandler_real);
+   auto subhandler_auth = std::make_shared<SubscriptionHandler>(logger, httpServer, authhandler, accesshandler_real);
+   subhandler_auth->addPublisher(mqttPublisher);
    auto database_auth = std::make_shared<VssDatabase>(logger, subhandler_auth, accesshandler_real);
    database_auth->initJsonTree("test_vss_rel_2.0.json");
 
@@ -407,7 +409,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
     MOCK_EXPECT(accesshandler->checkWriteAccess).returns(true);
     MOCK_EXPECT(accesshandler->checkReadAccess).returns(true);
-    MOCK_EXPECT(mqttClient->sendPathValue).returns(true);
+    MOCK_EXPECT(mqttPublisher->sendPathValue).returns(true);
     json result;
     WsChannel channel;
     channel.setConnID(1234);

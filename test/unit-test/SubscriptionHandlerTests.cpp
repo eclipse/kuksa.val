@@ -31,7 +31,6 @@
 #include "ILoggerMock.hpp"
 #include "IVssDatabaseMock.hpp"
 #include "IServerMock.hpp"
-#include "IClientMock.hpp"
 #include "IAuthenticatorMock.hpp"
 #include "IAccessCheckerMock.hpp"
 #include "JsonResponses.hpp"
@@ -44,7 +43,6 @@ namespace {
   std::shared_ptr<ILoggerMock> logMock;
   std::shared_ptr<IVssDatabaseMock> dbMock;
   std::shared_ptr<IServerMock> serverMock;
-  std::shared_ptr<IClient> clientMock;
   std::shared_ptr<IAuthenticatorMock> authMock;
   std::shared_ptr<IAccessCheckerMock> accCheckMock;
 
@@ -56,12 +54,11 @@ namespace {
       logMock = std::make_shared<ILoggerMock>();
       dbMock = std::make_shared<IVssDatabaseMock>();
       serverMock = std::make_shared<IServerMock>();
-      clientMock = std::make_shared<IClientMock>();
       authMock = std::make_shared<IAuthenticatorMock>();
       accCheckMock = std::make_shared<IAccessCheckerMock>();
 
       MOCK_EXPECT(logMock->Log).at_least(0); // ignore log events
-      subHandler = std::make_unique<SubscriptionHandler>(logMock, serverMock, clientMock, authMock, accCheckMock);
+      subHandler = std::make_unique<SubscriptionHandler>(logMock, serverMock, authMock, accCheckMock);
     }
     ~TestSuiteFixture() {
       subHandler.reset();
