@@ -810,6 +810,7 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
     }
   }
   subHandler_->updateByPath(path.getVSSPath(), value);
+  // TODO missing calling updateByUUID(uuid, value);
   return answer;
 }
 
