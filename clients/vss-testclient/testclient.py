@@ -8,7 +8,6 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
-import configparser
 import argparse, json, sys
 from typing import Dict, List
 import queue, time, os
@@ -98,8 +97,6 @@ class VSSTestClient(Cmd):
 
         self.prompt = "VSS Client> "
         self.max_completion_items = 20
-        self.sendMsgQueue = queue.Queue()
-        self.recvMsgQueue = queue.Queue()
         self.serverIP = DEFAULT_SERVER_ADDR
         self.serverPort = DEFAULT_SERVER_PORT
         self.vssTree = {}
@@ -194,13 +191,11 @@ class VSSTestClient(Cmd):
             if self.commThread != None:
                 self.commThread.stopComm()
                 self.commThread = None
-        self.sendMsgQueue = queue.Queue()
-        self.recvMsgQueue = queue.Queue()
         config = {'ip':self.serverIP,
         'port': self.serverPort,
         'insecure' : insecure
         }
-        self.commThread = VSSClientComm(self.sendMsgQueue, self.recvMsgQueue, config)
+        self.commThread = VSSClientComm(config)
         self.commThread.start()
 
         pollIndex = 10

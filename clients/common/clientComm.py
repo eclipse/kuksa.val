@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python
 
 ########################################################################
 # Copyright (c) 2020 Robert Bosch GmbH
@@ -17,10 +17,10 @@ import asyncio, websockets, pathlib
 class VSSClientComm(threading.Thread):
 
     # Constructor
-    def __init__(self, sendMsgQueue, recvMsgQueue, config):
+    def __init__(self, config):
         super(VSSClientComm, self).__init__()
-        self.sendMsgQueue = sendMsgQueue
-        self.recvMsgQueue = recvMsgQueue
+        self.sendMsgQueue = queue.Queue()
+        self.recvMsgQueue = queue.Queue()
         scriptDir= os.path.dirname(os.path.realpath(__file__))
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
