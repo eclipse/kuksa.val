@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   // verify
 
-  BOOST_CHECK_NO_THROW(db->setSignal(signalPath.getVSSGen1Path(), setValue));
+  BOOST_CHECK_NO_THROW(db->setSignalDBUS(signalPath.getVSSGen1Path(), setValue));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
   BOOST_TEST(returnJson["value"].as<int>() == 10);
@@ -322,7 +322,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPathNoCh
 
   // verify
 
-  BOOST_CHECK_THROW(db->setSignal(signalPath, setValue), noPathFoundonTree);
+  BOOST_CHECK_THROW(db->setSignalDBUS(signalPath, setValue), noPathFoundonTree);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

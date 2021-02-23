@@ -816,7 +816,7 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
 
 //Only needed for DBUS currently- 
 // Method for setting values to signals.
-void VssDatabase::setSignal(const string &dbuspath,
+void VssDatabase::setSignalDBUS(const string &dbuspath,
                             jsoncons::json value) {
                               
   if (dbuspath == "") {
