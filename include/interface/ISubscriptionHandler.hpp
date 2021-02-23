@@ -18,12 +18,14 @@
 #include <memory>
 #include <jsoncons/json.hpp>
 
+#include "IPublisher.hpp"
 #include "IServer.hpp"
 
 class VssDatabase;
 class WsChannel;
 class WsServer;
 class IVssDatabase;
+class IPublisher;
 
 using SubscriptionId = uint32_t;
 
@@ -43,5 +45,6 @@ class ISubscriptionHandler {
     virtual int stopThread() = 0;
     virtual bool isThreadRunning() const = 0;
     virtual void* subThreadRunner() = 0;
+    virtual void addPublisher(std::shared_ptr<IPublisher> publisher) = 0;
 };
 #endif

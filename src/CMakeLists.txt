@@ -35,25 +35,8 @@ set(ADDRESS_SAN OFF CACHE BOOL "Build with AddressSanitizer")
 
 ###
 # Define source list
-
-set(LIB_SOURCES
-   AccessChecker.cpp
-   Authenticator.cpp
-   BasicLogger.cpp
-   JsonResponses.cpp
-   permmclient.cpp
-   RestV1ApiHandler.cpp
-   SigningHandler.cpp
-   SubscriptionHandler.cpp
-   VSSRequestValidator.cpp
-   VSSPath.cpp
-   VssCommandProcessor.cpp
-   VssCommandGet.cpp
-   VssCommandSet.cpp
-   VssDatabase.cpp
-   WebSockHttpFlexServer.cpp
-   MQTTClient.cpp
-)
+file(GLOB LIB_SOURCES *.cpp)
+list(REMOVE_ITEM LIB_SOURCES "${PROJECT_SOURCE_DIR}/main.cpp")
 
 ###
 # set main 'object library' as target to prevent multiple compilations of same sources

@@ -29,7 +29,7 @@
 #include "IAuthenticator.hpp"
 #include "IAccessChecker.hpp"
 #include "IServer.hpp"
-#include "IClient.hpp"
+#include "IPublisher.hpp"
 
 class AccessChecker;
 class Authenticator;
@@ -52,7 +52,7 @@ class SubscriptionHandler : public ISubscriptionHandler {
   std::shared_ptr<ILogger> logger;
   std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
   std::shared_ptr<IServer> server;
-  std::shared_ptr<IClient> client;
+  std::vector<std::shared_ptr<IPublisher>> publishers_;
   std::shared_ptr<IAuthenticator> validator;
   std::shared_ptr<IAccessChecker> checkAccess;
   mutable std::mutex subMutex;
@@ -65,11 +65,13 @@ class SubscriptionHandler : public ISubscriptionHandler {
  public:
   SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
                       std::shared_ptr<IServer> wserver,
-                      std::shared_ptr<IClient> mclient,
                       std::shared_ptr<IAuthenticator> authenticate,
                       std::shared_ptr<IAccessChecker> checkAccess);
   ~SubscriptionHandler();
 
+  void addPublisher(std::shared_ptr<IPublisher> publisher){
+    publishers_.push_back(publisher);
+  }
   SubscriptionId subscribe(WsChannel& channel,
                            std::shared_ptr<IVssDatabase> db,
                            const std::string &path);

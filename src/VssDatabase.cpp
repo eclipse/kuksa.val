@@ -809,13 +809,13 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
       }
     }
   }
-
+  subHandler_->updateByPath(path.getVSSPath(), value);
   return answer;
 }
 
 //Only needed for DBUS currently- 
 // Method for setting values to signals.
-void VssDatabase::setSignalDBUS(const string &dbuspath,
+void VssDatabase::setSignal(const string &dbuspath,
                             jsoncons::json value) {
                               
   if (dbuspath == "") {

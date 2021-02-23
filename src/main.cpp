@@ -33,7 +33,7 @@
 #include "VssCommandProcessor.hpp"
 #include "VssDatabase.hpp"
 #include "WebSockHttpFlexServer.hpp"
-#include "MQTTClient.hpp"
+#include "MQTTPublisher.hpp"
 #include "exception.hpp"
 
 #include "../buildinfo.h"
@@ -142,7 +142,7 @@ static void handle_method_call(GDBusConnection *connection, const gchar *sender,
   // set the data in the db.
   try {
     string pathStr(vss_path);
-    gDatabase->setSignalDBUS(pathStr, jsonVal);
+    gDatabase->setSignal(pathStr, jsonVal);
   } catch (genException &e) {
     g_dbus_method_invocation_return_error(
         invocation, G_IO_ERROR, G_IO_ERROR_FAILED_HANDLED,
@@ -225,24 +225,11 @@ int main(int argc, const char *argv[]) {
         "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
     ("log-level",
       program_options::value<vector<string>>(&logLevels)->composing(),
-      "Enable selected log level value. To allow for different log level combinations, parameter can be provided multiple times with different log level values.\n"
+      "Enable selected log level value. To allow for different log level "
+      "combinations, parameter can be provided multiple times with different "
+      "log level values.\n"
       "Supported log levels: NONE, VERBOSE, INFO, WARNING, ERROR, ALL");
-  // mqtt options 
-  program_options::options_description mqtt_desc("MQTT Options");
-  mqtt_desc.add_options()
-    ("mqtt.insecure", program_options::bool_switch()->default_value(false), "Do not check that the server certificate hostname matches the remote hostname. Do not use this option in a production environment")
-    ("mqtt.username", program_options::value<string>(), "Provide a mqtt username")
-    ("mqtt.password", program_options::value<string>(), "Provide a mqtt password")
-    ("mqtt.address", program_options::value<string>()->default_value("localhost"),
-    "Address of MQTT broker")
-    ("mqtt.port", program_options::value<int>()->default_value(1883),
-    "Port of MQTT broker")
-    ("mqtt.qos", program_options::value<int>()->default_value(0), "Quality of service level to use for all messages. Defaults to 0")
-    ("mqtt.keepalive", program_options::value<int>()->default_value(60), "Keep alive in seconds for this mqtt client. Defaults to 60")
-    ("mqtt.retry", program_options::value<int>()->default_value(3), "Times of retry via connections. Defaults to 3")
-    ("mqtt.topic-prefix", program_options::value<string>(), "Prefix to add for each mqtt topics")
-    ("mqtt.publish", program_options::value<string>()->default_value(""), "List of vss data path (using readable format with `.`) to be published to mqtt broker, using \";\" to seperate multiple path and \"*\" as wildcard");
-  desc.add(mqtt_desc);
+  desc.add(MQTTPublisher::getOptions());
   program_options::variables_map variables;
   program_options::store(parse_command_line(argc, argv, desc), variables);
   // if config file passed, get configuration from it
@@ -252,24 +239,27 @@ int main(int argc, const char *argv[]) {
     std::cout << "Read configs from " <<  configFile.string() <<std::endl;
     std::ifstream ifs(configFile.string());
     if (ifs) {
-      // update path only, if these options is not defined via command line, but via config file
-      bool update_vss_path = !variables.count("vss");
-      bool update_cert_path = (!variables.count("cert-path")) || (!variables["cert-file"].defaulted());
+      // update path only, if these options is not defined via command line, but
+      // via config file
       program_options::store(parse_config_file(ifs, desc), variables);
-      if(update_vss_path){
-        auto vss_path = variables["vss"].as<boost::filesystem::path>();
-        variables.at("vss").value() = boost::filesystem::absolute(vss_path, configFilePath.parent_path());
-        std::cout << "Update vss path to " <<  variables["vss"].as<boost::filesystem::path>().string() <<std::endl;
-      }
-      if(update_cert_path){
-        auto cert_path = variables["cert-path"].as<boost::filesystem::path>();
-        variables.at("cert-path").value() = boost::filesystem::absolute(cert_path, configFilePath.parent_path());
-        std::cout << "Update cert-path to " <<  variables["cert-path"].as<boost::filesystem::path>().string() <<std::endl;
-      }
-    } else if (!variables["config-file"].defaulted()){
+      auto vss_path = variables["vss"].as<boost::filesystem::path>();
+      variables.at("vss").value() =
+          boost::filesystem::absolute(vss_path, configFilePath.parent_path());
+      std::cout << "Update vss path to "
+                << variables["vss"].as<boost::filesystem::path>().string()
+                << std::endl;
+      auto cert_path = variables["cert-path"].as<boost::filesystem::path>();
+      variables.at("cert-path").value() =
+          boost::filesystem::absolute(cert_path, configFilePath.parent_path());
+      std::cout << "Update cert-path to "
+                << variables["cert-path"].as<boost::filesystem::path>().string()
+                << std::endl;
+    } else if (!variables["config-file"].defaulted()) {
       std::cerr << "Could not open config file: " << configFile << std::endl;
       return -1;
     }
+    // store again, because command line argument prefered
+    program_options::store(parse_command_line(argc, argv, desc), variables);
   }
 
   // print usage
@@ -337,11 +327,14 @@ int main(int argc, const char *argv[]) {
     // older by having API versioning through URIs
     std::string docRoot{"/vss/api/v1/"};
 
-    auto pubKeyFile = variables["cert-path"].as<boost::filesystem::path>()/"jwt.key.pub";
-    string jwtPubkey=Authenticator::getPublicKeyFromFile(pubKeyFile.string(), logger);
-    if (jwtPubkey == "" ) {
-        logger->Log(LogLevel::ERROR, "Could not read valid JWT pub key. Terminating.");
-        return -1;
+    auto pubKeyFile =
+        variables["cert-path"].as<boost::filesystem::path>() / "jwt.key.pub";
+    string jwtPubkey =
+        Authenticator::getPublicKeyFromFile(pubKeyFile.string(), logger);
+    if (jwtPubkey == "") {
+      logger->Log(LogLevel::ERROR,
+                  "Could not read valid JWT pub key. Terminating.");
+      return -1;
     }
 
     auto rest2JsonConverter =
@@ -353,31 +346,13 @@ int main(int argc, const char *argv[]) {
         std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
     auto accessCheck = std::make_shared<AccessChecker>(tokenValidator);
 
-    auto  mqttClient = std::make_shared<MQTTClient>(
-            logger, "vss", variables["mqtt.address"].as<string>()
-            , variables["mqtt.port"].as<int>()
-            , variables["mqtt.insecure"].as<bool>()
-            , variables["mqtt.keepalive"].as<int>()
-            , variables["mqtt.qos"].as<int>()
-            , variables["mqtt.retry"].as<int>()
-            );
-    if (variables.count("mqtt.username")) {
-        std::string password;
-        if (!variables.count("mqtt.password")){
-            std::cout << "Please input your mqtt password:" << std::endl;
-            std::cin >> password;
-
-        } else {
-            password = variables["mqtt.password"].as<string>();
-        }
-        mqttClient->setUsernamePassword(variables["mqtt.username"].as<string>(), password);
-    }
-    if (variables.count("mqtt.topic-prefix")) {
-        mqttClient->addPrefix(variables["mqtt.topic-prefix"].as<string>());
-    }
+    auto mqttPublisher = std::make_shared<MQTTPublisher>(
+        logger, "vss", variables);
 
     auto subHandler = std::make_shared<SubscriptionHandler>(
-        logger, httpServer, mqttClient, tokenValidator, accessCheck);
+        logger, httpServer, tokenValidator, accessCheck);
+    subHandler->addPublisher(mqttPublisher);
+
     auto database =
         std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(
@@ -394,18 +369,19 @@ int main(int argc, const char *argv[]) {
         path_to_publish = std::regex_replace(path_to_publish, std::regex("\\s+"), std::string(""));
         path_to_publish = std::regex_replace(path_to_publish, std::regex("\""), std::string(""));
 
-        if(!path_to_publish.empty()){
-            std::stringstream topicsstream(path_to_publish);
-            std::string token;
-            while (std::getline(topicsstream, token, ';')) {
-                if(database->checkPathValid(token)){
-                    mqttClient->addPublishPath(token);
-                }else{
-                    logger->Log(LogLevel::ERROR, string("main: ") +
-                    token + string(" is not a valid path to publish"));
-                }
-            }
+      if (!path_to_publish.empty()) {
+        std::stringstream topicsstream(path_to_publish);
+        std::string token;
+        while (std::getline(topicsstream, token, ';')) {
+          if (database->checkPathValid(token)) {
+            mqttPublisher->addPublishPath(token);
+          } else {
+            logger->Log(LogLevel::ERROR,
+                        string("main: ") + token +
+                            string(" is not a valid path to publish"));
+          }
         }
+      }
     }
 
     httpServer->AddListener(ObserverType::ALL, cmdProcessor);
@@ -423,7 +399,7 @@ int main(int argc, const char *argv[]) {
     cerr << ex.what() << std::endl;
     return -1;
   } catch (const std::runtime_error &ex) {
-    logger->Log(LogLevel::ERROR, "Fatal runtime error: "+ string(ex.what()));
+    logger->Log(LogLevel::ERROR, "Fatal runtime error: " + string(ex.what()));
     return -1;
   }
   return 0;
