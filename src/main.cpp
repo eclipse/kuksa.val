@@ -142,7 +142,7 @@ static void handle_method_call(GDBusConnection *connection, const gchar *sender,
   // set the data in the db.
   try {
     string pathStr(vss_path);
-    gDatabase->setSignal(pathStr, jsonVal);
+    gDatabase->setSignalDBUS(pathStr, jsonVal);
   } catch (genException &e) {
     g_dbus_method_invocation_return_error(
         invocation, G_IO_ERROR, G_IO_ERROR_FAILED_HANDLED,
