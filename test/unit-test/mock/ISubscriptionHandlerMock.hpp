@@ -31,4 +31,5 @@ MOCK_BASE_CLASS( ISubscriptionHandlerMock, ISubscriptionHandler )
   MOCK_METHOD(stopThread, 0)
   MOCK_CONST_METHOD(isThreadRunning, 0, bool(void))
   MOCK_METHOD(subThreadRunner, 0, void*(void))
+  MOCK_METHOD(addPublisher, 1, void(std::shared_ptr<IPublisher>))
 };
