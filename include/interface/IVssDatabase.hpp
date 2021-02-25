@@ -34,6 +34,9 @@ class IVssDatabase {
   
     virtual jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) = 0; //gen2 version
 
+    virtual bool pathExists(const VSSPath &path) = 0;
+    virtual bool pathIsWritable(const VSSPath &path) = 0;
+
                            
     virtual jsoncons::json getSignal(WsChannel& channel, const VSSPath& path, bool gen1_compat) = 0;
 

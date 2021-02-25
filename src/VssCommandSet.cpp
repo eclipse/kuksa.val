@@ -12,6 +12,8 @@
  * *****************************************************************************
  */
 
+#include<tuple> 
+
 #include "JsonResponses.hpp"
 #include "VSSPath.hpp"
 #include "VSSRequestValidator.hpp"
@@ -20,6 +22,8 @@
 
 #include "ILogger.hpp"
 #include "IVssDatabase.hpp"
+#include "IAccessChecker.hpp"
+
 
 /** Implements the Websocket get request according to GEN2, with GEN1 backwards
  * compatibility **/
@@ -38,15 +42,45 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   }
 
   VSSPath path = VSSPath::fromVSS(request["path"].as_string());
-  bool gen1_compat_mode = path.isGen1Origin();
-
+  
   string requestId = request["requestId"].as_string();
 
   logger->Log(LogLevel::VERBOSE, "Set request with id " + requestId +
                                      " for path: " + path.getVSSPath());
 
+  //unpack any multiset or filters here later as in
+  //list of setPairs=expand(VSSPath, filters)
+
+  std::vector<std::tuple<VSSPath,jsoncons::json>> setPairs;
+  setPairs.push_back(std::make_tuple(path, (jsoncons::json&)request["value"]));
+
+  //Check Access rights first
+  for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
+    if (! accessValidator->checkWriteAccess(channel, std::get<0>(setTuple) )) {
+      stringstream msg;
+      msg << "No write  access to " << std::get<0>(setTuple).getVSSPath();
+      return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
+    }
+  }
+
+  //Check if exists and is a sensor/actor
+  for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
+    if (! database->pathExists(std::get<0>(setTuple) )) {
+      return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", std::get<0>(setTuple).getVSSPath());
+    }
+    if (! database->pathIsWritable(std::get<0>(setTuple))) {
+      stringstream msg;
+      msg << "Can not set " << std::get<0>(setTuple).getVSSPath() << ". Only sensor or actor leaves can be set.";
+      logger->Log(LogLevel::VERBOSE,msg.str());
+      return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
+    } 
+  }
+
+
   try {
-    database->setSignal(channel, path, request["value"], gen1_compat_mode);
+    for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
+      database->setSignal(channel, std::get<0>(setTuple), std::get<1>(setTuple), std::get<0>(setTuple).isGen1Origin());
+    }
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json root;

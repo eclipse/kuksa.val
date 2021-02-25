@@ -30,4 +30,6 @@ MOCK_BASE_CLASS( IVssDatabaseMock, IVssDatabase )
   MOCK_METHOD(getPathForGet, 2)
   MOCK_METHOD(getVSSSpecificPath, 3)
   MOCK_METHOD(getPathForSet, 2)
+  MOCK_METHOD(pathExists, 1)
+  MOCK_METHOD(pathIsWritable, 1)
 };
