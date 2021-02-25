@@ -288,6 +288,32 @@ void VssDatabase::initJsonTree(const boost::filesystem::path &fileName) {
   }
 }
 
+//Check if a path exists, doesn't care about the type
+bool VssDatabase::pathExists(const VSSPath &path) {
+  jsoncons::json res = jsonpath::json_query(data_tree__, path.getJSONPath());
+  if (res.size() == 0) {
+    return false;
+  }
+  return true;
+  
+}
+
+// Check if a path is writable _in principle_, i.e. whether it is an actor or sensor.
+// This does _not_ check whether a user is authorized, and it will return false in case
+// the VSSPath references multiple destinations
+bool VssDatabase::pathIsWritable(const VSSPath &path) {
+  jsoncons::json res = jsonpath::json_query(data_tree__, path.getJSONPath(),jsonpath::result_type::value);
+  if (res.size() != 1) { //either no match, or multiple matches
+    return false;
+  }
+  if (res[0].contains("type") && ( res[0]["type"].as<string>() == "sensor" || res[0]["type"].as<string>() == "actuator" )) {
+    return true; //sensors and actors can be written to
+  }
+  //else it is either another type (branch), or a broken part (no type at all) of the tree, and thus not writable
+  return false;
+}
+
+
 
 bool VssDatabase::checkPathValid(const std::string & path){
     bool isBranch;

@@ -57,6 +57,11 @@ class VssDatabase : public IVssDatabase {
               std::shared_ptr<IAccessChecker> accValidator);
   ~VssDatabase();
 
+  //helpers
+  bool pathExists(const VSSPath &path) override;
+  bool pathIsWritable(const VSSPath &path) override;
+
+
   void initJsonTree(const boost::filesystem::path &fileName) override;
   bool checkPathValid(const std::string& path);
   void updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree);
