@@ -1,0 +1,3 @@
+websockets
+pyarrow
+json2parquet

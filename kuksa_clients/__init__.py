@@ -14,11 +14,11 @@ import os, sys, threading, queue, ssl, json
 import uuid
 import asyncio, websockets, pathlib
 
-class VSSClientComm(threading.Thread):
+class KuksaClientThread(threading.Thread):
 
     # Constructor
     def __init__(self, config):
-        super(VSSClientComm, self).__init__()
+        super(KuksaClientThread, self).__init__()
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
         scriptDir= os.path.dirname(os.path.realpath(__file__))
