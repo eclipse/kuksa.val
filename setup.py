@@ -16,7 +16,7 @@ setuptools.setup(
     },
     setup_requires=['setuptools-git-versioning'],
     author="Sebastian Schildt, Naresh Nayak, Wenwen Chen",
-    author_email="sebastian.schildt@de.bosch.com, naresh,nayak@de.bosch.com, wenwen.chen@de.bosch.com",
+    author_email="sebastian.schildt@de.bosch.com, naresh.nayak@de.bosch.com, wenwen.chen@de.bosch.com",
     description="kuksa.val python client SDK",
     long_description=long_description,
     long_description_content_type="text/markdown",
