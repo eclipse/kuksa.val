@@ -13,7 +13,7 @@
 import os, sys, threading, queue, ssl, json
 import uuid
 import asyncio, websockets, pathlib
-import __version__ from _version
+from _version import __version__
 
 class KuksaClientThread(threading.Thread):
 
