@@ -34,5 +34,5 @@ setuptools.setup(
     ],
     packages=setuptools.find_packages(),
     python_requires=">=3.6",
-    install_requires= ['cmd2']
+    # does not work for test install_requires= ['websockets~=8.1']
 )
