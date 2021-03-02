@@ -307,9 +307,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
 
   string requestId = "1";
   int requestValue = 123;
-  std::string path{"Signal.OBD.DTC1"};
+  std::string path{"Vehicle.OBD.DTC1"};
   VSSPath vsspath = VSSPath::fromVSSGen1(path);
+  
   // setup
+  //We need permission first, (otherwise get 403 before checking for invalid path)
+  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
+  channel.setPermissions(perm);
 
   channel.setAuthorized(true);
   channel.setConnID(1);
@@ -327,6 +331,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
+  MOCK_EXPECT(dbMock->pathExists)
+    .with(vsspath).returns(false);
   MOCK_EXPECT(dbMock->setSignal)
     .with(mock::any, vsspath, jsonValue, true)
     .throws(noPathFoundonTree(""));
@@ -351,9 +357,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
   jsoncons::json jsonSignalValue;
   jsoncons::json jsonValueOutOfBound;
 
+   // setup
+  //We need permission first, (otherwise get 403 before checking for invalid path)
+  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
+  channel.setPermissions(perm);
+
   string requestId = "1";
-  int requestValue = 123;
-  std::string path{"Signal.OBD.DTC1"};
+  int requestValue = 300; //OoB for uint8
+  std::string path{"Vehicle.OBD.ShortTermO2Trim2"};
   VSSPath vsspath = VSSPath::fromVSSGen1(path);
 
   // setup
@@ -378,6 +389,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
+  MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   MOCK_EXPECT(dbMock->setSignal)
     .with(mock::any, vsspath, jsonValue, true)
     .throws(outOfBoundException(""));
@@ -422,7 +435,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["timestamp"] = 11111111;
 
-  JsonResponses::noAccess(requestId, "set", "", jsonNoAccess);
+  JsonResponses::noAccess(requestId, "set", "No write  access to Signal/OBD/DTC1", jsonNoAccess);
 
   // expectations
 
@@ -456,11 +469,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
   string requestId = "1";
   int requestValue = 123;
-  std::string path{"Signal.OBD.DTC1"};
+  std::string path{"Vehicle.OBD.Speed"};
   VSSPath vsspath = VSSPath::fromVSSGen1(path);
 
   // setup
-
+  //We need permission first, (otherwise get 403 before checking for invalid path)
+  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
+  channel.setPermissions(perm);
   channel.setAuthorized(true);
   channel.setConnID(1);
 
@@ -481,6 +496,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
+  MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
+  
   MOCK_EXPECT(dbMock->setSignal)
     .with(mock::any, vsspath, jsonValue, true)
     .throws(std::exception());
@@ -509,11 +527,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 
   string requestId = "1";
   int requestValue = 123;
-  std::string path{"Signal.OBD.DTC1"};
+  std::string path{"Vehicle.OBD.DTC1"};
   VSSPath vsspath = VSSPath::fromVSSGen1(path);
 
   // setup
-
+  //We need permission first, (otherwise get 403 before checking for invalid path)
+  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
+  channel.setPermissions(perm);
   channel.setAuthorized(true);
   channel.setConnID(1);
 
@@ -533,6 +553,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   //as db is mocked, this test basically only checks if the command proccesor routes the query accordingly
+  MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   MOCK_EXPECT(dbMock->setSignal)
     .with(mock::any, vsspath, mock::any, true).returns(jsonSignalValue);
 
