@@ -25,11 +25,14 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/eclipse/kuksa.val/issues",
     },
     classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Environment :: Console"
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",
         "Operating System :: OS Independent",
+        "Topic :: Software Development"
     ],
     packages=setuptools.find_packages(),
     python_requires=">=3.6",
-    install_requires= ["websockets>=8.0"]
+    install_requires= ['websockets']
 )
