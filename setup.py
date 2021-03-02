@@ -7,7 +7,7 @@ setuptools.setup(
     name="kuksa_client",
     version_config={
         "template": "{tag}",
-        "dev_template": "{tag}.dev{sha}",
+        "dev_template": "{tag}-{ccount}",
         "dirty_template": "{tag}.dev{sha}-dirty",
         "starting_version": "0.0.1",
         "version_callback": None,
