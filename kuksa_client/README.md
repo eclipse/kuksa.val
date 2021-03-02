@@ -1,33 +1,18 @@
 # Kuksa Clients
 
 ## Introduction
-This is a command-line test client for the VSS Server developed in Python.
+You will find different clients implementation here
 
 ## Python SDK
 ### Requirements
-- > Python 3.8 
-- websockets~=8.1
+- Python3
 
-## Execution 
-### With Pipenv
-```sh
-pipenv sync
-pipenv run python testclient.py
+### Installation
 ```
-### Without Pipenv
-Ensure all the dependencies are installed.
-```sh
-pip3 install -r requirements.txt
-python3 testclient.py
+pip install kuksa-client
 ```
 
 ### Usage
-Set the Server IP Address & Connect
 ```
-VSS Client> import kuksa_client
-```
-
-Refer help for further issues
-```
-VSS Client> help -v
+import kuksa-client
 ```
