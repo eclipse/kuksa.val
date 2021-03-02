@@ -24,8 +24,7 @@ python3 testclient.py
 ### Usage
 Set the Server IP Address & Connect
 ```
-VSS Client> setServerIP 127.0.0.1 8090
-VSS Client> connect
+VSS Client> import kuksa_client
 ```
 
 Refer help for further issues
