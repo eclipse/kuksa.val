@@ -1,20 +1,12 @@
 import setuptools
 
+exec(open("kuksa_client/_version.py").read())
 with open("kuksa_client/README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="kuksa_client",
-    version_config={
-        "template": "{tag}",
-        "dev_template": "{tag}-{ccount}",
-        "dirty_template": "{tag}-{ccount}-dirty",
-        "starting_version": "0.1.6",
-        "version_callback": None,
-        "version_file": None,
-        "count_commits_from_version_file": False
-    },
-    setup_requires=['setuptools-git-versioning'],
+    version=__version__,
     author="Sebastian Schildt, Naresh Nayak, Wenwen Chen",
     author_email="sebastian.schildt@de.bosch.com, naresh.nayak@de.bosch.com, wenwen.chen@de.bosch.com",
     description="kuksa.val python client SDK",
@@ -34,5 +26,5 @@ setuptools.setup(
     ],
     packages=setuptools.find_packages(),
     python_requires=">=3.6",
-    # does not work for test install_requires= ['websockets~=8.1']
+    install_requires= ['websockets~=8.1']
 )
