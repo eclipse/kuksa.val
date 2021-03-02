@@ -1,8 +1,5 @@
 # Kuksa Clients
 
-## Introduction
-You will find different clients implementation here
-
 ## Python SDK
 ### Requirements
 - Python3
