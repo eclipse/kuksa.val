@@ -1,5 +1,7 @@
-/build
-/unit-test/build
+build
+dist
+build
+*.egg-info
 *.build
 .cproject
 .project
