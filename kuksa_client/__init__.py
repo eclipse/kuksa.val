@@ -13,6 +13,7 @@
 import os, sys, threading, queue, ssl, json
 import uuid
 import asyncio, websockets, pathlib
+scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, ".."))
 from _metadata import *
 
@@ -23,7 +24,6 @@ class KuksaClientThread(threading.Thread):
         super(KuksaClientThread, self).__init__()
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
-        scriptDir= os.path.dirname(os.path.realpath(__file__))
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
         try:

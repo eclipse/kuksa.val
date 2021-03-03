@@ -21,6 +21,8 @@ __all__ = (
     "__copyright__",
 )
 
+__copyright__ = "Copyright 2020 Robert Bosch GmbH"
+
 import importlib_metadata
 
 metadata = importlib_metadata.metadata("kuksa_client")
