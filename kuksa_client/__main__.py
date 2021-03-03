@@ -239,7 +239,11 @@ class VSSTestClient(Cmd):
             print("Server IP not set!!")
 
 # Main Function
+def main():
+    clientApp = VSSTestClient()
+    clientApp.cmdloop()
+
 if __name__=="__main__":
     clientApp = VSSTestClient()
-    sys.exit(clientApp.cmdloop())
+    sys.exit(main())
 
