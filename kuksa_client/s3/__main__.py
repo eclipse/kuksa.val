@@ -219,7 +219,7 @@ class Parquet_Packer():
         self.thread.join()
 
         
-if __name__ == "__main__":
+def main():
     config_candidates=['config.ini']
     for candidate in config_candidates:
         if os.path.isfile(candidate):
@@ -240,3 +240,5 @@ if __name__ == "__main__":
     signal.signal(signal.SIGQUIT, terminationSignalreceived)
     signal.signal(signal.SIGTERM, terminationSignalreceived)
 
+if __name__ == "__main__":
+    sys.exit(main())

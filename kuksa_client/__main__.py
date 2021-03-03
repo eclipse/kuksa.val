@@ -244,6 +244,5 @@ def main():
     clientApp.cmdloop()
 
 if __name__=="__main__":
-    clientApp = VSSTestClient()
     sys.exit(main())
 
