@@ -240,7 +240,6 @@ class VSSTestClient(Cmd):
 
 # Main Function
 if __name__=="__main__":
-    import sys
     clientApp = VSSTestClient()
     sys.exit(clientApp.cmdloop())
 
