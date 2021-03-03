@@ -61,6 +61,7 @@ class VssCommandProcessor : public IVssCommandProcessor {
   VssCommandProcessor(std::shared_ptr<ILogger> loggerUtil,
                       std::shared_ptr<IVssDatabase> database,
                       std::shared_ptr<IAuthenticator> vdator,
+                      std::shared_ptr<IAccessChecker> accC,
                       std::shared_ptr<ISubscriptionHandler> subhandler);
   ~VssCommandProcessor();
 

@@ -43,13 +43,13 @@ VssCommandProcessor::VssCommandProcessor(
     std::shared_ptr<ILogger> loggerUtil,
     std::shared_ptr<IVssDatabase> dbase,
     std::shared_ptr<IAuthenticator> vdator,
+    std::shared_ptr<IAccessChecker> accC,
     std::shared_ptr<ISubscriptionHandler> subhandler) {
   logger = loggerUtil;
   database = dbase;
   tokenValidator = vdator;
   subHandler = subhandler;
-  // TODO: add accessValidator as dependency
-  accessValidator = std::make_shared<AccessChecker>(tokenValidator);
+  accessValidator = accC;
   requestValidator = new VSSRequestValidator(logger);
 #ifdef JSON_SIGNING_ON
   // TODO: add signer as dependency
