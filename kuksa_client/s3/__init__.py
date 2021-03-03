@@ -11,5 +11,5 @@
 ########################################################################
 
 
-sys.path.append(os.path.join(scriptDir, ".."))
-from _metadata import *
+sys.path.append(os.path.join(scriptDir, "../.."))
+from kuksa_client._metadata import *
