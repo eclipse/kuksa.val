@@ -356,7 +356,7 @@ int main(int argc, const char *argv[]) {
     auto database =
         std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(
-        logger, database, tokenValidator, subHandler);
+        logger, database, tokenValidator, accessCheck, subHandler);
 
     gDatabase = database.get();
 

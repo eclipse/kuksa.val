@@ -26,6 +26,8 @@
 #include "IAuthenticatorMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
 
+#include "AccessChecker.hpp"
+
 #include "VSSPath.hpp"
 
 #include "exception.hpp"
@@ -37,6 +39,8 @@ namespace {
   std::shared_ptr<ILoggerMock> logMock;
   std::shared_ptr<IVssDatabaseMock> dbMock;
   std::shared_ptr<IAuthenticatorMock> authMock;
+  std::shared_ptr<IAccessChecker> accCheck;
+
   std::shared_ptr<ISubscriptionHandlerMock> subsHndlMock;
 
   std::unique_ptr<VssCommandProcessor> processor;
@@ -48,8 +52,10 @@ namespace {
       dbMock = std::make_shared<IVssDatabaseMock>();
       authMock = std::make_shared<IAuthenticatorMock>();
       subsHndlMock = std::make_shared<ISubscriptionHandlerMock>();
+      //real auth checker, becasue this test module has been written before this could be mocked
+      accCheck = std::make_shared<AccessChecker>(authMock);
 
-      processor = std::make_unique<VssCommandProcessor>(logMock, dbMock, authMock, subsHndlMock);
+      processor = std::make_unique<VssCommandProcessor>(logMock, dbMock, authMock, accCheck, subsHndlMock);
     }
     ~TestSuiteFixture() {
       logMock.reset();

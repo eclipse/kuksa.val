@@ -96,7 +96,7 @@ kuksavalunittest::kuksavalunittest() {
   subhandler = std::make_shared<SubscriptionHandler>(logger, httpServer, authhandler, accesshandler);
   subhandler->addPublisher(mqttPublisher);
   database = std::make_shared<VssDatabase>(logger, subhandler, accesshandler);
-  commandProc = std::make_shared<VssCommandProcessor>(logger, database, authhandler , subhandler);
+  commandProc = std::make_shared<VssCommandProcessor>(logger, database, authhandler , accesshandler, subhandler);
   json_signer = std::make_shared<SigningHandler>(logger);
   database->initJsonTree("test_vss_rel_2.0.json");
 
@@ -107,7 +107,7 @@ kuksavalunittest::kuksavalunittest() {
    auto database_auth = std::make_shared<VssDatabase>(logger, subhandler_auth, accesshandler_real);
    database_auth->initJsonTree("test_vss_rel_2.0.json");
 
-   commandProc_auth = std::make_shared<VssCommandProcessor>(logger, database_auth, authhandler , subhandler_auth);
+   commandProc_auth = std::make_shared<VssCommandProcessor>(logger, database_auth, authhandler , accesshandler_real, subhandler_auth);
 
 
 }

@@ -69,7 +69,7 @@ struct TestSuiteFixture {
     db = std::make_shared<VssDatabase>(logMock, subHandlerMock, accCheckMock);
     db->initJsonTree(vss_file);
 
-    processor = std::make_unique<VssCommandProcessor>(logMock, db, authMock,
+    processor = std::make_unique<VssCommandProcessor>(logMock, db, authMock, accCheckMock,
                                                       subHandlerMock);
 
   }
