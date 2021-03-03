@@ -10,12 +10,6 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 
-from setuptools_git_versioning import version_from_git 
 
-__version__ = version_from_git(
-        template = "{tag}",
-        dev_template = "{tag}-{ccount}",
-        dirty_template =  "{tag}-{ccount}-dirty",
-        starting_version =  "0.1.6"
-        )
-
+sys.path.append(os.path.join(scriptDir, ".."))
+from _metadata import *
