@@ -13,7 +13,8 @@
 import os, sys, threading, queue, ssl, json
 import uuid
 import asyncio, websockets, pathlib
-from kuksa_client._version import __version__
+sys.path.append(os.path.join(scriptDir, ".."))
+from _metadata import *
 
 class KuksaClientThread(threading.Thread):
 
@@ -29,9 +30,9 @@ class KuksaClientThread(threading.Thread):
             self.insecure = config.getboolean('insecure', False)
         except AttributeError:
             self.insecure = config.get('insecure', False)
-        self.cacertificate = config.get('cacertificate', os.path.join(scriptDir, "CA.pem"))
-        self.certificate = config.get('certificate', os.path.join(scriptDir, "Client.pem"))
-        self.keyfile = config.get('key', os.path.join(scriptDir, "Client.key"))
+        self.cacertificate = config.get('cacertificate', os.path.join(scriptDir, "../certificates/CA.pem"))
+        self.certificate = config.get('certificate', os.path.join(scriptDir, "../certificates/Client.pem"))
+        self.keyfile = config.get('key', os.path.join(scriptDir, "../certificates/Client.key"))
         self.runComm = True
         self.wsConnected = False
 
