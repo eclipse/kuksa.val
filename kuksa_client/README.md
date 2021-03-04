@@ -113,8 +113,8 @@ You can start the client by run:
 kuksa_s3_client
 ```
 
+More details can be found under the folder [s3](./s3).
 
-More details can be found under the folder [s3](./s3)
 ## Other python clients 
 Name | Description
 ---- | -----------
@@ -125,5 +125,6 @@ Name | Description
 
 ## Clients in other language 
 Name | Description
+---- | -----------
 [web client](./web-client) | A static webpage, which virsualize `kuksa.val` data
 [node red](./node-red) | Examples of `kuksa.val` clients using node-red flows
