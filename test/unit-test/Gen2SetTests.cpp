@@ -67,8 +67,8 @@ struct TestSuiteFixture {
     db = std::make_shared<VssDatabase>(logMock, subHandlerMock, accCheckMock);
     db->initJsonTree(vss_file);
 
-    processor = std::make_unique<VssCommandProcessor>(logMock, db, authMock, accCheckMock,
-                                                      subHandlerMock);
+    processor = std::make_unique<VssCommandProcessor>(
+        logMock, db, authMock, accCheckMock, subHandlerMock);
   }
   ~TestSuiteFixture() {
     logMock.reset();
@@ -85,19 +85,16 @@ struct TestSuiteFixture {
 BOOST_FIXTURE_TEST_SUITE(Gen2SetTests, TestSuiteFixture);
 
 /** Set an existing value */
-BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor) {
+BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
   WsChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
 
   jsoncons::json jsonSetRequestForSignal;
-  // jsoncons::json jsonPathNotFound;
 
   string requestId = "1";
   std::string path{"Vehicle/Speed"};
   const VSSPath vss_path = VSSPath::fromVSSGen2(path);
-
-  // setup
-  channel.setAuthorized(false);
-  channel.setConnID(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -112,18 +109,16 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor) {
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
-
   // Write access has been checked
   MOCK_EXPECT(accCheckMock->checkWriteAccess)
       .with(mock::any, vss_path)
       .returns(true);
 
-  //Notify subscribers
+  // Notify subscribers
   MOCK_EXPECT(subHandlerMock->updateByPath)
       .once()
       .with(path, 100)
       .returns(true);
-      
 
   // run UUT
   auto resStr =
@@ -139,4 +134,87 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor) {
   BOOST_TEST(res == expectedJson);
 }
 
+/** Send an invalid JSON */
+BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
+  WsChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsoncons::json jsonSetRequestForSignal;
+
+  std::string path{"Vehicle/Speed"};
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["requestId"] = 100;  // int is invalid here;
+  jsonSetRequestForSignal["value"] = 100;
+
+  std::string expectedJsonString{R"(
+      {
+  "action": "set",
+  "error": {
+    "message": "Schema error: VSS set malformed: #/requestId: Expected string, found uint64",
+    "number": 400,
+    "reason": "Bad Request"
+  },
+  "requestId": "100",
+  "timestamp": 0
+}
+      )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // Does result have a timestamp?
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+
+  // Remove timestamp for comparision purposes
+  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+
+  BOOST_TEST(res == expectedJson);
+}
+
+/** Send an invalid JSON, without any determinable Request Id */
+BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
+  WsChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsoncons::json jsonSetRequestForSignal;
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["path"] = 999;  // int as path is wrong
+  jsonSetRequestForSignal["value"] = 100;
+
+  std::string expectedJsonString{R"(
+{
+  "action": "set",
+  "error": {
+    "message": "Schema error: VSS set malformed: #: Required property \"requestId\" not found\n#/path: Expected string, found uint64",
+    "number": 400,
+    "reason": "Bad Request"
+  },
+  "requestId": "UNKNOWN",
+  "timestamp": 0
+}
+      )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // Does result have a timestamp?
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+
+  // Remove timestamp for comparision purposes
+  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+
+  BOOST_TEST(res == expectedJson);
+}
 }

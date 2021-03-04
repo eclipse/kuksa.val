@@ -24,6 +24,8 @@
 #include "IVssDatabase.hpp"
 #include "IAccessChecker.hpp"
 
+#include <boost/algorithm/string.hpp>
+
 
 /** Implements the Websocket get request according to GEN2, with GEN1 backwards
  * compatibility **/
@@ -32,9 +34,11 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   try {
     requestValidator->validateSet(request);
   } catch (jsoncons::jsonschema::schema_error &e) {
-    logger->Log(LogLevel::ERROR, string(e.what()));
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, msg);
     return JsonResponses::malFormedRequest( requestValidator->tryExtractRequestId(request), "set",
-                                           string("Schema error: ") + e.what());
+                                           string("Schema error: ") + msg);
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
