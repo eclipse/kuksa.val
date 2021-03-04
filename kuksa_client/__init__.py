@@ -24,6 +24,9 @@ class KuksaClientThread(threading.Thread):
         super(KuksaClientThread, self).__init__()
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueue = queue.Queue()
+        self.subscriptionCallbacks = {}
+        self.handlerTasks = []
+        scriptDir= os.path.dirname(os.path.realpath(__file__))
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
         try:
@@ -33,28 +36,30 @@ class KuksaClientThread(threading.Thread):
         self.cacertificate = config.get('cacertificate', os.path.join(scriptDir, "../certificates/CA.pem"))
         self.certificate = config.get('certificate', os.path.join(scriptDir, "../certificates/Client.pem"))
         self.keyfile = config.get('key', os.path.join(scriptDir, "../certificates/Client.key"))
-        self.runComm = True
         self.wsConnected = False
 
-    def stopComm(self):
-        self.runComm = False
+    def stop(self):
         self.wsConnected = False
+        for t in self.handlerTasks:
+            t.cancel()
 
 
-    def sendReceiveMsg(self, req, timeout): 
+    def _sendReceiveMsg(self, req, timeout): 
         req["requestId"] = str(uuid.uuid4())
         jsonDump = json.dumps(req)
         self.sendMsgQueue.put(jsonDump)
         while True:
             try:
-                resp = self.recvMsgQueue.get(timeout = timeout)
-                respJson =  json.loads(resp) 
-                if str(req["requestId"]) == str(respJson["requestId"]):
-                    return resp
+                res = self.recvMsgQueue.get(timeout = timeout)
+                resJson =  json.loads(res) 
+                if "requestId" in res and str(req["requestId"]) == str(resJson["requestId"]):
+                    return res
             except queue.Empty:
                 req["error"] =  "timeout"
                 return json.dumps(req, indent=2) 
+            
 
+    # Do authorization by passing a jwt token or a token file
     def authorize(self, token, timeout = 2):
         if os.path.isfile(token):
             with open(token, "r") as f:
@@ -63,32 +68,36 @@ class KuksaClientThread(threading.Thread):
         req = {}
         req["action"]= "authorize"
         req["tokens"] = token
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
-    def updateVSSTree(self, jsonStr, timeout = 5):
+    # Update VISS Tree Entry 
+    def updateVISSTree(self, jsonStr, timeout = 5):
         req = {}
-        req["action"]= "updateVSSTree"
+        req["action"]= "updateVISSTree"
         if os.path.isfile(jsonStr):
             with open(jsonStr, "r") as f:
                 req["metadata"] = json.load(f)
         else:
             req["metadata"] = json.loads(jsonStr) 
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
+    # Update Meta Data of a given path
     def updateMetaData(self, path, jsonStr, timeout = 5):
         req = {}
         req["action"]= "updateMetaData"
         req["path"] = path
         req["metadata"] = json.loads(jsonStr) 
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
+    # Get Meta Data of a given path
     def getMetaData(self, path, timeout = 1):
         """Get MetaData of the parameter"""
         req = {}
         req["action"]= "getMetaData"
         req["path"] = path 
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
+    # Set value to a given path
     def setValue(self, path, value, timeout = 1):
         if 'nan' == value:
             print(path + " has an invalid value " + str(value))
@@ -97,25 +106,73 @@ class KuksaClientThread(threading.Thread):
         req["action"]= "set"
         req["path"] = path
         req["value"] = value
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
 
+    # Get value to a given path
     def getValue(self, path, timeout = 5):
         req = {}
         req["action"]= "get"
         req["path"] = path
-        return self.sendReceiveMsg(req, timeout)
+        return self._sendReceiveMsg(req, timeout)
 
-    async def msgHandler(self, webSocket):
-        while self.runComm:
+    # Subscribe value changes of to a given path.
+    # The given callback function will be called then, if the given path is updated:
+    #   updateMessage = await webSocket.recv()
+    #   callback(updateMessage)
+    def subscribe(self, path, callback, timeout = 5):
+        req = {}
+        req["action"]= "subscribe"
+        req["path"] = path
+        res = self.sendReceiveMsg_(req, timeout)
+        resJson =  json.loads(res) 
+        if "subscriptionId" in resJson:
+            print("add callback" + str(resJson["subscriptionId"]))
+            self.subscriptionCallbacks[resJson["subscriptionId"]] = callback; 
+        return res;
+
+
+    async def _receiver_handler(self, webSocket):
+        while True:
+            message = await webSocket.recv()
+            resJson =  json.loads(message) 
+            print("message" + str(resJson))
+            if "requestId" in resJson:
+                self.recvMsgQueue.put(message)
+            else:
+                print("call callback" + str(resJson["subscriptionId"]))
+                if "subscriptionId" in resJson and resJson["subscriptionId"] in self.subscriptionCallbacks:
+                    print("call")
+                    self.subscriptionCallbacks[resJson["subscriptionId"]](message)
+
+    async def _sender_handler(self, webSocket):
+        while True:
             try:
-                req = self.sendMsgQueue.get(timeout=1)
+                req = self.sendMsgQueue.get(timeout=0.1)
                 await webSocket.send(req)
-                resp = await webSocket.recv()
-                self.recvMsgQueue.put(resp)
             except queue.Empty:
+                await asyncio.sleep(0.1)
                 pass
-        await webSocket.close()
+    
+    async def _msgHandler(self, webSocket):
+        self.wsConnected = True
+        self.handlerTasks= [
+            asyncio.ensure_future(self._receiver_handler(webSocket)),
+            asyncio.ensure_future(self._sender_handler(webSocket))
+        ]
+
+        try:
+            await asyncio.gather(
+                *self.handlerTasks, 
+                return_exceptions=False
+            )
+
+        except asyncio.exceptions.CancelledError as e:
+            print("all handlerTasks canceled")
+
+
+        finally:
+            await webSocket.close()
 
     async def mainLoop(self):
         if not self.insecure:
@@ -125,8 +182,7 @@ class KuksaClientThread(threading.Thread):
             try:
                 print("connect to wss://"+self.serverIP+":"+str(self.serverPort))
                 async with websockets.connect("wss://"+self.serverIP+":"+str(self.serverPort), ssl=context) as ws:
-                    self.wsConnected = True
-                    await self.msgHandler(ws)
+                    await self._msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))
                 pass
@@ -134,8 +190,7 @@ class KuksaClientThread(threading.Thread):
             try:
                 print("connect to ws://"+self.serverIP+":"+str(self.serverPort))
                 async with websockets.connect("ws://"+self.serverIP+":"+str(self.serverPort)) as ws:
-                    self.wsConnected = True
-                    await self.msgHandler(ws)
+                    await self._msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))
                 pass

@@ -22,15 +22,14 @@ from pyarrow import fs
 import boto3
 import pyarrow as pa
 import numpy as np 
-import pandas as pd
 from datetime import date
 from datetime import datetime
 import pyarrow_mapping
 
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, "../common/"))
-from clientComm import VSSClientComm
+sys.path.append(os.path.join(scriptDir, "../../"))
+from kuksa_client import KuksaClientThread
 
 class S3_Client():
 
@@ -97,9 +96,7 @@ class Kuksa_Client():
             print("kuksa_val section missing from configuration, exiting")
             sys.exit(-1)
         provider_config=config['kuksa_val']
-        self.sendMsgQueue = queue.Queue()
-        self.recvMsgQueue = queue.Queue()
-        self.client = VSSClientComm(self.sendMsgQueue, self.recvMsgQueue, provider_config)
+        self.client = KuksaClientThread(provider_config)
         self.client.start()
         self.token = provider_config.get('token', "token.json")
         self.client.authorize(self.token)
@@ -220,7 +217,7 @@ class Parquet_Packer():
 
         
 def main():
-    config_candidates=['config.ini']
+    config_candidates=[os.path.join(scriptDir, 'config.ini')]
     for candidate in config_candidates:
         if os.path.isfile(candidate):
             configfile=candidate
