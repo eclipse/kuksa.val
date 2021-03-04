@@ -1,4 +1,5 @@
 # KUKSA.VAL
+![kuksa.val Logo](./doc/pictures/logo.png)
 
 This is KUKSA.val, the KUKSA **V**ehicle **A**bstration **L**ayer.
 

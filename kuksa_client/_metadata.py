@@ -22,17 +22,25 @@ __all__ = (
 )
 
 __copyright__ = "Copyright 2020 Robert Bosch GmbH"
-
 import importlib_metadata
 
-metadata = importlib_metadata.metadata("kuksa_client")
+try:
+
+    metadata = importlib_metadata.metadata("kuksa_client")
 
 
-__title__ = metadata["name"]
-__summary__ = metadata["summary"]
-__uri__ = metadata["home-page"]
-__version__ = metadata["version"]
-__author__ = metadata["author"]
-__email__ = metadata["author-email"]
-__license__ = metadata["license"]
+    __title__ = metadata["name"]
+    __summary__ = metadata["summary"]
+    __uri__ = metadata["home-page"]
+    __version__ = metadata["version"]
+    __author__ = metadata["author"]
+    __email__ = metadata["author-email"]
+    __license__ = metadata["license"]
+
+except importlib_metadata.PackageNotFoundError as e:
+    print(e)
+    print("skip configuring metadata")
+    __all__ = (
+        "__copyright__",
+    )
 
