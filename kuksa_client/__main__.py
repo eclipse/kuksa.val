@@ -22,7 +22,7 @@ scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, ".."))
 from kuksa_client import KuksaClientThread
 
-class VSSTestClient(Cmd):
+class TestClient(Cmd):
     def get_childtree(self, pathText):
         childVssTree = self.vssTree
         if "." in pathText:
@@ -59,7 +59,7 @@ class VSSTestClient(Cmd):
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
     COMM_SETUP_COMMANDS = "Communication Set-up Commands"
-    VSS_COMMANDS = "VSS Interaction Commands"
+    VISS_COMMANDS = "Kuksa Interaction Commands"
 
     ap_getServerAddr = argparse.ArgumentParser()
     ap_connect = argparse.ArgumentParser()
@@ -70,32 +70,32 @@ class VSSTestClient(Cmd):
         path_filter=lambda path: (os.path.isdir(path) or path.endswith(".token")))
     ap_authorize.add_argument('Token', help='JWT(or the file storing the token) for authorizing the client.', completer_method=tokenfile_completer_method)
     ap_setServerAddr = argparse.ArgumentParser()
-    ap_setServerAddr.add_argument('IP', help='VSS Server IP Address', default=DEFAULT_SERVER_ADDR)
-    ap_setServerAddr.add_argument('Port', type=int, help='VSS Server Websocket Port', default=DEFAULT_SERVER_PORT)
+    ap_setServerAddr.add_argument('IP', help='VISS Server IP Address', default=DEFAULT_SERVER_ADDR)
+    ap_setServerAddr.add_argument('Port', type=int, help='VISS Server Websocket Port', default=DEFAULT_SERVER_PORT)
 
     ap_setValue = argparse.ArgumentParser()
-    ap_setValue.add_argument("Parameter", help="Parameter to be set", completer_method=path_completer)
+    ap_setValue.add_argument("Path", help="Path to be set", completer_method=path_completer)
     ap_setValue.add_argument("Value", help="Value to be set")
 
     ap_getValue = argparse.ArgumentParser()
-    ap_getValue.add_argument("Parameter", help="Parameter whose metadata is to be read", completer_method=path_completer)
+    ap_getValue.add_argument("Path", help="Path whose metadata is to be read", completer_method=path_completer)
     ap_getMetaData = argparse.ArgumentParser()
-    ap_getMetaData.add_argument("Parameter", help="Parameter whose metadata is to be read", completer_method=path_completer)
+    ap_getMetaData.add_argument("Path", help="Path whose metadata is to be read", completer_method=path_completer)
     ap_updateMetaData = argparse.ArgumentParser()
-    ap_updateMetaData.add_argument("Parameter", help="Parameter whose MetaData is to update", completer_method=path_completer)
-    ap_updateMetaData.add_argument("Json", help="MetaData to update. Note, only attributes can be update, if update children or the whole vss tree, use `updateVSSTree` instead.")
+    ap_updateMetaData.add_argument("Path", help="Path whose MetaData is to update", completer_method=path_completer)
+    ap_updateMetaData.add_argument("Json", help="MetaData to update. Note, only attributes can be update, if update children or the whole vss tree, use `updateVISSTree` instead.")
 
-    ap_updateVSSTree = argparse.ArgumentParser()
+    ap_updateVISSTree = argparse.ArgumentParser()
     jsonfile_completer_method = functools.partial(Cmd.path_complete,
         path_filter=lambda path: (os.path.isdir(path) or path.endswith(".json")))
-    ap_updateVSSTree.add_argument("Json", help="Json tree to update VSS", completer_method=jsonfile_completer_method)
+    ap_updateVISSTree.add_argument("Json", help="Json tree to update VISS", completer_method=jsonfile_completer_method)
 
 
     # Constructor
     def __init__(self):
-        super(VSSTestClient, self).__init__(persistent_history_file=".vssclient_history", persistent_history_length=100)
+        super(TestClient, self).__init__(persistent_history_file=".vssclient_history", persistent_history_length=100)
 
-        self.prompt = "VSS Client> "
+        self.prompt = "Test Client> "
         self.max_completion_items = 20
         self.serverIP = DEFAULT_SERVER_ADDR
         self.serverPort = DEFAULT_SERVER_PORT
@@ -112,21 +112,21 @@ class VSSTestClient(Cmd):
             resp = self.commThread.authorize(args.Token)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
-    @with_category(VSS_COMMANDS)
+    @with_category(VISS_COMMANDS)
     @with_argparser(ap_setValue)
     def do_setValue(self, args):
-        """Set the value of a parameter"""
+        """Set the value of a path"""
         if self.checkConnection():
-            resp = self.commThread.setValue(args.Parameter, args.Value)
+            resp = self.commThread.setValue(args.Path, args.Value)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
-    @with_category(VSS_COMMANDS)
+    @with_category(VISS_COMMANDS)
     @with_argparser(ap_getValue)
     def do_getValue(self, args):
-        """Get the value of a parameter"""
+        """Get the value of a path"""
         if self.checkConnection():
-            resp = self.commThread.getValue(args.Parameter)
+            resp = self.commThread.getValue(args.Path)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -136,35 +136,37 @@ class VSSTestClient(Cmd):
             if self.commThread != None:
                 self.commThread.stopComm()
                 time.sleep(1)
-        super(VSSTestClient, self).do_quit(args)
+        super(TestClient, self).do_quit(args)
         sys.exit(0)
 
     def getMetaData(self, path):
-        """Get MetaData of the parameter"""
+        """Get MetaData of the path"""
         if self.checkConnection():
             return self.commThread.getMetaData(path)
         else:
             return "{}"
 
-    @with_category(VSS_COMMANDS)
-    @with_argparser(ap_updateVSSTree)
-    def do_updateVSSTree(self, args):
+    @with_category(VISS_COMMANDS)
+    @with_argparser(ap_updateVISSTree)
+    def do_updateVISSTree(self, args):
+        """Update VISS Tree Entry"""
         if self.checkConnection():
-            resp =  self.commThread.updateVSSTree(args.Json)
+            resp =  self.commThread.updateVISSTree(args.Json)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
-    @with_category(VSS_COMMANDS)
+    @with_category(VISS_COMMANDS)
     @with_argparser(ap_updateMetaData)
     def do_updateMetaData(self, args):
+        """Update MetaData of a given path"""
         if self.checkConnection():
-            resp =  self.commThread.updateMetaData(args.Parameter, args.Json)
+            resp =  self.commThread.updateMetaData(args.Path, args.Json)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
-    @with_category(VSS_COMMANDS)
+    @with_category(VISS_COMMANDS)
     @with_argparser(ap_getMetaData)
     def do_getMetaData(self, args):
-        """Get MetaData of the parameter"""
-        resp = self.getMetaData(args.Parameter)
+        """Get MetaData of the path"""
+        resp = self.getMetaData(args.Path)
         print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -172,7 +174,7 @@ class VSSTestClient(Cmd):
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_disconnect)
     def do_disconnect(self, args):
-        """Disconnect from the VSS Server"""
+        """Disconnect from the VISS Server"""
         if hasattr(self, "commThread"):
             if self.commThread != None:
                 self.commThread.stopComm()
@@ -186,7 +188,7 @@ class VSSTestClient(Cmd):
 
 
     def connect(self, insecure=False):
-        """Connect to the VSS Server"""
+        """Connect to the VISS Server"""
         if hasattr(self, "commThread"):
             if self.commThread != None:
                 self.commThread.stopComm()
@@ -210,7 +212,7 @@ class VSSTestClient(Cmd):
             print("Websocket connected!!")
         else:
             print("Websocket could not be connected!!")
-            self.commThread.stopComm()
+            self.commThread.stop()
             self.commThread = None
 
     @with_category(COMM_SETUP_COMMANDS)
@@ -221,7 +223,7 @@ class VSSTestClient(Cmd):
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_setServerAddr)
     def do_setServerAddress(self, args):
-        """Sets the IP Address for the VSS Server"""
+        """Sets the IP Address for the VISS Server"""
         try:
             self.serverIP = args.IP
             self.serverPort = args.Port
@@ -232,7 +234,7 @@ class VSSTestClient(Cmd):
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_getServerAddr)
     def do_getServerAddress(self, args):
-        """Gets the IP Address for the VSS Server"""
+        """Gets the IP Address for the VISS Server"""
         if hasattr(self, "serverIP") and hasattr(self, "serverPort"):
             print(self.serverIP + ":" + str(self.serverPort))
         else:
@@ -240,7 +242,7 @@ class VSSTestClient(Cmd):
 
 # Main Function
 def main():
-    clientApp = VSSTestClient()
+    clientApp = TestClient()
     clientApp.cmdloop()
 
 if __name__=="__main__":

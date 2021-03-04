@@ -198,21 +198,6 @@ class VSSTestClient(Cmd):
         self.commThread = VSSClientComm(config)
         self.commThread.start()
 
-        pollIndex = 10
-        while(pollIndex > 0):
-            if self.commThread.wsConnected == True:
-                pollIndex = 0
-            else:
-                time.sleep(0.1)
-            pollIndex -= 1
-
-        if self.commThread.wsConnected:
-            print("Websocket connected!!")
-        else:
-            print("Websocket could not be connected!!")
-            self.commThread.stopComm()
-            self.commThread = None
-
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_connect)
     def do_connect(self, args):
