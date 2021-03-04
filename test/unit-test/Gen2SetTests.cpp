@@ -270,4 +270,116 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
 
   BOOST_TEST(res == expectedJson);
 }
+
+
+/** Set branch */
+BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
+  WsChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsoncons::json jsonSetRequestForSignal;
+
+  string requestId = "1";
+  std::string path{"Vehicle/VehicleIdentification"};
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["requestId"] = requestId;
+  jsonSetRequestForSignal["value"] = 100;
+
+  std::string test = jsonSetRequestForSignal.as_string();
+
+  std::string expectedJsonString{R"(
+      {
+  "action": "set",
+  "error": {
+    "message": "Can not set Vehicle/VehicleIdentification. Only sensor or actor leaves can be set.",
+    "number": 403,
+    "reason": "Forbidden"
+  },
+  "requestId": "1",
+  "timestamp": 0
+}
+      )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  // Write access has been checked
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+      .with(mock::any, vss_path)
+      .returns(true);
+
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+
+  auto res = json::parse(resStr);
+
+  // Does result have a timestamp?
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+
+  // Remove timestamp for comparision purposes
+  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+
+  BOOST_TEST(res == expectedJson);
+}
+
+
+/** Set attribute */
+BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
+  WsChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsoncons::json jsonSetRequestForSignal;
+
+  string requestId = "1";
+  std::string path{"Vehicle/VehicleIdentification/Brand"};
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["requestId"] = requestId;
+  jsonSetRequestForSignal["value"] = 100;
+
+  std::string test = jsonSetRequestForSignal.as_string();
+
+  std::string expectedJsonString{R"(
+      {
+  "action": "set",
+  "error": {
+    "message": "Can not set Vehicle/VehicleIdentification/Brand. Only sensor or actor leaves can be set.",
+    "number": 403,
+    "reason": "Forbidden"
+  },
+  "requestId": "1",
+  "timestamp": 0
+}
+      )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  // Write access has been checked
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+      .with(mock::any, vss_path)
+      .returns(true);
+
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+
+  auto res = json::parse(resStr);
+
+  // Does result have a timestamp?
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+
+  // Remove timestamp for comparision purposes
+  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+
+  BOOST_TEST(res == expectedJson);
+}
+
+
+
+
 }
