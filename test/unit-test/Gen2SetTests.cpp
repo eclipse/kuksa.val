@@ -84,7 +84,7 @@ struct TestSuiteFixture {
 // handling
 BOOST_FIXTURE_TEST_SUITE(Gen2SetTests, TestSuiteFixture);
 
-/** Set an existing value */
+/** Set an existing sensor */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
   WsChannel channel;
   channel.setAuthorized(false);
@@ -207,6 +207,59 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
   // run UUT
   auto resStr =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // Does result have a timestamp?
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+
+  // Remove timestamp for comparision purposes
+  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+
+  BOOST_TEST(res == expectedJson);
+}
+
+/** Set an non-existing path */
+BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
+  WsChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsoncons::json jsonSetRequestForSignal;
+
+  string requestId = "1";
+  std::string path{"Vehicle/Fluxcapacitor/Charge"};
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["requestId"] = requestId;
+  jsonSetRequestForSignal["value"] = 100;
+
+  std::string test = jsonSetRequestForSignal.as_string();
+
+  std::string expectedJsonString{R"(
+      {
+  "action": "set",
+  "error": {
+    "message": "I can not find Vehicle/Fluxcapacitor/Charge in my db",
+    "number": 404,
+    "reason": "Path not found"
+  },
+  "requestId": "1",
+  "timestamp": 0
+  }
+      )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  // Write access has been checked
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+      .with(mock::any, vss_path)
+      .returns(true);
+
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
