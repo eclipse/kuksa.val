@@ -2,6 +2,7 @@ import setuptools
 
 __packages__=setuptools.find_packages()
 __packages__.append('certificates')
+__packages__.append('doc')
 setuptools.setup(
     version_config={
         "template": "{tag}",
