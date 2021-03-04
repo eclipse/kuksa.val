@@ -134,7 +134,7 @@ class TestClient(Cmd):
     def do_quit(self, args):
         if hasattr(self, "commThread"):
             if self.commThread != None:
-                self.commThread.stopComm()
+                self.commThread.stop()
                 time.sleep(1)
         super(TestClient, self).do_quit(args)
         sys.exit(0)
@@ -177,7 +177,7 @@ class TestClient(Cmd):
         """Disconnect from the VISS Server"""
         if hasattr(self, "commThread"):
             if self.commThread != None:
-                self.commThread.stopComm()
+                self.commThread.stop()
                 self.commThread = None
             print("Websocket disconnected!!")
 
@@ -191,7 +191,7 @@ class TestClient(Cmd):
         """Connect to the VISS Server"""
         if hasattr(self, "commThread"):
             if self.commThread != None:
-                self.commThread.stopComm()
+                self.commThread.stop()
                 self.commThread = None
         config = {'ip':self.serverIP,
         'port': self.serverPort,

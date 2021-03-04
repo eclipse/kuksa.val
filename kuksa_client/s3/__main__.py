@@ -119,7 +119,7 @@ class Kuksa_Client():
         return (dataset)
 
     def shutdown(self):
-        self.client.stopComm()
+        self.client.stop()
 
         
 class Parquet_Packer():
