@@ -127,7 +127,6 @@ class KuksaClientThread(threading.Thread):
         res = self.sendReceiveMsg_(req, timeout)
         resJson =  json.loads(res) 
         if "subscriptionId" in resJson:
-            print("add callback" + str(resJson["subscriptionId"]))
             self.subscriptionCallbacks[resJson["subscriptionId"]] = callback; 
         return res;
 
@@ -136,13 +135,10 @@ class KuksaClientThread(threading.Thread):
         while True:
             message = await webSocket.recv()
             resJson =  json.loads(message) 
-            print("message" + str(resJson))
             if "requestId" in resJson:
                 self.recvMsgQueue.put(message)
             else:
-                print("call callback" + str(resJson["subscriptionId"]))
                 if "subscriptionId" in resJson and resJson["subscriptionId"] in self.subscriptionCallbacks:
-                    print("call")
                     self.subscriptionCallbacks[resJson["subscriptionId"]](message)
 
     async def _sender_handler(self, webSocket):
