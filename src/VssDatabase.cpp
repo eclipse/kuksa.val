@@ -828,6 +828,8 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
         resJson.insert_or_assign("value", value);
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
+          subHandler_->updateByPath(path.getVSSPath(), value);
+          subHandler_->updateByUUID(resJson["uuid"].as<string>(),value);
         }
       }
       else {
@@ -835,8 +837,6 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
       }
     }
   }
-  subHandler_->updateByPath(path.getVSSPath(), value);
-  // TODO missing calling updateByUUID(uuid, value);
   return answer;
 }
 
