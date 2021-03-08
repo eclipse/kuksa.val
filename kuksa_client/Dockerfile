@@ -8,16 +8,18 @@
 
 # Note: This dockerfile needs to be executed one level above in the root folder
 
-FROM python:3.8-alpine
+FROM python:3.8-alpine as build
 # TODO build and upload
 RUN apk update && apk add git bash
 ADD . /kuksa.val
 WORKDIR /kuksa.val
-RUN ls
 RUN pip install --upgrade pip build
 RUN python -m build
-RUN ls dist
-RUN pip install dist/*.whl 
 
+FROM python:3.8-alpine
+
+COPY --from=build /kuksa.val/dist /kuksa_dist
+RUN pip install kuksa_dist/*.whl 
+RUN rm -rf kuksa_dist
 ENV PYTHONUNBUFFERED=yes
 CMD ["kuksa_client"]
