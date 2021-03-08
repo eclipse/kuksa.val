@@ -65,5 +65,5 @@ if(BUILD_UNIT_TEST)
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE jsoncons jwt-cpp)
 
   configure_file(test_vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../certificates/jwt/jwt.key.pub ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../kuksa_certificates/jwt/jwt.key.pub ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 endif(BUILD_UNIT_TEST)
