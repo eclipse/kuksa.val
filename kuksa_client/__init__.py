@@ -70,10 +70,10 @@ class KuksaClientThread(threading.Thread):
         req["tokens"] = token
         return self._sendReceiveMsg(req, timeout)
 
-    # Update VISS Tree Entry 
-    def updateVISSTree(self, jsonStr, timeout = 5):
+    # Update VSS Tree Entry 
+    def updateVSSTree(self, jsonStr, timeout = 5):
         req = {}
-        req["action"]= "updateVISSTree"
+        req["action"]= "updateVSSTree"
         if os.path.isfile(jsonStr):
             with open(jsonStr, "r") as f:
                 req["metadata"] = json.load(f)

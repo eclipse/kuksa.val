@@ -83,12 +83,12 @@ class TestClient(Cmd):
     ap_getMetaData.add_argument("Path", help="Path whose metadata is to be read", completer_method=path_completer)
     ap_updateMetaData = argparse.ArgumentParser()
     ap_updateMetaData.add_argument("Path", help="Path whose MetaData is to update", completer_method=path_completer)
-    ap_updateMetaData.add_argument("Json", help="MetaData to update. Note, only attributes can be update, if update children or the whole vss tree, use `updateVISSTree` instead.")
+    ap_updateMetaData.add_argument("Json", help="MetaData to update. Note, only attributes can be update, if update children or the whole vss tree, use `updateVSSTree` instead.")
 
-    ap_updateVISSTree = argparse.ArgumentParser()
+    ap_updateVSSTree = argparse.ArgumentParser()
     jsonfile_completer_method = functools.partial(Cmd.path_complete,
         path_filter=lambda path: (os.path.isdir(path) or path.endswith(".json")))
-    ap_updateVISSTree.add_argument("Json", help="Json tree to update VISS", completer_method=jsonfile_completer_method)
+    ap_updateVSSTree.add_argument("Json", help="Json tree to update VSS", completer_method=jsonfile_completer_method)
 
 
     # Constructor
@@ -147,11 +147,11 @@ class TestClient(Cmd):
             return "{}"
 
     @with_category(VISS_COMMANDS)
-    @with_argparser(ap_updateVISSTree)
-    def do_updateVISSTree(self, args):
-        """Update VISS Tree Entry"""
+    @with_argparser(ap_updateVSSTree)
+    def do_updateVSSTree(self, args):
+        """Update VSS Tree Entry"""
         if self.checkConnection():
-            resp =  self.commThread.updateVISSTree(args.Json)
+            resp =  self.commThread.updateVSSTree(args.Json)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
     @with_category(VISS_COMMANDS)
