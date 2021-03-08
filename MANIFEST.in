@@ -1,2 +1,2 @@
-include certificates
-include doc
+recursive-include certificates *
+recursive-include doc *
