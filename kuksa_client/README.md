@@ -98,6 +98,17 @@ setValue            Set the value of a path
 updateMetaData      Update MetaData of a given path
 updateVISSTree      Update VISS Tree Entry
 ```
+#### Docker
+You can build a docker image of the testclient using the [`Dockerfile`](./Dockerfile). Not the most effcient way to pack a small python script, but it is easy to get started. The Dockerfile needs to be executed on the parent directory (so it include the needed certificates and `pip` package configuration).
+
+To run the builded image:
+
+```
+docker run --rm -it --net=host <image-id-from docker-build>
+```
+
+`--rm` ensures we do not keep the docker continer lying aroind after closing the vss-testclient and `--net=host` makes sure you can reach locally running kuksa.val-server or kuksa-val docker with port forwarding on the host using the default `127.0.0.1` address.
+
 
 ## s3 uploader
 This example client can bridge data from `kuksa.val` to a s3 server. After install the package and install the necessary packages:
