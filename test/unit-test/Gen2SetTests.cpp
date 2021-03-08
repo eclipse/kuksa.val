@@ -120,6 +120,11 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
       .with(path, 100)
       .returns(true);
 
+  MOCK_EXPECT(subHandlerMock->updateByUUID)
+      .once()
+      .with(mock::any, 100)
+      .returns(true);
+
   // run UUT
   auto resStr =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
