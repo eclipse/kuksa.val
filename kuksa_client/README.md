@@ -27,9 +27,9 @@ The following properties for the connection can be configured:
 - `ip` default: "127.0.0.1"
 - `port` default: 8090
 - `insecure` default: `False`
-- `cacertificate` default: "../certificates/CA.pem"
-- `certificate` default: "../certificates/Client.pem"
-- `key` default: "../certificates/Client.key"
+- `cacertificate` default: "../kuksa_certificates/CA.pem"
+- `certificate` default: "../kuksa_certificates/Client.pem"
+- `key` default: "../kuksa_certificates/Client.key"
 
 ```
 >>> config = {} 

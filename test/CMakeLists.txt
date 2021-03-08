@@ -37,8 +37,8 @@ if(BUILD_TEST_CLIENT)
   target_link_libraries(${TESTCLIENT_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
   target_link_libraries(${TESTCLIENT_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
 
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Client.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Client.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/CA.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Client.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Client.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/CA.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
 endif(BUILD_TEST_CLIENT)
