@@ -7,8 +7,6 @@
 #
 
 # Note: This dockerfile needs to be executed one level above in the root folder
-# and it expects a token folder (where you can preload some security tokens)
-# see build.sh for an example how to run this
 
 FROM python:3.8-alpine
 # TODO build and upload
@@ -16,8 +14,9 @@ RUN apk update && apk add git bash
 ADD . /kuksa.val
 WORKDIR /kuksa.val
 RUN ls
-RUN pip install --upgrade build
+RUN pip install --upgrade pip build
 RUN python -m build
+RUN ls dist
 RUN pip install dist/*.whl 
 
 ENV PYTHONUNBUFFERED=yes
