@@ -28,16 +28,12 @@ node('docker') {
         parallel arm64: {
                 stage('arm64') {
                     sh "docker buildx build --platform=linux/arm64 -f ./docker/Dockerfile -t arm64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-arm64.tar ."
-
-                    sh "docker buildx build --platform=linux/arm64 -f ./clients/vss-testclient/Dockerfile -t arm64/kuksa-vssclient:${versiontag} --output type=docker,dest=./artifacts/kuksa-vssclient-${versiontag}-arm64.tar ./clients/"
                 }
                 }, 
                 amd64: {
                 stage('amd64') {
                     sh "docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-amd64.tar ."
                     
-                    sh "docker buildx build --platform=linux/amd64 -f ./clients/vss-testclient/Dockerfile -t amd64/kuksa-vssclient:${versiontag} --output type=docker,dest=./artifacts/kuksa-vssclient-${versiontag}-amd64.tar ./clients/"
-
                     sh "docker build -t kuksa-val-dev-ubuntu20.04:${versiontag} -f docker/Dockerfile.dev ."
                     sh "docker save kuksa-val-dev-ubuntu20.04:${versiontag}  > artifacts/kuksa-val-dev-ubuntu20.04:${versiontag}.tar"
             }
