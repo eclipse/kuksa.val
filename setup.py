@@ -1,6 +1,5 @@
 import setuptools
 
-__packages__=setuptools.find_packages()
 setuptools.setup(
     version_config={
         "template": "{tag}",
@@ -12,5 +11,4 @@ setuptools.setup(
         "count_commits_from_version_file": False
     },
     setup_requires=['setuptools-git-versioning'],
-    packages=__packages__,
 )
