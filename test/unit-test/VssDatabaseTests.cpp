@@ -227,6 +227,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .returns(true);
   MOCK_EXPECT(subHandlerMock->updateByPath).with(signalPath.getVSSPath(),mock::any).returns(0);
+  MOCK_EXPECT(subHandlerMock->updateByUUID)
+    .at_least(1)
+    .with(mock::any, 10)
+    .returns(0);
 
   // verify
 
