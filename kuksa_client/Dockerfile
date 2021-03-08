@@ -10,23 +10,14 @@
 # and it expects a token folder (where you can preload some security tokens)
 # see build.sh for an example how to run this
 
-FROM python:3.8-alpine AS build-env
-
-
-RUN mkdir /app
-RUN mkdir /app/vssclient
-COPY vss-testclient/testclient.py /app/vssclient/
-COPY vss-testclient/requirements.txt /app/vssclient/
-ADD vss-testclient/tokens /app/vssclient/tokens
-ADD common /app/common
-WORKDIR /app/vssclient
-RUN pip install --target=./ --no-cache-dir -r requirements.txt
-RUN rm requirements.txt
-
-
 FROM python:3.8-alpine
-COPY --from=build-env /app /app
+# TODO build and upload
+ADD . /kuksa.val
+WORKDIR /kuksa.val
+RUN ls
+RUN pip install --upgrade build
+RUN python -m build
+RUN pip install kuksa-client
 
 ENV PYTHONUNBUFFERED=yes
-WORKDIR /app/vssclient
-CMD ["/usr/local/bin/python", "testclient.py"]
+CMD ["kuksa-client"]
