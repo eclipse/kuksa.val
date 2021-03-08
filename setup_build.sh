@@ -1,7 +1,7 @@
 #!/bin/bash
      
     #Generate the public key from private key in demo-certs directory
-    openssl rsa -in ./certificates/Client.key -pubout -outform PEM -out ./certificates/jwt.pub.key
+    openssl rsa -in ./kuksa_certificates/Client.key -pubout -outform PEM -out ./kuksa_certificates/jwt.pub.key
 
     rm -rf build
     mkdir -p build
