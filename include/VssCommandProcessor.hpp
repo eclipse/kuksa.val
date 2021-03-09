@@ -43,9 +43,6 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::shared_ptr<SigningHandler> signer;
 #endif
 
-  std::string processGet(WsChannel& channel, const std::string& request_id, const std::string& path);
-  std::string processSet(WsChannel& channel, const std::string& request_id, const std::string& path,
-                         jsoncons::json value);
   std::string processSubscribe(WsChannel& channel, const std::string& request_id, const std::string& path);
   std::string processUnsubscribe(const std::string & request_id, uint32_t subscribeID);
   std::string processUpdateVSSTree(WsChannel& channel, const std::string& request_id, const jsoncons::json& metadata);
@@ -58,11 +55,13 @@ class VssCommandProcessor : public IVssCommandProcessor {
 
   std::string getPathFromRequest(const jsoncons::json &req, bool *gen1_compat);
   std::string processGet2(WsChannel &channel, jsoncons::json &request);
+  std::string processSet2(WsChannel &channel, jsoncons::json &request);
 
  public:
   VssCommandProcessor(std::shared_ptr<ILogger> loggerUtil,
                       std::shared_ptr<IVssDatabase> database,
                       std::shared_ptr<IAuthenticator> vdator,
+                      std::shared_ptr<IAccessChecker> accC,
                       std::shared_ptr<ISubscriptionHandler> subhandler);
   ~VssCommandProcessor();
 

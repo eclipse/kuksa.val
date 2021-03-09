@@ -31,7 +31,6 @@
 #include "ILoggerMock.hpp"
 #include "IVssDatabaseMock.hpp"
 #include "IServerMock.hpp"
-#include "IClientMock.hpp"
 #include "IAuthenticatorMock.hpp"
 #include "IAccessCheckerMock.hpp"
 #include "JsonResponses.hpp"
@@ -44,7 +43,6 @@ namespace {
   std::shared_ptr<ILoggerMock> logMock;
   std::shared_ptr<IVssDatabaseMock> dbMock;
   std::shared_ptr<IServerMock> serverMock;
-  std::shared_ptr<IClient> clientMock;
   std::shared_ptr<IAuthenticatorMock> authMock;
   std::shared_ptr<IAccessCheckerMock> accCheckMock;
 
@@ -56,12 +54,11 @@ namespace {
       logMock = std::make_shared<ILoggerMock>();
       dbMock = std::make_shared<IVssDatabaseMock>();
       serverMock = std::make_shared<IServerMock>();
-      clientMock = std::make_shared<IClientMock>();
       authMock = std::make_shared<IAuthenticatorMock>();
       accCheckMock = std::make_shared<IAccessCheckerMock>();
 
       MOCK_EXPECT(logMock->Log).at_least(0); // ignore log events
-      subHandler = std::make_unique<SubscriptionHandler>(logMock, serverMock, clientMock, authMock, accCheckMock);
+      subHandler = std::make_unique<SubscriptionHandler>(logMock, serverMock, authMock, accCheckMock);
     }
     ~TestSuiteFixture() {
       subHandler.reset();
@@ -81,6 +78,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
   std::string path{"Vehicle.Drivetrain.*"};
+  VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Drivetrain");
 
   // expectations
 
@@ -88,9 +86,9 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
     .once()
     .with(mock::equal(path), mock::assign(true), mock::any)
     .returns(retDbListWider.front());
-  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
     .once()
-    .with(mock::any, path)
+    .with(mock::any, vsspath)
     .returns(true);
 
   // load data tree
@@ -121,6 +119,11 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
                                 "Vehicle.Acceleration.*",
                                 "Vehicle.Media.*",
                                 "Vehicle.Acceleration.Lateral" };
+  std::vector<VSSPath> vss_acces_path{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration"),
+                          VSSPath::fromVSSGen1("Vehicle.Media"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
+  
 
   // expectations
 
@@ -129,9 +132,9 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
       .once()
       .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+    MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, path[index])
+      .with(mock::any, vss_acces_path[index])
       .returns(true);
   }
 
@@ -174,6 +177,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
   std::string path{"Vehicle.Drivetrain.*"};
+  VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Drivetrain");
 
   // expectations
 
@@ -181,9 +185,9 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
     .exactly(clientNum)
     .with(mock::equal(path), mock::assign(true), mock::any)
     .returns(retDbListWider.front());
-  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
-    .with(mock::any, path)
+    .with(mock::any, vsspath)
     .returns(true);
 
   // load data tree
@@ -231,6 +235,10 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
                                 "Vehicle.Acceleration.*",
                                 "Vehicle.Media.*",
                                 "Vehicle.Acceleration.Lateral" };
+    std::vector<VSSPath> vss_acces_path{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration"),
+                          VSSPath::fromVSSGen1("Vehicle.Media"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
 
   // expectations
 
@@ -239,9 +247,9 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
       .once()
       .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+    MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, path[index])
+      .with(mock::any, vss_acces_path[index])
       .returns(true);
   }
 
@@ -282,6 +290,10 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
                                 "Vehicle.Acceleration.*",
                                 "Vehicle.Media.*",
                                 "Vehicle.Acceleration.Lateral" };
+  std::vector<VSSPath> vss_acces_path{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration"),
+                          VSSPath::fromVSSGen1("Vehicle.Media"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
 
   // expectations
 
@@ -290,9 +302,9 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
       .once()
       .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+    MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, path[index])
+      .with(mock::any, vss_acces_path[index])
       .returns(true);
   }
 
@@ -339,16 +351,16 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
   std::string path{"Vehicle.Drivetrain.*"};
-
+  VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Drivetrain");
   // expectations
 
   MOCK_EXPECT(dbMock->getVSSSpecificPath)
     .exactly(clientNum)
     .with(mock::equal(path), mock::assign(true), mock::any)
     .returns(retDbListWider.front());
-  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
-    .with(mock::any, path)
+    .with(mock::any, vsspath)
     .returns(true);
 
   // load data tree
@@ -403,9 +415,9 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
       .once()
       .with(mock::equal(path[index]), mock::assign(true), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+    MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, path[index])
+      .with(mock::any, VSSPath::fromVSSGen1(path[index]))
       .returns(true);
   }
 
@@ -487,9 +499,9 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
       .exactly(channelCount)
       .with(mock::equal(path[index]), mock::assign(true), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+    MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
-      .with(mock::any, path[index])
+      .with(mock::any, VSSPath::fromVSSGen1(path[index]))
       .returns(true);
   }
 
@@ -583,9 +595,9 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
       .exactly(channelCount)
       .with(mock::equal(path[index]), mock::assign(true), mock::any)
       .returns(retDbListWider[index]);
-    MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+    MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
-      .with(mock::any, path[index])
+      .with(mock::any, VSSPath::fromVSSGen1(path[index]))
       .returns(true);
   }
 

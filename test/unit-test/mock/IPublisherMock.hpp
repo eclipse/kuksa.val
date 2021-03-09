@@ -16,9 +16,9 @@
 
 #include <turtle/mock.hpp>
 
-#include "IClient.hpp"
+#include "IPublisher.hpp"
 
-MOCK_BASE_CLASS( IClientMock, IClient )
+MOCK_BASE_CLASS( IPublisherMock, IPublisher )
 {
   MOCK_METHOD(sendPathValue, 2)
 };

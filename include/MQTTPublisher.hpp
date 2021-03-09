@@ -11,21 +11,22 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#ifndef __MQTTCLIENT_H__
-#define __MQTTCLIENT_H__
+#ifndef __MQTTPUBLISHER_H__
+#define __MQTTPUBLISHER_H__
 
-#include "IClient.hpp"
+#include "IPublisher.hpp"
 #include <regex>
 #include "mosquitto.h"
+#include <boost/program_options.hpp>
 
 class ILogger;
 
 /**
- * \class MQTTClient 
+ * \class MQTTPublisher 
  * \brief A MQTT client as publisher
  *        Implementation of \ref IClient interface, based on mosquittopp library
  */
-class MQTTClient : public IClient
+class MQTTPublisher : public IPublisher
  {
   private:
     std::shared_ptr<ILogger> logger_;
@@ -39,6 +40,18 @@ class MQTTClient : public IClient
     const std::string host_;
     const int port_;
 
+    /**
+     * @brief initialize mosquitto mqtt client
+     */
+    void init(const std::string&, bool insecure);
+    /**
+     * @brief Set username and password for this mqtt client
+     */
+    bool setUsernamePassword(const 	std::string& username, const std::string& password);
+
+    void addPrefix(const std::string& prefix);
+    bool start();
+
   public:
     /**
      * @brief Initialize Boost.Beast server
@@ -51,27 +64,23 @@ class MQTTClient : public IClient
      *              message to the client if no other messages have been exchanged
      *              in that time. Default is 60s
      */
-    MQTTClient(std::shared_ptr<ILogger> loggerUtil, const std::string &id, const std::string& host, int port, bool insecure = false,  int keepalive=60, int qos=0, int connection_retry = 3);
-    ~MQTTClient();
+    MQTTPublisher(std::shared_ptr<ILogger> loggerUtil, const std::string &id, boost::program_options::variables_map& config);
+    ~MQTTPublisher();
+
+    static boost::program_options::options_description& getOptions();
 
     /**
      * @brief Start client
      */
-    bool start();
-    void addPrefix(const std::string& prefix);
     void addPublishPath(const std::string& path);
 
-    /**
-     * @brief Set username and password for this mqtt client
-     */
-    bool setUsernamePassword(const 	std::string& username, const std::string& password);
 
-    // IClient
+    // IPublisher
     bool sendPathValue(const std::string &path, const jsoncons::json &value) override;
 
 };
 
 
 
-#endif /* __MQTTCLIENT_H__ */
+#endif /* __MQTTPUBLISHER_H__ */
 

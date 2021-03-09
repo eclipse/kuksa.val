@@ -37,16 +37,12 @@ json vss_resolver(const jsoncons::uri& uri) {
 
 VSSRequestValidator::VSSRequestValidator(std::shared_ptr<ILogger> loggerUtil) {
     this->logger=loggerUtil;  
-   /* std::string s;
-    VSS_JSON::SCHEMA_GET.dump(s);
-    deinemudda.dump(s);
-
-    json::parse(VSS_JSON::gettest).dump(s);
-
-    FU.dump(s);*/
 
     this->getSchema = jsoncons::jsonschema::make_schema(json::parse(VSS_JSON::SCHEMA_GET), vss_resolver);
     this->getValidator =  new jsonschema::json_validator<json>(this->getSchema);
+
+    this->setSchema = jsoncons::jsonschema::make_schema(json::parse(VSS_JSON::SCHEMA_SET), vss_resolver);
+    this->setValidator =  new jsonschema::json_validator<json>(this->setSchema);
 }
 
 VSSRequestValidator::~VSSRequestValidator() {
@@ -69,4 +65,28 @@ void VSSRequestValidator::validateGet(jsoncons::json &request) {
         throw jsonschema::schema_error("VSS get malformed: "+ss.str());
     }
     return;
+}
+
+void VSSRequestValidator::validateSet(jsoncons::json &request) {
+    std::stringstream ss;
+    bool valid=true;
+    auto reporter = [&ss,&valid](const jsonschema::validation_output& o)
+        {
+            valid=false;
+            ss << o.instance_location() << ": " << o.message() << "\n";
+    };
+
+    this->setValidator->validate(request, reporter);
+
+    if (!valid) {
+        throw jsonschema::schema_error("VSS set malformed: "+ss.str());
+    }
+}
+
+/* When JSON schema validation fails, we can not be sure if the request contains a request_id 
+ * This hleper tries to extract one in a save way (Helpful in error response), or 
+ * returning "Unknown" if none is present
+ * */
+std::string VSSRequestValidator::tryExtractRequestId(jsoncons::json &request) {
+    return request.get_value_or<std::string>("requestId", "UNKNOWN");;
 }
