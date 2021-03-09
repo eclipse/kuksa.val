@@ -24,7 +24,6 @@ node('docker') {
     }
     stage('Build') {
         //Prepare for building test-client with default tokens
-        sh "mkdir -p ./clients/vss-testclient/tokens && rm -rf ./clients/vss-testclient/tokens/*"
         parallel arm64: {
                 stage('arm64') {
                     sh "docker buildx build --platform=linux/arm64 -f ./docker/Dockerfile -t arm64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-arm64.tar ."
