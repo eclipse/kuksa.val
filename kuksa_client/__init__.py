@@ -163,8 +163,8 @@ class KuksaClientThread(threading.Thread):
                 return_exceptions=False
             )
 
-        except asyncio.exceptions.CancelledError as e:
-            print("Stop all handlerTasks")
+        except Exception:
+            print("Stop all tasks")
 
 
         finally:
