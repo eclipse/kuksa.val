@@ -40,8 +40,7 @@ class KuksaClientThread(threading.Thread):
 
     def stop(self):
         self.wsConnected = False
-        for t in self.handlerTasks:
-            t.cancel()
+        self.run = False
 
 
     def _sendReceiveMsg(self, req, timeout): 
@@ -128,13 +127,13 @@ class KuksaClientThread(threading.Thread):
         resJson =  json.loads(res) 
         if "subscriptionId" in resJson:
             self.subscriptionCallbacks[resJson["subscriptionId"]] = callback; 
-        return res;
+        return res
 
 
     async def _receiver_handler(self, webSocket):
-        while True:
+        while self.run:
             message = await webSocket.recv()
-            resJson =  json.loads(message) 
+            resJson = json.loads(message) 
             if "requestId" in resJson:
                 self.recvMsgQueue.put(message)
             else:
@@ -142,7 +141,7 @@ class KuksaClientThread(threading.Thread):
                     self.subscriptionCallbacks[resJson["subscriptionId"]](message)
 
     async def _sender_handler(self, webSocket):
-        while True:
+        while self.run:
             try:
                 req = self.sendMsgQueue.get(timeout=0.1)
                 await webSocket.send(req)
@@ -152,23 +151,15 @@ class KuksaClientThread(threading.Thread):
     
     async def _msgHandler(self, webSocket):
         self.wsConnected = True
-        self.handlerTasks= [
-            asyncio.ensure_future(self._receiver_handler(webSocket)),
-            asyncio.ensure_future(self._sender_handler(webSocket))
-        ]
+        self.run = True
+        recv = asyncio.Task(self._receiver_handler(webSocket))
+        send = asyncio.Task(self._sender_handler(webSocket))
 
-        try:
-            await asyncio.gather(
-                *self.handlerTasks, 
-                return_exceptions=False
-            )
-
-        except Exception:
-            print("Stop all tasks")
-
-
-        finally:
-            await webSocket.close()
+        await asyncio.wait([recv, send], return_when=asyncio.FIRST_COMPLETED)
+        recv.cancel()
+        send.cancel()
+        
+        await webSocket.close()
 
     async def mainLoop(self):
         if not self.insecure:
