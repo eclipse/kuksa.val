@@ -6,3 +6,4 @@ This documentation will detail, what is supported on the Websocket Interface
 
 
 ## [get calls](get.md)
+## [set calls](set.md)
