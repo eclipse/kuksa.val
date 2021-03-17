@@ -17,8 +17,8 @@ pip install kuksa-client
 
 import the sdk
 ```
->>> import kuksa_client
->>> kuksa_client.__version__
+>>> import kuksa_viss_client
+>>> kuksa_viss_client.__version__
 '<your version, e.g. 0.1.7>'
 ```
 
@@ -33,7 +33,7 @@ The following properties for the connection can be configured:
 
 ```
 >>> config = {} 
->>> client = kuksa_client.KuksaClientThread(config)
+>>> client = kuksa_viss_client.KuksaClientThread(config)
 >>> 
 >>> # Start the client thread to connect with configured server
 >>> client.start()
@@ -74,7 +74,7 @@ def subscribe(self, path, callback, timeout = 5)
 Using the python sdk, we implemented a command-line test client.
 
 #### Usage
-After install the package from  `pip`. You can just start the test client with `kuksa_client`.
+After install the package from  `pip`. You can just start the test client with `kuksa_viss_client`.
 
 Refer help for further issues
 ```
