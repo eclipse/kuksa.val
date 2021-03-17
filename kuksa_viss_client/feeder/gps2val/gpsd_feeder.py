@@ -24,7 +24,7 @@ import queue
 import gps
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, "../../"))
+sys.path.append(os.path.join(scriptDir, "../../../"))
 from kuksa_viss_client import KuksaClientThread
 
 class Kuksa_Client():
@@ -36,7 +36,6 @@ class Kuksa_Client():
             print("kuksa_val section missing from configuration, exiting")
             sys.exit(-1)
         provider_config=config['kuksa_val']
-        self.interval = provider_config.get('interval', 1)
         self.client = KuksaClientThread(provider_config)
         self.client.start()
         self.client.authorize()
@@ -62,6 +61,7 @@ class GPSD_Client():
         provider_config=config['gpsd']
         gpsd_host=provider_config.get('host','127.0.0.1')
         gpsd_port=provider_config.get('port','2947')
+        self.interval = provider_config.getint('interval', 1)
 
         gpsd = gps.gps(host = gpsd_host, port = gpsd_port, mode=gps.WATCH_ENABLE|gps.WATCH_NEWSTYLE) 
         print("Trying to connect gpsd at "+str(gpsd_host)+" port "+str(gpsd_port))
