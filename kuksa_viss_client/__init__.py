@@ -60,7 +60,9 @@ class KuksaClientThread(threading.Thread):
             
 
     # Do authorization by passing a jwt token or a token file
-    def authorize(self, token=self.token, timeout = 2):
+    def authorize(self, token=None, timeout = 2):
+        if token == None:
+            token = self.tokenfile
         if os.path.isfile(token):
             with open(token, "r") as f:
                 token = f.readline()
