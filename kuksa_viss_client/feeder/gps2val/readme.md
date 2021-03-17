@@ -21,6 +21,7 @@ After installation, run the following command to simulate a gps device as dataso
 ```
 gpsfake -P 2947 simplelog_example.nmea
 ```
+Note: You need to use the `gpsfake` with the same version like the installed `gpsd`.
 
 There are several tools for generating nmea log files:
 - [nmea-gps logger](https://www.npmjs.com/package/nmea-gps-logger)

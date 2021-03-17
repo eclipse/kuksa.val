@@ -36,7 +36,7 @@ class KuksaClientThread(threading.Thread):
         self.cacertificate = config.get('cacertificate', os.path.join(scriptDir, "../kuksa_certificates/CA.pem"))
         self.certificate = config.get('certificate', os.path.join(scriptDir, "../kuksa_certificates/Client.pem"))
         self.keyfile = config.get('key', os.path.join(scriptDir, "../kuksa_certificates/Client.key"))
-        self.tokenfile = config.get('token', os.path.join(scriptDir, "../kuksa_certificates/jwt/all-read-write.json"))
+        self.tokenfile = config.get('token', os.path.join(scriptDir, "../kuksa_certificates/jwt/all-read-write.json.token"))
         self.wsConnected = False
 
     def stop(self):
@@ -63,6 +63,7 @@ class KuksaClientThread(threading.Thread):
     def authorize(self, token=None, timeout = 2):
         if token == None:
             token = self.tokenfile
+        print(token)
         if os.path.isfile(token):
             with open(token, "r") as f:
                 token = f.readline()

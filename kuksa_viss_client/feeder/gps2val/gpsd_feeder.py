@@ -38,6 +38,7 @@ class Kuksa_Client():
         provider_config=config['kuksa_val']
         self.client = KuksaClientThread(provider_config)
         self.client.start()
+        print("authorizing...")
         self.client.authorize()
         
     def shutdown(self):
