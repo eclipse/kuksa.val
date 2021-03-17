@@ -102,7 +102,7 @@ For more information check [usage](doc/usage.md).
 
 ## Clients
 
-In the [kuksa_clients](./kuksa_clients) folder, you can find differents clients for kuksa-val-server
+In the [kuksa_viss_clients](./kuksa_viss_clients) folder, you can find differents clients for kuksa-val-server
 
 ### Python test client
 

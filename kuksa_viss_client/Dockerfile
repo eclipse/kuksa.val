@@ -22,4 +22,4 @@ COPY --from=build /kuksa.val/dist /kuksa_dist
 RUN pip install kuksa_dist/*.whl 
 RUN rm -rf kuksa_dist
 ENV PYTHONUNBUFFERED=yes
-CMD ["kuksa_client"]
+CMD ["kuksa_viss_client"]

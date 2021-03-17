@@ -15,7 +15,7 @@ import uuid
 import asyncio, websockets, pathlib
 scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, ".."))
-from kuksa_client._metadata import *
+from kuksa_viss_client._metadata import *
 
 class KuksaClientThread(threading.Thread):
 

@@ -26,7 +26,7 @@ import importlib_metadata
 
 try:
 
-    metadata = importlib_metadata.metadata("kuksa_client")
+    metadata = importlib_metadata.metadata("kuksa_viss_client")
 
 
     __title__ = metadata["name"]
