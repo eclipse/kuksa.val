@@ -9,17 +9,17 @@
 # Note: This dockerfile needs to be executed one level above in the root folder
 
 FROM python:3.8-alpine as build
-# TODO build and upload
-RUN apk update && apk add git bash
+RUN apk update && apk add git
 ADD . /kuksa.val
 WORKDIR /kuksa.val
 RUN pip install --upgrade pip build
-RUN python -m build
+RUN rm -rf dist && python -m build
+RUN mkdir /kuksa_viss_client
+RUN pip install --target /kuksa_viss_client --no-cache-dir dist/*.whl 
 
 FROM python:3.8-alpine
 
-COPY --from=build /kuksa.val/dist /kuksa_dist
-RUN pip install kuksa_dist/*.whl 
-RUN rm -rf kuksa_dist
+COPY --from=build /kuksa_viss_client /kuksa_viss_client
 ENV PYTHONUNBUFFERED=yes
-CMD ["kuksa_viss_client"]
+WORKDIR /kuksa_viss_client
+CMD ["/usr/local/bin/python", "-m", "kuksa_viss_client"]
