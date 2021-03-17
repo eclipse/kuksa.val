@@ -110,25 +110,10 @@ docker run --rm -it --net=host <image-id-from docker-build>
 `--rm` ensures we do not keep the docker continer lying aroind after closing the vss-testclient and `--net=host` makes sure you can reach locally running kuksa.val-server or kuksa-val docker with port forwarding on the host using the default `127.0.0.1` address.
 
 
-## s3 uploader
-This example client can bridge data from `kuksa.val` to a s3 server. After install the package and install the necessary packages:
-
-```
-pip install kuksa-client
-pip install -r s3/requirements.txt
-```
-
-You can start the client by run:
-
-```
-kuksa_s3_client
-```
-
-More details can be found under the folder [s3](./s3).
-
 ## Other python clients 
 Name | Description
 ---- | -----------
+[s3 uploader](./s3) | Data bridge from `kuksa.val` to s3 server
 [dapr pubsub](./dapr/pubsub) | Data bridge from `kuksa.val` to dapr `pubsub` component
 [dapr state_store](./dapr/state_store) | Store data to dapr `statestore` component
 [GPS feeder](./feeder/gps2val) | GPS data source for `kuksa.val` server
