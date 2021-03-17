@@ -98,8 +98,7 @@ class Kuksa_Client():
         provider_config=config['kuksa_val']
         self.client = KuksaClientThread(provider_config)
         self.client.start()
-        self.token = provider_config.get('token', "token.json")
-        self.client.authorize(self.token)
+        self.client.authorize()
         self.dataset = {}
         
     def getMetaData(self, path):
@@ -118,6 +117,7 @@ class Kuksa_Client():
                 dataset[key] = [dataset[key]]
         return (dataset)
 
+
     def shutdown(self):
         self.client.stop()
 
@@ -132,9 +132,9 @@ class Parquet_Packer():
         self.dataprovider = Kuksa_Client(config)
         self.uploader = S3_Client(config)
         config=config['parquet']
+        self.interval = config.get('interval', 1)
         self.path = config.get('path', "")
         self.path = self.path.replace(" ", "").split(",")
-        self.interval = config.getint('sample_interval', 1)
         self.max_num_rows = config.getint('max_num_rows', -1)
         
         self.schema = self.genSchema(self.path)

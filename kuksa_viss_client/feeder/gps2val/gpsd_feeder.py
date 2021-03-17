@@ -24,8 +24,8 @@ import queue
 import gps
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, "../../common/"))
-from clientComm import VSSClientComm
+sys.path.append(os.path.join(scriptDir, "../../"))
+from kuksa_viss_client import KuksaClientThread
 
 class Kuksa_Client():
 
@@ -36,13 +36,13 @@ class Kuksa_Client():
             print("kuksa_val section missing from configuration, exiting")
             sys.exit(-1)
         provider_config=config['kuksa_val']
-        self.client = VSSClientComm(provider_config)
+        self.interval = provider_config.get('interval', 1)
+        self.client = KuksaClientThread(provider_config)
         self.client.start()
-        self.token = provider_config.get('token', "token.json")
-        self.client.authorize(self.token)
+        self.client.authorize()
         
     def shutdown(self):
-        self.client.stopComm()
+        self.client.stop()
 
     def setPosition(self, position):
         self.client.setValue('Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Altitude', position['alt'])
@@ -90,12 +90,12 @@ class GPSD_Client():
             except Exception as e:
                 print("Get exceptions: ")
                 print(e)
-                time.sleep(1) 
+                time.sleep(self.interval) 
                 continue
 
             self.consumer.setPosition(self.position)
      
-            time.sleep(1) 
+            time.sleep(self.interval) 
 
 
     def shutdown(self):
