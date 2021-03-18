@@ -17,16 +17,17 @@ then
     echo "Using existing vss tree"
 else
     echo "No VSS tree, initilaize with example"
+    mkdir -p /config
     cp /kuksa.val/exampleconfig/vss.json /config/
 fi
 
-mkdir -p /config/certs
 
 if [ -e /config/certs/Server.key ]
 then
     echo "Using existing server keys"
 else
     echo "No server keys configured, initialize with example"
+    mkdir -p /config/certs
     cp /kuksa.val/exampleconfig/certs/Server.key /config/certs/
     cp /kuksa.val/exampleconfig/certs/Server.pem /config/certs/
 fi
@@ -37,6 +38,7 @@ then
     echo "Using existing jwt key"
 else
     echo "No jwt key configured, initialize with example"
+    mkdir -p /config/certs
     cp /kuksa.val/exampleconfig/certs/jwt/jwt.key.pub /config/certs/
 fi
 
