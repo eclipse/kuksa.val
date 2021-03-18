@@ -101,7 +101,7 @@ updateMetaData      Update MetaData of a given path
 updateVISSTree      Update VISS Tree Entry
 ```
 
-Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](./doc/liveUpdateVSSTree.md).
+Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](../doc/liveUpdateVSSTree.md).
 #### Docker
 You can build a docker image of the testclient using the [`Dockerfile`](./Dockerfile). Not the most effcient way to pack a small python script, but it is easy to get started. The Dockerfile needs to be executed on the parent directory (so it include the needed certificates and `pip` package configuration).
 
@@ -113,5 +113,3 @@ docker run --rm -it --net=host <image-id-from docker-build>
 
 `--rm` ensures we do not keep the docker continer lying aroind after closing the vss-testclient and `--net=host` makes sure you can reach locally running kuksa.val-server or kuksa-val docker with port forwarding on the host using the default `127.0.0.1` address.
 
-
-## Other python clients 
