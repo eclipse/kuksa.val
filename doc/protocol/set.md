@@ -1,6 +1,6 @@
 ## set: Write data
 
-KUKSA.val supports basic set requests according to VISS  validated against the following schema.
+KUKSA.val supports basic set requests according to VISS validated against the following schema:
 
 
 ```json
@@ -32,7 +32,7 @@ The following shows some valid and invalid sample requests. Unless otherwise not
 
 ### VSS1-Path Example Request
 
-KUKSA.val supports VISS1 (dot-seperated) and VISS2  (slash-seperated) paths. VISS1 example
+KUKSA.val supports VISS1 (dot-seperated) and VISS2 (slash-seperated) paths. VISS1 example:
 
 ```json 
 {
@@ -160,7 +160,7 @@ As expected, trying to set a non-existent path returns a 404
 ```
 
 ### Authorization Checks first
-Please not, that authrization is checked *first*, i.e. in the previous example, if we do not have a permission covering the requested path, no matter it exists or not, we get a 403
+Please note, that authorization is checked *first*, i.e. in the previous example, if we do not have a permission covering the requested path, no matter it exists or not, we get a 403
 
 ```json
 {
@@ -185,7 +185,4 @@ Please not, that authrization is checked *first*, i.e. in the previous example, 
     "timestamp": 1615833458803
 }
 ```
-
-
-
 

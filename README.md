@@ -7,7 +7,7 @@ This is KUKSA.val, the KUKSA **V**ehicle **A**bstration **L**ayer.
 [![Build Status](https://ci.eclipse.org/kuksa/buildStatus/icon?job=kuksa.val%2Fmaster)](https://ci.eclipse.org/kuksa/job/kuksa.val/job/master/)
 
 
-KUKSA.val provides a [Genivi VSS data model](https://github.com/GENIVI/vehicle_signal_specification) describing data in a vehicle. This data is provided to applications using a variant based on the W3C VISS Interface. KUKSA.val supports VISS V1 https://www.w3.org/TR/vehicle-information-service/ and extensions as well as parts of the upcomming VISS2 standard (https://raw.githack.com/w3c/automotive/gh-pages/spec/Gen2_Core.html, https://raw.githack.com/w3c/automotive/gh-pages/spec/Gen2_Transport.html), that are applicable to in-vehicle VSS servers.
+KUKSA.val provides a [Genivi VSS data model](https://github.com/GENIVI/vehicle_signal_specification) describing data in a vehicle. This data is provided to applications using a variant based on the W3C VISS Interface. KUKSA.val supports VISS V1 https://www.w3.org/TR/vehicle-information-service/ and extensions as well as parts of the upcomming VISS2 standard ([Gen2 Core](https://raw.githack.com/w3c/automotive/gh-pages/spec/VISSv2_Core.html), [Gen2 Transport](https://raw.githack.com/w3c/automotive/gh-pages/spec/VISSv2_Transport.html)), that are applicable to in-vehicle VSS servers.
 
 See [Supported Protocol](doc/protocol/README.md) for a detailled overview.
 
