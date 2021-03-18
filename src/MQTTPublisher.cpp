@@ -29,7 +29,7 @@ MQTTPublisher::MQTTPublisher(std::shared_ptr<ILogger> loggerUtil,
       prefix_(config["mqtt.topic-prefix"].as<std::string>()),
       host_(config["mqtt.address"].as<std::string>()),
       port_(config["mqtt.port"].as<int>()) {
-  init(id, config["mqtt.insecure"].as<bool>());
+    init(id, config["mqtt.insecure"].as<bool>());
     if (config.count("mqtt.username")) {
       std::string password;
       if (!config.count("mqtt.password")) {
@@ -85,7 +85,7 @@ boost::program_options::options_description& MQTTPublisher::getOptions() {
       "Keep alive in seconds for this mqtt client. Defaults to 60")(
       "mqtt.retry", boost::program_options::value<int>()->default_value(3),
       "Times of retry via connections. Defaults to 3")(
-      "mqtt.topic-prefix", boost::program_options::value<std::string>(),
+      "mqtt.topic-prefix", boost::program_options::value<std::string>()->default_value("vss"),
       "Prefix to add for each mqtt topics")(
       "mqtt.publish", boost::program_options::value<std::string>()->default_value(""),
       "List of vss data path (using readable format with `.`) to be published "
