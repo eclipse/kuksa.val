@@ -63,7 +63,6 @@ class KuksaClientThread(threading.Thread):
     def authorize(self, token=None, timeout = 2):
         if token == None:
             token = self.tokenfile
-        print(token)
         if os.path.isfile(token):
             with open(token, "r") as f:
                 token = f.readline()
@@ -127,7 +126,7 @@ class KuksaClientThread(threading.Thread):
         req = {}
         req["action"]= "subscribe"
         req["path"] = path
-        res = self.sendReceiveMsg_(req, timeout)
+        res = self._sendReceiveMsg(req, timeout)
         resJson =  json.loads(res) 
         if "subscriptionId" in resJson:
             self.subscriptionCallbacks[resJson["subscriptionId"]] = callback; 

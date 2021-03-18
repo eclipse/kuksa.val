@@ -1,4 +1,4 @@
-# Kuksa VISS Clients
+# Kuksa VISS Client
 ![kuksa.val Logo](../doc/pictures/logo.png)
 
 `kuksa.val` is a part of the opensource project [eclipse kuksa](https://www.eclipse.org/kuksa/).
@@ -73,6 +73,8 @@ def subscribe(self, path, callback, timeout = 5)
 ## Test client
 Using the python sdk, we implemented a command-line test client.
 
+![Alt text](../doc/pictures/testclient_basic.gif "test client usage")
+
 #### Usage
 After install the package from  `pip`. You can just start the test client with `kuksa_viss_client`.
 
@@ -98,6 +100,8 @@ setValue            Set the value of a path
 updateMetaData      Update MetaData of a given path
 updateVISSTree      Update VISS Tree Entry
 ```
+
+Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](./doc/liveUpdateVSSTree.md).
 #### Docker
 You can build a docker image of the testclient using the [`Dockerfile`](./Dockerfile). Not the most effcient way to pack a small python script, but it is easy to get started. The Dockerfile needs to be executed on the parent directory (so it include the needed certificates and `pip` package configuration).
 
@@ -111,16 +115,3 @@ docker run --rm -it --net=host <image-id-from docker-build>
 
 
 ## Other python clients 
-Name | Description
----- | -----------
-[s3 uploader](./s3) | Data bridge from `kuksa.val` to s3 server
-[dapr pubsub](./dapr/pubsub) | Data bridge from `kuksa.val` to dapr `pubsub` component
-[dapr state_store](./dapr/state_store) | Store data to dapr `statestore` component
-[GPS feeder](./feeder/gps2val) | GPS data source for `kuksa.val` server
-[DBC feeder](./feeder/dbc2val) | DBC feeder for `kuksa.val` server
-
-## Clients in other language 
-Name | Description
----- | -----------
-[web client](./web-client) | A static webpage, which virsualize `kuksa.val` data
-[node red](./node-red) | Examples of `kuksa.val` clients using node-red flows
