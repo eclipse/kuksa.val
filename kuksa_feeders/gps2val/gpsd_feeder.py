@@ -24,7 +24,7 @@ import queue
 import gps
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, "../../../"))
+sys.path.append(os.path.join(scriptDir, "../../"))
 from kuksa_viss_client import KuksaClientThread
 
 class Kuksa_Client():
