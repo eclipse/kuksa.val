@@ -10,7 +10,7 @@ The python sdk is the easiest way for you to develop your own kuksa.val clients 
 
 ### Installation
 ```
-pip install kuksa-client
+pip install kuksa-viss-client
 ```
 
 ### Usage
@@ -71,14 +71,16 @@ def subscribe(self, path, callback, timeout = 5)
 ```
 
 ## Test client
-Using the python sdk, we implemented a command-line test client.
+Using the python sdk, we implemented a command-line test client. When you have installed the kuksa-viss-client package via pip you can run the test client directly by executing
+
+```bash
+$ kuksa_viss_client
+```
 
 ![Alt text](../doc/pictures/testclient_basic.gif "test client usage")
 
-#### Usage
-After install the package from  `pip`. You can just start the test client with `kuksa_viss_client`.
 
-Refer help for further issues
+Refer help for further information
 ```
 VSS Client> help -v
 
