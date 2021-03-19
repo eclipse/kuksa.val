@@ -115,103 +115,12 @@ kuksavalunittest::kuksavalunittest() {
 kuksavalunittest::~kuksavalunittest() {
 }
 
-list<string> kuksavalunittest::test_wrap_getPathForGet(string path , bool &isBranch) {
-    return database->getPathForGet(path , isBranch);
-}
-
 json kuksavalunittest::test_wrap_getPathForSet(string path,  json value) {
     return database->getPathForSet(path , value);
 }
 
 //--------Do not change the order of the tests in this file, because some results are dependent on the previous tests and data in the db-------
-//----------------------------------------------------VssDatabase Tests ------------------------------------------------------------------------
-
-// Get method tests
-BOOST_AUTO_TEST_CASE(path_for_get_without_wildcard_simple)
-{
-    string test_path = "Vehicle.OBD.EngineSpeed"; // Pass a path to signal without wildcard.
-    bool isBranch = false;
-
-    list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
-    string result = paths.back();
-
-    BOOST_TEST(paths.size() ==  1u);
-    BOOST_TEST(result == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
-    BOOST_TEST(isBranch == false);
-
-}
-
-BOOST_AUTO_TEST_CASE(path_for_get_with_wildcard_simple)
-{
-
-    string test_path = "Vehicle.*.EngineSpeed"; // Pass a path to signal with wildcard.
-    bool isBranch = false;
-
-    list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
-    string result = paths.back();
-
-    BOOST_TEST(paths.size() == 1u);
-    BOOST_TEST(result == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
-    BOOST_TEST(isBranch == false);
-
-}
-
-BOOST_AUTO_TEST_CASE(path_for_get_with_wildcard_multiple)
-{
-
-    string test_path = "Vehicle.Chassis.Axle.*.*.Left.*.Pressure"; // Pass a path to signal with wildcard.
-    bool isBranch = false;
-
-    list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
-    BOOST_TEST(paths.size() == 2u);
-    string result2 = paths.back();
-    paths.pop_back();
-    string result1 = paths.back();
-
-    BOOST_TEST(result1 == "$['Vehicle']['children']['Chassis']['children']['Axle']['children']['Row1']['children']['Wheel']['children']['Left']['children']['Tire']['children']['Pressure']");
-    BOOST_TEST(result2 == "$['Vehicle']['children']['Chassis']['children']['Axle']['children']['Row2']['children']['Wheel']['children']['Left']['children']['Tire']['children']['Pressure']");
-    BOOST_TEST(isBranch == false);
-
-}
-
-BOOST_AUTO_TEST_CASE(test_get_branch)
-{
-    string test_path = "Vehicle.Acceleration"; // Pass a path to branch
-    bool isBranch = false;
-
-    list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
-    string result = paths.back();
-
-    BOOST_TEST(paths.size() == 3u);
-    BOOST_TEST(isBranch == true);
-
-}
-
-BOOST_AUTO_TEST_CASE(test_get_branch_with_wildcard)
-{
-    string test_path = "Vehicle.*.Transmission"; // Pass a path to branch with wildcard
-    bool isBranch = false;
-
-    list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
-    string result = paths.back();
-
-    BOOST_TEST(paths.size() == 10u);
-    BOOST_TEST(isBranch == true);
-
-}
-
-
-BOOST_AUTO_TEST_CASE(test_get_invalidpath)
-{
-    string test_path = "scdKC"; // pass an invalid path with or without wildcard.
-    bool isBranch = false;
-
-    list<string> paths = unittestObj.test_wrap_getPathForGet(test_path , isBranch);
-
-    BOOST_TEST(paths.size() == 0u);
-    BOOST_TEST(isBranch == false);
-
-}
+//----------------------------------------------------VssDatabase Tests 
 
 // set method tests
 
