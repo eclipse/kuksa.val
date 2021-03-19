@@ -1,6 +1,6 @@
 ## set: Write data
 
-KUKSA.val supports basic set requests according to VISS validated against the following schema:
+KUKSA.val supports basic set requests according to VISS validated against the [following schema](https://github.com/eclipse/kuksa.val/blob/master/include/VSSRequestJsonSchema.hpp#L48-L71):
 
 
 ```json
