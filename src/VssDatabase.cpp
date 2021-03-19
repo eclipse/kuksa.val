@@ -65,7 +65,7 @@ jsoncons::json tryParse(jsoncons::json val) {
 }
 
     // Check the value type and if the value is within the range
-  void checkTypeAndBound(std::shared_ptr<ILogger> logger, string value_type, jsoncons::json val) {
+  void checkTypeAndBound(std::shared_ptr<ILogger> logger, string value_type, jsoncons::json &val) {
     bool typeValid = false;
 
     boost::algorithm::to_lower(value_type);
@@ -171,7 +171,6 @@ jsoncons::json tryParse(jsoncons::json val) {
         msg << "The type " << value_type << " with value " << val.as<float>()
             << " is out of bound";
         logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
         throw outOfBoundException(msg.str());
       }
     }  else if (value_type == "float") {
@@ -203,6 +202,22 @@ jsoncons::json tryParse(jsoncons::json val) {
         throw outOfBoundException(msg.str());
       }
     } else if (value_type == "boolean") {
+      string v=val.as<string>();
+      boost::algorithm::erase_all(v, "\"");
+
+      if ( v == "true") {
+        val=true;
+      }
+      else if ( v == "false" ) {
+        val=false;
+      }
+      else {
+        std::stringstream msg;
+        msg << val.as_string() << " is not a bool. Valid values are true and false ";
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str()); 
+        std::cout << pretty_print(val) << std::endl;
+        throw outOfBoundException(msg.str());
+      }
       typeValid = true;
     } else if (value_type == "string") {
       typeValid = true;
