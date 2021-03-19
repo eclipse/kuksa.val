@@ -76,10 +76,11 @@ class S3_Client():
     def upload(self, srcFile, dstFile):
 
         # Output the bucket names
+        print(f'update file {srcFile} to s3://{self.bucket}/{dstFile}')
         self.client.upload_file(srcFile, self.bucket, dstFile)
+        time.sleep(1)
 
         # read uploaded file for debugging
-        print(f'update file {srcFile} to s3://{self.bucket}/{dstFile}')
         try:
             self.client.download_file(self.bucket, dstFile, srcFile + ".downloaded")
         except Exception as e:
@@ -103,7 +104,6 @@ class Kuksa_Client():
         
     def getMetaData(self, path):
         metadata = (json.loads(self.client.getMetaData(path))["metadata"])
-        #print(metadata)
 
         return metadata
 
@@ -158,7 +158,7 @@ class Parquet_Packer():
             #print("key is " + key)
             if "children" in metadata[key]:
                 prefix += key + "."
-                return self.genFields(metadata[key]["children"], prefix)
+                return pa.struct(self.genFields(metadata[key]["children"], prefix))
             else:
                 #print("prefix is " + prefix)
                 datatype = pyarrow_mapping.KUKSA_TO_PYARROW_MAPPING[metadata[key]["datatype"]]()
@@ -174,7 +174,6 @@ class Parquet_Packer():
             metadata = self.dataprovider.getMetaData(p)
             fields += (self.genFields(metadata))
 
-        
         return pa.schema(fields)
 
 
@@ -206,7 +205,7 @@ class Parquet_Packer():
 
             self.writeTable(data)
             
-            time.sleep(self.interval) 
+            time.sleep(int(self.interval))
 
     def shutdown(self):
 
