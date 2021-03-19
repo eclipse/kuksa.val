@@ -63,7 +63,7 @@ class VssDatabase : public IVssDatabase {
 
 
   void initJsonTree(const boost::filesystem::path &fileName) override;
-  bool checkPathValid(const std::string& path);
+  bool checkPathValid(const VSSPath& path);
   void updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree);
   void updateJsonTree(WsChannel& channel, const jsoncons::json& value) override;
   void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& newTree) override;
@@ -76,8 +76,6 @@ class VssDatabase : public IVssDatabase {
 
   jsoncons::json getSignal(WsChannel& channel, const VSSPath &path, bool gen1_compat) override; //Gen2 version
 
-
-  std::list<std::string> getPathForGet(const std::string &path, bool& isBranch) override;
 
   std::string getVSSSpecificPath(const std::string &path, bool& isBranch,
                                  jsoncons::json& tree) override;

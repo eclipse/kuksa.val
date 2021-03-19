@@ -329,10 +329,9 @@ bool VssDatabase::pathIsWritable(const VSSPath &path) {
 }
 
 
-
-bool VssDatabase::checkPathValid(const std::string & path){
-    bool isBranch;
-    return !getPathForGet(path, isBranch).empty();
+//returns true if the given path contains usable leafs
+bool VssDatabase::checkPathValid(const VSSPath & path){
+    return !getJSONPaths(path).empty();
 }
 
 // Tokenizes path with '.' as separator.
@@ -442,44 +441,6 @@ string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
   } else {
     return "";
   }
-}
-
-// This method uses recursion.
-// Returns the path for get method. Resolves wild card and gives the absolute
-// path.
-// For eg : path = Signal.*.RPM
-// The method would return a list containing 1 signal path =
-// $['Signal']['children']['OBD']['children']['RPM']
-//Will be replaced by getJSonPaths for gen2
-list<string> VssDatabase::getPathForGet(const string &path, bool& isBranch) {
-  list<string> paths;
-  string format_path = getVSSSpecificPath(path, isBranch, data_tree__);
-
-  /* In case string is empty, signal was not found in VSS DB. json_query would assert with empty query
-   * string, so we return our empty list directly */
-  if (format_path == "") {
-    return paths;
-  }
-  jsoncons::json pathRes = jsonpath::json_query(data_tree__, format_path, jsonpath::result_type::path);
-
-  for (size_t i = 0; i < pathRes.size(); i++) {
-    string jPath = pathRes[i].as<string>();
-
-    jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
-    if (resArray.size() == 0) {
-      continue;
-    }
-    jsoncons::json result = resArray[0];
-    if (!result.contains("id") &&
-        (result.contains("type") && result["type"].as<string>() == "branch")) {
-      bool dummy = true;
-      paths.merge(getPathForGet(getReadablePath(jPath) + ".*", dummy));
-      continue;
-    } else {
-      paths.push_back(pathRes[i].as<string>());
-    }
-  }
-  return paths;
 }
 
 

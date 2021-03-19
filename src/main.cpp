@@ -373,7 +373,7 @@ int main(int argc, const char *argv[]) {
         std::stringstream topicsstream(path_to_publish);
         std::string token;
         while (std::getline(topicsstream, token, ';')) {
-          if (database->checkPathValid(token)) {
+          if (database->checkPathValid(VSSPath::fromVSSGen1(token))) {
             mqttPublisher->addPublishPath(token);
           } else {
             logger->Log(LogLevel::ERROR,
