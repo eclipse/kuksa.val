@@ -20,8 +20,8 @@ from dapr.clients.grpc._request import TransactionalStateOperation, TransactionO
 from dapr.clients.grpc._state import StateItem
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, "../../"))
-from clientComm import VSSClientComm
+sys.path.append(os.path.join(scriptDir, "../../../"))
+from kuksa_viss_client import KuksaClientThread
 
 class Kuksa_Client():
 
@@ -33,7 +33,7 @@ class Kuksa_Client():
             sys.exit(-1)
         self.subscriptionMap = {}
         provider_config=config['kuksa_val']
-        self.client = VSSClientComm(provider_config)
+        self.client = KuksaClientThread(provider_config)
         self.client.start()
         self.token = provider_config.get('token', "token.json")
         self.client.authorize(self.token)
