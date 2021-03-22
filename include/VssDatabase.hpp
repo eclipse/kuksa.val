@@ -73,6 +73,5 @@ class VssDatabase : public IVssDatabase {
 
   std::string getVSSSpecificPath(const std::string &path, bool& isBranch,
                                  jsoncons::json& tree) override;
-  jsoncons::json getPathForSet(const std::string &path, jsoncons::json value) override;
 };
 #endif
