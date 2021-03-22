@@ -35,8 +35,7 @@ class Kuksa_Client():
         provider_config=config['kuksa_val']
         self.client = KuksaClientThread(provider_config)
         self.client.start()
-        self.token = provider_config.get('token', "token.json")
-        self.client.authorize(self.token)
+        self.client.authorize()
         
     def shutdown(self):
         self.client.stopComm()
