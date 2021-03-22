@@ -58,17 +58,14 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   std::vector<std::tuple<VSSPath,jsoncons::json>> setPairs;
   setPairs.push_back(std::make_tuple(path, (jsoncons::json&)request["value"]));
 
-  //Check Access rights first
+  //Check Access rights  & types first. Will only proceed to set, if all paths in set are valid
+  //(set all or none)
   for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
     if (! accessValidator->checkWriteAccess(channel, std::get<0>(setTuple) )) {
       stringstream msg;
       msg << "No write  access to " << std::get<0>(setTuple).getVSSPath();
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
-  }
-
-  //Check if exists and is a sensor/actor
-  for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
     if (! database->pathExists(std::get<0>(setTuple) )) {
       return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", std::get<0>(setTuple).getVSSPath());
     }
@@ -77,10 +74,10 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
       msg << "Can not set " << std::get<0>(setTuple).getVSSPath() << ". Only sensor or actor leaves can be set.";
       logger->Log(LogLevel::VERBOSE,msg.str());
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
-    } 
+    }
   }
 
-
+  //If all preliminary checks successful, we are setting everything
   try {
     for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
       database->setSignal(channel, std::get<0>(setTuple), std::get<1>(setTuple), std::get<0>(setTuple).isGen1Origin());
