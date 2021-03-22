@@ -43,13 +43,13 @@ VssCommandProcessor::VssCommandProcessor(
     std::shared_ptr<ILogger> loggerUtil,
     std::shared_ptr<IVssDatabase> dbase,
     std::shared_ptr<IAuthenticator> vdator,
+    std::shared_ptr<IAccessChecker> accC,
     std::shared_ptr<ISubscriptionHandler> subhandler) {
   logger = loggerUtil;
   database = dbase;
   tokenValidator = vdator;
   subHandler = subhandler;
-  // TODO: add accessValidator as dependency
-  accessValidator = std::make_shared<AccessChecker>(tokenValidator);
+  accessValidator = accC;
   requestValidator = new VSSRequestValidator(logger);
 #ifdef JSON_SIGNING_ON
   // TODO: add signer as dependency
@@ -65,82 +65,7 @@ VssCommandProcessor::~VssCommandProcessor() {
 #endif
 }
 
-string VssCommandProcessor::processGet(WsChannel &channel,
-                                       const string & request_id, 
-                                       const string & path) {
-  logger->Log(LogLevel::VERBOSE, "GET :: path received from client = " + path);
-  jsoncons::json res;
-  try {
-    res = database->getSignal(channel, path);
-  } catch (noPermissionException &nopermission) {
-    logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request_id, "get", nopermission.what());
-  } catch (std::exception &e) {
-    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
-    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
-  }
 
-  if (!res.contains("value")) {
-    return JsonResponses::pathNotFound(request_id, "get", path);
-  } else {
-    res["action"] = "get";
-    res["requestId"] = request_id;
-    res["timestamp"] = JsonResponses::getTimeStamp();
-    stringstream ss;
-    ss << pretty_print(res);
-    return ss.str();
-  }
-}
-
-string VssCommandProcessor::processSet(WsChannel &channel,
-                                       const string & request_id, 
-                                       const string & path,
-                                       jsoncons::json value) {
-  logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processSet: path received from client" + path);
-
-  try {
-    database->setSignal(channel, path, value);
-  } catch (genException &e) {
-    logger->Log(LogLevel::ERROR, string(e.what()));
-    jsoncons::json root;
-    jsoncons::json error;
-
-    root["action"] = "set";
-    root["requestId"] = request_id;
-
-    error["number"] = 401;
-    error["reason"] = "Unknown error";
-    error["message"] = e.what();
-
-    root["error"] = error;
-    root["timestamp"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(root);
-    return ss.str();
-  } catch (noPathFoundonTree &e) {
-    logger->Log(LogLevel::ERROR, string(e.what()));
-    return JsonResponses::pathNotFound(request_id, "set", path);
-  } catch (outOfBoundException &outofboundExp) {
-    logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
-    return JsonResponses::valueOutOfBounds(request_id, "set", outofboundExp.what());
-  } catch (noPermissionException &nopermission) {
-    logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request_id, "set", nopermission.what());
-  } catch (std::exception &e) {
-    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
-    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
-  }
-
-  jsoncons::json answer;
-  answer["action"] = "set";
-  answer["requestId"] = request_id;
-  answer["timestamp"] = JsonResponses::getTimeStamp();
-
-  std::stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
-}
 
 string VssCommandProcessor::processSubscribe(WsChannel &channel,
                                              const string & request_id, 
@@ -444,6 +369,12 @@ string VssCommandProcessor::processQuery(const string &req_json,
         response = signer->sign(response);
 #endif  
     }
+    else if (action == "set") {
+        response = processSet2(channel, root);
+        #ifdef JSON_SIGNING_ON
+        response = signer->sign(response);
+        #endif
+    }
     else if (action == "authorize") {
       string token = root["tokens"].as<string>();
       //string request_id = root["requestId"].as<int>();
@@ -475,15 +406,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
     } else {
       string path = root["path"].as<string>();
       string request_id = root["requestId"].as<string>();
-      if (action == "get") {
-       //replaced, handled above
-      } else if (action == "set") {
-        jsoncons::json value = root["value"];
-
-        logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: set query  for " + path
-             + " with request id " + request_id + " value " + value.as_string());
-        response = processSet(channel, request_id, path, value);
-      } else if (action == "subscribe") {
+     if (action == "subscribe") {
         logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: subscribe query  for "
              + path + " with request id " + request_id);
         response =
@@ -517,14 +440,4 @@ string VssCommandProcessor::processQuery(const string &req_json,
 }
 
 
-/*std::string VssCommandProcessor::getPathFromRequest(const jsoncons::json &req, bool *gen1_compat_mode) {
-  string path=req["path"].as_string();
-  if (path.find(".") == std::string::npos ) { //If no "." in we assume a GEN2 "/" seperated path
-    *gen1_compat_mode=false;
-    return path;
-  }
-  logger->Log(LogLevel::WARNING, "Deprecation warning: "+ path +  "looks like a VISS GEN1 path. Converting to GEN2");
-  std::replace(path.begin(),path.end(),'.','/');
-  *gen1_compat_mode=true;
-  return path;
-}*/
+

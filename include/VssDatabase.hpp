@@ -41,11 +41,12 @@ class VssDatabase : public IVssDatabase {
   std::shared_ptr<IAccessChecker> accessValidator_;
 
   std::string getPathForMetadata(std::string path, bool& isBranch);
-  std::string getReadablePath(std::string jsonpath);
-  std::string getVSSPathFromJSONPath(std::string jsonpath); //Gen2 repalcement for getReadablePath
 
-  void checkSetPermission(WsChannel& channel, const std::string& path);
-  void HandleSet(jsoncons::json & setValues);
+  [[deprecated("Use VSSPath helper")]]
+  std::string getReadablePath(std::string jsonpath);
+  
+  [[deprecated("Use VSSPath helper")]]
+  std::string getVSSPathFromJSONPath(std::string jsonpath); //Gen2 replacement for getReadablePath
 
   std::list<std::string> getJSONPaths(const VSSPath& path);
 
@@ -56,20 +57,25 @@ class VssDatabase : public IVssDatabase {
               std::shared_ptr<IAccessChecker> accValidator);
   ~VssDatabase();
 
+  //helpers
+  bool pathExists(const VSSPath &path) override;
+  bool pathIsWritable(const VSSPath &path) override;
+
+
   void initJsonTree(const boost::filesystem::path &fileName) override;
-  bool checkPathValid(const std::string& path);
+  bool checkPathValid(const VSSPath& path);
   void updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree);
   void updateJsonTree(WsChannel& channel, const jsoncons::json& value) override;
   void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& newTree) override;
   jsoncons::json getMetaData(const std::string &path) override;
-  void setSignal(WsChannel& channel, const std::string &path, jsoncons::json value) override;
-  void setSignal(const std::string &path, jsoncons::json value);
-  jsoncons::json getSignal(WsChannel& channel, const std::string &path) override;
+
+  void setSignalDBUS(const std::string &dbuspath, jsoncons::json value);
+
+  jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) override; //gen2 version
+
 
   jsoncons::json getSignal(WsChannel& channel, const VSSPath &path, bool gen1_compat) override; //Gen2 version
 
-
-  std::list<std::string> getPathForGet(const std::string &path, bool& isBranch) override;
 
   std::string getVSSSpecificPath(const std::string &path, bool& isBranch,
                                  jsoncons::json& tree) override;

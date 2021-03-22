@@ -21,6 +21,9 @@
 #include "ILogger.hpp"
 #include "IVssDatabase.hpp"
 
+#include <boost/algorithm/string.hpp>
+
+
 /** Implements the Websocket get request accroding to GEN2, with GEN1 backwards
  * compatibility **/
 std::string VssCommandProcessor::processGet2(WsChannel &channel,
@@ -28,20 +31,25 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   VSSPath path=VSSPath::fromVSS(request["path"].as_string());
   bool  gen1_compat_mode=path.isGen1Origin();
 
-  string requestId = request["requestId"].as_string();
-  logger->Log(LogLevel::VERBOSE,
-              "Get request with id " + requestId + " for path: " + path.getVSSPath());
-
   try {
     requestValidator->validateGet(request);
   } catch (jsoncons::jsonschema::schema_error & e) {
-    logger->Log(LogLevel::ERROR, string(e.what()));
-    return JsonResponses::malFormedRequest(requestId, "get", string("Schema error: ") + e.what());
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, msg);
+    return JsonResponses::malFormedRequest(requestValidator->tryExtractRequestId(request), "get", string("Schema error: ") + msg);
   } catch (std::exception &e) {
-    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + msg );
     return JsonResponses::malFormedRequest(
-        requestId, "get", string("Unhandled error: ") + e.what());
+        requestValidator->tryExtractRequestId(request), "get", string("Unhandled error: ") + e.what());
   }
+
+  string requestId = request["requestId"].as_string();
+  
+  logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId + " for path: " + path.getVSSPath());
+
 
   //-------------------------------------
   jsoncons::json res;

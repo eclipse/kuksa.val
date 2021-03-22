@@ -35,24 +35,8 @@ set(ADDRESS_SAN OFF CACHE BOOL "Build with AddressSanitizer")
 
 ###
 # Define source list
-
-set(LIB_SOURCES
-   AccessChecker.cpp
-   Authenticator.cpp
-   BasicLogger.cpp
-   JsonResponses.cpp
-   permmclient.cpp
-   RestV1ApiHandler.cpp
-   SigningHandler.cpp
-   SubscriptionHandler.cpp
-   VSSRequestValidator.cpp
-   VSSPath.cpp
-   VssCommandProcessor.cpp
-   VssCommandGet.cpp
-   VssDatabase.cpp
-   WebSockHttpFlexServer.cpp
-   MQTTClient.cpp
-)
+file(GLOB LIB_SOURCES *.cpp)
+list(REMOVE_ITEM LIB_SOURCES "${PROJECT_SOURCE_DIR}/main.cpp")
 
 ###
 # set main 'object library' as target to prevent multiple compilations of same sources
@@ -142,16 +126,16 @@ if(BUILD_EXE)
   ######
   # Setup server install and packaging
 
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/jwt/jwt.key.pub  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/jwt/jwt.key.pub  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../test/unit-test/vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../config.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
   install( TARGETS ${SERVER_EXE_NAME} DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../certificates/jwt/jwt.key.pub DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Server.pem DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../certificates/Server.key DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/jwt/jwt.key.pub DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.pem DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.key DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../test/unit-test/vss_rel_2.0.json DESTINATION bin/${SERVER_EXE_NAME})
 
   # CPack

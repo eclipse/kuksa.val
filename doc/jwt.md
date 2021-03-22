@@ -47,7 +47,7 @@ This are the rules to create a valid kuksa.val token
 
 The tokens are protected using public key cryptography using the RS256 mechanism. This is basically an RSA encrypted  SHA256 hash of the token contents. The private key is used to create the signature and the public key needs to be provided to the kuksa.val server so it can validate tokens. It will only accept tokens that are signed by the corresponding private key.
 
-In [certifcates/jwt](../certificates/jwt) is a helper script to create a valid token out of the json input like so 
+In [kuksa_certificates/jwt](../kuksa_certificates/jwt) is a helper script to create a valid token out of the json input like so 
 ```
 $ ./createToken.py sometoken.json 
 Reading private key from jwt.key
@@ -57,7 +57,7 @@ Writing signed key to sometoken.json.token
 
 This uses `jwt.key` in the same folder as private key. The corresponding public key `jwt.key.pub` will be copied to the `build/src` folder during a cmake build.
 
-If you wish to create a new key pair, [certifcates/jwt](../certificates/jwt) contains a script for that
+If you wish to create a new key pair, [kuksa_certificates/jwt](../kuksa_certificates/jwt) contains a script for that
 ```
 $ ./recreateJWTkeyPair.sh 
 Recreating kuksa.val key pair used for JWT verification

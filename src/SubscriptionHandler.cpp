@@ -33,12 +33,12 @@ using jsoncons::json;
 
 SubscriptionHandler::SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
                                          std::shared_ptr<IServer> wserver,
-                                         std::shared_ptr<IClient> mclient,
                                          std::shared_ptr<IAuthenticator> authenticate,
-                                         std::shared_ptr<IAccessChecker> checkAcc) {
+                                         std::shared_ptr<IAccessChecker> checkAcc):
+publishers_()
+{
   logger = loggerUtil;
   server = wserver;
-  client = mclient;
   validator = authenticate;
   checkAccess = checkAcc;
   startThread();
@@ -61,7 +61,7 @@ SubscriptionId SubscriptionHandler::subscribe(WsChannel& channel,
 
   if (jPath == "") {
     throw noPathFoundonTree(path);
-  } else if (!checkAccess->checkReadAccess(channel, path)) {
+  } else if (!checkAccess->checkReadAccess(channel, VSSPath::fromJSON(jPath))) {
     stringstream msg;
     msg << "no permission to subscribe to path " << path;
     throw noPermissionException(msg.str());
@@ -166,8 +166,8 @@ int SubscriptionHandler::updateByPath(const string &path, const json &value) {
   std::stringstream ss;
   ss << pretty_print(value);
   logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByPath: new value set at path " + path + ss.str());
-  if(client){
-    client->sendPathValue(path, value);
+  for(auto & publisher: publishers_){
+    publisher->sendPathValue(path, value);
   }
 
 

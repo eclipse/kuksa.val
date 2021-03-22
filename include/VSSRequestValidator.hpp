@@ -24,6 +24,7 @@
 
 #include <jsoncons/json.hpp>
 #include <jsoncons_ext/jsonschema/jsonschema.hpp>
+#include <string>
 
 #include "ILogger.hpp"
 
@@ -38,9 +39,14 @@ class VSSRequestValidator {
         ~VSSRequestValidator();
 
         void validateGet(jsoncons::json &request);
+        void validateSet(jsoncons::json &request);
+        std::string tryExtractRequestId(jsoncons::json &request);
+
     private:
         std::shared_ptr<jsonschema::json_schema<json>> getSchema;
+        std::shared_ptr<jsonschema::json_schema<json>> setSchema;
         jsonschema::json_validator<json> *getValidator;
+        jsonschema::json_validator<json> *setValidator;
         std::shared_ptr<ILogger> logger;
 };
 

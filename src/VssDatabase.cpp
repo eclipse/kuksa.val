@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2018 Robert Bosch GmbH.
+ * Copyright (c) 2018-2021 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -65,7 +65,7 @@ jsoncons::json tryParse(jsoncons::json val) {
 }
 
     // Check the value type and if the value is within the range
-  void checkTypeAndBound(std::shared_ptr<ILogger> logger, string value_type, jsoncons::json val) {
+  void checkTypeAndBound(std::shared_ptr<ILogger> logger, string value_type, jsoncons::json &val) {
     bool typeValid = false;
 
     boost::algorithm::to_lower(value_type);
@@ -171,7 +171,6 @@ jsoncons::json tryParse(jsoncons::json val) {
         msg << "The type " << value_type << " with value " << val.as<float>()
             << " is out of bound";
         logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
         throw outOfBoundException(msg.str());
       }
     }  else if (value_type == "float") {
@@ -203,6 +202,22 @@ jsoncons::json tryParse(jsoncons::json val) {
         throw outOfBoundException(msg.str());
       }
     } else if (value_type == "boolean") {
+      string v=val.as<string>();
+      boost::algorithm::erase_all(v, "\"");
+
+      if ( v == "true") {
+        val=true;
+      }
+      else if ( v == "false" ) {
+        val=false;
+      }
+      else {
+        std::stringstream msg;
+        msg << val.as_string() << " is not a bool. Valid values are true and false ";
+        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str()); 
+        std::cout << pretty_print(val) << std::endl;
+        throw outOfBoundException(msg.str());
+      }
       typeValid = true;
     } else if (value_type == "string") {
       typeValid = true;
@@ -288,10 +303,35 @@ void VssDatabase::initJsonTree(const boost::filesystem::path &fileName) {
   }
 }
 
+//Check if a path exists, doesn't care about the type
+bool VssDatabase::pathExists(const VSSPath &path) {
+  jsoncons::json res = jsonpath::json_query(data_tree__, path.getJSONPath());
+  if (res.size() == 0) {
+    return false;
+  }
+  return true;
+  
+}
 
-bool VssDatabase::checkPathValid(const std::string & path){
-    bool isBranch;
-    return !getPathForGet(path, isBranch).empty();
+// Check if a path is writable _in principle_, i.e. whether it is an actor or sensor.
+// This does _not_ check whether a user is authorized, and it will return false in case
+// the VSSPath references multiple destinations
+bool VssDatabase::pathIsWritable(const VSSPath &path) {
+  jsoncons::json res = jsonpath::json_query(data_tree__, path.getJSONPath(),jsonpath::result_type::value);
+  if (res.size() != 1) { //either no match, or multiple matches
+    return false;
+  }
+  if (res[0].contains("type") && ( res[0]["type"].as<string>() == "sensor" || res[0]["type"].as<string>() == "actuator" )) {
+    return true; //sensors and actors can be written to
+  }
+  //else it is either another type (branch), or a broken part (no type at all) of the tree, and thus not writable
+  return false;
+}
+
+
+//returns true if the given path contains usable leafs
+bool VssDatabase::checkPathValid(const VSSPath & path){
+    return !getJSONPaths(path).empty();
 }
 
 // Tokenizes path with '.' as separator.
@@ -403,44 +443,6 @@ string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
   }
 }
 
-// This method uses recursion.
-// Returns the path for get method. Resolves wild card and gives the absolute
-// path.
-// For eg : path = Signal.*.RPM
-// The method would return a list containing 1 signal path =
-// $['Signal']['children']['OBD']['children']['RPM']
-//Will be replaced by getJSonPaths for gen2
-list<string> VssDatabase::getPathForGet(const string &path, bool& isBranch) {
-  list<string> paths;
-  string format_path = getVSSSpecificPath(path, isBranch, data_tree__);
-
-  /* In case string is empty, signal was not found in VSS DB. json_query would assert with empty query
-   * string, so we return our empty list directly */
-  if (format_path == "") {
-    return paths;
-  }
-  jsoncons::json pathRes = jsonpath::json_query(data_tree__, format_path, jsonpath::result_type::path);
-
-  for (size_t i = 0; i < pathRes.size(); i++) {
-    string jPath = pathRes[i].as<string>();
-
-    jsoncons::json resArray = jsonpath::json_query(data_tree__, jPath);
-    if (resArray.size() == 0) {
-      continue;
-    }
-    jsoncons::json result = resArray[0];
-    if (!result.contains("id") &&
-        (result.contains("type") && result["type"].as<string>() == "branch")) {
-      bool dummy = true;
-      paths.merge(getPathForGet(getReadablePath(jPath) + ".*", dummy));
-      continue;
-    } else {
-      paths.push_back(pathRes[i].as<string>());
-    }
-  }
-  return paths;
-}
-
 
 list<string> VssDatabase::getJSONPaths(const VSSPath &path) {
   list<string> paths;
@@ -499,55 +501,7 @@ vector<string> getVSSTokens(string path) {
 
   return tokens;
 }
-void VssDatabase::HandleSet(jsoncons::json & setValues) {
-  for (size_t i = 0; i < setValues.size(); i++) {
-    jsoncons::json item = setValues[i];
-    string jPath = item["path"].as<string>();
 
-    logger_->Log(LogLevel::VERBOSE, "vssdatabase::HandleSet path found = " + jPath);
-    logger_->Log(LogLevel::VERBOSE, "value to set asstring = " + item["value"].as<string>());
-
-    jsoncons::json resArray;
-    {
-      std::lock_guard<std::mutex> lock_guard(rwMutex_);
-      resArray = jsonpath::json_query(data_tree__, jPath);
-    }
-    if (resArray.is_array() && resArray.size() == 1) {
-      jsoncons::json resJson = resArray[0];
-      if (resJson.contains("datatype")) {
-        string value_type = resJson["datatype"].as<string>();
-        json val = item["value"];
-        checkTypeAndBound(logger_, value_type, val);
-
-        resJson.insert_or_assign("value", val);
-
-        {
-          std::lock_guard<std::mutex> lock_guard(rwMutex_);
-          jsonpath::json_replace(data_tree__, jPath, resJson);
-        }
-
-        logger_->Log(LogLevel::VERBOSE, "vssdatabase::setSignal: new value set at path " + jPath);
-
-        string uuid = resJson["uuid"].as<string>();
-
-        jsoncons::json value = resJson["value"];
-        subHandler_->updateByUUID(uuid, value);
-        subHandler_->updateByPath(getReadablePath(jPath), value);
-      } else {
-        stringstream msg;
-        msg << "Type key not found for " << jPath;
-        throw genException(msg.str());
-      }
-
-    } else if (resArray.is_array()) {
-      stringstream msg;
-      msg << "Path " << jPath << " has " << resArray.size()
-          << " signals, the path needs refinement";
-      logger_->Log(LogLevel::INFO, "vssdatabase::setSignal : " + msg.str());
-      throw genException(msg.str());
-    }
-  }
-}
 
 void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree){
   std::error_code ec;
@@ -826,198 +780,75 @@ jsoncons::json VssDatabase::getPathForSet(const string &path, jsoncons::json val
   return setValues;
 }
 
-void VssDatabase::checkSetPermission(WsChannel& channel, const string & path) {
-    // check if all the paths have write access.
-    bool haveAccess = accessValidator_->checkWriteAccess(channel, path);
-    if (!haveAccess) {
-       stringstream msg;
-       msg << "Path(s) in set request do not have write access or is invalid";
-       throw noPermissionException(msg.str());
-    }
-}
 
-// Method for setting values to signals.
-void VssDatabase::setSignal(WsChannel& channel,
-                            const string &path,
-                            jsoncons::json valueJson) {
-  if (path == "") {
-    string msg = "Path is empty while setting";
-    throw genException(msg);
-  }
-  checkSetPermission(channel, path);
+jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) {
+  jsoncons::json answer;
   
-  jsoncons::json setValues;
+  answer["path"] = gen1_compat? path.getVSSGen1Path() : path.getVSSPath();
 
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    try {
-        setValues = getPathForSet(path, valueJson);
-    }
-    catch( noPathFoundonTree& e) {
-      throw e;
-    }
-    catch ( genException &e) {
-      logger_->Log(LogLevel::ERROR, "Exception VssDatabase::setSignal: " + string(e.what()));
-      throw e;
-    }
-  }
-  if (setValues.is_array()) {
-    HandleSet(setValues);
-  } else {
-    string msg = "Exception occured while setting data for " + path;
-    throw genException(msg);
-  }
-}
-
-// Method for setting values to signals.
-void VssDatabase::setSignal(const string &path,
-                            jsoncons::json valueJson) {
-  if (path == "") {
-    string msg = "Path is empty while setting";
-    throw genException(msg);
-  }
-  
-      logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal  LOCK:");
-
-  jsoncons::json setValues;
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    try {
-        setValues = getPathForSet(path, valueJson);
-    }
-    catch( genException& e) {
-      logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal Excpetion unlock: " + string(e.what()));
-    }
-  }
-
-  if (setValues.is_array()) {
-    HandleSet(setValues);
-  } else {
-    string msg = "Exception occurred while setting data for " + path;
-    logger_->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg);
-    throw genException(msg);
-  }
-}
-
-// Returns response JSON for get request.
-jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const string &path) {
-  bool isBranch = false;
-
-  list<string> jPaths;
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    jPaths = getPathForGet(path, isBranch);
-  }
-  int pathsFound = jPaths.size();
-  if (pathsFound == 0) {
-    jsoncons::json answer;
-    return answer;
-  }
-
-  logger_->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + to_string(pathsFound)
-              + " signals found under path = \"" + path + "\"");
-  if (isBranch) {
-    jsoncons::json answer;
-    logger_->Log(LogLevel::VERBOSE, " VssDatabase::getSignal : \"" + path + "\" is a Branch.");
-
-    if (pathsFound == 0) {
-      throw noPathFoundonTree(path);
-    } else {
-      jsoncons::json value;
-
-      for (int i = 0; i < pathsFound; i++) {
-        string jPath = jPaths.back();
-        // check Read access here.
-        if (!accessValidator_->checkReadAccess(channel, getReadablePath(jPath))) {
-          // Allow the permitted signals to return. If exception is enable here,
-          // then say only "Signal.OBD.RPM" is permitted and get request is made
-          // for a branch like "Signal.OBD" then
-          // an error would be returned. By disabling the exception the value
-          // for Signal.OBD.RPM (only) will be returned.
-          /*stringstream msg;
-          msg << "No read access to  " << getReadablePath(jPath);
-          throw genException (msg.str());*/
-          jPaths.pop_back();
-          continue;
-        }
-        jsoncons::json resArray;
-        {
-          std::lock_guard<std::mutex> lock_guard(rwMutex_);
-          resArray = jsonpath::json_query(data_tree__, jPath);
-        }
-        jPaths.pop_back();
-        jsoncons::json result = resArray[0];
-        if (result.contains("value")) {
-          setJsonValue(logger_, value, result, getReadablePath(jPath));
-        } else {
-          value[getReadablePath(jPath)] = "---";
-        }
-      }
-      answer["value"] = value;
-    }
-    return answer;
-  } else if (pathsFound == 1) {
-    string jPath = jPaths.back();
-    // check Read access here.
-    if (!accessValidator_->checkReadAccess(channel, getReadablePath(jPath))) {
+  if (!accessValidator_->checkWriteAccess(channel, path )) {
       stringstream msg;
-      msg << "No read access to " << getReadablePath(jPath);
+      msg << "No write  access to " << path.getVSSPath();
       throw noPermissionException(msg.str());
-    }
-    jsoncons::json resArray;
-    {
-      std::lock_guard<std::mutex> lock_guard(rwMutex_);
-      resArray = jsonpath::json_query(data_tree__, jPath);
-    }
-    jsoncons::json answer;
-    answer["path"] = getReadablePath(jPath);
-    jsoncons::json result = resArray[0];
-    if (result.contains("value")) {
-      setJsonValue(logger_, answer, result, "value");
-      return answer;
-    } else {
-      answer["value"] = "---";
-      return answer;
-    }
-
-  } else if (pathsFound > 1) {
-    jsoncons::json answer;
-    jsoncons::json valueArray = jsoncons::json::array();
-
-    for (int i = 0; i < pathsFound; i++) {
-      jsoncons::json value;
-      string jPath = jPaths.back();
-      // Check access here.
-      if (!accessValidator_->checkReadAccess(channel, getReadablePath(jPath))) {
-        // Allow the permitted signals to return. If exception is enable here,
-        // then say only "Signal.OBD.RPM" is permitted and get request is made
-        // using wildcard like "Signal.OBD.*" then
-        // an error would be returned. By disabling the exception the value for
-        // Signal.OBD.RPM (only) will be returned.
-        /*stringstream msg;
-        msg << "No read access to  " << getReadablePath(jPath);
-        throw genException (msg.str());*/
-        jPaths.pop_back();
-        continue;
-      }
-      jsoncons::json resArray;
-      {
-        std::lock_guard<std::mutex> lock_guard(rwMutex_);
-        resArray = jsonpath::json_query(data_tree__, jPath);
-      }
-      jPaths.pop_back();
-      jsoncons::json result = resArray[0];
-      if (result.contains("value")) {
-        setJsonValue(logger_, value, result, getReadablePath(jPath));
-      } else {
-        value[getReadablePath(jPath)] = "---";
-      }
-      valueArray.insert(valueArray.array_range().end(), value);
-    }
-    answer["value"] = valueArray;
-    return answer;
   }
-  return NULL;
+
+  jsoncons::json res; 
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    res = jsonpath::json_query(data_tree__, path.getJSONPath());
+    if (res.is_array() && res.size() == 1) {
+    jsoncons::json resJson = res[0];
+      if (resJson.contains("datatype")) {
+        string value_type = resJson["datatype"].as<string>();
+        checkTypeAndBound(logger_, value_type, value);
+        resJson.insert_or_assign("value", value);
+        {
+          jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
+          subHandler_->updateByPath(path.getVSSPath(), value);
+          subHandler_->updateByUUID(resJson["uuid"].as<string>(),value);
+        }
+      }
+      else {
+        throw genException(path.getVSSPath()+ "is invalid for set"); //Todo better error message. (Does not propagate);
+      }
+    }
+  }
+  return answer;
+}
+
+//Only needed for DBUS currently- 
+// Method for setting values to signals.
+void VssDatabase::setSignalDBUS(const string &dbuspath,
+                            jsoncons::json value) {
+                              
+  if (dbuspath == "") {
+    string msg = "Path is empty while setting";
+    throw genException(msg);
+  }
+
+  VSSPath path = VSSPath::fromVSS(dbuspath);
+
+  jsoncons::json res; 
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    res = jsonpath::json_query(data_tree__, path.getJSONPath());
+    if (res.is_array() && res.size() == 1) {
+    jsoncons::json resJson = res[0];
+      if (resJson.contains("datatype")) {
+        string value_type = resJson["datatype"].as<string>();
+        checkTypeAndBound(logger_, value_type, value);
+        resJson.insert_or_assign("value", value);
+        {
+          jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
+        }
+      }
+      else {
+        throw noPathFoundonTree(path.getVSSPath()+ "is invalid for set"); //Todo better error message. (Does not propagate);
+      }
+    }
+  }
+  subHandler_->updateByPath(path.getVSSPath(), value);
+  // TODO missing calling updateByUUID(uuid, value);
 }
 
 // Returns response JSON for get request, checking authorization.

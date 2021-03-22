@@ -51,15 +51,14 @@ BOOST_FIXTURE_TEST_SUITE(AccessCheckerTests, TestSuiteFixture)
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathAuthorized_Shall_ReturnTrue) {
   WsChannel channel;
   jsoncons::json permissions;
-  std::string path;
-
+  
   // setup
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "rw");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "rw");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
+  permissions.insert_or_assign("Vehicle.Acceleration.Vertical", "rw");
+  permissions.insert_or_assign("Vehicle.Acceleration.Longitudinal", "rw");
+  permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
-  path = "$['Vehicle']['children']['Acceleration']['children']['Vertical']";
-
+  VSSPath path  = VSSPath::fromJSON("$['Vehicle']['children']['Acceleration']['children']['Vertical']");
+ 
   channel.setConnID(11);
   channel.setAuthorized(true);
   channel.setPermissions(permissions);
@@ -71,14 +70,13 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathAuthorized_Shall_Retur
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotAuthorized_Shall_ReturnFalse) {
   WsChannel channel;
   jsoncons::json permissions;
-  std::string path;
-
+  
   // setup
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "w");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "rw");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
+  permissions.insert_or_assign("Vehicle.Acceleration.Vertical", "w");
+  permissions.insert_or_assign("Vehicle.Acceleration.Longitudinal", "rw");
+  permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
-  path = "$['Vehicle']['children']['Acceleration']['children']['Vertical']";
+  VSSPath path = VSSPath::fromJSON("$['Vehicle']['children']['Acceleration']['children']['Vertical']");
 
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -91,14 +89,13 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotAuthorized_Shall_Re
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotExistent_Shall_ReturnFalse) {
   WsChannel channel;
   jsoncons::json permissions;
-  std::string path;
-
+  
   // setup
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "w");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "rw");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
+  permissions.insert_or_assign("Vehicle.Acceleration.Vertical", "w");
+  permissions.insert_or_assign("Vehicle.Acceleration.Longitudinal", "rw");
+  permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
-  path = "$['Vehicle']['children']['Dummy']['children']['Leaf']";
+  VSSPath path = VSSPath::fromJSON("$['Vehicle']['children']['Dummy']['children']['Leaf']");
 
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -111,14 +108,13 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotExistent_Shall_Retu
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathAuthorized_Shall_ReturnTrue) {
   WsChannel channel;
   jsoncons::json permissions;
-  std::string path;
-
+  
   // setup
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "rw");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "rw");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
+  permissions.insert_or_assign("Vehicle.Acceleration.Vertical", "rw");
+  permissions.insert_or_assign("Vehicle.Acceleration.Longitudinal", "rw");
+  permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
-  path = "$['Vehicle']['children']['Acceleration']['children']['Vertical']";
+  VSSPath path=VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
 
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -131,14 +127,13 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathAuthorized_Shall_Retu
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotAuthorized_Shall_ReturnFalse) {
   WsChannel channel;
   jsoncons::json permissions;
-  std::string path;
 
   // setup
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "r");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "rw");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
+  permissions.insert_or_assign("Vehicle.Acceleration.Vertical", "r");
+  permissions.insert_or_assign("Vehicle.Acceleration.Longitudinal", "rw");
+  permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
-  path = "$['Vehicle']['children']['Acceleration']['children']['Vertical']";
+  VSSPath path = VSSPath::fromVSSGen2("Vehicle.Acceleration.Vertical");
 
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -151,14 +146,13 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotAuthorized_Shall_R
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotExistent_Shall_ReturnFalse) {
   WsChannel channel;
   jsoncons::json permissions;
-  std::string path;
 
   // setup
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "w");
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "rw");
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
 
-  path = "$['Vehicle']['children']['Dummy']['children']['Leaf']";
+  VSSPath path = VSSPath::fromVSSGen2("Vehicle.Dummy.Leaf");
 
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -176,9 +170,10 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsValid_Shal
 
   // setup
 
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "w");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "rw");
-  permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
+
+  permissions.insert_or_assign("Vehicle.Acceleration.Vertical", "w");
+  permissions.insert_or_assign("Vehicle.Acceleration.Longitudinal", "rw");
+  permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
   channel.setConnID(11);
   channel.setAuthorized(true);

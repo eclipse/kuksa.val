@@ -33,7 +33,7 @@ fi
 echo "Go to build directory ${builddir}"
 cd ${builddir}
 
-cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON ..
+cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON -DCTEST_RESULT_CODE=no ..
 
 rm -rf test/unit-test/results.xml
 rm -rf coverage.xml

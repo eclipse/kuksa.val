@@ -55,7 +55,7 @@ Then you can check, that the new signal is available and the max speed limit has
 
 ![Alt text](./pictures/testclient_updateVSSTree.gif "test client update vss tree")
 
-**Note:** You may need the [super-admin.json.token](../certificates/jwt/super-admin.json.token) for authorization. 
+**Note:** You may need the [super-admin.json.token](../kuksa_certificates/jwt/super-admin.json.token) for authorization. 
 
 ## Hot-patching with updateMetaData
 if you just want to add or change a single metadata item in a signal or sensor, going through the whole VSS tooling may be a little cumbersome. Instead, you can use the testclient to update metadata of a single path directly, if you have the permission to modify metadata:

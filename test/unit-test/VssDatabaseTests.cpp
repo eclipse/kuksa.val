@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForSingleSignal_Shal
 
   // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration.Vertical"};
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
 
   // expectations
 
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForSingleSignal_Shal
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getMetaData(signalPath));
+  BOOST_CHECK_NO_THROW(returnJson = db->getMetaData(signalPath.getVSSGen1Path()));
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -123,14 +123,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration.Vertical"};
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
 
   channel.setConnID(11);
   channel.setAuthorized(true);
 
   // expectations
 
-  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
     .returns(true);
 
   std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","value":"---"})"};
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -148,22 +148,22 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration"};
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration");
 
   channel.setConnID(11);
   channel.setAuthorized(true);
 
   // expectations
 
-  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
     .returns(true);
 
-  std::string expectedJsonString{R"({"value":{"Vehicle.Acceleration.Lateral":"---","Vehicle.Acceleration.Longitudinal":"---","Vehicle.Acceleration.Vertical":"---"}})"};
+  std::string expectedJsonString{R"({"value":[{"Vehicle.Acceleration.Vertical":"---"},{"Vehicle.Acceleration.Longitudinal":"---"},{"Vehicle.Acceleration.Lateral":"---"}]})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -172,19 +172,19 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_GetSingl
 
   // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration.Vertical"};
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
 
   channel.setConnID(11);
   channel.setAuthorized(false);
 
   // expectations
 
-  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
     .returns(false);
 
   // verify
 
-  BOOST_CHECK_THROW(db->getSignal(channel, signalPath), noPermissionException);
+  BOOST_CHECK_THROW(db->getSignal(channel, signalPath, true), noPermissionException);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_GetBranch_Shall_Throw) {
@@ -192,19 +192,19 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_GetBranc
 
   // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration.Vertical"};
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
 
   channel.setConnID(11);
   channel.setAuthorized(false);
 
   // expectations
 
-  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
     .returns(false);
 
   // verify
 
-  BOOST_CHECK_THROW(db->getSignal(channel, signalPath), noPermissionException);
+  BOOST_CHECK_THROW(db->getSignal(channel, signalPath, true), noPermissionException);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSignal_Shall_SetValue) {
@@ -212,8 +212,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration.Vertical"};
-
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
+  
   channel.setConnID(11);
   channel.setAuthorized(false);
 
@@ -224,21 +224,19 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   MOCK_EXPECT(accCheckMock->checkWriteAccess)
     .returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
     .returns(true);
+  MOCK_EXPECT(subHandlerMock->updateByPath).with(signalPath.getVSSPath(),mock::any).returns(0);
   MOCK_EXPECT(subHandlerMock->updateByUUID)
     .at_least(1)
     .with(mock::any, 10)
     .returns(0);
-  MOCK_EXPECT(subHandlerMock->updateByPath)
-    .at_least(1)
-    .with(signalPath, 10)
-    .returns(0);
+
   // verify
 
-  BOOST_CHECK_NO_THROW(db->setSignal(channel, signalPath, setValue));
+  BOOST_CHECK_NO_THROW(db->setSignal(channel, signalPath, setValue, true));
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
   BOOST_TEST(returnJson["value"].as<int>() == 10);
 }
 
@@ -248,6 +246,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPath_Sha
   // setup
   db->initJsonTree(validFilename);
   std::string signalPath{"Vehicle.Acceleration"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(signalPath);
+
 
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -259,12 +259,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPath_Sha
 
   MOCK_EXPECT(accCheckMock->checkWriteAccess)
     .returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
     .returns(true);
 
   // verify
-
-  BOOST_CHECK_THROW(db->setSignal(channel, signalPath, setValue), genException);
+  //Acceleration is a branch, so can not be set
+  BOOST_CHECK_THROW(db->setSignal(channel, vsspath, setValue, true), genException);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_SetPath_Shall_ThrowError) {
@@ -273,6 +273,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_SetPath_
   // setup
   db->initJsonTree(validFilename);
   std::string signalPath{"Vehicle.Acceleration.Vectical"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(signalPath);
 
   channel.setConnID(11);
   channel.setAuthorized(false);
@@ -287,7 +288,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_SetPath_
 
   // verify
 
-  BOOST_CHECK_THROW(db->setSignal(channel, signalPath, setValue), noPermissionException);
+  BOOST_CHECK_THROW(db->setSignal(channel, vsspath, setValue, true), noPermissionException);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSignalNoChannel_Shall_SetValue) {
@@ -295,28 +296,23 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
     // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration.Vertical"};
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
 
   // expectations
 
   jsoncons::json setValue, returnJson;
   setValue = 10;
 
-  MOCK_EXPECT(accCheckMock->checkReadDeprecated)
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
     .returns(true);
-  MOCK_EXPECT(subHandlerMock->updateByUUID)
-    .at_least(1)
-    .with(mock::any, 10)
-    .returns(0);
-  MOCK_EXPECT(subHandlerMock->updateByPath)
-    .at_least(1)
-    .with(signalPath, 10)
-    .returns(0);
+  MOCK_EXPECT(subHandlerMock->updateByPath).with(signalPath.getVSSPath(),mock::any).returns(0);
+
+
   // verify
 
-  BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
+  BOOST_CHECK_NO_THROW(db->setSignalDBUS(signalPath.getVSSGen1Path(), setValue));
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
   BOOST_TEST(returnJson["value"].as<int>() == 10);
 }
 
@@ -332,7 +328,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPathNoCh
 
   // verify
 
-  BOOST_CHECK_THROW(db->setSignal(signalPath, setValue), genException);
+  BOOST_CHECK_THROW(db->setSignalDBUS(signalPath, setValue), noPathFoundonTree);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -31,19 +31,18 @@ class IVssDatabase {
     virtual void updateJsonTree(WsChannel& channel, const jsoncons::json& value) = 0;
     virtual void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& value) = 0;
     virtual jsoncons::json getMetaData(const std::string &path) = 0;
-    virtual void setSignal(WsChannel& channel,
-                           const std::string &path,
-                           jsoncons::json value) = 0;
-                           
-    [[deprecated("Once Gen2 migration is complete, only the getSignal version with gen1_compat flag should be used")]]
-    virtual jsoncons::json getSignal(WsChannel& channel, const std::string &path) = 0;
-    virtual jsoncons::json getSignal(WsChannel& channel, const VSSPath& path, bool gen1_compat) = 0;
+  
+    virtual jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) = 0; //gen2 version
 
+    virtual bool pathExists(const VSSPath &path) = 0;
+    virtual bool pathIsWritable(const VSSPath &path) = 0;
+
+                           
+    virtual jsoncons::json getSignal(WsChannel& channel, const VSSPath& path, bool gen1_compat) = 0;
 
     // TODO: temporary added while components are refactored
     jsoncons::json data_tree__;
     jsoncons::json meta_tree__;
-    virtual std::list<std::string> getPathForGet(const std::string &path, bool& isBranch) = 0;
     virtual std::string getVSSSpecificPath(const std::string &path, bool& isBranch, jsoncons::json& tree) = 0;
     virtual jsoncons::json getPathForSet(const std::string &path, jsoncons::json value) = 0;
 };

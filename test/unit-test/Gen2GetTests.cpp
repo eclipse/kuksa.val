@@ -19,7 +19,6 @@
 #include <turtle/mock.hpp>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
-
 #include <memory>
 #include <string>
 
@@ -64,14 +63,12 @@ struct TestSuiteFixture {
 
     std::string vss_file{"test_vss_rel_2.0.json"};
 
-
     MOCK_EXPECT(logMock->Log).at_least(0);  // ignore log events
     db = std::make_shared<VssDatabase>(logMock, subHandlerMock, accCheckMock);
     db->initJsonTree(vss_file);
 
-    processor = std::make_unique<VssCommandProcessor>(logMock, db, authMock,
-                                                      subHandlerMock);
-
+    processor = std::make_unique<VssCommandProcessor>(
+        logMock, db, authMock, accCheckMock, subHandlerMock);
   }
   ~TestSuiteFixture() {
     logMock.reset();
@@ -86,7 +83,6 @@ struct TestSuiteFixture {
 // Define name of test suite and define test suite fixture for pre and post test
 // handling
 BOOST_FIXTURE_TEST_SUITE(Gen2GetTests, TestSuiteFixture);
-
 
 BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   WsChannel channel;
@@ -116,9 +112,12 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
-  //Read access has been checked
-  MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_path).returns(true);
-  
+  // Read access has been checked
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+      .once()
+      .with(mock::any, vss_path)
+      .returns(true);
+
   // run UUT
   auto resStr =
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
@@ -133,6 +132,86 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   BOOST_TEST(res == expectedJson);
 }
 
+BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON) {
+  WsChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsoncons::json jsonSetRequestForSignal;
+
+  std::string path{"Vehicle/Speed"};
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
+
+  jsonSetRequestForSignal["action"] = "get";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["requestId"] = 100;  // int is invalid here;
+
+  std::string expectedJsonString{R"(
+      {
+  "action": "get",
+  "error": {
+    "message": "Schema error: VSS get malformed: #/requestId: Expected string, found uint64",
+    "number": 400,
+    "reason": "Bad Request"
+  },
+  "requestId": "100",
+  "timestamp": 0
+}
+      )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // Does result have a timestamp?
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+
+  // Remove timestamp for comparision purposes
+  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+
+  BOOST_TEST(res == expectedJson);
+}
+
+/** Send an invalid JSON, without any determinable Request Id */
+BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON_NoRequestID) {
+  WsChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsoncons::json jsonSetRequestForSignal;
+
+  jsonSetRequestForSignal["action"] = "get";
+  jsonSetRequestForSignal["path"] = 999;  // int as path is wrong
+
+  std::string expectedJsonString{R"(
+  {
+  "action": "get",
+  "error": {
+    "message": "Schema error: VSS get malformed: #: Required property \"requestId\" not found\n#/path: Expected string, found uint64",
+    "number": 400,
+    "reason": "Bad Request"
+  },
+  "requestId": "UNKNOWN",
+  "timestamp": 0
+}
+      )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // Does result have a timestamp?
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+
+  // Remove timestamp for comparision purposes
+  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+
+  BOOST_TEST(res == expectedJson);
+}
 
 BOOST_AUTO_TEST_CASE(Gen2_Get_NonExistingPath) {
   WsChannel channel;
@@ -154,7 +233,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_NonExistingPath) {
 
   JsonResponses::pathNotFound(requestId, "get", path, jsonPathNotFound);
 
-  
   // run UUT
   auto resStr =
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
@@ -162,10 +240,11 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_NonExistingPath) {
 
   // verify
   BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonPathNotFound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  res["timestamp"] =
+      jsonPathNotFound["timestamp"]
+          .as<int64_t>();  // ignoring timestamp difference for response
   BOOST_TEST(res == jsonPathNotFound);
 }
-
 
 BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   WsChannel channel;
@@ -249,11 +328,17 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
-  //it needs to check all elements in subtree. Expect one example explicitely, and allow for others
-  auto vss_access_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
-  MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_access_path).returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadNew).with(mock::any,mock::any).returns(true);
-
+  // it needs to check all elements in subtree. Expect one example explicitely,
+  // and allow for others
+  auto vss_access_path =
+      VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+      .once()
+      .with(mock::any, vss_access_path)
+      .returns(true);
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+      .with(mock::any, mock::any)
+      .returns(true);
 
   // run UUT
   auto resStr =
@@ -268,7 +353,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
 
   BOOST_TEST(res == expectedJson);
 }
-
 
 BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   WsChannel channel;
@@ -352,10 +436,17 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
-  //it needs to check all elements in subtree. Expect one example explicitely, and allow for others
-  auto vss_access_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
-  MOCK_EXPECT(accCheckMock->checkReadNew).once().with(mock::any,vss_access_path).returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadNew).with(mock::any,mock::any).returns(true);
+  // it needs to check all elements in subtree. Expect one example explicitely,
+  // and allow for others
+  auto vss_access_path =
+      VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+      .once()
+      .with(mock::any, vss_access_path)
+      .returns(true);
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+      .with(mock::any, mock::any)
+      .returns(true);
 
   // run UUT
   auto resStr =
@@ -370,7 +461,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
 
   BOOST_TEST(res == expectedJson);
 }
-
 
 BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
   WsChannel channel;
@@ -392,7 +482,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
 
   JsonResponses::pathNotFound(requestId, "get", path, jsonPathNotFound);
 
-  
   // run UUT
   auto resStr =
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
@@ -400,11 +489,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
 
   // verify
   BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonPathNotFound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  res["timestamp"] =
+      jsonPathNotFound["timestamp"]
+          .as<int64_t>();  // ignoring timestamp difference for response
   BOOST_TEST(res == jsonPathNotFound);
 }
-
-
-
-
 }

@@ -1,0 +1,2 @@
+recursive-include kuksa_certificates *
+recursive-include doc *

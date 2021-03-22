@@ -45,6 +45,31 @@ static const char* SCHEMA_GET=R"(
 )";
 
 
+static const char* SCHEMA_SET=R"(
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Set Request",
+    "description": "Enables the client to set one or more values once.",
+    "type": "object",
+    "required": ["action", "path", "value", "requestId"],
+    "properties": {
+        "action": {
+            "enum": [ "set" ],
+            "description": "The identifier for the set request"
+        },
+        "path": {
+            "$ref": "viss#/definitions/path"
+        },
+        "value": {
+            "$ref": "viss#/definitions/value"
+        },
+        "requestId": {
+            "$ref": "viss#/definitions/requestId"
+        }
+    }
+}
+)";
+
 static const char* SCHEMA = (R"(
 {
     "definitions": {
@@ -62,7 +87,7 @@ static const char* SCHEMA = (R"(
         },
         "value": {
             "description": "The data value returned by the server. This could either be a basic type, or a complex type comprised of nested name/value pairs in JSON format.",
-            "type": "string"
+            "type": ["number", "string"]
         },
         "timestamp": {
             "description": "The Coordinated Universal Time (UTC) time that the server returned the response (expressed as number of milliseconds).",

@@ -1,4 +1,0 @@
-requests
-websockets
-dapr                                          
-dapr-ext-grpc

@@ -46,20 +46,18 @@ bool AccessChecker::checkSignalAccess(const WsChannel& channel, const string& pa
   } 
   return permissionValue.find(requiredPermission) != std::string::npos;
 }
-// check the permissions json in WsChannel if path has read access
-bool AccessChecker::checkReadAccess(WsChannel &channel, const string &path) {
-  return checkSignalAccess(channel, path, "r");
-}
+
 
 // check the permissions json in WsChannel if path has read access
 bool AccessChecker::checkReadAccess(WsChannel &channel, const VSSPath &path) {
   return checkSignalAccess(channel, path.getVSSGen1Path(), "r");
 }
 
-// check the permissions json in WsChannel if path has write access
-bool AccessChecker::checkWriteAccess(WsChannel &channel, const string &path) {
-  return checkSignalAccess(channel, path, "w");
+// check the permissions json in WsChannel if path has read access
+bool AccessChecker::checkWriteAccess(WsChannel &channel, const VSSPath &path) {
+  return checkSignalAccess(channel, path.getVSSGen1Path(), "w");
 }
+
 
 // Checks if all the paths have write access.If even 1 path in the list does not
 // have write access, this method returns false.
@@ -67,7 +65,8 @@ bool AccessChecker::checkPathWriteAccess(WsChannel &channel, const json &paths) 
   for (size_t i = 0; i < paths.size(); i++) {
     json item = paths[i];
     string jPath = item["path"].as<string>();
-    if (!checkWriteAccess(channel, jPath)) {
+    VSSPath path = VSSPath::fromJSON(jPath);
+    if (!checkWriteAccess(channel, path)) {
       return false;
     }
   }

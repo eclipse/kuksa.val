@@ -11,6 +11,7 @@
 
 echo "Starting kuksa.val"
 
+mkdir -p /config/certs
 
 if [ -e /config/vss.json ]
 then
@@ -20,7 +21,6 @@ else
     cp /kuksa.val/exampleconfig/vss.json /config/
 fi
 
-mkdir -p /config/certs
 
 if [ -e /config/certs/Server.key ]
 then
