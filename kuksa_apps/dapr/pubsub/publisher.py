@@ -18,7 +18,7 @@ import time
 from dapr.clients import DaprClient
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, "../../common/"))
+sys.path.append(os.path.join(scriptDir, "../../"))
 from clientComm import VSSClientComm
 
 class Kuksa_Client():
