@@ -353,30 +353,6 @@ vector<string> tokenizePath(string path) {
   return tokens;
 }
 
-// Removes the internally used "children" tag and "$" tag and returns a client
-// readable path.
-// Eg: jsonpath = $['Signal']['children']['OBD']['children']['RPM']
-// The method returns Signal.OBD.RPM
-//replaced with getVSSPathFromJSONPath in Gen2
-string VssDatabase::getReadablePath(string jsonpath) {
-  stringstream ss;
-  // regex to remove special characters from JSONPath and make it VSS
-  // compatible.
-  std::regex bracket("[$\\[\\]']{2,4}");
-  std::copy(
-      std::sregex_token_iterator(jsonpath.begin(), jsonpath.end(), bracket, -1),
-      std::sregex_token_iterator(),
-      std::ostream_iterator<std::string>(ss, "."));
-
-  ss.seekg(0, ios::end);
-  int size = ss.tellg();
-  string readablePath = ss.str().substr(1, size - 2);
-  regex e("\\b(.children)([]*)");
-  readablePath = regex_replace(readablePath, e, "");
-  return readablePath;
-}
-
-
 
 // Appends the internally used "children" tag to the path. And also formats the
 // path in JSONPath query format.
@@ -875,7 +851,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     // check Read access here.
     if (!accessValidator_->checkReadAccess(channel, path )) {
       stringstream msg;
-      msg << "No read access to " << getReadablePath(jPath);
+      msg << "No read access to " << VSSPath::fromJSON(jPath).getVSSPath();
       throw noPermissionException(msg.str());
     }
     jsoncons::json resArray;
