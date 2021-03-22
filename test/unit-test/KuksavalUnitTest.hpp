@@ -37,7 +37,6 @@ class kuksavalunittest {
 
     kuksavalunittest();
     ~kuksavalunittest();
-    std::list<std::string> test_wrap_getPathForGet(std::string path , bool &isBranch);
     jsoncons::json test_wrap_getPathForSet(std::string path,  jsoncons::json value);
 };
 
