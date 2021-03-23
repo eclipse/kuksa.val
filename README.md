@@ -110,7 +110,7 @@ pip install kuksa-viss-client
 kuksa_viss_client
 ```
 
-![try kuksa_viss_client out](../doc/pictures/testclient_basic.gif "test client usage")
+![try kuksa_viss_client out](doc/pictures/testclient_basic.gif "test client usage")
 
 
 You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa_viss_client` can be found [here](./kuksa_viss_client). 
