@@ -55,15 +55,24 @@ class Dapr_Publisher():
         
         self.producer = producer
         dapr_config=config['dapr']
+        self.daprClient = DaprClient()
         if "topics" not in dapr_config:
             print("no topics sepcified, exiting")
             sys.exit(-1)
         self.topics=dapr_config.get('topics').replace(" ", "").split(',')
         for topic in self.topics:
-            self.publisher(self.producer.client.getValue(topic))
+
+            kuksa_message = self.producer.client.getValue(topic)
+            jsonMsg = json.loads(kuksa_message) 
+            req_data = {
+                'id': 0,
+                'timestamp': jsonMsg["timestamp"],
+                'value': jsonMsg["value"],
+                'topic': topic
+                }
+            self.publisherTopic(topic, req_data)
             self.producer.subscribe(topic, self.publisher)
 
-        self.daprClient = DaprClient()
 
     def publisher(self, kuksa_message):
         jsonMsg = json.loads(kuksa_message) 
@@ -76,17 +85,20 @@ class Dapr_Publisher():
             'value': jsonMsg["value"],
             'topic': topic
             }
+        self.publisherTopic(topic, req_data)
+
+    def publisherTopic(self, topic, data):
 
         # Create a typed message with content type and body
         resp = self.daprClient.publish_event(
             pubsub_name='pubsub',
             topic_name=topic,
-            data=json.dumps(req_data),
+            data=json.dumps(data),
             data_content_type='application/json',
             )
 
         # Print the request
-        print(req_data, flush=True)
+        print(data, flush=True)
 
 
 
