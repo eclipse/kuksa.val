@@ -16,10 +16,12 @@ pip3 install -r requirements.txt
 
 ## Run the example
 
-At first, you need to start `kuksa.val` and [testclient](../../vss-testclient) to feed data into `kuksa.val`.
-You also need the dapr runtime running on your system.
+At first, you need to start `kuksa.val` and [kuksa viss client](../../../kuksa_viss_client) to feed data into `kuksa.val`.
+This dapr app `kuksavalstorage` subscribes the given vss pathes and stores the value, if the value is changed.
+To configure the subscribed vss path and the address of `kuksa.val`, you can use the config file [`config.ini`](./config.ini).
 
-You can configure `kuksa.val` and to subscribed topics using [`config.ini`](./config.ini).
+Do not forget to start the dapr runtime on your system.
+
 Then run the following commands to start the dapr application:
 
 ```bash
