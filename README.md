@@ -52,9 +52,9 @@ More information on using the docker images can be found [here](doc/run-docker.m
 
 To learn, how to build your own docker image see [doc/build-docker.md](doc/build-docker.md).
 
-If this is succesful you can skip to [using KUKSA.val](#Using-kuksaval).
+If this is succesful you can skip to [using kuksa.val](#Using-kuksaval).
 
-## Building KUKSA.val
+## Building kuksa.val
 KUKSA.val uses the cmake build system. First install the required packages. On Ubuntu 20.04 this can be achieved by
 
 ```
@@ -102,7 +102,20 @@ if no other config file is specified using the command line option `-c/--config-
 
 For more information check [usage](doc/usage.md).
 
+## Using kuksa.val
+The easiest way to try `kuksa.val` out, is to use the test client [`kuksa_viss_client`](./kuksa_viss_client):
 
+```
+pip install kuksa-viss-client
+kuksa_viss_client
+```
+
+![try kuksa_viss_client out](doc/pictures/testclient_basic.gif "test client usage")
+
+
+You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa_viss_client` can be found [here](./kuksa_viss_client). 
+
+Additionally, you can use the [example apps](./kuksa_apps) and [feeders](./kuksa_feeders) to handle vehicle data, interacting with the `kuksa.val` server.
 
 ## Other topics
 

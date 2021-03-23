@@ -3,81 +3,21 @@
 
 `kuksa.val` is a part of the opensource project [eclipse kuksa](https://www.eclipse.org/kuksa/).
 More about `kuksa.val` can be found under the root [README.md](../README.md).
-Here is a collection of clients, which can feed or handle data with the `kuksa.val` server.
 
-## Python SDK
-The python sdk is the easiest way for you to develop your own kuksa.val clients to interactive with the `kuksa.val` server.
-
-### Installation
+## Installation
 ```
 pip install kuksa-viss-client
 ```
 
-### Usage
-
-import the sdk
-```
->>> import kuksa_viss_client
->>> kuksa_viss_client.__version__
-'<your version, e.g. 0.1.7>'
-```
-
-Setup a thread to connect with the `kuksa.val` server.
-The following properties for the connection can be configured:
-- `ip` default: "127.0.0.1"
-- `port` default: 8090
-- `insecure` default: `False`
-- `cacertificate` default: "../kuksa_certificates/CA.pem"
-- `certificate` default: "../kuksa_certificates/Client.pem"
-- `key` default: "../kuksa_certificates/Client.key"
-
-```
->>> config = {} 
->>> client = kuksa_viss_client.KuksaClientThread(config)
->>> 
->>> # Start the client thread to connect with configured server
->>> client.start()
->>>
->>> # Close the connection and stop the client thread
->>> client.stop()
-```
-
-You have the following methods to interactive with the `kuksa.val` server:
-
-```
-# Do authorization by passing a jwt token or a token file
-def authorize(self, token, timeout = 2)
-
-# Update VISS Tree Entry 
-def updateVISSTree(self, jsonStr, timeout = 5)
-
-# Update Meta Data of a given path
-def updateMetaData(self, path, jsonStr, timeout = 5)
-
-# Get Meta Data of a given path
-def getMetaData(self, path, timeout = 1)
-
-# Set value to a given path
-def setValue(self, path, value, timeout = 1)
-
-# Get value to a given path
-def getValue(self, path, timeout = 5)
-
-# Subscribe value changes of to a given path.
-# The given callback function will be called then, if the given path is updated:
-#   updateMessage = await webSocket.recv()
-#   callback(updateMessage)
-def subscribe(self, path, callback, timeout = 5)
-```
-
 ## Test client
-Using the python sdk, we implemented a command-line test client. When you have installed the kuksa-viss-client package via pip you can run the test client directly by executing
+`kuksa_viss_client` is a command-line test client.
+After you have installed the kuksa-viss-client package via pip you can run the test client directly by executing
 
 ```bash
 $ kuksa_viss_client
 ```
 
-![Alt text](../doc/pictures/testclient_basic.gif "test client usage")
+![try kuksa_viss_client out](../doc/pictures/testclient_basic.gif "test client usage")
 
 
 Refer help for further information
@@ -114,4 +54,67 @@ docker run --rm -it --net=host <image-id-from docker-build>
 ```
 
 `--rm` ensures we do not keep the docker continer lying aroind after closing the vss-testclient and `--net=host` makes sure you can reach locally running kuksa.val-server or kuksa-val docker with port forwarding on the host using the default `127.0.0.1` address.
+
+
+## Python SDK
+If you would like to develop your own `kuksa.val` client,
+you can use the python sdk to interact with the `kuksa.val` server in a very easy way.
+
+
+### Usage
+
+import the sdk
+```
+>>> import kuksa_viss_client
+>>> kuksa_viss_client.__version__
+'<your version, e.g. 0.1.7>'
+```
+
+Setup a thread to connect with the `kuksa.val` server.
+The following properties for the connection can be configured:
+- `ip` default: "127.0.0.1"
+- `port` default: 8090
+- `insecure` default: `False`
+- `cacertificate` default: "../kuksa_certificates/CA.pem"
+- `certificate` default: "../kuksa_certificates/Client.pem"
+- `key` default: "../kuksa_certificates/Client.key"
+
+```
+>>> config = {} 
+>>> client = kuksa_viss_client.KuksaClientThread(config)
+>>> 
+>>> # Start the client thread to connect with configured server
+>>> client.start()
+>>>
+>>> # Close the connection and stop the client thread
+>>> client.stop()
+```
+
+You have the following methods to interact with the `kuksa.val` server:
+
+```
+# Do authorization by passing a jwt token or a token file
+def authorize(self, token, timeout = 2)
+
+# Update VISS Tree Entry 
+def updateVISSTree(self, jsonStr, timeout = 5)
+
+# Update Meta Data of a given path
+def updateMetaData(self, path, jsonStr, timeout = 5)
+
+# Get Meta Data of a given path
+def getMetaData(self, path, timeout = 1)
+
+# Set value to a given path
+def setValue(self, path, value, timeout = 1)
+
+# Get value to a given path
+def getValue(self, path, timeout = 5)
+
+# Subscribe value changes of to a given path.
+# The given callback function will be called then, if the given path is updated:
+#   updateMessage = await webSocket.recv()
+#   callback(updateMessage)
+def subscribe(self, path, callback, timeout = 5)
+```
 
