@@ -115,174 +115,14 @@ kuksavalunittest::kuksavalunittest() {
 kuksavalunittest::~kuksavalunittest() {
 }
 
-json kuksavalunittest::test_wrap_getPathForSet(string path,  json value) {
-    return database->getPathForSet(path , value);
-}
+
 
 //--------Do not change the order of the tests in this file, because some results are dependent on the previous tests and data in the db-------
 //----------------------------------------------------VssDatabase Tests 
 
 // set method tests
 
-BOOST_AUTO_TEST_CASE(path_for_set_without_wildcard_simple)
-{
-    string test_path = "Vehicle.OBD.EngineSpeed"; // pass a valid path without wildcard.
-    json test_value;
-    test_value["value"] = 123;
 
-    json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value);
-
-    BOOST_TEST(paths.size() == 1u);
-
-    BOOST_TEST(paths[0]["path"].as<std::string>() == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
-
-
-}
-
-BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_simple)
-{
-    string test_path = "Vehicle.*"; // pass a valid path with wildcard.
-
-    json test_value_array = json::make_array(2);
-    json test_value1, test_value2;
-    test_value1["OBD.EngineSpeed"] = 123;
-    test_value2["OBD.Speed"] = 234;
-
-    test_value_array[0] = test_value1;
-    test_value_array[1] = test_value2;
-
-    json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
-
-    BOOST_TEST(paths.size() == 2u);
-
-    BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['OBD']['children']['EngineSpeed']");
-    BOOST_TEST(paths[1]["path"].as_string() == "$['Vehicle']['children']['OBD']['children']['Speed']");
-
-}
-
-
-BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_invalid_values)
-{
-    string test_path = "Vehicle.*"; // pass a valid path with wildcard.
-
-    json test_value_array = json::make_array(2);
-    json test_value1, test_value2;
-    test_value1["OBD1.EngineSpeed"] = 123;   // pass invalid sub-path
-    test_value2["OBD.Speed1"] = 234;  // pass invalid sub-path
-
-    test_value_array[0] = test_value1;
-    test_value_array[1] = test_value2;
-
-    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
-    
-}
-
-BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_one_valid_value)
-{
-    string test_path = "Vehicle.*"; // pass a valid path with wildcard.
-
-    json test_value_array = json::make_array(2);
-    json test_value1, test_value2;
-    test_value1["OBD.EngineSpeed"] = 123;   // pass valid sub-path
-    test_value2["OBD.Speed1"] = 234;  // pass invalid sub-path
-
-    test_value_array[0] = test_value1;
-    test_value_array[1] = test_value2;
-
-    
-    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
-
-}
-
-BOOST_AUTO_TEST_CASE(path_for_set_with_wildcard_with_invalid_path_valid_values)
-{
-    string test_path = "Signal.Vehicle.*"; // pass an invalid path.
-
-    json test_value_array = json::make_array(2);
-    json test_value1, test_value2;
-    test_value1["OBD.EngineSpeed"] = 123;   // pass valid sub-path
-    test_value2["OBD.Speed"] = 234;  // pass valid sub-path
-
-    test_value_array[0] = test_value1;
-    test_value_array[1] = test_value2;
-
-
-    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
-
-}
-
-BOOST_AUTO_TEST_CASE(test_set_value_on_branch)
-{
-    string test_path = "Vehicle.OBD"; // pass a valid branch path without wildcard.
-    json test_value;
-    bool isException = false;
-    test_value["value"] = 123;
-    try {
-       json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value);
-    }catch (exception &e) {
-       isException = true;
-    }
-
-    // An exception is thrown if a set value is attempted on a branch.
-    BOOST_TEST(isException ==  true);
-}
-
-BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_valid_values)
-{
-    string test_path = "Vehicle.Cabin.HVAC.Row2"; // pass a valid path with wildcard.
-
-    json test_value_array = json::make_array(2);
-    json test_value1, test_value2;
-    test_value1["Left.Temperature"] = 24;
-    test_value2["Right.Temperature"] = 25;
-
-    test_value_array[0] = test_value1;
-    test_value_array[1] = test_value2;
-
-    json paths = unittestObj.test_wrap_getPathForSet(test_path , test_value_array);
-
-    BOOST_TEST(paths.size() == 2u);
-
-    BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['Cabin']['children']['HVAC']['children']['Row2']['children']['Left']['children']['Temperature']");
-    BOOST_TEST(paths[1]["path"].as_string() == "$['Vehicle']['children']['Cabin']['children']['HVAC']['children']['Row2']['children']['Right']['children']['Temperature']");
-
-}
-
-BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_invalid_values)
-{
-    string test_path = "Vehicle.Cabin.HVAC.Row2"; // pass a valid branch path with wildcard.
-
-    json test_value_array = json::make_array(2);
-    json test_value1, test_value2;
-    test_value1["Left.NotTemperature"] = 24;  //Invalid leaf
-    test_value2["Right.NotTemperature"] = 25; //Invalid leaf
-
-    test_value_array[0] = test_value1;
-    test_value_array[1] = test_value2;
-
-    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
-}
-
-BOOST_AUTO_TEST_CASE(test_set_value_on_branch_with_one_invalid_value)
-{
-    string test_path = "Vehicle.Cabin.HVAC.Row2"; // pass a valid branch path with wildcard.
-
-    json test_value_array = json::make_array(2);
-    json test_value1, test_value2;
-    test_value1["Left.Temperature"] = true;
-    test_value2["Right.NotTemperature"] = false; //invalid leaf. Leads to fail
-
-    test_value_array[0] = test_value1;
-    test_value_array[1] = test_value2;
-    MOCK_EXPECT(accesshandler->checkReadAccess).returns(true);
-
-    
-    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value_array);}, noPathFoundonTree );
-
-    //Old conditon before it was atomic    
-    //BOOST_TEST(paths[0]["path"].as_string() == "$['Vehicle']['children']['Cabin']['children']['HVAC']['children']['Row2']['children']['Left']['children']['Temperature']");  
-
-}
 
 BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 {
@@ -825,14 +665,6 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 }
 
 
-BOOST_AUTO_TEST_CASE(test_set_invalid_path)
-{
-    string test_path = "Signal.lksdcl"; // pass an invalid path without wildcard.
-    json test_value;
-    test_value["value"] = 123;
-
-    BOOST_CHECK_THROW( {unittestObj.test_wrap_getPathForSet(test_path , test_value);}, noPathFoundonTree );
-}
 
 // -------------------------------- Metadata test ----------------------------------
 
@@ -1642,7 +1474,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"No read access to Vehicle/OBD/Speed","number":403,"reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
@@ -1693,7 +1525,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"No read access to Vehicle/OBD/EngineSpeed","number":403,"reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
@@ -1903,7 +1735,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"No read access to Vehicle/OBD/EngineSpeed","number":403,"reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
@@ -2335,7 +2167,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
   json get_expected = json::parse(R"({
     "action": "get",
-    "error":{"message":"No read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
+    "error":{"message":"No read access to Vehicle/OBD/Speed","number":403,"reason":"Forbidden"},
     "requestId": "8757"
     })");
 

@@ -42,12 +42,6 @@ class VssDatabase : public IVssDatabase {
 
   std::string getPathForMetadata(std::string path, bool& isBranch);
 
-  [[deprecated("Use VSSPath helper")]]
-  std::string getReadablePath(std::string jsonpath);
-  
-  [[deprecated("Use VSSPath helper")]]
-  std::string getVSSPathFromJSONPath(std::string jsonpath); //Gen2 replacement for getReadablePath
-
   std::list<std::string> getJSONPaths(const VSSPath& path);
 
 
@@ -79,6 +73,5 @@ class VssDatabase : public IVssDatabase {
 
   std::string getVSSSpecificPath(const std::string &path, bool& isBranch,
                                  jsoncons::json& tree) override;
-  jsoncons::json getPathForSet(const std::string &path, jsoncons::json value) override;
 };
 #endif

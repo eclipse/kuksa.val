@@ -44,7 +44,6 @@ class IVssDatabase {
     jsoncons::json data_tree__;
     jsoncons::json meta_tree__;
     virtual std::string getVSSSpecificPath(const std::string &path, bool& isBranch, jsoncons::json& tree) = 0;
-    virtual jsoncons::json getPathForSet(const std::string &path, jsoncons::json value) = 0;
 };
 
 #endif

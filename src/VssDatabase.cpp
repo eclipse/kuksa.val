@@ -49,21 +49,6 @@ namespace {
   }
 
 
-/** Some functions expect JSON data in the "value" member of a request. This is usually the string.
- *  This function tries to parse it as JSON returning a new json object containign the decompostion
- *  if this fails, the original JSON is returend
- * This important for functions such as "is_array", becasue a "value":"[1,2,3]", is of type string
- * as the inner JSON is nor parsed normally */ 
-jsoncons::json tryParse(jsoncons::json val) {
-  try {
-    jsoncons::json innerJson=jsoncons::json::parse(val.as_string_view());
-    return innerJson;
-  }
-  catch (std::exception &e) {
-    return val;
-  }
-}
-
     // Check the value type and if the value is within the range
   void checkTypeAndBound(std::shared_ptr<ILogger> logger, string value_type, jsoncons::json &val) {
     bool typeValid = false;
@@ -352,30 +337,6 @@ vector<string> tokenizePath(string path) {
   boost::split(tokens,path, boost::is_any_of("/"));
   return tokens;
 }
-
-// Removes the internally used "children" tag and "$" tag and returns a client
-// readable path.
-// Eg: jsonpath = $['Signal']['children']['OBD']['children']['RPM']
-// The method returns Signal.OBD.RPM
-//replaced with getVSSPathFromJSONPath in Gen2
-string VssDatabase::getReadablePath(string jsonpath) {
-  stringstream ss;
-  // regex to remove special characters from JSONPath and make it VSS
-  // compatible.
-  std::regex bracket("[$\\[\\]']{2,4}");
-  std::copy(
-      std::sregex_token_iterator(jsonpath.begin(), jsonpath.end(), bracket, -1),
-      std::sregex_token_iterator(),
-      std::ostream_iterator<std::string>(ss, "."));
-
-  ss.seekg(0, ios::end);
-  int size = ss.tellg();
-  string readablePath = ss.str().substr(1, size - 2);
-  regex e("\\b(.children)([]*)");
-  readablePath = regex_replace(readablePath, e, "");
-  return readablePath;
-}
-
 
 
 // Appends the internally used "children" tag to the path. And also formats the
@@ -685,101 +646,6 @@ jsoncons::json VssDatabase::getMetaData(const std::string &path) {
   return result;
 }
 
-// returns the absolute path based on the base path and the path in the values
-// JSON.
-// eg : path = Signal.*
-//      values = {"OBD.RPM" : 23, "OBD.Speed" : 10}
-// The function would return = {{"path" : "$.Signal.children.OBD.children.RPM",
-// "value" : 23}, {"path" : "$.Signal.children.OBD.children.Speed", "value" :
-// 10}}
-jsoncons::json VssDatabase::getPathForSet(const string &path, jsoncons::json values) {
-  jsoncons::json setValues;
-  string updatedPath = path;
-
-  logger_->Log(LogLevel::VERBOSE, "VssDatabase::getPathForSet for path " + path+ " with values " + values.as_string());
-
-  values=tryParse(values);
-  //std::string s = "[1,2,3]";
-  //values = json::parse(s);
-  if (values.is_array()) {
-    std::size_t found = updatedPath.find("*");
-    if (found == std::string::npos) {
-      updatedPath = updatedPath + ".";
-      found = updatedPath.length();
-    }
-    setValues = jsoncons::json::make_array(values.size());
-    for (size_t i = 0; i < values.size(); i++) {
-      jsoncons::json value = values[i];
-      string readablePath = updatedPath;
-      string replaceString;
-
-      int size;
-      try {
-        auto iter = value.object_range();
-        size = std::distance(iter.begin(), iter.end());
-        if (size == 1) {
-          for (const auto& member : iter) {
-            replaceString = string(member.key());
-          }
-        } else {
-          stringstream msg;
-          msg << "More than 1 signal found while setting for path = " << updatedPath
-              << " with values " << pretty_print(values);
-          throw genException(msg.str());
-        }
-      }
-      catch (std::exception &e) {
-        stringstream msg;
-        msg << "Invalid JSON for multi-set. " << e.what();
-        throw genException(msg.str());
-      }
-
-      readablePath.replace(found, readablePath.length(), replaceString);
-      jsoncons::json pathValue;
-      bool isBranch = false;
-      string absolutePath =
-          getVSSSpecificPath(readablePath, isBranch, data_tree__);
-      if (isBranch) {
-        stringstream msg;
-        msg << "Path = " << updatedPath << " with values " << value
-            << " points to a branch. Needs to point to a signal";
-        throw genException(msg.str());
-      }
-      if ( absolutePath == "" ) {
-        stringstream msg;
-        msg << "Path = " << readablePath << " with values " << value
-            << " points to an invalid path. Needs to point to a signal";
-        throw noPathFoundonTree(msg.str());
-      }
-
-      pathValue["path"] = absolutePath;
-      pathValue["value"] = value[replaceString].as<string>();
-      setValues[i] = pathValue;
-    }
-  } else {
-    setValues = jsoncons::json::make_array(1);
-    jsoncons::json pathValue;
-    bool isBranch = false;
-    string absolutePath = getVSSSpecificPath(updatedPath, isBranch, data_tree__);
-    if (isBranch) {
-      stringstream msg;
-      msg << "Path = " << updatedPath << " with values " << pretty_print(setValues)
-          << " points to a branch. Needs to point to a signal";
-      throw genException(msg.str());
-    }
-    if ( absolutePath == "" ) {
-        stringstream msg;
-        msg << "Path = " << updatedPath << " with values " << pretty_print(values)
-            << " points to an invalid path. Needs to point to valid a signal.";
-        throw noPathFoundonTree(msg.str());
-      }
-    pathValue["path"] = absolutePath;
-    pathValue["value"] = values;
-    setValues[0] = pathValue;
-  }
-  return setValues;
-}
-
 
 jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) {
   jsoncons::json answer;
@@ -875,7 +741,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     // check Read access here.
     if (!accessValidator_->checkReadAccess(channel, path )) {
       stringstream msg;
-      msg << "No read access to " << getReadablePath(jPath);
+      msg << "No read access to " << VSSPath::fromJSON(jPath).getVSSPath();
       throw noPermissionException(msg.str());
     }
     jsoncons::json resArray;

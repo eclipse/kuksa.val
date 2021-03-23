@@ -37,7 +37,6 @@ class kuksavalunittest {
 
     kuksavalunittest();
     ~kuksavalunittest();
-    jsoncons::json test_wrap_getPathForSet(std::string path,  jsoncons::json value);
 };
 
 
