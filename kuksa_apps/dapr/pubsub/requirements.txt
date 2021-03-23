@@ -1,0 +1,3 @@
+kuksa-viss-client
+dapr                                          
+dapr-ext-grpc
