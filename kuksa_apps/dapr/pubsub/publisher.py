@@ -60,6 +60,7 @@ class Dapr_Publisher():
             sys.exit(-1)
         self.topics=dapr_config.get('topics').replace(" ", "").split(',')
         for topic in self.topics:
+            self.publisher(self.producer.client.getValue(topic))
             self.producer.subscribe(topic, self.publisher)
 
         self.daprClient = DaprClient()
