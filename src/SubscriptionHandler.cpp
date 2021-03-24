@@ -132,6 +132,9 @@ int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
 
 int SubscriptionHandler::updateByUUID(const string &signalUUID,
                                       const jsoncons::json &value) {
+  std::stringstream ss;
+  ss << pretty_print(value);
+  logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByUUID: new value set at path " + signalUUID + ss.str());
   std::unique_lock<std::mutex> lock(accessMutex);
   auto handle = subscribeHandle.find(signalUUID);
   if (handle == subscribeHandle.end()) {
@@ -142,6 +145,7 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID,
   for (auto subID : handle->second) {
     std::lock_guard<std::mutex> lock(subMutex);
     tuple<SubscriptionId, ConnectionId, json> newSub;
+    logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByUUID: new value set at path " + std::to_string(subID.first) + ss.str());
     newSub = std::make_tuple(subID.first, subID.second, value);
     buffer.push(newSub);
     c.notify_one();
