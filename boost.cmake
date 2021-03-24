@@ -48,7 +48,7 @@ if(NOT Boost_FOUND)
     FetchContent_Populate(Boost)
     message(STATUS "Fetching Boost - done")
     message(STATUS " boost source dir is ${boost_SOURCE_DIR} ")
-    message(STATUS " boost source dir is ${boost_BINARY_DIR} ")
+    message(STATUS " boost binary dir is ${boost_BINARY_DIR} ")
     string(JOIN "," BOOST_WITH_LIBRARIES ${BOOST_COMPONENTS}) 
     execute_process(
       COMMAND ./bootstrap.sh --prefix=${boost_BINARY_DIR} --with-libraries=${BOOST_WITH_LIBRARIES}
