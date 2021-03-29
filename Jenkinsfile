@@ -35,7 +35,7 @@ node('docker') {
                 stage('amd64') {
                     sh "docker buildx build --platform=linux/amd64 -f ./docker/Dockerfile -t amd64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-amd64.tar ."
                     sh "docker buildx build --platform=linux/amd64 -f ./kuksa_viss_client/Dockerfile -t amd64/kuksa-client:${versiontag} --output type=docker,dest=./artifacts/kuksa-client-${versiontag}-amd64.tar ."
-                    sh "docker buildx build --platform=linux/amd64-t amd64/kuksa-gps-feeder:${versiontag} --output type=docker,dest=./artifacts/kuksa-gps-feeder-${versiontag}-amd64.tar kuksa_feeders/gps2val"
+                    sh "docker buildx build --platform=linux/amd64 -t amd64/kuksa-gps-feeder:${versiontag} --output type=docker,dest=./artifacts/kuksa-gps-feeder-${versiontag}-amd64.tar kuksa_feeders/gps2val"
                     
                     sh "docker build -t kuksa-val-dev-ubuntu20.04:${versiontag} -f docker/Dockerfile.dev ."
                     sh "docker save kuksa-val-dev-ubuntu20.04:${versiontag}  > artifacts/kuksa-val-dev-ubuntu20.04:${versiontag}.tar"
