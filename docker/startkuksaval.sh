@@ -13,11 +13,19 @@ echo "Starting kuksa.val"
 
 mkdir -p /config/certs
 
+if [ -e /config/config.ini ]
+then
+    echo "Using existing config file"
+else
+    echo "No config file, initialize with example config"
+    cp /kuksa.val/exampleconfig/config.ini /config/
+fi
+
 if [ -e /config/vss.json ]
 then
     echo "Using existing vss tree"
 else
-    echo "No VSS tree, initilaize with example"
+    echo "No VSS tree, initialize with example"
     cp /kuksa.val/exampleconfig/vss.json /config/
 fi
 
@@ -47,4 +55,4 @@ else
 fi
 
 
-LD_LIBRARY_PATH=./ ./kuksa-val-server --vss /config/vss.json --cert-path /config/certs --log-level $LOG_LEVEL --address $BIND_ADDRESS $OPTARGS
+LD_LIBRARY_PATH=./ ./kuksa-val-server --vss /config/vss.json --cert-path /config/certs --log-level $LOG_LEVEL --address $BIND_ADDRESS -c /config/config.ini $OPTARGS
