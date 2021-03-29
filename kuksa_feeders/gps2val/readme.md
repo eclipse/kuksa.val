@@ -14,7 +14,19 @@ If you do not have a gps device, you can use your cellphone to forward gps data 
 ```
 gpsd -N udp://0.0.0.0:29998
 ```
+## Using docker
+To build:
+```
+docker build -t gpsd_feeder .
+```
 
+To run:
+```
+docker run -it -p 29998:29998/udp -v $PWD/config:/config gpsd_feeder
+```
+
+
+## Test with gpsfake
 You can also use [gpsfake](https://gpsd.gitlab.io/gpsd/gpsfake.html) to playback a gps logs in e.g. nmea format.
 To install `gpsfake`, follow the command in this [link](https://command-not-found.com/gpsfake).
 After installation, run the following command to simulate a gps device as datasource:
