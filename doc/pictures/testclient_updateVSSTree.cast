@@ -1,4 +1,4 @@
-{"version": 2, "width": 80, "height": 33, "timestamp": 1599127929, "env": {"SHELL": "/usr/bin/fish", "TERM": "rxvt-unicode-256color"}}
+{"version": 2, "width": 80, "height": 40, "timestamp": 1599127929, "env": {"SHELL": "/usr/bin/fish", "TERM": "rxvt-unicode-256color"}}
 [0.028577, "o", "\u001b]0;fish /home/wenwen/too"]
 [0.029226, "o", "ls/kuksa.val/kuksa_viss_client\u0007\u001b[38;5;0m\u001b[m\u001b(B"]
 [0.029333, "o", "\u001b[38;5;237m⏎\u001b[m\u001b(B                                                                           \r⏎ \r\u001b[K"]
@@ -16,14 +16,8 @@
 [2.300203, "o", "\u001b[?2004l"]
 [2.300478, "o", "\u001b]0;python /home/wenwen/tools/kuksa.val/"]
 [2.300586, "o", "kuksa_viss_client\u0007\u001b[38;5;0m\u001b[m\u001b(B\r"]
-[2.993776, "o", "Test Client> "]
-[3.579401, "o", "c"]
-[3.691608, "o", "o"]
-[3.867431, "o", "n"]
-[4.003622, "o", "n"]
-[4.123667, "o", "ect "]
-[4.627574, "o", "\r\n"]
-[4.728685, "o", "Websocket connected!!\r\n"]
+[2.488912, "o", "Welcome to kuksa viss client 0.1.8\r\n                                ``                               \r\n                       `.-:/+o.+hhhhhys+/-`                      \r\n                    .:+ooooooo.+hhhhhhhhhhhy+-                   \r\n                 `:+oooooooooo..---:/+oyhhhhhhy+.                \r\n               `/ooooo+:.-oooo.         `-+yhhhhho.              \r\n              :ooooo/.   -oooo.             .ohhhhh+`            \r\n            `+oooo/`     -oooo.     `.-:`     .ohhhhy.           \r\n           .ooooo.       -oooo.    .hhhh:       -yhhhh-          \r\n          `oooo+`        -oooo.    :hhhh-        .yhhhh.         \r\n          /oooo.         -oooo.   -hhhhy          .hhhhs         \r\n         .oooo:          -oooo. .+hhhhy.           /hhhh-        \r\n         :oooo`          -oooo--+yhhho`            `hhhh+        \r\n         /oooo           -oooooo+/:+-               yhhhs        \r\n         /oooo           .//+oooooo+-               yhhhs        \r\n         :oooo`          -yso/-/+oooo+.            `hhhh+        \r\n         `oooo:          :hhhh- `-ooooo.           +hhhh.        \r\n          /oooo.         :hhhh-   `+ooo+          -hhhho         \r\n          `+oooo.        :hhhh-    -oooo.        -yhhhy`         \r\n           `+oooo-       :hhhh-    `++oo-       :hhhhy.          \r\n            `/oooo/.     :hhhh-     ```.`     -shhhhs.           \r\n              -ooooo/-`  :hhhh-            `:ohhhhy/`            \r\n               `:+oooo+/.:hhhh-        `.:oyhhhhy+.              \r\n                 `-+oooo-:hhhh+/:://+osyhhhhhhs/.                \r\n                    `-/+-:hhhhhhhhhhhhhhhhyo/.                   \r\n                        ``/+osyyyyyyss+/-.`                      \r\n                                ```                              \r\n                                                                 \r\n                                                                 \r\n ``    ```    ``      ``    ``    ```     `....`         ```     \r\n`oo`  -o+-   -o+     `oo`  .oo  `:o+-   .+o+//+o/`      .ooo-    \r\n`oo`-+o:`    -o+     `oo`  .oo -oo-     /o/    ``      .oo-oo.   \r\n`oo+o/`      -o+     `oo`  .oo+o:`      `/o++//:.     `oo- .oo`  \r\n`oo:+o:`     -o+     .oo   .oo:oo-         `..-+o/   `+o:   -o+` \r\n`oo` -oo-    `+o:`  .+o/   .oo `:o+-    :+-`  `:o+   +o/     :o+`\r\n`oo`  `:++.   `:+oooo/-    .o+   `/o/.  ./+oooo+:`  :o/       /o/\r\n\r\n"]
+[2.923964, "o", "Websocket connected!!\r\n"]
 [4.731513, "o", "Test Client> "]
 [6.267665, "o", "a"]
 [6.467588, "o", "u"]
