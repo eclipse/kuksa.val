@@ -106,7 +106,7 @@ class GPSD_Client():
 
         
 if __name__ == "__main__":
-    config_candidates=['gpsd_feeder.ini', '/etc/gpsd_feeder.ini']
+    config_candidates=['/config/gpsd_feeder.ini', '/etc/gpsd_feeder.ini', os.path.join(scriptDir, 'config/gpsd_feeder.ini')]
     for candidate in config_candidates:
         if os.path.isfile(candidate):
             configfile=candidate
