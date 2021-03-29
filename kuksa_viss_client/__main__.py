@@ -21,6 +21,7 @@ DEFAULT_SERVER_PORT = 8090
 scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, ".."))
 from kuksa_viss_client import KuksaClientThread
+from kuksa_viss_client import __version__
 
 class TestClient(Cmd):
     def get_childtree(self, pathText):
@@ -101,6 +102,12 @@ class TestClient(Cmd):
         self.serverPort = DEFAULT_SERVER_PORT
         self.vssTree = {}
         self.pathCompletionItems = []
+
+        print("Welcome to kuksa viss client " + str(__version__))
+        with open(os.path.join(scriptDir, 'logo'), 'r') as f:
+            print(f.read())
+
+        print()
         self.connect()
 
 
