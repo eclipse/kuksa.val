@@ -29,7 +29,7 @@ services:
     image: ${ARCH}/kuksa-gps-feeder:aa695c0
     restart: unless-stopped 
     volumes:
-      - ${PWD}/../../kuksa_feeders/gps2val/config:/config
+      - ${PWD}/kuksa_config:/config
     ports:
       - 29998:29998/udp
     depends_on:
