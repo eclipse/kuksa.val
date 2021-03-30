@@ -134,7 +134,6 @@ BOOST_AUTO_TEST_CASE(uint8_limits) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
-
 BOOST_AUTO_TEST_CASE(int8_nolimits) {
   jsoncons::json meta = createUnlimitedMeta("int8");
   jsoncons::json value = "-10";
@@ -166,6 +165,265 @@ BOOST_AUTO_TEST_CASE(int8_limits) {
 }
 
 
+BOOST_AUTO_TEST_CASE(uint16_nolimits) {
+  jsoncons::json meta = createUnlimitedMeta("uint16");
+  jsoncons::json value = "4096";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-10";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "65600";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(uint16_limits) {
+  jsoncons::json meta = createDoublelimitedMeta("uint16", 10, 800);
+  jsoncons::json value = "50";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "6";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "4096";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  meta = createMinlimitedMeta("uint16", 10);
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  meta = createMaxlimitedMeta("uint16", 10);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(int16_nolimits) {
+  jsoncons::json meta = createUnlimitedMeta("int16");
+  jsoncons::json value = "-10";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-65600";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "65600";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(int16_limits) {
+  jsoncons::json meta = createDoublelimitedMeta("int16", -50, 100);
+  jsoncons::json value = "50";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-51";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "120";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  meta = createMinlimitedMeta("int16", -10);
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  meta = createMaxlimitedMeta("int16", 10);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+
+BOOST_AUTO_TEST_CASE(uint32_nolimits) {
+  jsoncons::json meta = createUnlimitedMeta("uint32");
+  jsoncons::json value = "100000";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-10";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "4294967297";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(uint32_limits) {
+  jsoncons::json meta = createDoublelimitedMeta("uint32", 10, 70000);
+  jsoncons::json value = "50";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "6";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "80000";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  meta = createMinlimitedMeta("uint32", 10);
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  meta = createMaxlimitedMeta("uint32", 10);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(int32_nolimits) {
+  jsoncons::json meta = createUnlimitedMeta("int32");
+  jsoncons::json value = "10";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-4294967297";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "4294967297";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(int32_limits) {
+  jsoncons::json meta = createDoublelimitedMeta("int32", -50, 100);
+  jsoncons::json value = "50";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-51";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "45000";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  meta = createMinlimitedMeta("int32", -10);
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  meta = createMaxlimitedMeta("int32", 38000);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+
+BOOST_AUTO_TEST_CASE(uint64_nolimits) {
+  jsoncons::json meta = createUnlimitedMeta("uint64");
+  jsoncons::json value = "100000";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-10";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "36893488147419103232";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(uint64_limits) {
+  jsoncons::json meta = createDoublelimitedMeta("uint64", 10, 8589934592);
+  jsoncons::json value = "50 ";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "6";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "8589934593";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  meta = createMinlimitedMeta("uint64", 10);
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  meta = createMaxlimitedMeta("uint64", 10);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(int64_nolimits) {
+  jsoncons::json meta = createUnlimitedMeta("int64");
+  jsoncons::json value = "10";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-18446744073709551617";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "18446744073709551617";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(int64_limits) {
+  jsoncons::json meta = createDoublelimitedMeta("int64", -50, 8589934592);
+  jsoncons::json value = "50";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-51";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "8589934593";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  meta = createMinlimitedMeta("int64", -10);
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  meta = createMaxlimitedMeta("int64", 8589934592);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+
+BOOST_AUTO_TEST_CASE(float_nolimits) {
+  jsoncons::json meta = createUnlimitedMeta("float");
+  jsoncons::json value = "10";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-4e38";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "+4e38";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(float_limits) {
+  jsoncons::json meta = createDoublelimitedMeta("float", -50, 8589934592);
+  jsoncons::json value = "50";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-51";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "8589934593";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  meta = createMinlimitedMeta("float", -10);
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  meta = createMaxlimitedMeta("float", 8589934592);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+//Only "limited" double tests, as "long double" might not be longer than double
+//on all platforms, using som "bigint" library is to expensive
+BOOST_AUTO_TEST_CASE(double_limits) {
+  jsoncons::json meta = createDoublelimitedMeta("double", -50, 8589934592);
+  jsoncons::json value = "50";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "-51";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "8589934593";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  meta = createMinlimitedMeta("double", -10);
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  meta = createMaxlimitedMeta("double", 8589934592);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+
+BOOST_AUTO_TEST_CASE(boolean) {
+  jsoncons::json meta = createUnlimitedMeta("boolean");
+  jsoncons::json value = "true";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "false";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "BOGUS";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+
+BOOST_AUTO_TEST_CASE(string) {
+  jsoncons::json meta = createUnlimitedMeta("string");
+  jsoncons::json value = "Use Iceoryx!";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+}
+
+
+BOOST_AUTO_TEST_CASE(bogus) {
+  jsoncons::json meta = createUnlimitedMeta("not_a_ttype");
+  jsoncons::json value = "true";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), genException);
+}
 
 
 BOOST_AUTO_TEST_SUITE_END()
