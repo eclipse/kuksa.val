@@ -55,6 +55,8 @@ class VssDatabase : public IVssDatabase {
   bool pathExists(const VSSPath &path) override;
   bool pathIsWritable(const VSSPath &path) override;
 
+  void checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val) override;
+
 
   void initJsonTree(const boost::filesystem::path &fileName) override;
   bool checkPathValid(const VSSPath& path);

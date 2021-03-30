@@ -385,6 +385,5 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
 }
 
 
+BOOST_AUTO_TEST_SUITE_END()
 
-
-}
