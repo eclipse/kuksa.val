@@ -59,7 +59,6 @@ KUKSA.val uses the cmake build system. First install the required packages. On U
 
 ```
 sudo apt install cmake build-essential libssl-dev libglib2.0-dev libmosquitto-dev 
-
 ```
 
 **Note**: If you use `cmake >= 3.14`, you do not need to install boost on your system. `cmake` will download the required boost for building. Otherwise you need install the [`boost==1.75`](https://www.boost.org/users/history/version_1_75_0.html) on the system.
