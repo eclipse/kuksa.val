@@ -32,6 +32,6 @@ services:
       - ${PWD}/../../kuksa_feeders/gps2val/config:/config
     ports:
       - 29998:29998/udp
-    depens_on:
+    depends_on:
       - 'kuksa-val'
 
