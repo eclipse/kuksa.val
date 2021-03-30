@@ -10,10 +10,8 @@ The following node red extensions are used in the example flows:
 
 ### Installation
 You can use docker to start `node-red` and `kuksa.val` server.
-You need install a mqtt broker for using the mqtt example and load `kuksa.val` docker images:
+At first load `kuksa.val` docker images:
 ```
-sudo apt install docker.io mosquitto
-
 wget https://github.com/eclipse/kuksa.val/releases/download/0.1.8/kuksa-val-0.1.8-amd64.tar.xz
 docker load -i kuksa-val-0.1.8-amd64.tar.xz
 ```
