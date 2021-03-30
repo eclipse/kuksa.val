@@ -31,19 +31,19 @@ void checkNumTypes(jsoncons::json &meta, jsoncons::json &val )
 
     if (dval < std::numeric_limits<T>::min() || dval > std::numeric_limits<T>::max() ) {
         std::stringstream msg;
-        msg << "Value " << dval << "is out of bounds for type " << meta["datatype"].as<std::string>();
+        msg << "Value " << dval << " is out of bounds for type " << meta["datatype"].as<std::string>();
         throw outOfBoundException(msg.str());
     }
 
     if ( meta.contains("min") && dval < meta["min"].as<double>() ) {
         std::stringstream msg;
-        msg << "Value " << dval << "is out of bounds. Allowed minimum is " <<  meta["min"].as<double>();
+        msg << "Value " << dval << " is out of bounds. Allowed minimum is " <<  meta["min"].as<double>();
         throw outOfBoundException(msg.str());
     }
 
     if ( meta.contains("max") && dval > meta["max"].as<double>() ) {
         std::stringstream msg;
-        msg << "Value " << dval << "is out of bounds. Allowed maximum is " <<  meta["max"].as<double>();
+        msg << "Value " << dval << " is out of bounds. Allowed maximum is " <<  meta["max"].as<double>();
         throw outOfBoundException(msg.str());
     }
 }
