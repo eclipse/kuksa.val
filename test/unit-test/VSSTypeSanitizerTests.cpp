@@ -8,10 +8,9 @@
  * https://www.eclipse.org/org/documents/epl-2.0/index.php
  *
  *  Contributors:
- *      Robert Bosch GmbH 
+ *      Robert Bosch GmbH
  * *****************************************************************************
  */
-
 
 /** This are tests for the type and limit checks during set */
 
@@ -39,8 +38,6 @@
 
 #include "exception.hpp"
 
-
-
 namespace {
 // common resources for tests
 std::string validFilename{"test_vss_rel_2.0.json"};
@@ -56,7 +53,7 @@ std::shared_ptr<VssDatabase> db;
 struct TestSuiteFixture {
   TestSuiteFixture() {
     logMock = std::make_shared<ILoggerMock>();
-    
+
     accCheckMock = std::make_shared<IAccessCheckerMock>();
     subHandlerMock = std::make_shared<ISubscriptionHandlerMock>();
 
@@ -74,18 +71,101 @@ struct TestSuiteFixture {
 };
 }  // namespace
 
+static jsoncons::json createUnlimitedMeta(std::string datatype) {
+  jsoncons::json meta;
+  meta["datatype"] = datatype;
+  return meta;
+}
+
+static jsoncons::json createDoublelimitedMeta(std::string datatype,
+                                              double min, double max) {
+  jsoncons::json meta;
+  meta["datatype"] = datatype;
+  meta["min"] = min;
+  meta["max"] = max;
+  return meta;
+}
+
+static jsoncons::json createMinlimitedMeta(std::string datatype,
+                                              double min) {
+  jsoncons::json meta;
+  meta["datatype"] = datatype;
+  meta["min"] = min;
+  return meta;
+}
+
+static jsoncons::json createMaxlimitedMeta(std::string datatype,
+                                              double max) {
+  jsoncons::json meta;
+  meta["datatype"] = datatype;
+  meta["max"] = max;
+  return meta;
+}
 
 BOOST_FIXTURE_TEST_SUITE(VSSTypeSanitizerTests, TestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(valid_uint8_nolimits) {
-    jsoncons::json meta;
-    meta["datatype"] = "uint8";
+BOOST_AUTO_TEST_CASE(uint8_nolimits) {
+  jsoncons::json meta = createUnlimitedMeta("uint8");
+  jsoncons::json value = "127";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
 
-    jsoncons::json value = "127";
+  value = "-10";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 
-    BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta,value));
+  value = "400";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(uint8_limits) {
+  jsoncons::json meta = createDoublelimitedMeta("uint8", 10, 100);
+  jsoncons::json value = "50";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "6";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "120";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  meta = createMinlimitedMeta("uint8", 10);
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  meta = createMaxlimitedMeta("uint8", 10);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_CASE(int8_nolimits) {
+  jsoncons::json meta = createUnlimitedMeta("int8");
+  jsoncons::json value = "-10";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
 
+  value = "-200";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "400";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(int8_limits) {
+  jsoncons::json meta = createDoublelimitedMeta("int8", 10, 100);
+  jsoncons::json value = "50";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "6";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "120";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  meta = createMinlimitedMeta("int8", 10);
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  meta = createMaxlimitedMeta("int8", -5);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+
+
+
+BOOST_AUTO_TEST_SUITE_END()

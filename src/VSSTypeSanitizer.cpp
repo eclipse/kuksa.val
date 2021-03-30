@@ -23,20 +23,27 @@
 
 
 template<typename T>
-void checkIntTypes(std::shared_ptr<ILogger> logger, jsoncons::json &meta, jsoncons::json &val )
+void checkIntTypes(jsoncons::json &meta, jsoncons::json &val )
 {
-    std::cout << "Running for " << __PRETTY_FUNCTION__  << '\n';
-    //Double can be larger than largest allowed vss type signed or unsingedn ((u)int64)
+    //Double can be larger than largest allowed VSS type ((u)int64)
     double dval = val.as<double>();
     if (dval < std::numeric_limits<T>::min() || dval > std::numeric_limits<T>::max() ) {
         std::stringstream msg;
         msg << "Value " << dval << "is out of bounds for type " << meta["datatype"].as<std::string>();
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
         throw outOfBoundException(msg.str());
     }
 
+    if ( meta.contains("min") && dval < meta["min"].as<double>() ) {
+        std::stringstream msg;
+        msg << "Value " << dval << "is out of bounds. Allowed minimum is " <<  meta["min"].as<double>();
+        throw outOfBoundException(msg.str());
+    }
 
-
+    if ( meta.contains("max") && dval > meta["max"].as<double>() ) {
+        std::stringstream msg;
+        msg << "Value " << dval << "is out of bounds. Allowed maximum is " <<  meta["max"].as<double>();
+        throw outOfBoundException(msg.str());
+    }
 }
 
 /** This will check whether &val val is a valid value for the sensor described
@@ -44,7 +51,10 @@ void checkIntTypes(std::shared_ptr<ILogger> logger, jsoncons::json &meta, jsonco
 void VssDatabase::checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val) {
     std::string dt=meta["datatype"].as<std::string>();
     if (dt == "uint8") {
-        checkIntTypes<uint8_t>(this->logger_, meta,val);
+        checkIntTypes<uint8_t>(meta,val);
+    }
+    else if (dt == "int8") {
+        checkIntTypes<int8_t>(meta,val);
     }
 }
 
