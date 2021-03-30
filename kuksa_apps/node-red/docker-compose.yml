@@ -14,7 +14,7 @@ services:
     command: mosquitto -c /mosquitto-no-auth.conf
     ports:
       - 1883:1883
-  kuksa.val:
+  kuksa-val:
     image: ${ARCH}/kuksa-val:0.1.8
     restart: unless-stopped 
     ports:
@@ -22,4 +22,16 @@ services:
     environment:
       - LOG_LEVEL=ALL
       - KUKSAVAL_OPTARGS=--mqtt.publish=* --mqtt.topic-prefix=vss --mqtt.address=mybroker
+    depends_on:
+      - "mybroker"
+  # you can comment the following config out to also start a gps feeder
+  gps-feeder:
+    image: ${ARCH}/kuksa-gps-feeder:aa695c0
+    restart: unless-stopped 
+    volumes:
+      - ${PWD}/../../kuksa_feeders/gps2val/config:/config
+    ports:
+      - 29998:29998/udp
+    depens_on:
+      - 'kuksa-val'
 
