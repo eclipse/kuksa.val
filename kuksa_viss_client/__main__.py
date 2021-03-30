@@ -104,6 +104,7 @@ class TestClient(Cmd):
         self.pathCompletionItems = []
 
         print("Welcome to kuksa viss client " + str(__version__))
+        print()
         with open(os.path.join(scriptDir, 'logo'), 'r') as f:
             print(f.read())
 
