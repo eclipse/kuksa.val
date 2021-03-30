@@ -25,8 +25,9 @@ docker load -i kuksa-val-0.1.8-arm64.tar.xz
 Then start all needed container using [`docker-compose.yml`](./docker-compose.yml):
 ```
 sudo apt  install docker-compose
-ARCH=arm64 docker-compose up
+ARCH=arm64 docker-compose up -d
 ```
+`-d` for detach.
 
 By default, the mqtt flows will be configured in node-red. You can also use the import feature inside node-red to try the websocket example [below](#Websocket). 
 
