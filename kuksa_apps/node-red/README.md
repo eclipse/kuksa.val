@@ -1,6 +1,6 @@
 # Flow for node-red dashboard
 
-After installing [node-red](https://nodered.org/), you can import the json file to receive data from kuksa-val-server. Then you can use the node-red dashboard feature to view data.
+This example uses [node-red](https://nodered.org/) but an installation is not required at your machine, as we are using Docker. You can import the json file to receive data from kuksa-val-server. Then you can use the node-red dashboard feature to view data.
 
 ## Dependencies
 ### Node-red extensions
@@ -38,4 +38,3 @@ ARCH=arm64 docker-compose up
 - [websocket-advanced.json](./websocket-advanced.json) implements a test client and uses secure connection with server
 
 ![screenshot](./node-red-screenshot.png)
-
