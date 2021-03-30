@@ -25,13 +25,13 @@ services:
     depends_on:
       - "mybroker"
   # you can comment the following config out to also start a gps feeder
-  gps-feeder:
-    image: ${ARCH}/kuksa-gps-feeder:aa695c0
-    restart: unless-stopped 
-    volumes:
-      - ${PWD}/kuksa_config:/config
-    ports:
-      - 29998:29998/udp
-    depends_on:
-      - 'kuksa-val'
+  #gps-feeder:
+  #  image: ${ARCH}/kuksa-gps-feeder:aa695c0
+  #  restart: unless-stopped 
+  #  volumes:
+  #    - ${PWD}/kuksa_config:/config
+  #  ports:
+  #    - 29998:29998/udp
+  #  depends_on:
+  #    - 'kuksa-val'
 

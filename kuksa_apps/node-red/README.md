@@ -28,8 +28,15 @@ sudo apt  install docker-compose
 ARCH=arm64 docker-compose up
 ```
 
+By default, the mqtt flows will be configured in node-red. You can also use the import feature inside node-red to try the websocket example [below](#Websocket). 
+
+**Note**: At first start, you may need to install the [node red extensions](#Node-red-extensions) under the [palette manager](https://nodered.org/docs/user-guide/editor/palette/manager).
+
+Now you can test the node-red example using the [viss test client](../../kuksa_viss_client) or use the [gps feeder](../../kuksa_feeders/gps2val). In [`docker-compose.yml`](./docker-compose.yml), you can find the experimental config for gps feeder container. You can comment it out to start the gps feeder directly.
+
+
 ## MQTT
-[mqtt-examples.json](./mqtt-examples.json) subscribes some mqtt topics, which will be published by kuksa-val-server
+[mqtt/flows.json](./mqtt/flows.json) subscribes some mqtt topics, which will be published by kuksa-val-server
 
 *Note*: Do not forget to config your kuksa-val-server to publish the needed topics using the option `--mqtt.publish`.
 
