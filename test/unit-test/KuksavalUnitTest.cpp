@@ -135,13 +135,13 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     string test_path_Uint32 = "Vehicle.OBD.TimeSinceDTCCleared";
     VSSPath vss_test_path_Uint32 = VSSPath::fromVSSGen1(test_path_Uint32);
 
-    string test_path_int8 = "Vehicle.OBD.ShortTermFuelTrim2";
+    string test_path_int8 = "Vehicle.Body.Mirrors.Right.Tilt";
     VSSPath vss_test_path_int8 = VSSPath::fromVSSGen1(test_path_int8);
 
     string test_path_int16 = "Vehicle.OBD.FuelInjectionTiming";
     VSSPath vss_test_path_int16 = VSSPath::fromVSSGen1(test_path_int16);
 
-    string test_path_int32 = "Vehicle.Drivetrain.Transmission.Speed";
+    string test_path_int32 = "Vehicle.ADAS.CruiseControl.SpeedSet";
     VSSPath vss_test_path_int32 = VSSPath::fromVSSGen1(test_path_int32);
 
     string test_path_boolean = "Vehicle.OBD.Status.MIL";
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     string test_path_Float = "Vehicle.OBD.FuelRate";
    VSSPath vss_test_path_Float = VSSPath::fromVSSGen1(test_path_Float);
 
-    string test_path_Double =  "Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Latitude";
+    string test_path_Double =  "Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Altitude";
     VSSPath vss_test_path_Double = VSSPath::fromVSSGen1(test_path_Double);
 
     string test_path_string = "Vehicle.Cabin.Infotainment.Media.Played.URI";
@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
     string get_request(R"({
 		"action": "get",
-		"path": "Vehicle.OBD.Speed",
+		"path": "Vehicle.Speed",
 		"requestId": "8756"
 	})");
     string response = commandProc->processQuery(get_request,channel);
@@ -519,24 +519,6 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::max());
 
 
-    json test_value_Float_boundary_low_neg;
-    test_value_Float_boundary_low_neg = std::numeric_limits<float>::min() * -1;
-
-    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_low_neg,true);
-    result = database->getSignal(channel, vss_test_path_Float, true);
-
-
-    BOOST_TEST(result["value"].as<float>() == (std::numeric_limits<float>::min() * -1));
-
-    json test_value_Float_boundary_high_neg;
-    test_value_Float_boundary_high_neg = std::numeric_limits<float>::max() * -1;
-
-    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_high_neg,true);
-    result = database->getSignal(channel, vss_test_path_Float, true);
-
-    BOOST_TEST(result["value"].as<float>() == (std::numeric_limits<float>::max() * -1));
-
-
     json test_value_Float_boundary_middle;
     test_value_Float_boundary_middle = std::numeric_limits<float>::max() / 2;
 
@@ -554,7 +536,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
     BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::min() * 2);
 
-    
+
     
 //---------------------  Double SET/GET TEST ------------------------------------
 
@@ -573,24 +555,6 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     result = database->getSignal(channel, vss_test_path_Double, true);
 
     BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::max());
-
-
-    json test_value_Double_boundary_low_neg;
-    test_value_Double_boundary_low_neg = std::numeric_limits<double>::min() * -1;
-
-    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_low_neg,true);
-    result = database->getSignal(channel, vss_test_path_Double, true);
-
-    BOOST_TEST(result["value"].as<double>() == (std::numeric_limits<double>::min() * -1));
-
-    json test_value_Double_boundary_high_neg;
-    test_value_Double_boundary_high_neg = std::numeric_limits<double>::max() * -1;
-
-    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_high_neg,true);
-    result = database->getSignal(channel ,vss_test_path_Double, true);
-
-    BOOST_TEST(result["value"].as<double>() == (std::numeric_limits<double>::max() * -1));
-
 
 
     json test_value_Double_boundary_middle;
