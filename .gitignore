@@ -16,3 +16,11 @@ __pycache__
 .vssclient_history
 *.parquet
 *.downloaded
+node_modules/
+.npm
+.config.*.json
+.config.*.json.backup
+.flows.json.backup
+flows_cred.json
+
+
