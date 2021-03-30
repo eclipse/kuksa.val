@@ -58,8 +58,11 @@ If this is succesful you can skip to [using kuksa.val](#Using-kuksaval).
 KUKSA.val uses the cmake build system. First install the required packages. On Ubuntu 20.04 this can be achieved by
 
 ```
-sudo apt install cmake build-essential libboost1.67-all-dev libssl-dev libglib2.0-dev libmosquitto-dev 
+sudo apt install cmake build-essential libssl-dev libglib2.0-dev libmosquitto-dev 
+
 ```
+
+**Note**: If you use `cmake >= 3.14`, you do not need to install boost on your system. `cmake` will download the required boost for building. Otherwise you need install the [`boost==1.75`](https://www.boost.org/users/history/version_1_75_0.html) on the system.
 
 When fetching the source, make sure you also get the needed submodules, e.g. by using the `--recursive` flag
 
@@ -112,6 +115,7 @@ kuksa_viss_client
 
 ![try kuksa_viss_client out](doc/pictures/testclient_basic.gif "test client usage")
 
+The jwt tokens for testing can be found under [kuksa_certificates/jwt](./kuksa_certificates/jwt).
 
 You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa_viss_client` can be found [here](./kuksa_viss_client). 
 
