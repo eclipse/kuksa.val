@@ -1,6 +1,6 @@
 # GPS Feeder
 consumes [gpsd](https://gpsd.gitlab.io/gpsd/) as datasource and pushes location to kuksa.val server.
-The [`gpsd_feeder.ini`](./gpsd_feeder.ini) contains `kuksa.val` and `gpsd` configuration.
+The [`gpsd_feeder.ini`](./config/gpsd_feeder.ini) contains `kuksa.val` and `gpsd` configuration.
 
 Before starting the gps feeder, you need start `kuksa.val` and `gpsd`:
 ```
