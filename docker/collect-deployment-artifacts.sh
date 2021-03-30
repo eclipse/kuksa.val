@@ -19,5 +19,6 @@ ldd /kuksa.val/build/src/kuksa-val-server | grep "=>" | awk '{print $3}' |   xar
 mkdir /deploy/exampleconfig
 mkdir /deploy/exampleconfig/certs
 
+cp /kuksa.val/build/src/config.ini  /deploy/exampleconfig/config.ini
 cp /kuksa.val/build/src/vss_rel_2.0.json  /deploy/exampleconfig/vss.json
 cp -r  /kuksa.val/kuksa_certificates/* /deploy/exampleconfig/certs/
