@@ -35,9 +35,14 @@ ARCH=arm64 docker-compose up -d
 ```
 `-d` for detach.
 
-By default, the mqtt flows will be configured in node-red. You can also use the import feature inside node-red to try the websocket example [below](#Websocket). 
+**Note**: You need to be in this [directory](./) to be able to start the [`docker-compose.yml`](./docker-compose.yml) to use `docker-compose` to start all docker containers or shut down all docker containers:
+```
+ARCH=arm64 docker-compose down
+```
 
 **Note**: At first start, you may need to install the [node red extensions](#Node-red-extensions) under the [palette manager](https://nodered.org/docs/user-guide/editor/palette/manager).
+
+By default, the mqtt flows will be configured in node-red. You can also use the import feature inside node-red to try the websocket example [below](#Websocket). 
 
 Now you can view the example under [http://<node-red ip>:1880](http://localhost:1880/).
 To test the example, you can use the [viss test client](../../kuksa_viss_client) or use the [gps feeder](../../kuksa_feeders/gps2val).
