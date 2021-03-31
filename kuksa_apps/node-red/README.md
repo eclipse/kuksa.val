@@ -39,7 +39,7 @@ By default, the mqtt flows will be configured in node-red. You can also use the 
 
 **Note**: At first start, you may need to install the [node red extensions](#Node-red-extensions) under the [palette manager](https://nodered.org/docs/user-guide/editor/palette/manager).
 
-Now you can view the example under [http://<node-red ip>:1880](http://localhost:1880/).
+Now you can view the example under [http://&lt;node-red server ip&gt;:1880](http://localhost:1880/).
 To test the example, you can use the [viss test client](../../kuksa_viss_client) or use the [gps feeder](../../kuksa_feeders/gps2val).
 In [`docker-compose.yml`](./docker-compose.yml), you can find the experimental config for gps feeder container. You can comment it out to start the gps feeder directly.
 
