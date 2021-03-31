@@ -297,6 +297,17 @@ BOOST_AUTO_TEST_CASE(uint64_nolimits) {
 
   value = "36893488147419103232";
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "0xffffffffffffffff";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+  value = "0x10000000000000000";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+  value = "18446744073709551614.9999999999999999999995";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+  value = "18446744073709551615.0000000000000000000005";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+
 }
 
 BOOST_AUTO_TEST_CASE(uint64_limits) {
@@ -316,6 +327,7 @@ BOOST_AUTO_TEST_CASE(uint64_limits) {
   meta = createMaxlimitedMeta("uint64", 10);
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
+
 
 BOOST_AUTO_TEST_CASE(int64_nolimits) {
   jsoncons::json meta = createUnlimitedMeta("int64");
