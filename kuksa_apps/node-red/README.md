@@ -11,7 +11,7 @@ The following node red extensions are used in the example flows:
 ### Installation
 To test the node-red examples, you need `node-red` and `kuksa.val` server.
 
-Since we provide docker images to simplify the setup process. You can intall the docker at first:
+Since we provide docker images to simplify the setup process. You can install the docker at first:
 ```
 sudo apt install docker.io
 ```
