@@ -9,8 +9,14 @@ The following node red extensions are used in the example flows:
 - [node-red-contrib-web-worldmap](https://flows.nodered.org/node/node-red-contrib-web-worldmap)
 
 ### Installation
-You can use docker to start `node-red` and `kuksa.val` server.
-At first load `kuksa.val` docker images:
+To test the node-red examples, you need `node-red` and `kuksa.val` server.
+
+Since we provide docker images to simplify the setup process. You can intall the docker at first:
+```
+sudo apt install docker.io
+```
+
+Then load `kuksa.val` docker images:
 ```
 wget https://github.com/eclipse/kuksa.val/releases/download/0.1.8/kuksa-val-0.1.8-amd64.tar.xz
 docker load -i kuksa-val-0.1.8-amd64.tar.xz
@@ -22,9 +28,9 @@ wget https://github.com/eclipse/kuksa.val/releases/download/0.1.8/kuksa-val-0.1.
 docker load -i kuksa-val-0.1.8-arm64.tar.xz
 ```
 
-Then start all needed container using [`docker-compose.yml`](./docker-compose.yml):
+After that, just start all needed container using [`docker-compose.yml`](./docker-compose.yml):
 ```
-sudo apt  install docker-compose
+sudo apt install docker-compose
 ARCH=arm64 docker-compose up -d
 ```
 `-d` for detach.
