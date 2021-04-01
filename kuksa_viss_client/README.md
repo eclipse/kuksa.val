@@ -19,6 +19,10 @@ $ kuksa_viss_client
 
 ![try kuksa_viss_client out](../doc/pictures/testclient_basic.gif "test client usage")
 
+The jwt tokens for testing can either be found under [kuksa_certificates/jwt](../kuksa_certificates/jwt) or you can also use following command to find the via `pip` installed certificate directory.
+```bash
+$ print_kuksa_certificate_dir --jwt
+```
 
 Refer help for further information
 ```
