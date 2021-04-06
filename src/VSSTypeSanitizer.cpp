@@ -18,32 +18,45 @@
 #include "exception.hpp"
 #include <string>
 #include <boost/algorithm/string.hpp>
+#include <boost/exception/diagnostic_information.hpp>
 
 
 
-
-
+/** Converting numeric types. We will rely on JSoncons implementation, i.e. if it is 
+ *  an acceptable number for jsoncons, so it is for us.
+ *  See https://github.com/danielaparker/jsoncons/blob/master/include/jsoncons/detail/parse_number.hpp
+ *  for what they are doing.
+ *  Jsoncons will report out-of bounds exceptions for int types
+ *  For float types we do reject +/-infinity, as we assume setting this
+ *  are not the intention of a client
+ */
 template<typename T>
 void checkNumTypes(jsoncons::json &meta, jsoncons::json &val )
 {
-    //Double can be larger than largest allowed VSS type ((u)int64)
-    double dval = val.as<long double>();
-
-    if (dval < std::numeric_limits<T>::min() || dval > std::numeric_limits<T>::max() ) {
+    T cval;
+    try {
+        cval = val.as<T>();
+    }
+    catch(...) {
         std::stringstream msg;
-        msg << "Value " << dval << " is out of bounds for type " << meta["datatype"].as<std::string>();
+        msg << "Value " << val << " can not be converted to neccessary type:" << boost::current_exception_diagnostic_information();
         throw outOfBoundException(msg.str());
     }
 
-    if ( meta.contains("min") && dval < meta["min"].as<double>() ) {
+    if (std::numeric_limits<T>::has_infinity && (cval == std::numeric_limits<T>::infinity() || cval == -std::numeric_limits<T>::infinity()) ) {
+        throw outOfBoundException("Value out of bounds: Infinity");
+    }
+    
+
+    if ( meta.contains("min") && cval < meta["min"].as<T>() ) {
         std::stringstream msg;
-        msg << "Value " << dval << " is out of bounds. Allowed minimum is " <<  meta["min"].as<double>();
+        msg << "Value " << cval << " is out of bounds. Allowed minimum is " <<  meta["min"].as<double>();
         throw outOfBoundException(msg.str());
     }
 
-    if ( meta.contains("max") && dval > meta["max"].as<double>() ) {
+    if ( meta.contains("max") && cval > meta["max"].as<T>() ) {
         std::stringstream msg;
-        msg << "Value " << dval << " is out of bounds. Allowed maximum is " <<  meta["max"].as<double>();
+        msg << "Value " << cval << " is out of bounds. Allowed maximum is " <<  meta["max"].as<double>();
         throw outOfBoundException(msg.str());
     }
 }
