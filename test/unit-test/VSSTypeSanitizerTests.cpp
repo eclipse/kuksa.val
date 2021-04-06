@@ -114,6 +114,9 @@ BOOST_AUTO_TEST_CASE(uint8_nolimits) {
 
   value = "400";
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
+  value = "-10";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
 BOOST_AUTO_TEST_CASE(uint8_limits) {
