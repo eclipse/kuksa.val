@@ -60,25 +60,25 @@ class GPSD_Client():
         
         self.consumer = consumer
         provider_config=config['gpsd']
-        gpsd_host=provider_config.get('host','127.0.0.1')
-        gpsd_port=provider_config.get('port','2947')
+        self.gpsd_host=provider_config.get('host','127.0.0.1')
+        self.gpsd_port=provider_config.get('port','2947')
         self.interval = provider_config.getint('interval', 1)
 
-        gpsd = gps.gps(host = gpsd_host, port = gpsd_port, mode=gps.WATCH_ENABLE|gps.WATCH_NEWSTYLE) 
-        print("Trying to connect gpsd at "+str(gpsd_host)+" port "+str(gpsd_port))
+        self.gpsd = gps.gps(host = self.gpsd_host, port = self.gpsd_port, mode=gps.WATCH_ENABLE) 
+        print("Trying to connect gpsd at "+str(self.gpsd_host)+" port "+str(self.gpsd_port))
 
 
         self.position = {"lat":"0", "lon":"0", "alt":"0", "hdop":"0", "speed":"0" }
         self.running = True
 
-        self.thread = threading.Thread(target=self.loop, args=(gpsd,))
+        self.thread = threading.Thread(target=self.loop, args=())
         self.thread.start()
 
-    def loop(self, gpsd):
+    def loop(self):
         print("gpsd receive loop started")
         while self.running:
             try:
-                report = gpsd.next()
+                report = self.gpsd.next()
                 if report['class'] == 'TPV':
 
                     self.position['lat']= getattr(report,'lat',0.0)
@@ -87,6 +87,9 @@ class GPSD_Client():
                     self.position['speed']= getattr(report,'speed',0.0)
                     print(getattr(report,'time', "-"))
                     print(self.position)
+                    self.consumer.setPosition(self.position)
+                
+                time.sleep(self.interval) 
                 
             except Exception as e:
                 print("Get exceptions: ")
@@ -94,19 +97,18 @@ class GPSD_Client():
                 time.sleep(self.interval) 
                 continue
 
-            self.consumer.setPosition(self.position)
      
-            time.sleep(self.interval) 
 
 
     def shutdown(self):
         self.running=False
         self.consumer.shutdown()
+        self.gpsd.close()
         self.thread.join()
 
         
 if __name__ == "__main__":
-    config_candidates=['gpsd_feeder.ini', '/etc/gpsd_feeder.ini']
+    config_candidates=['/config/gpsd_feeder.ini', '/etc/gpsd_feeder.ini', os.path.join(scriptDir, 'config/gpsd_feeder.ini')]
     for candidate in config_candidates:
         if os.path.isfile(candidate):
             configfile=candidate
