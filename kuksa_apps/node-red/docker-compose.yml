@@ -4,6 +4,7 @@ services:
   mynodered:
     image: nodered/node-red
     restart: unless-stopped
+    user: root
     volumes:
       - ${PWD}/mqtt:/data
     ports:
