@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     // Test out of bound
     bool isExceptionThrown = false;
     json test_value_Uint8_boundary_low_outbound;
-    test_value_Uint8_boundary_low_outbound = -1;
+    test_value_Uint8_boundary_low_outbound = "-1";
     try {
        database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_low_outbound, true);
     } catch (outOfBoundException & e) {
@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     isExceptionThrown = false;
 
     json test_value_Uint8_boundary_high_outbound;
-    test_value_Uint8_boundary_high_outbound = numeric_limits<uint8_t>::max() + 1;
+    test_value_Uint8_boundary_high_outbound = "256";
     try {
        database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_high_outbound, true);
     } catch (outOfBoundException & e) {
@@ -255,7 +255,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     // Test out of bound
     isExceptionThrown = false;
     json test_value_Uint16_boundary_low_outbound;
-    test_value_Uint16_boundary_low_outbound = -1;
+    test_value_Uint16_boundary_low_outbound = "-1";
     try {
        database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_low_outbound,true);
     } catch (outOfBoundException & e) {
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     isExceptionThrown = false;
 
     json test_value_Uint16_boundary_high_outbound;
-    test_value_Uint16_boundary_high_outbound = numeric_limits<uint16_t>::max() + 1;
+    test_value_Uint16_boundary_high_outbound = "65537";
     try {
        database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_high_outbound,true);
     } catch (outOfBoundException & e) {
@@ -305,7 +305,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     // Test out of bound
     isExceptionThrown = false;
     json test_value_Uint32_boundary_low_outbound;
-    test_value_Uint32_boundary_low_outbound = -1;
+    test_value_Uint32_boundary_low_outbound = "-1";
     try {
        database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_low_outbound,true);
     } catch (outOfBoundException & e) {
@@ -317,7 +317,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
     json test_value_Uint32_boundary_high_outbound;
     uint64_t maxU32_value = numeric_limits<uint32_t>::max();
-    test_value_Uint32_boundary_high_outbound = maxU32_value + 1;
+    test_value_Uint32_boundary_high_outbound = "4294967297";
     try {
        database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_high_outbound,true);
     } catch (outOfBoundException & e) {
@@ -363,7 +363,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     // Test out of bound
     isExceptionThrown = false;
     json test_value_int8_boundary_low_outbound;
-    test_value_int8_boundary_low_outbound = numeric_limits<int8_t>::min() - 1;
+    test_value_int8_boundary_low_outbound = "-129";
     try {
        database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_low_outbound,true);
     } catch (outOfBoundException & e) {
@@ -374,7 +374,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     isExceptionThrown = false;
 
     json test_value_int8_boundary_high_outbound;
-    test_value_int8_boundary_high_outbound = numeric_limits<int8_t>::max() + 1;
+    test_value_int8_boundary_high_outbound = "128";
     try {
        database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_high_outbound,true);
     } catch (outOfBoundException & e) {
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     // Test out of bound
     isExceptionThrown = false;
     json test_value_int16_boundary_low_outbound;
-    test_value_int16_boundary_low_outbound = numeric_limits<int16_t>::min() - 1;
+    test_value_int16_boundary_low_outbound = "-32769";
     try {
        database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_low_outbound,true);
     } catch (outOfBoundException & e) {
@@ -431,7 +431,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     isExceptionThrown = false;
 
     json test_value_int16_boundary_high_outbound;
-    test_value_int16_boundary_high_outbound = numeric_limits<int16_t>::max() + 1;
+    test_value_int16_boundary_high_outbound = "32768";
     try {
        database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_high_outbound,true);
     } catch (outOfBoundException & e) {
@@ -479,7 +479,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     isExceptionThrown = false;
     json test_value_int32_boundary_low_outbound;
     int64_t minInt32_value = numeric_limits<int32_t>::min();
-    test_value_int32_boundary_low_outbound = minInt32_value - 1;
+    test_value_int32_boundary_low_outbound = "-2147483649";
     try {
        database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_low_outbound,true);
     } catch (outOfBoundException & e) {
@@ -491,7 +491,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
     json test_value_int32_boundary_high_outbound;
     int64_t maxInt32_value = numeric_limits<int32_t>::max();
-    test_value_int32_boundary_high_outbound = maxInt32_value + 1;
+    test_value_int32_boundary_high_outbound = "2147483648";
     try {
        database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_high_outbound,true);
     } catch (outOfBoundException & e) {
