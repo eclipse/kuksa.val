@@ -33,189 +33,7 @@ using namespace jsoncons;
 using jsoncons::json;
 
 namespace {
-  // Check if the value can be converted to requested output type
-  template <typename OutType>
-  void ValidateValue(std::shared_ptr<ILogger> logger, const jsoncons::json &val, OutType &outVal) {
-    try{
-      outVal = val.as<OutType>();
-    }
-    catch (exception &e) {
-      std::stringstream msg;
-      msg << "The input value '" + val.as_string() + "' is not valid!";
-      logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
-      throw notValidException(msg.str());
-    }
-  }
-
-
-    // Check the value type and if the value is within the range
-  void checkTypeAndBound(std::shared_ptr<ILogger> logger, string value_type, jsoncons::json &val) {
-    bool typeValid = false;
-
-    boost::algorithm::to_lower(value_type);
-
-    if (value_type == "uint8") {
-      typeValid = true;
-      long double longDoubleVal;
-      ValidateValue(logger, val, longDoubleVal);
-      if (!((longDoubleVal <= numeric_limits<uint8_t>::max()) &&
-            (longDoubleVal >= numeric_limits<uint8_t>::min()))) {
-        std::stringstream msg;
-        msg << "The type " << value_type << " with value " << val.as<float>()
-            << " is out of bound";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
-        throw outOfBoundException(msg.str());
-      }
-    } else if (value_type == "uint16") {
-      typeValid = true;
-      long double longDoubleVal;
-      ValidateValue(logger, val, longDoubleVal);
-      if (!((longDoubleVal <= numeric_limits<uint16_t>::max()) &&
-            (longDoubleVal >= numeric_limits<uint16_t>::min()))) {
-        std::stringstream msg;
-        msg << "The type " << value_type << " with value " << val.as<float>()
-            << " is out of bound";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
-        throw outOfBoundException(msg.str());
-      }
-    } else if (value_type == "uint32") {
-      typeValid = true;
-      long double longDoubleVal;
-      ValidateValue(logger, val, longDoubleVal);
-      if (!((longDoubleVal <= numeric_limits<uint32_t>::max()) &&
-            (longDoubleVal >= numeric_limits<uint32_t>::min()))) {
-        std::stringstream msg;
-        msg << "The type " << value_type << " with value " << val.as<float>()
-            << " is out of bound";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
-        throw outOfBoundException(msg.str());
-      }
-    } else if (value_type == "uint64") {
-      typeValid = true;
-      long double longDoubleVal;
-      ValidateValue(logger, val, longDoubleVal);
-      if (!((longDoubleVal <= numeric_limits<uint64_t>::max()) &&
-            (longDoubleVal >= numeric_limits<uint64_t>::min()))) {
-        std::stringstream msg;
-        msg << "The type " << value_type << " with value " << val.as<float>()
-            << " is out of bound";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
-        throw outOfBoundException(msg.str());
-      }
-    } else if (value_type == "int8") {
-      typeValid = true;
-      long double longDoubleVal;
-      ValidateValue(logger, val, longDoubleVal);
-      if (!((longDoubleVal <= numeric_limits<int8_t>::max()) &&
-            (longDoubleVal >= numeric_limits<int8_t>::min()))) {
-        std::stringstream msg;
-        msg << "The type " << value_type << " with value " << val.as<float>()
-            << " is out of bound";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
-        throw outOfBoundException(msg.str());
-      }
-    } else if (value_type == "int16") {
-      typeValid = true;
-      long double longDoubleVal;
-      ValidateValue(logger, val, longDoubleVal);
-      if (!((longDoubleVal <= numeric_limits<int16_t>::max()) &&
-            (longDoubleVal >= numeric_limits<int16_t>::min()))) {
-        std::stringstream msg;
-        msg << "The type " << value_type << " with value " << val.as<float>()
-            << " is out of bound";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
-        throw outOfBoundException(msg.str());
-      }
-    } else if (value_type == "int32") {
-      typeValid = true;
-      long double longDoubleVal;
-      ValidateValue(logger, val, longDoubleVal);
-      if (!((longDoubleVal <= numeric_limits<int32_t>::max()) &&
-            (longDoubleVal >= numeric_limits<int32_t>::min()))) {
-        std::stringstream msg;
-        msg << "The type " << value_type << " with value " << val.as<float>()
-            << " is out of bound";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
-        throw outOfBoundException(msg.str());
-      }
-    } else if (value_type == "int64") {
-      typeValid = true;
-      long double longDoubleVal;
-      ValidateValue(logger, val, longDoubleVal);
-      if (!((longDoubleVal <= numeric_limits<int64_t>::max()) &&
-            (longDoubleVal >= numeric_limits<int64_t>::min()))) {
-        std::stringstream msg;
-        msg << "The type " << value_type << " with value " << val.as<float>()
-            << " is out of bound";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-        throw outOfBoundException(msg.str());
-      }
-    }  else if (value_type == "float") {
-      typeValid = true;
-      long double longDoubleVal;
-      ValidateValue(logger, val, longDoubleVal);
-      float max = numeric_limits<float>::max();
-      float min = numeric_limits<float>::lowest();
-      if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
-        std::stringstream msg;
-        msg << "The type " << value_type << " with value '" << val.as<double>()
-            << "' is out of bound";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
-        throw outOfBoundException(msg.str());
-      }
-    } else if (value_type == "double") {
-      typeValid = true;
-      long double longDoubleVal;
-      ValidateValue(logger, val, longDoubleVal);
-      double max = numeric_limits<double>::max();
-      double min = numeric_limits<double>::lowest();
-      if (!((longDoubleVal <= max) && (longDoubleVal >= min))) {
-        std::stringstream msg;
-        msg << "The type " << value_type << " with value "
-            << val.as<long double>() << " is out of bound";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str());
-
-        throw outOfBoundException(msg.str());
-      }
-    } else if (value_type == "boolean") {
-      string v=val.as<string>();
-      boost::algorithm::erase_all(v, "\"");
-
-      if ( v == "true") {
-        val=true;
-      }
-      else if ( v == "false" ) {
-        val=false;
-      }
-      else {
-        std::stringstream msg;
-        msg << val.as_string() << " is not a bool. Valid values are true and false ";
-        logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg.str()); 
-        std::cout << pretty_print(val) << std::endl;
-        throw outOfBoundException(msg.str());
-      }
-      typeValid = true;
-    } else if (value_type == "string") {
-      typeValid = true;
-    }
-
-    if (!typeValid) {
-      string msg = "The type " + value_type + " is not supported ";
-      logger->Log(LogLevel::ERROR, "VssDatabase::setSignal: " + msg);
-
-      throw genException(msg);
-    }
-  }
-
+  
   // Utility method for setting values to JSON.
   void setJsonValue(std::shared_ptr<ILogger> logger,
                     jsoncons::json& dest,
@@ -666,7 +484,7 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
     jsoncons::json resJson = res[0];
       if (resJson.contains("datatype")) {
         string value_type = resJson["datatype"].as<string>();
-        checkTypeAndBound(logger_, value_type, value);
+        checkAndSanitizeType(resJson, value);
         resJson.insert_or_assign("value", value);
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
@@ -701,8 +519,7 @@ void VssDatabase::setSignalDBUS(const string &dbuspath,
     if (res.is_array() && res.size() == 1) {
     jsoncons::json resJson = res[0];
       if (resJson.contains("datatype")) {
-        string value_type = resJson["datatype"].as<string>();
-        checkTypeAndBound(logger_, value_type, value);
+        checkAndSanitizeType(resJson,value);
         resJson.insert_or_assign("value", value);
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);

@@ -30,8 +30,6 @@
 
 
 
-using jsoncons::json;
-namespace jsonschema = jsoncons::jsonschema; 
 
 class VSSRequestValidator {
     public:
@@ -43,10 +41,10 @@ class VSSRequestValidator {
         std::string tryExtractRequestId(jsoncons::json &request);
 
     private:
-        std::shared_ptr<jsonschema::json_schema<json>> getSchema;
-        std::shared_ptr<jsonschema::json_schema<json>> setSchema;
-        jsonschema::json_validator<json> *getValidator;
-        jsonschema::json_validator<json> *setValidator;
+        std::shared_ptr<jsoncons::jsonschema::json_schema<jsoncons::json> > getSchema;
+        std::shared_ptr<jsoncons::jsonschema::json_schema<jsoncons::json> > setSchema;
+        jsoncons::jsonschema::json_validator<jsoncons::json> *getValidator;
+        jsoncons::jsonschema::json_validator<jsoncons::json> *setValidator;
         std::shared_ptr<ILogger> logger;
 };
 

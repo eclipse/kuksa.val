@@ -36,6 +36,7 @@ if(BUILD_UNIT_TEST)
     VssCommandProcessorTests.cpp
     Gen2GetTests.cpp
     Gen2SetTests.cpp
+    VSSTypeSanitizerTests.cpp
     VssDatabaseTests.cpp
     VSSPathTests.cpp
     KuksavalUnitTest.cpp

@@ -39,10 +39,10 @@ VSSRequestValidator::VSSRequestValidator(std::shared_ptr<ILogger> loggerUtil) {
     this->logger=loggerUtil;  
 
     this->getSchema = jsoncons::jsonschema::make_schema(json::parse(VSS_JSON::SCHEMA_GET), vss_resolver);
-    this->getValidator =  new jsonschema::json_validator<json>(this->getSchema);
+    this->getValidator =  new jsoncons::jsonschema::json_validator<json>(this->getSchema);
 
     this->setSchema = jsoncons::jsonschema::make_schema(json::parse(VSS_JSON::SCHEMA_SET), vss_resolver);
-    this->setValidator =  new jsonschema::json_validator<json>(this->setSchema);
+    this->setValidator =  new jsoncons::jsonschema::json_validator<json>(this->setSchema);
 }
 
 VSSRequestValidator::~VSSRequestValidator() {
@@ -53,7 +53,7 @@ VSSRequestValidator::~VSSRequestValidator() {
 void VSSRequestValidator::validateGet(jsoncons::json &request) {
     std::stringstream ss;
     bool valid=true;
-    auto reporter = [&ss,&valid](const jsonschema::validation_output& o)
+    auto reporter = [&ss,&valid](const jsoncons::jsonschema::validation_output& o)
         {
             valid=false;
             ss << o.instance_location() << ": " << o.message() << "\n";
@@ -62,7 +62,7 @@ void VSSRequestValidator::validateGet(jsoncons::json &request) {
     this->getValidator->validate(request, reporter);
 
     if (!valid) {
-        throw jsonschema::schema_error("VSS get malformed: "+ss.str());
+        throw jsoncons::jsonschema::schema_error("VSS get malformed: "+ss.str());
     }
     return;
 }
@@ -70,7 +70,7 @@ void VSSRequestValidator::validateGet(jsoncons::json &request) {
 void VSSRequestValidator::validateSet(jsoncons::json &request) {
     std::stringstream ss;
     bool valid=true;
-    auto reporter = [&ss,&valid](const jsonschema::validation_output& o)
+    auto reporter = [&ss,&valid](const jsoncons::jsonschema::validation_output& o)
         {
             valid=false;
             ss << o.instance_location() << ": " << o.message() << "\n";
@@ -79,7 +79,7 @@ void VSSRequestValidator::validateSet(jsoncons::json &request) {
     this->setValidator->validate(request, reporter);
 
     if (!valid) {
-        throw jsonschema::schema_error("VSS set malformed: "+ss.str());
+        throw jsoncons::jsonschema::schema_error("VSS set malformed: "+ss.str());
     }
 }
 
