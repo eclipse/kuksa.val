@@ -266,7 +266,7 @@ class TestClient(Cmd):
 
     @with_category(INFO_COMMANDS)
     def do_printTokenDir(self, args):
-        """Show token directory"""
+        """Show default token directory"""
         print(os.path.join(__certificate_dir__, "jwt"))
 
 # Main Function
