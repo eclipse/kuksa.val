@@ -78,16 +78,17 @@ class GPSD_Client():
         print("gpsd receive loop started")
         while self.running:
             try:
-                report = self.gpsd.next()
-                if report['class'] == 'TPV':
+                if self.gpsd.waiting():
+                    report = self.gpsd.next()
+                    if report['class'] == 'TPV':
 
-                    self.position['lat']= getattr(report,'lat',0.0)
-                    self.position['lon']= getattr(report,'lon',0.0)
-                    self.position['alt']= getattr(report,'alt', 'nan')
-                    self.position['speed']= getattr(report,'speed',0.0)
-                    print(getattr(report,'time', "-"))
-                    print(self.position)
-                    self.consumer.setPosition(self.position)
+                        self.position['lat']= getattr(report,'lat',0.0)
+                        self.position['lon']= getattr(report,'lon',0.0)
+                        self.position['alt']= getattr(report,'alt', 'nan')
+                        self.position['speed']= getattr(report,'speed',0.0)
+                        print(getattr(report,'time', "-"))
+                        print(self.position)
+                        self.consumer.setPosition(self.position)
                 
                 time.sleep(self.interval) 
                 

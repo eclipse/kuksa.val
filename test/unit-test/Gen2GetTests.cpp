@@ -494,4 +494,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
           .as<int64_t>();  // ignoring timestamp difference for response
   BOOST_TEST(res == jsonPathNotFound);
 }
-}
+
+BOOST_AUTO_TEST_SUITE_END()
+

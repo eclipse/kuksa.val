@@ -38,7 +38,7 @@ class Kuksa_Client():
         self.client.authorize()
         
     def shutdown(self):
-        self.client.stopComm()
+        self.client.stop()
 
     def subscribe(self, path, callback):
         print("subscribe " + path)

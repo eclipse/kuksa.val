@@ -28,6 +28,7 @@ MOCK_BASE_CLASS( IVssDatabaseMock, IVssDatabase )
   MOCK_METHOD(getSignal, 2, jsoncons::json(WsChannel&, const std::string &), getSignalDeprecated )
   MOCK_METHOD(getSignal, 3, jsoncons::json(WsChannel&, const VSSPath&, bool), getSignalNew )
   MOCK_METHOD(getVSSSpecificPath, 3)
+  MOCK_METHOD(checkAndSanitizeType,2)
   MOCK_METHOD(pathExists, 1)
   MOCK_METHOD(pathIsWritable, 1)
 };
