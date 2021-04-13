@@ -21,7 +21,8 @@ DEFAULT_SERVER_PORT = 8090
 scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, ".."))
 from kuksa_viss_client import KuksaClientThread
-from kuksa_viss_client import __version__
+from kuksa_viss_client._metadata import *
+from kuksa_certificates import __certificate_dir__
 
 class TestClient(Cmd):
     def get_childtree(self, pathText):
@@ -61,6 +62,7 @@ class TestClient(Cmd):
 
     COMM_SETUP_COMMANDS = "Communication Set-up Commands"
     VISS_COMMANDS = "Kuksa Interaction Commands"
+    INFO_COMMANDS = "Info Commands"
 
     ap_getServerAddr = argparse.ArgumentParser()
     ap_connect = argparse.ArgumentParser()
@@ -247,6 +249,25 @@ class TestClient(Cmd):
             print(self.serverIP + ":" + str(self.serverPort))
         else:
             print("Server IP not set!!")
+
+    @with_category(INFO_COMMANDS)
+    def do_info(self, args):
+        """Show summary info of the client"""
+        print("Kuksa viss client " + __version__)
+        print("Uri: " + __uri__)
+        print("Author: " + __author__)
+        print("Copyright: " + __copyright__)
+        print("Default tokens directory: " + os.path.join(__certificate_dir__, "jwt"))
+
+    @with_category(INFO_COMMANDS)
+    def do_version(self, args):
+        """Show version of the client"""
+        print(__version__)
+
+    @with_category(INFO_COMMANDS)
+    def do_printTokenDir(self, args):
+        """Show token directory"""
+        print(os.path.join(__certificate_dir__, "jwt"))
 
 # Main Function
 def main():

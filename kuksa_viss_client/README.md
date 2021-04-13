@@ -19,9 +19,10 @@ $ kuksa_viss_client
 
 ![try kuksa_viss_client out](../doc/pictures/testclient_basic.gif "test client usage")
 
-The jwt tokens for testing can either be found under [kuksa_certificates/jwt](../kuksa_certificates/jwt) or you can also use following command to find the via `pip` installed certificate directory.
+The jwt tokens for testing can either be found under [kuksa_certificates/jwt](../kuksa_certificates/jwt) or you can also use following command inside `kuksa_viss_client` to find the via `pip` installed certificate directory.
+
 ```bash
-$ print_kuksa_certificate_dir --jwt
+Test Client> printTokenDir
 ```
 
 Refer help for further information
@@ -37,6 +38,12 @@ connect
 disconnect          Disconnect from the VSS Server
 getServerAddress    Gets the IP Address for the VSS Server
 setServerAddress    Sets the IP Address for the VSS Server
+
+Info Commands
+================================================================================
+info                Show summary info of the client
+printTokenDir       Show token directory
+version             Show version of the client
 
 Kuksa Interaction Commands
 ================================================================================
