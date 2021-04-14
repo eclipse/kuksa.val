@@ -309,26 +309,15 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
 
   // verify
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .returns(true);
+  MOCK_EXPECT(subHandlerMock->updateByUUID).with(mock::any,setValue).returns(0);
 
-  BOOST_CHECK_NO_THROW(db->setSignalDBUS(signalPath.getVSSGen1Path(), setValue));
+  BOOST_CHECK_NO_THROW(db->setSignal(channel,signalPath, setValue,true));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
   BOOST_TEST(returnJson["value"].as<int>() == 10);
 }
 
-BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPathNoChannel_Shall_ThrowError) {
-  // setup
-  db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration"};
-
-  // expectations
-
-  jsoncons::json setValue, returnJson;
-  setValue = 10;
-
-  // verify
-
-  BOOST_CHECK_THROW(db->setSignalDBUS(signalPath, setValue), noPathFoundonTree);
-}
 
 BOOST_AUTO_TEST_SUITE_END()
