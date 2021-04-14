@@ -1,0 +1,22 @@
+version: "3.7"
+
+services:
+  gps-feeder:
+    image: ${ARCH}/kuksa-gps-feeder:3d38e47
+    restart: unless-stopped 
+    volumes:
+      - ${PWD}/kuksa_config:/config
+    ports:
+      - 29998:29998/udp
+    depends_on:
+      - 'kuksa-val'
+  #obd-feeder:
+  #  image: ${ARCH}/kuksa-obd-feeder
+  #  restart: unless-stopped 
+  #  volumes:
+  #    - ${PWD}/kuksa_config:/config
+  #  devices:
+  #    - /dev/ttyAMA0:/dev/ttyAMA0
+  #  depends_on:
+  #    - 'kuksa-val'
+
