@@ -12,7 +12,6 @@
  * *****************************************************************************
  */
 
-#include <gio/gio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctime>

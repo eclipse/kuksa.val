@@ -11,7 +11,7 @@ LABEL maintainer="Sebastian Schildt <sebastian.schildt@de.bosch.com>"
 
 
 
-RUN apk update && apk add cmake wget alpine-sdk glib-dev openssl-dev libstdc++ mosquitto-dev
+RUN apk update && apk add cmake wget alpine-sdk linux-headers openssl-dev libstdc++ mosquitto-dev
 
 
 #Build Boost 1.75
