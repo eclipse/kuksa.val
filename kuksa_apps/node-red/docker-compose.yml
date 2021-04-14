@@ -35,11 +35,11 @@ services:
   #    - 29998:29998/udp
   #  depends_on:
   #    - 'kuksa-val'
-  #obd-feeder:
-  #  image: ${ARCH}/kuksa-obd-feeder
-  #  restart: unless-stopped 
-  #  volumes:
-  #    - ${PWD}/kuksa_config:/config
-  #  depends_on:
-  #    - 'kuksa-val'
+  obd-feeder:
+    image: ${ARCH}/kuksa-obd-feeder
+    restart: unless-stopped 
+    volumes:
+      - ${PWD}/kuksa_config:/config
+    depends_on:
+      - 'kuksa-val'
 
