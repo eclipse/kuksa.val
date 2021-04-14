@@ -25,11 +25,6 @@ To run:
 docker run -it -p 29998:29998/udp -v $PWD/config:/config gpsd_feeder
 ```
 
-**Note**: If no data source is avaible for `gpsd`, the `gpsd_feeder` may be frozen.
-It is a known issue. You need to kill the `gpsd_feeder` to stop the program.
-You can use `docker kill <container id>` to kill the docker container, if you use `docker`.
-
-
 ## Test with gpsfake
 You can also use [gpsfake](https://gpsd.gitlab.io/gpsd/gpsfake.html) to playback a gps logs in e.g. nmea format.
 To install `gpsfake`, follow the command in this [link](https://command-not-found.com/gpsfake).

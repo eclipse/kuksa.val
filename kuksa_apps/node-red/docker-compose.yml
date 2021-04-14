@@ -25,21 +25,4 @@ services:
       - KUKSAVAL_OPTARGS=--mqtt.publish=* --mqtt.topic-prefix=vss --mqtt.address=mybroker
     depends_on:
       - "mybroker"
-  # you can comment the following config out to also start a feeders
-  #gps-feeder:
-  #  image: ${ARCH}/kuksa-gps-feeder:aa695c0
-  #  restart: unless-stopped 
-  #  volumes:
-  #    - ${PWD}/kuksa_config:/config
-  #  ports:
-  #    - 29998:29998/udp
-  #  depends_on:
-  #    - 'kuksa-val'
-  obd-feeder:
-    image: ${ARCH}/kuksa-obd-feeder
-    restart: unless-stopped 
-    volumes:
-      - ${PWD}/kuksa_config:/config
-    depends_on:
-      - 'kuksa-val'
 
