@@ -500,39 +500,6 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
   return answer;
 }
 
-//Only needed for DBUS currently- 
-// Method for setting values to signals.
-void VssDatabase::setSignalDBUS(const string &dbuspath,
-                            jsoncons::json value) {
-                              
-  if (dbuspath == "") {
-    string msg = "Path is empty while setting";
-    throw genException(msg);
-  }
-
-  VSSPath path = VSSPath::fromVSS(dbuspath);
-
-  jsoncons::json res; 
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    res = jsonpath::json_query(data_tree__, path.getJSONPath());
-    if (res.is_array() && res.size() == 1) {
-    jsoncons::json resJson = res[0];
-      if (resJson.contains("datatype")) {
-        checkAndSanitizeType(resJson,value);
-        resJson.insert_or_assign("value", value);
-        {
-          jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
-        }
-      }
-      else {
-        throw noPathFoundonTree(path.getVSSPath()+ "is invalid for set"); //Todo better error message. (Does not propagate);
-      }
-    }
-  }
-  subHandler_->updateByPath(path.getVSSPath(), value);
-  // TODO missing calling updateByUUID(uuid, value);
-}
 
 // Returns response JSON for get request, checking authorization.
 jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& path, bool gen1_compat_mode) {
