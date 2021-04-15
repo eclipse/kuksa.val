@@ -1,2 +1,3 @@
 recursive-include kuksa_certificates *
+recursive-include kuksa_viss_client *
 recursive-include doc *
