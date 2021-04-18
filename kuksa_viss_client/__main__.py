@@ -22,7 +22,7 @@ scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, ".."))
 from kuksa_viss_client import KuksaClientThread
 from kuksa_viss_client._metadata import *
-from kuksa_certificates import __certificate_dir__
+import kuksa_certificates
 
 class TestClient(Cmd):
     def get_childtree(self, pathText):
@@ -257,7 +257,7 @@ class TestClient(Cmd):
         print("Uri: " + __uri__)
         print("Author: " + __author__)
         print("Copyright: " + __copyright__)
-        print("Default tokens directory: " + os.path.join(__certificate_dir__, "jwt"))
+        print("Default tokens directory: " + os.path.join(kuksa_certificates.__certificate_dir__, "jwt"))
 
     @with_category(INFO_COMMANDS)
     def do_version(self, args):
@@ -267,7 +267,7 @@ class TestClient(Cmd):
     @with_category(INFO_COMMANDS)
     def do_printTokenDir(self, args):
         """Show default token directory"""
-        print(os.path.join(__certificate_dir__, "jwt"))
+        print(os.path.join(kuksa_certificates.__certificate_dir__, "jwt"))
 
 # Main Function
 def main():
