@@ -251,6 +251,15 @@ class TestClient(Cmd):
         else:
             print("Server IP not set!!")
 
+    def getDefaultTokenDir(self):
+        try:
+            return os.path.join(kuksa_certificates.__certificate_dir__, "jwt")
+        except Exception:
+            guessTokenDir = os.path.join(scriptDir, "../kuksa_certificates/jwt")
+            if os.path.isdir(guessTokenDir):
+                return guessTokenDir
+            return "Unknown"
+
     @with_category(INFO_COMMANDS)
     def do_info(self, args):
         """Show summary info of the client"""
@@ -258,7 +267,7 @@ class TestClient(Cmd):
         print("Uri: " + __uri__)
         print("Author: " + __author__)
         print("Copyright: " + __copyright__)
-        print("Default tokens directory: " + os.path.join(kuksa_certificates.__certificate_dir__, "jwt"))
+        print("Default tokens directory: " + self.getDefaultTokenDir())
 
     @with_category(INFO_COMMANDS)
     def do_version(self, args):
@@ -268,7 +277,7 @@ class TestClient(Cmd):
     @with_category(INFO_COMMANDS)
     def do_printTokenDir(self, args):
         """Show default token directory"""
-        print(os.path.join(kuksa_certificates.__certificate_dir__, "jwt"))
+        print(self.getDefaultTokenDir())
 
 # Main Function
 def main():
