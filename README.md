@@ -58,7 +58,7 @@ If this is succesful you can skip to [using kuksa.val](#Using-kuksaval).
 KUKSA.val uses the cmake build system. First install the required packages. On Ubuntu 20.04 this can be achieved by
 
 ```
-sudo apt install cmake build-essential libssl-dev libglib2.0-dev libmosquitto-dev 
+sudo apt install cmake build-essential libssl-dev libmosquitto-dev 
 ```
 
 **Note**: If you use `cmake >= 3.14`, you do not need to install boost on your system. `cmake` will download the required boost for building. Otherwise you need install the [`boost==1.75`](https://www.boost.org/users/history/version_1_75_0.html) on the system.
@@ -120,6 +120,4 @@ You can also use the provided python sdk to develop your own `kuksa.val` clients
 
 Additionally, you can use the [example apps](./kuksa_apps) and [feeders](./kuksa_feeders) to handle vehicle data, interacting with the `kuksa.val` server.
 
-## Other topics
 
- * Experimental [D-Bus](doc/dbus.md) connector

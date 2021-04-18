@@ -112,11 +112,6 @@ if(BUILD_EXE)
 
   # link executable dependencies
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE Threads::Threads)
-  target_include_directories(${SERVER_EXE_NAME} PRIVATE ${GLIB_INCLUDE_DIRS})
-  target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${GObject_LIBRARY_DIRS})
-  target_include_directories(${SERVER_EXE_NAME} PRIVATE ${GIO_INCLUDE_DIR})
-  target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${GIO_LIBRARY_DIRS})
-  target_link_libraries(${SERVER_EXE_NAME} PRIVATE gobject-2.0 glib-2.0 gio-2.0)
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE "-ldl")
