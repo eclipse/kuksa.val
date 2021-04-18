@@ -19,6 +19,7 @@ DEFAULT_SERVER_ADDR = "127.0.0.1"
 DEFAULT_SERVER_PORT = 8090
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
+#sys.path.append(scriptDir)
 sys.path.append(os.path.join(scriptDir, ".."))
 from kuksa_viss_client import KuksaClientThread
 from kuksa_viss_client._metadata import *
@@ -105,7 +106,7 @@ class TestClient(Cmd):
         self.vssTree = {}
         self.pathCompletionItems = []
 
-        print("Welcome to kuksa viss client " + str(__version__))
+        print("Welcome to kuksa viss client version" + str(__version__))
         print()
         with open(os.path.join(scriptDir, 'logo'), 'r') as f:
             print(f.read())
@@ -253,7 +254,7 @@ class TestClient(Cmd):
     @with_category(INFO_COMMANDS)
     def do_info(self, args):
         """Show summary info of the client"""
-        print("Kuksa viss client " + __version__)
+        print("Kuksa viss client version " + __version__)
         print("Uri: " + __uri__)
         print("Author: " + __author__)
         print("Copyright: " + __copyright__)
