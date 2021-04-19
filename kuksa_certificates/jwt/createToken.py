@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
 # All rights reserved. This configuration file is provided to you under the
 # terms and conditions of the Eclipse Distribution License v1.0 which
