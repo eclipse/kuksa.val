@@ -465,16 +465,10 @@ jsoncons::json VssDatabase::getMetaData(const std::string &path) {
 }
 
 
-jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) {
+jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &value, bool gen1_compat) {
   jsoncons::json answer;
   
   answer["path"] = gen1_compat? path.getVSSGen1Path() : path.getVSSPath();
-
-  if (!accessValidator_->checkWriteAccess(channel, path )) {
-      stringstream msg;
-      msg << "No write  access to " << path.getVSSPath();
-      throw noPermissionException(msg.str());
-  }
 
   jsoncons::json res; 
   {

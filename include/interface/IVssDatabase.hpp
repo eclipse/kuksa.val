@@ -32,7 +32,7 @@ class IVssDatabase {
     virtual void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& value) = 0;
     virtual jsoncons::json getMetaData(const std::string &path) = 0;
   
-    virtual jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) = 0; //gen2 version
+    virtual jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value, bool gen1_compat) = 0; //gen2 version
 
     virtual bool pathExists(const VSSPath &path) = 0;
     virtual bool pathIsWritable(const VSSPath &path) = 0;
