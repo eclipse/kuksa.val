@@ -88,7 +88,7 @@ void checkEnumType(jsoncons::json &enumDefinition, jsoncons::json &val ) {
 
     std::stringstream msg;
     msg << val.as_string() << " is a defined enum value. Valid values are " << print(enumDefinition);
-    throw genException(msg.str());
+    throw outOfBoundException(msg.str());
 }
 
 

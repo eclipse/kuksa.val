@@ -71,6 +71,12 @@ struct TestSuiteFixture {
 };
 }  // namespace
 
+static jsoncons::json createEnumMeta(const std::string& enumValues) {
+  jsoncons::json meta;
+  meta["datatype"] = "string";
+  meta["enum"] = json::parse(enumValues);
+  return meta;
+}
 static jsoncons::json createUnlimitedMeta(std::string datatype) {
   jsoncons::json meta;
   meta["datatype"] = datatype;
@@ -423,6 +429,20 @@ BOOST_AUTO_TEST_CASE(boolean) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
+BOOST_AUTO_TEST_CASE(enumtype) {
+  jsoncons::json meta = createEnumMeta("[\"bla\", \"blu\"]");
+  jsoncons::json value = "bla";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "blu";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "b";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+  
+  value = "blablu";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
 
 BOOST_AUTO_TEST_CASE(string) {
   jsoncons::json meta = createUnlimitedMeta("string");
