@@ -106,7 +106,7 @@ class TestClient(Cmd):
         self.vssTree = {}
         self.pathCompletionItems = []
 
-        print("Welcome to kuksa viss client version" + str(__version__))
+        print("Welcome to kuksa viss client version " + str(__version__))
         print()
         with open(os.path.join(scriptDir, 'logo'), 'r') as f:
             print(f.read())
