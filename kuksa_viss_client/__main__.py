@@ -110,6 +110,7 @@ class TestClient(Cmd):
         print()
         with open(os.path.join(scriptDir, 'logo'), 'r') as f:
             print(f.read())
+        print("Default tokens directory: " + self.getDefaultTokenDir())
 
         print()
         self.connect()
