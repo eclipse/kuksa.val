@@ -114,7 +114,7 @@ kuksa_viss_client
 
 ![try kuksa_viss_client out](doc/pictures/testclient_basic.gif "test client usage")
 
-The jwt tokens for testing can be found under [kuksa_certificates/jwt](./kuksa_certificates/jwt).
+The jwt tokens for testing can also be found under [kuksa_certificates/jwt](./kuksa_certificates/jwt).
 
 You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa_viss_client` can be found [here](./kuksa_viss_client). 
 

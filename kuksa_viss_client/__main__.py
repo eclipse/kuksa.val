@@ -19,9 +19,11 @@ DEFAULT_SERVER_ADDR = "127.0.0.1"
 DEFAULT_SERVER_PORT = 8090
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
+#sys.path.append(scriptDir)
 sys.path.append(os.path.join(scriptDir, ".."))
 from kuksa_viss_client import KuksaClientThread
-from kuksa_viss_client import __version__
+from kuksa_viss_client._metadata import *
+import kuksa_certificates
 
 class TestClient(Cmd):
     def get_childtree(self, pathText):
@@ -61,6 +63,7 @@ class TestClient(Cmd):
 
     COMM_SETUP_COMMANDS = "Communication Set-up Commands"
     VISS_COMMANDS = "Kuksa Interaction Commands"
+    INFO_COMMANDS = "Info Commands"
 
     ap_getServerAddr = argparse.ArgumentParser()
     ap_connect = argparse.ArgumentParser()
@@ -103,10 +106,11 @@ class TestClient(Cmd):
         self.vssTree = {}
         self.pathCompletionItems = []
 
-        print("Welcome to kuksa viss client " + str(__version__))
+        print("Welcome to kuksa viss client version " + str(__version__))
         print()
         with open(os.path.join(scriptDir, 'logo'), 'r') as f:
             print(f.read())
+        print("Default tokens directory: " + self.getDefaultTokenDir())
 
         print()
         self.connect()
@@ -247,6 +251,34 @@ class TestClient(Cmd):
             print(self.serverIP + ":" + str(self.serverPort))
         else:
             print("Server IP not set!!")
+
+    def getDefaultTokenDir(self):
+        try:
+            return os.path.join(kuksa_certificates.__certificate_dir__, "jwt")
+        except Exception:
+            guessTokenDir = os.path.join(scriptDir, "../kuksa_certificates/jwt")
+            if os.path.isdir(guessTokenDir):
+                return guessTokenDir
+            return "Unknown"
+
+    @with_category(INFO_COMMANDS)
+    def do_info(self, args):
+        """Show summary info of the client"""
+        print("Kuksa viss client version " + __version__)
+        print("Uri: " + __uri__)
+        print("Author: " + __author__)
+        print("Copyright: " + __copyright__)
+        print("Default tokens directory: " + self.getDefaultTokenDir())
+
+    @with_category(INFO_COMMANDS)
+    def do_version(self, args):
+        """Show version of the client"""
+        print(__version__)
+
+    @with_category(INFO_COMMANDS)
+    def do_printTokenDir(self, args):
+        """Show default token directory"""
+        print(self.getDefaultTokenDir())
 
 # Main Function
 def main():

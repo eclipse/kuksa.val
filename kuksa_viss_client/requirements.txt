@@ -1,0 +1,5 @@
+websockets~=8.1
+cmd2~=1.4
+pygments~=2.5
+importlib_metadata >= 3.6
+

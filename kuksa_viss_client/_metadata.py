@@ -21,7 +21,15 @@ __all__ = (
     "__copyright__",
 )
 
+__title__ = "Unknown"
+__summary__ = "Unknown"
+__uri__ = "Unknown"
+__version__ = "Unknown"
+__author__ = "Unknown"
+__email__ = "Unknown"
+__license__ = "Unknown"
 __copyright__ = "Copyright 2020 Robert Bosch GmbH"
+
 import importlib_metadata
 
 try:
@@ -40,7 +48,4 @@ try:
 except importlib_metadata.PackageNotFoundError as e:
     print(e)
     print("skip configuring metadata")
-    __all__ = (
-        "__copyright__",
-    )
 
