@@ -17,16 +17,17 @@ OPTIONS:
                                         easily (e.g. test and production 
                                         setup).Sample of configuration file 
                                         parameters looks like:
-                                        vss = vss_rel_2.0.json
+                                        vss = vss_release_2.0.json
                                         cert-path = . 
                                         log-level = ALL
                                         
   --vss arg                             [mandatory] Path to VSS data file 
                                         describing VSS data tree structure 
                                         which `kuksa-val-server` shall handle. 
-                                        Sample 'vss_rel_2.0.json' file can be 
-                                        found under [unit-test](./unit-test/vss
-                                        _rel_2.0.json)
+                                        Sample 'vss_release_2.0.json' file can be 
+                                        found under [unit-test](./data/vss-core/
+                                        vss_release_2.0.json)
+                                        
   --cert-path arg (=".")                [mandatory] Directory path where 
                                         'Server.pem', 'Server.key' and 
                                         'jwt.key.pub' are located. 
