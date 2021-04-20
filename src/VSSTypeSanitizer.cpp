@@ -78,6 +78,19 @@ void checkBoolType(jsoncons::json &val ) {
     }
 }
 
+void checkEnumType(jsoncons::json &enumDefinition, jsoncons::json &val ) {
+    
+    for (const auto& item: enumDefinition.array_range()){
+      if(item.as_string() == val){
+        return;
+      }
+    }
+
+    std::stringstream msg;
+    msg << val.as_string() << " is a defined enum value. Valid values are " << print(enumDefinition);
+    throw outOfBoundException(msg.str());
+}
+
 
 /** This will check whether &val val is a valid value for the sensor described
  *  by meta  and whether  it is within the limits defined by VSS if any */
@@ -117,7 +130,9 @@ void VssDatabase::checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val
         checkBoolType(val);
     }
     else if (dt == "string") { 
-        //o nothing. If it was a valid JSON it can always be string
+      if (meta.contains("enum") ) {
+        checkEnumType(meta["enum"], val);
+      }
     }
     else {
       std::string msg = "The datatype " + dt + " is not supported ";
