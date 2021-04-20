@@ -30,7 +30,7 @@ class TestClient(Cmd):
         childVssTree = self.vssTree
         if "." in pathText:
             paths = pathText.split(".")
-            for path in paths:
+            for path in paths[:-1]:
                 if path in childVssTree:
                     childVssTree = childVssTree[path]
                 elif 'children' in childVssTree and path in childVssTree['children']:
@@ -52,12 +52,14 @@ class TestClient(Cmd):
         if "." in text:
             prefix = text[:text.rfind(".")]+"."
         for key in childTree:
-            description = ""
-            if 'description' in childTree[key]:
-                description = "("+childTree[key]['description']+")"
-            self.pathCompletionItems.append(CompletionItem(prefix + key, description))
-            if 'children' in childTree[key]:
-                self.pathCompletionItems.append(CompletionItem(prefix + key + ".", "(children...)"))
+            child = childTree[key]
+            if isinstance(child, dict):
+                description = ""
+                if 'description' in child:
+                    description = "("+child['description']+")"
+                self.pathCompletionItems.append(CompletionItem(prefix + key, description))
+                if 'children' in child:
+                    self.pathCompletionItems.append(CompletionItem(prefix + key + ".", "(children...)"))
 
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
