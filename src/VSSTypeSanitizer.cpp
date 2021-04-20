@@ -126,9 +126,6 @@ void VssDatabase::checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val
     else if (dt == "double") {
         checkNumTypes<double>(meta,val);
     }
-    else if (dt == "enum") { 
-        checkEnumType(meta, val);
-    }
     else if (dt == "boolean") { 
         checkBoolType(val);
     }
