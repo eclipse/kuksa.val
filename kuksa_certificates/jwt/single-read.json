@@ -5,6 +5,6 @@
   "iat": 1516239022,
   "exp": 1767225599,
   "kuksa-vss":  {
-     "Vehicle.Drivetrain.Transmission.DriveType": "r"
+     "Vehicle.OBD.Speed": "r"
   }
 }
