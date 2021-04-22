@@ -634,7 +634,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
 BOOST_AUTO_TEST_CASE(test_metadata_simple)
 {
-    string test_path = "Vehicle.OBD.EngineSpeed"; // pass a valid path without wildcard.
+    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.OBD.EngineSpeed"); // pass a valid path without wildcard.
 
     json result = database->getMetaData(test_path);
 
@@ -667,7 +667,7 @@ BOOST_AUTO_TEST_CASE(test_metadata_simple)
 
 BOOST_AUTO_TEST_CASE(test_metadata_with_wildcard)
 {
-    string test_path = "Vehicle.*.EngineSpeed"; // pass a valid path with wildcard.
+    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.*.EngineSpeed"); // pass a valid path with wildcard.
 
     json result = database->getMetaData(test_path);
 
@@ -700,7 +700,7 @@ BOOST_AUTO_TEST_CASE(test_metadata_with_wildcard)
 
 BOOST_AUTO_TEST_CASE(test_metadata_branch)
 {
-    string test_path = "Vehicle.Chassis.SteeringWheel"; // pass a valid branch path without wildcard.
+    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.Chassis.SteeringWheel"); // pass a valid branch path without wildcard.
 
     json result = database->getMetaData(test_path);
 
@@ -759,7 +759,7 @@ BOOST_AUTO_TEST_CASE(test_metadata_branch)
 
 BOOST_AUTO_TEST_CASE(test_metadata_branch_with_wildcard)
 {
-    string test_path = "Vehicle.*.SteeringWheel"; // pass a valid branch path with wildcard.
+    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.*.SteeringWheel"); // pass a valid branch path with wildcard.
 
     json result = database->getMetaData(test_path);
 

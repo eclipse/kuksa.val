@@ -31,7 +31,7 @@ static const char* SCHEMA_GET=R"(
     "required": ["action", "path", "requestId" ],
     "properties": {
         "action": {
-            "enum": [ "get" ],
+            "enum": [ "get", "getMetaData" ],
             "description": "The identifier for the get request"
         },
         "path": {
@@ -74,7 +74,7 @@ static const char* SCHEMA = (R"(
 {
     "definitions": {
         "action": {
-            "enum": [ "authorize", "getMetadata", "get", "set", "subscribe", "subscription", "unsubscribe", "unsubscribeAll"],
+            "enum": [ "authorize", "getMetaData", "get", "set", "subscribe", "subscription", "unsubscribe", "unsubscribeAll"],
             "description": "The type of action requested by the client and/or delivered by the server"
         },
         "requestId": {

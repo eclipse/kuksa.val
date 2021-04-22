@@ -29,11 +29,11 @@ class IVssDatabase {
 
     virtual void initJsonTree(const boost::filesystem::path &fileName) = 0;
     virtual void updateJsonTree(WsChannel& channel, const jsoncons::json& value) = 0;
-    virtual void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& value) = 0;
-    virtual jsoncons::json getMetaData(const std::string &path) = 0;
+    virtual void updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& value) = 0;
+    virtual jsoncons::json getMetaData(const VSSPath &path) = 0;
   
-    virtual jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value, bool gen1_compat) = 0; //gen2 version
-    virtual jsoncons::json getSignal(const VSSPath& path, bool gen1_compat) = 0;
+    virtual jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) = 0; //gen2 version
+    virtual jsoncons::json getSignal(const VSSPath& path) = 0;
 
     virtual bool pathExists(const VSSPath &path) = 0;
     virtual bool pathIsWritable(const VSSPath &path) = 0;

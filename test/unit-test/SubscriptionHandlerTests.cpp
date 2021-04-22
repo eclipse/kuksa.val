@@ -77,15 +77,14 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
 
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
-  std::string path{"Vehicle.Drivetrain.*"};
   VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Drivetrain");
 
   // expectations
 
-  MOCK_EXPECT(dbMock->getVSSSpecificPath)
+  MOCK_EXPECT(dbMock->pathExists)
     .once()
-    .with(mock::equal(path), mock::assign(true), mock::any)
-    .returns(retDbListWider.front());
+    .with(vsspath)
+    .returns(true);
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .once()
     .with(mock::any, vsspath)
@@ -99,7 +98,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
   // verify
 
   SubscriptionId res;
-  BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, path));
+  BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath.getVSSPath()));
 
   BOOST_TEST(res != 0u);
 }
@@ -115,11 +114,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
                                           "$['Vehicle']['children']['Acceleration']",
                                           "$['Vehicle']['children']['Media']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Lateral']"};
-  std::vector<std::string> path{"Vehicle.Drivetrain.*",
-                                "Vehicle.Acceleration.*",
-                                "Vehicle.Media.*",
-                                "Vehicle.Acceleration.Lateral" };
-  std::vector<VSSPath> vss_acces_path{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
+  std::vector<VSSPath> vsspath{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
                           VSSPath::fromVSSGen1("Vehicle.Acceleration"),
                           VSSPath::fromVSSGen1("Vehicle.Media"),
                           VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
@@ -128,13 +123,13 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
   // expectations
 
   for (unsigned index = 0; index < paths; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
+    MOCK_EXPECT(dbMock->pathExists)
       .once()
-      .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
-      .returns(retDbListWider[index]);
+      .with(vsspath[index])
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, vss_acces_path[index])
+      .with(mock::any, vsspath[index])
       .returns(true);
   }
 
@@ -149,7 +144,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
   for (unsigned index = 0; index < paths; index++) {
     SubscriptionId res;
 
-    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, path[index]));
+    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath()));
     BOOST_TEST(res != 0u);
 
     // check that the value is different from previously returned
@@ -176,15 +171,14 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
 
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
-  std::string path{"Vehicle.Drivetrain.*"};
   VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Drivetrain");
 
   // expectations
 
-  MOCK_EXPECT(dbMock->getVSSSpecificPath)
+  MOCK_EXPECT(dbMock->pathExists)
     .exactly(clientNum)
-    .with(mock::equal(path), mock::assign(true), mock::any)
-    .returns(retDbListWider.front());
+    .with(vsspath)
+    .returns(true);
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
     .with(mock::any, vsspath)
@@ -201,7 +195,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
   for (auto &ch : channels) {
     SubscriptionId res;
 
-    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, path));
+    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath.getVSSPath()));
     BOOST_TEST(res != 0u);
 
     // check that the value is different from previously returned
@@ -231,11 +225,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
                                           "$['Vehicle']['children']['Acceleration']",
                                           "$['Vehicle']['children']['Media']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Lateral']"};
-  std::vector<std::string> path{"Vehicle.Drivetrain.*",
-                                "Vehicle.Acceleration.*",
-                                "Vehicle.Media.*",
-                                "Vehicle.Acceleration.Lateral" };
-    std::vector<VSSPath> vss_acces_path{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
+    std::vector<VSSPath> vsspath{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
                           VSSPath::fromVSSGen1("Vehicle.Acceleration"),
                           VSSPath::fromVSSGen1("Vehicle.Media"),
                           VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
@@ -243,13 +233,13 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
   // expectations
 
   for (unsigned index = 0; index < clientNum; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
+    MOCK_EXPECT(dbMock->pathExists)
       .once()
-      .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
-      .returns(retDbListWider[index]);
+      .with(vsspath[index])
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, vss_acces_path[index])
+      .with(mock::any, vsspath[index])
       .returns(true);
   }
 
@@ -265,7 +255,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
   for (auto &ch : channels) {
     SubscriptionId res;
 
-    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, path[index]));
+    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath()));
     BOOST_TEST(res != 0u);
 
     // check that the value is different from previously returned
@@ -286,11 +276,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
                                           "$['Vehicle']['children']['Acceleration']",
                                           "$['Vehicle']['children']['Media']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Lateral']"};
-  std::vector<std::string> path{"Vehicle.Drivetrain.*",
-                                "Vehicle.Acceleration.*",
-                                "Vehicle.Media.*",
-                                "Vehicle.Acceleration.Lateral" };
-  std::vector<VSSPath> vss_acces_path{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
+  std::vector<VSSPath> vsspath{ VSSPath::fromVSSGen1("Vehicle.Drivetrain"),
                           VSSPath::fromVSSGen1("Vehicle.Acceleration"),
                           VSSPath::fromVSSGen1("Vehicle.Media"),
                           VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
@@ -298,13 +284,13 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
   // expectations
 
   for (unsigned index = 0; index < paths; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
+    MOCK_EXPECT(dbMock->pathExists)
       .once()
-      .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
-      .returns(retDbListWider[index]);
+      .with(vsspath[index])
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, vss_acces_path[index])
+      .with(mock::any, vsspath[index])
       .returns(true);
   }
 
@@ -319,7 +305,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
   for (unsigned index = 0; index < paths; index++) {
     SubscriptionId res;
 
-    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, path[index]));
+    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath()));
     BOOST_TEST(res != 0u);
 
     // check that the value is different from previously returned
@@ -350,14 +336,13 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
 
   std::list<std::string> retDbListWider{"$['Vehicle']['children']['Drivetrain']"};
   std::list<std::string> retDbListNarrower{"$['Vehicle']['children']['Drivetrain']['children']['Transmission']"};
-  std::string path{"Vehicle.Drivetrain.*"};
   VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Drivetrain");
   // expectations
 
-  MOCK_EXPECT(dbMock->getVSSSpecificPath)
+  MOCK_EXPECT(dbMock->pathExists)
     .exactly(clientNum)
-    .with(mock::equal(path), mock::assign(true), mock::any)
-    .returns(retDbListWider.front());
+    .with(vsspath)
+    .returns(true);
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
     .with(mock::any, vsspath)
@@ -374,7 +359,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
   for (auto &ch : channels) {
     SubscriptionId res;
 
-    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, path));
+    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath.getVSSPath()));
     BOOST_TEST(res != 0u);
 
     // check that the value is different from previously returned
@@ -404,20 +389,20 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
   std::vector<std::string> retDbListWider{"$['Vehicle']['children']['Acceleration']['children']['Vertical']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Longitudinal']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Lateral']"};
-  std::vector<std::string> path{"Vehicle.Acceleration.Vertical",
-                                "Vehicle.Acceleration.Longitudinal",
-                                "Vehicle.Acceleration.Lateral" };
+  std::vector<VSSPath> vsspath{ VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Longitudinal"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
 
   // expectations
 
   for (unsigned index = 0; index < paths; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
+    MOCK_EXPECT(dbMock->pathExists)
       .once()
-      .with(mock::equal(path[index]), mock::assign(true), mock::any)
-      .returns(retDbListWider[index]);
+      .with(vsspath[index])
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
-      .with(mock::any, VSSPath::fromVSSGen1(path[index]))
+      .with(mock::any, vsspath[index])
       .returns(true);
   }
 
@@ -432,7 +417,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
   for (unsigned index = 0; index < paths; index++) {
     SubscriptionId subId;
 
-    BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(channel, dbMock, path[index]));
+    BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath()));
 
     BOOST_TEST(subId != 0u);
     resMap[index] = subId;
@@ -488,20 +473,20 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   std::vector<std::string> retDbListWider{"$['Vehicle']['children']['Acceleration']['children']['Vertical']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Longitudinal']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Lateral']"};
-  std::vector<std::string> path{"Vehicle.Acceleration.Vertical",
-                                "Vehicle.Acceleration.Longitudinal",
-                                "Vehicle.Acceleration.Lateral" };
+  std::vector<VSSPath> vsspath{ VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Longitudinal"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
 
   // expectations
 
   for (unsigned index = 0; index < paths; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
+    MOCK_EXPECT(dbMock->pathExists)
       .exactly(channelCount)
-      .with(mock::equal(path[index]), mock::assign(true), mock::any)
-      .returns(retDbListWider[index]);
+      .with(vsspath[index])
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
-      .with(mock::any, VSSPath::fromVSSGen1(path[index]))
+      .with(mock::any, vsspath[index])
       .returns(true);
   }
 
@@ -518,7 +503,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     for (unsigned index = 0; index < paths; index++) {
       SubscriptionId subId;
 
-      BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(ch, dbMock, path[index]));
+      BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath()));
 
       BOOST_TEST(subId != 0u);
       resMap[subId] = index;
@@ -584,20 +569,20 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   std::vector<std::string> retDbListWider{"$['Vehicle']['children']['Acceleration']['children']['Vertical']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Longitudinal']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Lateral']"};
-  std::vector<std::string> path{"Vehicle.Acceleration.Vertical",
-                                "Vehicle.Acceleration.Longitudinal",
-                                "Vehicle.Acceleration.Lateral" };
+  std::vector<VSSPath> vsspath{ VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Longitudinal"),
+                          VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
 
   // expectations
 
   for (unsigned index = 0; index < paths; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
+    MOCK_EXPECT(dbMock->pathExists)
       .exactly(channelCount)
-      .with(mock::equal(path[index]), mock::assign(true), mock::any)
-      .returns(retDbListWider[index]);
+      .with(vsspath[index])
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
-      .with(mock::any, VSSPath::fromVSSGen1(path[index]))
+      .with(mock::any, vsspath[index])
       .returns(true);
   }
 
@@ -645,7 +630,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     for (unsigned index = 0; index < paths; index++) {
       SubscriptionId subId;
 
-      BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(ch, dbMock, path[index]));
+      BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath()));
 
       BOOST_TEST(subId != 0u);
       resMap[subId] = index;

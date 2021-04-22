@@ -154,25 +154,6 @@ vector<string> tokenizePath(string path) {
   return tokens;
 }
 
-
-// Returns the absolute path but does not resolve wild card. Used only for
-// metadata request.
-string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
-  string format_path = getVSSSpecificPath(path, isBranch, meta_tree__);
-  /* json_query aserts with empty string, so when path is not found return empty string immediately */
-  if (format_path == "") {
-    return "";
-  }
-  jsoncons::json pathRes = jsonpath::json_query(meta_tree__, format_path, jsonpath::result_type::path);
-  if (pathRes.size() > 0) {
-    string jPath = pathRes[0].as<string>();
-    return jPath;
-  } else {
-    return "";
-  }
-}
-
-
 list<VSSPath> VssDatabase::getLeafPaths(const VSSPath &path) {
   list<VSSPath> paths;
 
@@ -278,28 +259,15 @@ void VssDatabase::updateJsonTree(WsChannel& channel, const jsoncons::json& jsonT
 
 // update a metadata in tree, which will only do one-level-deep shallow merge/update.
 // If deep merge/update are expected, use `updateJsonTree` instead.
-void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, const jsoncons::json& metadata){
+void VssDatabase::updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& metadata){
   if (! channel.authorizedToModifyTree()) {
      stringstream msg;
      msg << "do not have write access for updating MetaData or is invalid";
      throw noPermissionException(msg.str());
   }
-  if (path == "") {
-    string msg = "Path is empty while update metadata";
-    throw genException(msg);
-  }
-  string format_path = "$";
-  bool isBranch = false;
-  string jPath;
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    jPath = getPathForMetadata(path, isBranch);
-  }
-
-  if (jPath == "") {
-    return;
-  }
-  logger_->Log(LogLevel::VERBOSE, "VssDatabase::updateMetaData: VSS specific path =" + jPath + " , which is " + (isBranch?"":"not ") + "branch");
+  string jPath = path.getJSONPath();
+  
+  logger_->Log(LogLevel::VERBOSE, "VssDatabase::updateMetaData: VSS specific path =" + jPath);
     
   jsoncons::json resMetaTree, resDataTree, resMetaTreeArray, resDataTreeArray;
     
@@ -342,16 +310,12 @@ void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, co
 }
 
 // Returns the response JSON for metadata request.
-jsoncons::json VssDatabase::getMetaData(const std::string &path) {
-  string format_path = "$";
-  bool isBranch = false;
-  string jPath;
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    jPath = getPathForMetadata(path, isBranch);
-  }
-
-  if (jPath == "") {
+jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
+  string jPath = path.getJSONPath();
+  jsoncons::json pathRes = jsonpath::json_query(meta_tree__, jPath, jsonpath::result_type::path);
+  if (pathRes.size() > 0) {
+    jPath = pathRes[0].as<string>();
+  } else {
     return NULL;
   }
   logger_->Log(LogLevel::VERBOSE, "VssDatabase::getMetaData: VSS specific path =" + jPath);
@@ -364,6 +328,7 @@ jsoncons::json VssDatabase::getMetaData(const std::string &path) {
 
   int parentCount = 0;
   jsoncons::json resJson;
+  string format_path = "$";
   for (int i = 0; i < tokLength; i++) {
     format_path = format_path + "." + tokens[i];
     if ((i < tokLength - 1) && (tokens[i] == "children")) {
@@ -451,7 +416,6 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
 
 // Returns response JSON for get request, checking authorization.
 jsoncons::json VssDatabase::getSignal(const VSSPath& path, bool gen1_compat_mode) {
-
     jsoncons::json resArray;
     {
       std::lock_guard<std::mutex> lock_guard(rwMutex_);
