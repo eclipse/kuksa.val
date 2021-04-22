@@ -263,10 +263,9 @@ void VssDatabase::updateMetaData(WsChannel& channel, const VSSPath& path, const 
      msg << "do not have write access for updating MetaData or is invalid";
      throw noPermissionException(msg.str());
   }
-  bool isBranch = false;
   string jPath = path.getJSONPath();
   
-  logger_->Log(LogLevel::VERBOSE, "VssDatabase::updateMetaData: VSS specific path =" + jPath + " , which is " + (isBranch?"":"not ") + "branch");
+  logger_->Log(LogLevel::VERBOSE, "VssDatabase::updateMetaData: VSS specific path =" + jPath);
     
   jsoncons::json resMetaTree, resDataTree, resMetaTreeArray, resDataTreeArray;
     
@@ -421,7 +420,6 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
 
 // Returns response JSON for get request, checking authorization.
 jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& path, bool gen1_compat_mode) {
-  //bool isBranch = false;
 
   list<string> jPaths;
   {

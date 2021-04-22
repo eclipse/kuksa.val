@@ -117,6 +117,66 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForInvalidPath_Shall
   BOOST_TEST(returnJson == NULL);
 }
 
+BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_updateMetadata) {
+  jsoncons::json newMetaData, returnJson;
+  WsChannel channel;
+
+  channel.setConnID(11);
+  channel.setAuthorized(true);
+
+  // setup
+  db->initJsonTree(validFilename);
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Invalid.Path");
+
+  // expectations
+
+  // verify
+
+  BOOST_CHECK_THROW(db->updateMetaData(channel, signalPath, newMetaData), noPermissionException);
+}
+BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataForInvalidPath_Shall_throwException) {
+  jsoncons::json newMetaData, returnJson;
+  WsChannel channel;
+
+  channel.setConnID(11);
+  channel.enableModifyTree();
+
+  // setup
+  db->initJsonTree(validFilename);
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Invalid.Path");
+
+  // expectations
+
+  // verify
+
+  BOOST_CHECK_THROW(db->updateMetaData(channel, signalPath, newMetaData), notValidException);
+}
+BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataValidPath) {
+  jsoncons::json newMetaData, returnJson;
+  WsChannel channel;
+
+  channel.setConnID(11);
+  channel.enableModifyTree();
+
+  // setup
+  db->initJsonTree(validFilename);
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
+
+  // expectations
+
+  std::string expectedJsonString{R"({"Vehicle":{"children":{"Acceleration":{"children":{"Vertical":{"bla":"blu","datatype":"int64","description":"Vehicle acceleration in Z (vertical acceleration).","type":"sensor","unit":"m/s2","uuid":"9521e8d36a9b546d9414a779f5dd9bef"}},"description":"Spatial acceleration","type":"branch","uuid":"ce0fb48b566354c7841e279125f6f66d"}},"description":"High-level vehicle data.","type":"branch","uuid":"1c72453e738511e9b29ad46a6a4b77e9"}})"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  std::string metaDataString{R"({"bla":"blu","datatype":"int64"})"};
+  newMetaData = jsoncons::json::parse(metaDataString);
+  BOOST_CHECK_NO_THROW(db->updateMetaData(channel, signalPath, newMetaData));
+
+  // verify
+
+  BOOST_CHECK_NO_THROW(returnJson = db->getMetaData(signalPath));
+  BOOST_TEST(returnJson == expectedJson);
+
+}
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSignal_Shall_ReturnSignal) {
   jsoncons::json returnJson;
   WsChannel channel;
