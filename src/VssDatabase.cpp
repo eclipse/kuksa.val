@@ -547,7 +547,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     if (result.contains("timestamp")) {
       answer["timestamp"] = result["timestamp"].as<string>();
     } else {
-      answer["timestamp"] = 0;
+      answer["timestamp"] = "0";
     }
     return answer;
 
