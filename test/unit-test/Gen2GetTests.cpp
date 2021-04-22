@@ -124,10 +124,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  BOOST_TEST(res.contains("timestamp"));
 
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  // Assign timestamp for comparision purposes
+  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -346,10 +346,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  BOOST_TEST(res.contains("timestamp"));
 
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  // Insert timestamp for comparision purposes
+  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -454,10 +454,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  BOOST_TEST(res.contains("timestamp"));
 
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  // Assign timestamp for comparision purposes
+  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -494,6 +494,81 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
           .as<int64_t>();  // ignoring timestamp difference for response
   BOOST_TEST(res == jsonPathNotFound);
 }
+
+
+/** Differnt calls to get a specific path should yield the same timestamp
+ *  if the value associated with the path has not been updated in
+ *  the meantime 
+ */
+BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
+  WsChannel channel;
+
+  jsoncons::json jsonGetRequestForSignal;
+  jsoncons::json jsonPathNotFound;
+
+  string requestId = "1";
+  std::string path{"Vehicle/Speed"};
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
+
+  // setup
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  //Setting data (to put a valid timestamp into tree)
+  jsoncons::json value="100";
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+      .once()
+      .with(mock::any, vss_path)
+      .returns(true);
+  MOCK_EXPECT(subHandlerMock->updateByPath)
+      .once()
+      .with(path, "100")
+      .returns(true);
+MOCK_EXPECT(subHandlerMock->updateByUUID)
+      .once()
+      .with(mock::any, "100")
+      .returns(true);
+  db->setSignal(channel,vss_path,value,false);
+  
+
+  jsonGetRequestForSignal["action"] = "get";
+  jsonGetRequestForSignal["path"] = path;
+  jsonGetRequestForSignal["requestId"] = requestId;
+
+  std::string expectedJsonString{R"(
+      {
+    "action": "get", 
+    "path": "Vehicle/Speed", 
+    "requestId": "1", 
+    "value": 100
+    }
+      )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  // Read access has been checked
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+      .once()
+      .with(mock::any, vss_path)
+      .returns(true);
+
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // Does result have a timestamp?
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+
+  // Remove timestamp for comparision purposes
+  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
+  BOOST_TEST(res == expectedJson);
+
+  //wait 20ms (timestamps should be 1 ms resolution, but 20 ms should
+  // be enough to trigger error also on systems with 10ms tick)
+
+
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 
