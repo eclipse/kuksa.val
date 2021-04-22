@@ -39,7 +39,7 @@ class VssDatabase : public IVssDatabase {
   std::mutex rwMutex_;
   std::shared_ptr<ISubscriptionHandler> subHandler_;
 
-  std::string getPathForMetadata(std::string path, bool& isBranch);
+  std::string getPathForMetadata(VSSPath path, bool& isBranch);
 
 
 
@@ -65,11 +65,8 @@ class VssDatabase : public IVssDatabase {
 
   jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value, bool gen1_compat) override; //gen2 version
 
-
   jsoncons::json getSignal(const VSSPath &path, bool gen1_compat) override; //Gen2 version
 
 
-  std::string getVSSSpecificPath(const std::string &path, bool& isBranch,
-                                 jsoncons::json& tree) override;
 };
 #endif

@@ -155,54 +155,6 @@ vector<string> tokenizePath(string path) {
 }
 
 
-// Appends the internally used "children" tag to the path. And also formats the
-// path in JSONPath query format.
-// Eg: path = Signal.OBD.RPM
-// The method returns $['Signal']['children']['OBD']['children']['RPM'] and
-// updates isBranch to false.
-string VssDatabase::getVSSSpecificPath(const string &path, bool& isBranch,
-                                       jsoncons::json& tree) {
-  vector<string> tokens = getPathTokens(path);
-  int tokLength = tokens.size();
-  string format_path = "$";
-  for (int i = 0; i < tokLength; i++) {
-    if (tokens[i] == "*") {
-      format_path = format_path + "[" + tokens[i] + "]";
-    } else {
-      format_path = format_path + "[\'" + tokens[i] + "\']";
-    }
-
-    if (i < (tokLength - 1)) {
-      format_path = format_path + "[\'children\']";
-    }
-  }
-  try {
-    jsoncons::json res = jsonpath::json_query(tree, format_path);
-    string type = "";
-    if ((res.is_array() && res.size() > 0) && res[0].contains("type")) {
-      type = res[0]["type"].as<string>();
-    } else if (res.contains("type")) {
-      type = res["type"].as<string>();
-    }
-    if (type != "" && type == "branch") {
-      isBranch = true;
-    } else if (type != "") {
-      isBranch = false;
-    } else {
-      isBranch = false;
-      logger_->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath : Path "
-                  + format_path + " is invalid or is an empty tag!");
-      return "";
-    }
-  } catch (exception& e) {
-    logger_->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath :Exception \""
-         + string(e.what()) + "\" occured while querying JSON. Check Path!");
-    isBranch = false;
-    return "";
-  }
-  return format_path;
-}
-
 // Returns the absolute path but does not resolve wild card. Used only for
 // metadata request.
 string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
@@ -500,8 +452,6 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
 // Returns response JSON for get request, checking authorization.
 jsoncons::json VssDatabase::getSignal(const VSSPath& path, bool gen1_compat_mode) {
 
-  logger_->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + path.getVSSPath());
- 
     jsoncons::json resArray;
     {
       std::lock_guard<std::mutex> lock_guard(rwMutex_);

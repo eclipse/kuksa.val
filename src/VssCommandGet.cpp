@@ -54,8 +54,6 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId +
                                      " for path: " + path.getVSSPath());
 
-  // TODO check Read access here.
-
   jsoncons::json answer;
   jsoncons::json valueArray = jsoncons::json::array();
   std::vector<std::string> noPermissionPaths;
