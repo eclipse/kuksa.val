@@ -263,7 +263,6 @@ void VssDatabase::updateMetaData(WsChannel& channel, const VSSPath& path, const 
      msg << "do not have write access for updating MetaData or is invalid";
      throw noPermissionException(msg.str());
   }
-  string format_path = "$";
   bool isBranch = false;
   string jPath = path.getJSONPath();
   
@@ -311,9 +310,13 @@ void VssDatabase::updateMetaData(WsChannel& channel, const VSSPath& path, const 
 
 // Returns the response JSON for metadata request.
 jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
-  string format_path = "$";
   string jPath = path.getJSONPath();
-  
+  jsoncons::json pathRes = jsonpath::json_query(meta_tree__, jPath, jsonpath::result_type::path);
+  if (pathRes.size() > 0) {
+    jPath = pathRes[0].as<string>();
+  } else {
+    return NULL;
+  }
   logger_->Log(LogLevel::VERBOSE, "VssDatabase::getMetaData: VSS specific path =" + jPath);
 
   vector<string> tokens = getVSSTokens(jPath);
@@ -324,6 +327,7 @@ jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
 
   int parentCount = 0;
   jsoncons::json resJson;
+  string format_path = "$";
   for (int i = 0; i < tokLength; i++) {
     format_path = format_path + "." + tokens[i];
     if ((i < tokLength - 1) && (tokens[i] == "children")) {
