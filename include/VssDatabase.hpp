@@ -38,22 +38,20 @@ class VssDatabase : public IVssDatabase {
   std::shared_ptr<ILogger> logger_;
   std::mutex rwMutex_;
   std::shared_ptr<ISubscriptionHandler> subHandler_;
-  std::shared_ptr<IAccessChecker> accessValidator_;
 
   std::string getPathForMetadata(std::string path, bool& isBranch);
 
-  std::list<std::string> getJSONPaths(const VSSPath& path);
 
 
  public:
   VssDatabase(std::shared_ptr<ILogger> loggerUtil,
-              std::shared_ptr<ISubscriptionHandler> subHandle,
-              std::shared_ptr<IAccessChecker> accValidator);
+              std::shared_ptr<ISubscriptionHandler> subHandle);
   ~VssDatabase();
 
   //helpers
   bool pathExists(const VSSPath &path) override;
   bool pathIsWritable(const VSSPath &path) override;
+  std::list<VSSPath> getLeafPaths(const VSSPath& path) override;
 
   void checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val) override;
 
@@ -68,7 +66,7 @@ class VssDatabase : public IVssDatabase {
   jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value, bool gen1_compat) override; //gen2 version
 
 
-  jsoncons::json getSignal(WsChannel& channel, const VSSPath &path, bool gen1_compat) override; //Gen2 version
+  jsoncons::json getSignal(const VSSPath &path, bool gen1_compat) override; //Gen2 version
 
 
   std::string getVSSSpecificPath(const std::string &path, bool& isBranch,

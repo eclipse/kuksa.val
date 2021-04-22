@@ -22,11 +22,11 @@
 #include "IVssCommandProcessor.hpp"
 #include "VSSRequestValidator.hpp"
 #include "WsChannel.hpp"
+#include "IAccessChecker.hpp"
 
 class IVssDatabase;
 class ISubscriptionHandler;
 class IAuthenticator;
-class IAccessChecker;
 class ILogger;
 class WsChannel;
 

@@ -79,11 +79,9 @@ namespace {
 
 // Constructor
 VssDatabase::VssDatabase(std::shared_ptr<ILogger> loggerUtil,
-                         std::shared_ptr<ISubscriptionHandler> subHandle,
-                         std::shared_ptr<IAccessChecker> accValidator) {
+                         std::shared_ptr<ISubscriptionHandler> subHandle) {
   logger_ = loggerUtil;
   subHandler_ = subHandle;
-  accessValidator_ = accValidator;
 }
 
 VssDatabase::~VssDatabase() {}
@@ -134,7 +132,7 @@ bool VssDatabase::pathIsWritable(const VSSPath &path) {
 
 //returns true if the given path contains usable leafs
 bool VssDatabase::checkPathValid(const VSSPath & path){
-    return !getJSONPaths(path).empty();
+    return !getLeafPaths(path).empty();
 }
 
 // Tokenizes path with '.' as separator.
@@ -223,12 +221,13 @@ string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
 }
 
 
-list<string> VssDatabase::getJSONPaths(const VSSPath &path) {
-  list<string> paths;
+list<VSSPath> VssDatabase::getLeafPaths(const VSSPath &path) {
+  list<VSSPath> paths;
 
   //If this is a branch, recures
   jsoncons::json pathRes;
   try {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
     pathRes = jsonpath::json_query(data_tree__, path.getJSONPath(), jsonpath::result_type::path);
   }
   catch (jsonpath::jsonpath_error &e) { //no valid path, return empty list
@@ -236,9 +235,12 @@ list<string> VssDatabase::getJSONPaths(const VSSPath &path) {
     return paths;
   }
 
-  string json = pathRes.as_string();
   for (auto jpath : pathRes.array_range()) {
-    jsoncons::json resArray = jsonpath::json_query(data_tree__, jpath.as<string>());
+    jsoncons::json resArray;
+    {
+      std::lock_guard<std::mutex> lock_guard(rwMutex_);
+      resArray = jsonpath::json_query(data_tree__, jpath.as<string>());
+    }
     if (resArray.size() == 0) {
       continue;
     }
@@ -246,11 +248,11 @@ list<string> VssDatabase::getJSONPaths(const VSSPath &path) {
     //recurse if branch
     if (resArray[0].contains("type") && resArray[0]["type"].as<string>() == "branch") {
       VSSPath recursepath = VSSPath::fromJSON(jpath.as<string>()+"['children'][*]");
-      paths.merge(getJSONPaths(recursepath));
+      paths.merge(getLeafPaths(recursepath));
       continue;
     }
     else {
-      paths.push_back(jpath.as<string>());
+      paths.push_back(VSSPath::fromJSON(jpath.as<string>()));
     }
   }
 
@@ -496,36 +498,14 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
 
 
 // Returns response JSON for get request, checking authorization.
-jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& path, bool gen1_compat_mode) {
-  //bool isBranch = false;
+jsoncons::json VssDatabase::getSignal(const VSSPath& path, bool gen1_compat_mode) {
 
-  list<string> jPaths;
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    jPaths = getJSONPaths(path);
-  }
-  int pathsFound = jPaths.size();
-  if (pathsFound == 0) {
-    jsoncons::json answer;
-    return answer;
-  }
-
-  logger_->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + to_string(pathsFound)
-              + " signals found under path = \"" + path.getVSSPath() + "\"");
+  logger_->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + path.getVSSPath());
  
-   if (pathsFound == 1) {
-    string jPath = jPaths.back();
-    VSSPath path=VSSPath::fromJSON(jPath);
-    // check Read access here.
-    if (!accessValidator_->checkReadAccess(channel, path )) {
-      stringstream msg;
-      msg << "No read access to " << VSSPath::fromJSON(jPath).getVSSPath();
-      throw noPermissionException(msg.str());
-    }
     jsoncons::json resArray;
     {
       std::lock_guard<std::mutex> lock_guard(rwMutex_);
-      resArray = jsonpath::json_query(data_tree__, jPath);
+      resArray = jsonpath::json_query(data_tree__, path.getJSONPath());
     }
     jsoncons::json answer;
     answer["path"] = gen1_compat_mode? path.getVSSGen1Path() : path.getVSSPath();
@@ -538,45 +518,4 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
       return answer;
     }
 
-  } else if (pathsFound > 1) {
-    jsoncons::json answer;
-    jsoncons::json valueArray = jsoncons::json::array();
-
-    for (int i = 0; i < pathsFound; i++) {
-      jsoncons::json value;
-      string jPath = jPaths.back();
-      VSSPath path = VSSPath::fromJSON(jPath);
-      // Check access here.
-      if (!accessValidator_->checkReadAccess(channel, path)) {
-        // Allow the permitted signals to return. If exception is enable here,
-        // then say only "Signal.OBD.RPM" is permitted and get request is made
-        // using wildcard like "Signal.OBD.*" then
-        // an error would be returned. By disabling the exception the value for
-        // Signal.OBD.RPM (only) will be returned.
-        /*stringstream msg;
-        msg << "No read access to  " << getReadablePath(jPath);
-        throw genException (msg.str());*/
-        jPaths.pop_back();
-        continue;
-      }
-      jsoncons::json resArray;
-      {
-        std::lock_guard<std::mutex> lock_guard(rwMutex_);
-        resArray = jsonpath::json_query(data_tree__, jPath);
-      }
-      jPaths.pop_back();
-      jsoncons::json result = resArray[0];
-      
-      string spath = gen1_compat_mode? path.getVSSGen1Path() : path.getVSSPath();
-      if (result.contains("value")) {
-        setJsonValue(logger_, value, result, spath);
-      } else {
-        value[spath] = "---";
-      }
-      valueArray.insert(valueArray.array_range().end(), value);
-    }
-    answer["value"] = valueArray;
-    return answer;
-  }
-  return NULL;
 }

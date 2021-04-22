@@ -36,11 +36,12 @@ class IVssDatabase {
 
     virtual bool pathExists(const VSSPath &path) = 0;
     virtual bool pathIsWritable(const VSSPath &path) = 0;
+    virtual std::list<VSSPath> getLeafPaths(const VSSPath& path) = 0;
 
     virtual void checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val) = 0;
 
                            
-    virtual jsoncons::json getSignal(WsChannel& channel, const VSSPath& path, bool gen1_compat) = 0;
+    virtual jsoncons::json getSignal(const VSSPath& path, bool gen1_compat) = 0;
 
     // TODO: temporary added while components are refactored
     jsoncons::json data_tree__;

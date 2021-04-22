@@ -195,7 +195,7 @@ int main(int argc, const char *argv[]) {
     subHandler->addPublisher(mqttPublisher);
 
     auto database =
-        std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
+        std::make_shared<VssDatabase>(logger, subHandler);
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(
         logger, database, tokenValidator, accessCheck, subHandler);
 

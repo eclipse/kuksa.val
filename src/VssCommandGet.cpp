@@ -13,67 +13,94 @@
  */
 
 #include "JsonResponses.hpp"
+#include "VSSPath.hpp"
 #include "VSSRequestValidator.hpp"
 #include "VssCommandProcessor.hpp"
-#include "VSSPath.hpp"
 #include "exception.hpp"
 
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <vector>
 #include "ILogger.hpp"
 #include "IVssDatabase.hpp"
-
-#include <boost/algorithm/string.hpp>
-
 
 /** Implements the Websocket get request accroding to GEN2, with GEN1 backwards
  * compatibility **/
 std::string VssCommandProcessor::processGet2(WsChannel &channel,
                                              jsoncons::json &request) {
-  VSSPath path=VSSPath::fromVSS(request["path"].as_string());
-  bool  gen1_compat_mode=path.isGen1Origin();
+  VSSPath path = VSSPath::fromVSS(request["path"].as_string());
+  bool gen1_compat_mode = path.isGen1Origin();
 
   try {
     requestValidator->validateGet(request);
-  } catch (jsoncons::jsonschema::schema_error & e) {
-    std::string msg=std::string(e.what());
+  } catch (jsoncons::jsonschema::schema_error &e) {
+    std::string msg = std::string(e.what());
     boost::algorithm::trim(msg);
     logger->Log(LogLevel::ERROR, msg);
-    return JsonResponses::malFormedRequest(requestValidator->tryExtractRequestId(request), "get", string("Schema error: ") + msg);
-  } catch (std::exception &e) {
-    std::string msg=std::string(e.what());
-    boost::algorithm::trim(msg);
-    logger->Log(LogLevel::ERROR, "Unhandled error: " + msg );
     return JsonResponses::malFormedRequest(
-        requestValidator->tryExtractRequestId(request), "get", string("Unhandled error: ") + e.what());
+        requestValidator->tryExtractRequestId(request), "get",
+        string("Schema error: ") + msg);
+  } catch (std::exception &e) {
+    std::string msg = std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + msg);
+    return JsonResponses::malFormedRequest(
+        requestValidator->tryExtractRequestId(request), "get",
+        string("Unhandled error: ") + e.what());
   }
 
   string requestId = request["requestId"].as_string();
-  
-  logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId + " for path: " + path.getVSSPath());
 
+  logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId +
+                                     " for path: " + path.getVSSPath());
 
   // TODO check Read access here.
-  
-  //-------------------------------------
-  jsoncons::json res;
+
+  jsoncons::json answer;
+  jsoncons::json valueArray = jsoncons::json::array();
+  std::vector<std::string> noPermissionPaths;
+
   try {
-    res = database->getSignal(channel, path, gen1_compat_mode);
-  } catch (noPermissionException &nopermission) {
-    logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(requestId, "get", nopermission.what());
+    list<VSSPath> vssPaths = database->getLeafPaths(path);
+    for (const auto &vssPath : vssPaths) {
+      // check Read access here.
+      if (!accessValidator_->checkReadAccess(channel, vssPath)) {
+        noPermissionPaths.push_back(vssPath.getVSSPath());
+      } else {
+        valueArray.push_back(database->getSignal(vssPath, gen1_compat_mode));
+      }
+    }
+    if (vssPaths.size() < 1) {
+      return JsonResponses::pathNotFound(requestId, "get", path.getVSSPath());
+    }
+    if (vssPaths.size() == noPermissionPaths.size()) {
+      stringstream msg;
+      msg << "No read access to [ "
+          << boost::algorithm::join(noPermissionPaths, ", ") << " ]";
+      logger->Log(LogLevel::ERROR, msg.str());
+      return JsonResponses::noAccess(requestId, "get", msg.str());
+    }
+    if (noPermissionPaths.size() > 0) {
+      stringstream msg;
+      msg << "No read access to [ "
+          << boost::algorithm::join(noPermissionPaths, ",") << " ]";
+      answer["warning"] = std::string(msg.str());
+    }
+    if (vssPaths.size() == 1) {
+      answer.merge(valueArray[0]);
+    } else {
+      answer["value"] = valueArray;
+    }
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
         requestId, "get", string("Unhandled error: ") + e.what());
   }
 
-  if (!res.contains("value")) {
-    return JsonResponses::pathNotFound(requestId, "get", path.getVSSPath());
-  } else {
-    res["action"] = "get";
-    res["requestId"] = requestId;
-    res["timestamp"] = JsonResponses::getTimeStamp();
-    stringstream ss;
-    ss << pretty_print(res);
-    return ss.str();
-  }
+  answer["action"] = "get";
+  answer["requestId"] = requestId;
+  answer["timestamp"] = JsonResponses::getTimeStamp();
+  stringstream ss;
+  ss << pretty_print(answer);
+  return ss.str();
 }
