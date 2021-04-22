@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForSingleSignal_Shal
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getMetaData(signalPath.getVSSGen1Path()));
+  BOOST_CHECK_NO_THROW(returnJson = db->getMetaData(signalPath));
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForBranch_Shall_Retu
 
   // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration"};
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration");
 
   // expectations
 
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForInvalidPath_Shall
 
   // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Invalid.Path"};
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Invalid.Path");
 
   // expectations
 

@@ -56,8 +56,8 @@ SubscriptionId SubscriptionHandler::subscribe(WsChannel& channel,
   // embed connection ID into subID.
   subId = channel.getConnID() + subId;
 
-  bool isBranch = false;
-  string jPath = db->getVSSSpecificPath(path, isBranch, db->data_tree__);
+  VSSPath vssPath=VSSPath::fromVSS(path);
+  string jPath = vssPath.getJSONPath();
 
   if (jPath == "") {
     throw noPathFoundonTree(path);

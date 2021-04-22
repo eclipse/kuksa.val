@@ -34,6 +34,7 @@ class VSSPath {
         static VSSPath fromVSSGen1(std::string vssgen1); //Expect Gen1 path
         static VSSPath fromJSON(std::string json); //Expect json path
         static VSSPath fromVSS(std::string vss); //Auto decide for Gen1 or Gen2
+        inline bool operator==(const VSSPath& other) { return (vsspath == other.vsspath); };
 
     private:
         std::string vsspath;

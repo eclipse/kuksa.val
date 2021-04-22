@@ -82,10 +82,6 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
 
   // expectations
 
-  MOCK_EXPECT(dbMock->getVSSSpecificPath)
-    .once()
-    .with(mock::equal(path), mock::assign(true), mock::any)
-    .returns(retDbListWider.front());
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .once()
     .with(mock::any, vsspath)
@@ -128,10 +124,6 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
   // expectations
 
   for (unsigned index = 0; index < paths; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
-      .once()
-      .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
-      .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
       .with(mock::any, vss_acces_path[index])
@@ -181,10 +173,6 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
 
   // expectations
 
-  MOCK_EXPECT(dbMock->getVSSSpecificPath)
-    .exactly(clientNum)
-    .with(mock::equal(path), mock::assign(true), mock::any)
-    .returns(retDbListWider.front());
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
     .with(mock::any, vsspath)
@@ -243,10 +231,6 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
   // expectations
 
   for (unsigned index = 0; index < clientNum; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
-      .once()
-      .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
-      .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
       .with(mock::any, vss_acces_path[index])
@@ -298,10 +282,6 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
   // expectations
 
   for (unsigned index = 0; index < paths; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
-      .once()
-      .with(mock::equal(path[index]), mock::assign((index == 3 ? false : true)), mock::any)
-      .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
       .with(mock::any, vss_acces_path[index])
@@ -354,10 +334,6 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
   VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Drivetrain");
   // expectations
 
-  MOCK_EXPECT(dbMock->getVSSSpecificPath)
-    .exactly(clientNum)
-    .with(mock::equal(path), mock::assign(true), mock::any)
-    .returns(retDbListWider.front());
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
     .with(mock::any, vsspath)
@@ -411,10 +387,6 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
   // expectations
 
   for (unsigned index = 0; index < paths; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
-      .once()
-      .with(mock::equal(path[index]), mock::assign(true), mock::any)
-      .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
       .with(mock::any, VSSPath::fromVSSGen1(path[index]))
@@ -495,10 +467,6 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   // expectations
 
   for (unsigned index = 0; index < paths; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
-      .exactly(channelCount)
-      .with(mock::equal(path[index]), mock::assign(true), mock::any)
-      .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
       .with(mock::any, VSSPath::fromVSSGen1(path[index]))
@@ -591,10 +559,6 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   // expectations
 
   for (unsigned index = 0; index < paths; index++) {
-    MOCK_EXPECT(dbMock->getVSSSpecificPath)
-      .exactly(channelCount)
-      .with(mock::equal(path[index]), mock::assign(true), mock::any)
-      .returns(retDbListWider[index]);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
       .with(mock::any, VSSPath::fromVSSGen1(path[index]))

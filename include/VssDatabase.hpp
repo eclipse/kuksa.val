@@ -40,8 +40,6 @@ class VssDatabase : public IVssDatabase {
   std::shared_ptr<ISubscriptionHandler> subHandler_;
   std::shared_ptr<IAccessChecker> accessValidator_;
 
-  std::string getPathForMetadata(std::string path, bool& isBranch);
-
   std::list<std::string> getJSONPaths(const VSSPath& path);
 
 
@@ -62,16 +60,13 @@ class VssDatabase : public IVssDatabase {
   bool checkPathValid(const VSSPath& path);
   void updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree);
   void updateJsonTree(WsChannel& channel, const jsoncons::json& value) override;
-  void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& newTree) override;
-  jsoncons::json getMetaData(const std::string &path) override;
+  void updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& newTree) override;
+  jsoncons::json getMetaData(const VSSPath& path) override;
 
   jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) override; //gen2 version
 
 
   jsoncons::json getSignal(WsChannel& channel, const VSSPath &path, bool gen1_compat) override; //Gen2 version
 
-
-  std::string getVSSSpecificPath(const std::string &path, bool& isBranch,
-                                 jsoncons::json& tree) override;
 };
 #endif
