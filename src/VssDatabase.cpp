@@ -27,6 +27,7 @@
 #include "ISubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
 #include "WsChannel.hpp"
+#include "JsonResponses.hpp"
 
 using namespace std;
 using namespace jsoncons;
@@ -486,6 +487,8 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
         string value_type = resJson["datatype"].as<string>();
         checkAndSanitizeType(resJson, value);
         resJson.insert_or_assign("value", value);
+        resJson.insert_or_assign("timestamp", JsonResponses::getTimeStamp());
+
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
           subHandler_->updateByPath(path.getVSSPath(), value);
@@ -538,11 +541,15 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     jsoncons::json result = resArray[0];
     if (result.contains("value")) {
       setJsonValue(logger_, answer, result, "value");
-      return answer;
     } else {
       answer["value"] = "---";
-      return answer;
     }
+    if (result.contains("timestamp")) {
+      answer["timestamp"] = result["timestamp"].as<string>();
+    } else {
+      answer["timestamp"] = 0;
+    }
+    return answer;
 
   } else if (pathsFound > 1) {
     jsoncons::json answer;
