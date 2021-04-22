@@ -37,14 +37,20 @@ void checkNumTypes(jsoncons::json &meta, jsoncons::json &val )
     try {
         cval = val.as<T>();
     }
+    catch(std::exception const& e) {
+      std::stringstream msg;
+      msg << "Value " << val << " can not be converted to defined type " << meta["datatype"].as_string() << ". Reason: " << e.what();
+      throw outOfBoundException(msg.str());
+    }
     catch(...) {
-        std::stringstream msg;
-        msg << "Value " << val << " can not be converted to neccessary type:" << boost::current_exception_diagnostic_information();
-        throw outOfBoundException(msg.str());
+      std::stringstream msg;
+      msg << "Value " << val << " can not be converted to defined type " << meta["datatype"].as_string() << ". Reason: " << boost::current_exception_diagnostic_information();
+      throw outOfBoundException(msg.str());
+      
     }
 
     if (std::numeric_limits<T>::has_infinity && (cval == std::numeric_limits<T>::infinity() || cval == -std::numeric_limits<T>::infinity()) ) {
-        throw outOfBoundException("Value out of bounds: Infinity");
+        throw outOfBoundException("Value out of bounds. Reason: Infinity");
     }
     
 
