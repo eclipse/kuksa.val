@@ -19,6 +19,9 @@
 #include <turtle/mock.hpp>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
+#include <chrono>
+#include <thread>
+
 #include <memory>
 #include <string>
 
@@ -565,8 +568,17 @@ MOCK_EXPECT(subHandlerMock->updateByUUID)
 
   //wait 20ms (timestamps should be 1 ms resolution, but 20 ms should
   // be enough to trigger error also on systems with 10ms tick)
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+      .once()
+      .with(mock::any, vss_path)
+      .returns(true);
+  resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
+  res = json::parse(resStr);
 
+  //Answer should be identical
+  BOOST_TEST(res == expectedJson);
 }
 
 
