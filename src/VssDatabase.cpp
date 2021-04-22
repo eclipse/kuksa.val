@@ -559,6 +559,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
       jsoncons::json value;
       string jPath = jPaths.back();
       VSSPath path = VSSPath::fromJSON(jPath);
+      answer["timestamp"]="0";
       // Check access here.
       if (!accessValidator_->checkReadAccess(channel, path)) {
         // Allow the permitted signals to return. If exception is enable here,
@@ -587,6 +588,15 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
         value[spath] = "---";
       }
       valueArray.insert(valueArray.array_range().end(), value);
+      //This will add the "last"  timestamp, changing behavior from previous
+      //"timestamp of the get request" approach 
+      //Both are not very helpful when querying multiple values.
+      //This will be fixed once https://github.com/eclipse/kuksa.val/issues/158
+      //is implemented, as VISS2 will allow attaching individual timestamps to
+      //individual data
+      if (result.contains("timestamp")) {
+        answer["timestamp"] = result["timestamp"].as<string>();
+      }
     }
     answer["value"] = valueArray;
     return answer;
