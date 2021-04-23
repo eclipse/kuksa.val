@@ -157,73 +157,6 @@ vector<string> tokenizePath(string path) {
   return tokens;
 }
 
-
-// Appends the internally used "children" tag to the path. And also formats the
-// path in JSONPath query format.
-// Eg: path = Signal.OBD.RPM
-// The method returns $['Signal']['children']['OBD']['children']['RPM'] and
-// updates isBranch to false.
-string VssDatabase::getVSSSpecificPath(const string &path, bool& isBranch,
-                                       jsoncons::json& tree) {
-  vector<string> tokens = getPathTokens(path);
-  int tokLength = tokens.size();
-  string format_path = "$";
-  for (int i = 0; i < tokLength; i++) {
-    if (tokens[i] == "*") {
-      format_path = format_path + "[" + tokens[i] + "]";
-    } else {
-      format_path = format_path + "[\'" + tokens[i] + "\']";
-    }
-
-    if (i < (tokLength - 1)) {
-      format_path = format_path + "[\'children\']";
-    }
-  }
-  try {
-    jsoncons::json res = jsonpath::json_query(tree, format_path);
-    string type = "";
-    if ((res.is_array() && res.size() > 0) && res[0].contains("type")) {
-      type = res[0]["type"].as<string>();
-    } else if (res.contains("type")) {
-      type = res["type"].as<string>();
-    }
-    if (type != "" && type == "branch") {
-      isBranch = true;
-    } else if (type != "") {
-      isBranch = false;
-    } else {
-      isBranch = false;
-      logger_->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath : Path "
-                  + format_path + " is invalid or is an empty tag!");
-      return "";
-    }
-  } catch (exception& e) {
-    logger_->Log(LogLevel::ERROR, "VssDatabase::getVSSSpecificPath :Exception \""
-         + string(e.what()) + "\" occured while querying JSON. Check Path!");
-    isBranch = false;
-    return "";
-  }
-  return format_path;
-}
-
-// Returns the absolute path but does not resolve wild card. Used only for
-// metadata request.
-string VssDatabase::getPathForMetadata(string path, bool& isBranch) {
-  string format_path = getVSSSpecificPath(path, isBranch, meta_tree__);
-  /* json_query aserts with empty string, so when path is not found return empty string immediately */
-  if (format_path == "") {
-    return "";
-  }
-  jsoncons::json pathRes = jsonpath::json_query(meta_tree__, format_path, jsonpath::result_type::path);
-  if (pathRes.size() > 0) {
-    string jPath = pathRes[0].as<string>();
-    return jPath;
-  } else {
-    return "";
-  }
-}
-
-
 list<string> VssDatabase::getJSONPaths(const VSSPath &path) {
   list<string> paths;
 
@@ -326,28 +259,15 @@ void VssDatabase::updateJsonTree(WsChannel& channel, const jsoncons::json& jsonT
 
 // update a metadata in tree, which will only do one-level-deep shallow merge/update.
 // If deep merge/update are expected, use `updateJsonTree` instead.
-void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, const jsoncons::json& metadata){
+void VssDatabase::updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& metadata){
   if (! channel.authorizedToModifyTree()) {
      stringstream msg;
      msg << "do not have write access for updating MetaData or is invalid";
      throw noPermissionException(msg.str());
   }
-  if (path == "") {
-    string msg = "Path is empty while update metadata";
-    throw genException(msg);
-  }
-  string format_path = "$";
-  bool isBranch = false;
-  string jPath;
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    jPath = getPathForMetadata(path, isBranch);
-  }
-
-  if (jPath == "") {
-    return;
-  }
-  logger_->Log(LogLevel::VERBOSE, "VssDatabase::updateMetaData: VSS specific path =" + jPath + " , which is " + (isBranch?"":"not ") + "branch");
+  string jPath = path.getJSONPath();
+  
+  logger_->Log(LogLevel::VERBOSE, "VssDatabase::updateMetaData: VSS specific path =" + jPath);
     
   jsoncons::json resMetaTree, resDataTree, resMetaTreeArray, resDataTreeArray;
     
@@ -390,16 +310,12 @@ void VssDatabase::updateMetaData(WsChannel& channel, const std::string &path, co
 }
 
 // Returns the response JSON for metadata request.
-jsoncons::json VssDatabase::getMetaData(const std::string &path) {
-  string format_path = "$";
-  bool isBranch = false;
-  string jPath;
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    jPath = getPathForMetadata(path, isBranch);
-  }
-
-  if (jPath == "") {
+jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
+  string jPath = path.getJSONPath();
+  jsoncons::json pathRes = jsonpath::json_query(meta_tree__, jPath, jsonpath::result_type::path);
+  if (pathRes.size() > 0) {
+    jPath = pathRes[0].as<string>();
+  } else {
     return NULL;
   }
   logger_->Log(LogLevel::VERBOSE, "VssDatabase::getMetaData: VSS specific path =" + jPath);
@@ -412,6 +328,7 @@ jsoncons::json VssDatabase::getMetaData(const std::string &path) {
 
   int parentCount = 0;
   jsoncons::json resJson;
+  string format_path = "$";
   for (int i = 0; i < tokLength; i++) {
     format_path = format_path + "." + tokens[i];
     if ((i < tokLength - 1) && (tokens[i] == "children")) {
@@ -523,7 +440,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
   logger_->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + to_string(pathsFound)
               + " signals found under path = \"" + path.getVSSPath() + "\"");
  
-   if (pathsFound == 1) {
+  if (pathsFound == 1) {
     string jPath = jPaths.back();
     VSSPath vsspath=VSSPath::fromJSON(jPath, path.isGen1Origin());
     // check Read access here.
@@ -559,7 +476,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     for (int i = 0; i < pathsFound; i++) {
       jsoncons::json value;
       string jPath = jPaths.back();
-      VSSPath path = VSSPath::fromJSON(jPath, path.isGen1Origin());
+      VSSPath vsspath = VSSPath::fromJSON(jPath, path.isGen1Origin());
       answer["timestamp"]="0";
       // Check access here.
       if (!accessValidator_->checkReadAccess(channel, vsspath)) {

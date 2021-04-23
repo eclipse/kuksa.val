@@ -32,6 +32,7 @@
 #include "IVssDatabase.hpp"
 #include "IAuthenticator.hpp"
 #include "ISubscriptionHandler.hpp"
+#include <boost/algorithm/string.hpp>
 
 #ifdef JSON_SIGNING_ON
 #include "SigningHandler.hpp"
@@ -191,11 +192,28 @@ string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, const strin
   
 }
 
-string VssCommandProcessor::processGetMetaData(const string & request_id,
-                                               const string & path) {
+string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
+  VSSPath path=VSSPath::fromVSS(request["path"].as_string());
+
+  try {
+    requestValidator->validateGet(request);
+  } catch (jsoncons::jsonschema::schema_error & e) {
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, msg);
+    return JsonResponses::malFormedRequest(requestValidator->tryExtractRequestId(request), "getMetaData", string("Schema error: ") + msg);
+  } catch (std::exception &e) {
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + msg );
+    return JsonResponses::malFormedRequest(
+        requestValidator->tryExtractRequestId(request), "getMetaData", string("Unhandled error: ") + e.what());
+  }
+
+  string requestId = request["requestId"].as_string();
   jsoncons::json result;
   result["action"] = "getMetaData";
-  result["requestId"] = request_id;
+  result["requestId"] = requestId;
 
   jsoncons::json st = database->getMetaData(path);
   result["timestamp"] = JsonResponses::getTimeStamp();
@@ -203,7 +221,7 @@ string VssCommandProcessor::processGetMetaData(const string & request_id,
     jsoncons::json error;
     error["number"] = 404;
     error["reason"] = "Path not found";
-    error["message"] = "In database no metadata found for path " + path;
+    error["message"] = "In database no metadata found for path " + path.getVSSPath();
     result["error"] = error;
   
   } else {
@@ -216,17 +234,34 @@ string VssCommandProcessor::processGetMetaData(const string & request_id,
   return ss.str();
 }
 
-string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, const std::string& request_id, const string& path, const jsoncons::json& metaData){
+string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::json& request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateMetaData");
+  VSSPath path=VSSPath::fromVSS(request["path"].as_string());
+
+  try {
+    requestValidator->validateUpdateTree(request);
+  } catch (jsoncons::jsonschema::schema_error & e) {
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, msg);
+    return JsonResponses::malFormedRequest(requestValidator->tryExtractRequestId(request), "updateMetaData", string("Schema error: ") + msg);
+  } catch (std::exception &e) {
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + msg );
+    return JsonResponses::malFormedRequest(
+        requestValidator->tryExtractRequestId(request), "updateMetaData", string("Unhandled error: ") + e.what());
+  }
 
   jsoncons::json answer;
   answer["action"] = "updateMetaData";
-  answer["requestId"] = request_id;
+  string requestId = request["requestId"].as_string();
+  answer["requestId"] = requestId;
   answer["timestamp"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   try {
-    database->updateMetaData(channel, path, metaData);
+    database->updateMetaData(channel, path, request["metadata"]);
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json error;
@@ -241,10 +276,10 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, const std:
     return ss.str();
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request_id, "updateMetaData", nopermission.what());
+    return JsonResponses::noAccess(requestId, "updateMetaData", nopermission.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
-    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
+    return JsonResponses::malFormedRequest(requestId, "get", string("Unhandled error: ") + e.what());
   } 
 
   ss << pretty_print(answer);
@@ -370,9 +405,21 @@ string VssCommandProcessor::processQuery(const string &req_json,
     }
     else if (action == "set") {
         response = processSet2(channel, root);
-        #ifdef JSON_SIGNING_ON
+#ifdef JSON_SIGNING_ON
         response = signer->sign(response);
-        #endif
+#endif
+    }
+    else if (action == "getMetaData") {
+        response = processGetMetaData(root);
+#ifdef JSON_SIGNING_ON
+        response = signer->sign(response);
+#endif
+    }
+    else if (action == "updateMetaData") {
+        response = processUpdateMetaData(channel, root);
+#ifdef JSON_SIGNING_ON
+        response = signer->sign(response);
+#endif
     }
     else if (action == "authorize") {
       string token = root["tokens"].as<string>();
@@ -401,7 +448,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
     } else if (action == "updateVSSTree") {
       string request_id = root["requestId"].as<string>();
       logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: update MetaData query  for with request id " + request_id);
-      response = processUpdateVSSTree(channel, request_id, root["metadata"]);
+      response = processUpdateVSSTree(channel, request_id, root["updateadata"]);
     } else {
       string path = root["path"].as<string>();
       string request_id = root["requestId"].as<string>();
@@ -410,14 +457,6 @@ string VssCommandProcessor::processQuery(const string &req_json,
              + path + " with request id " + request_id);
         response =
             processSubscribe(channel, request_id, path);
-      } else if (action == "getMetaData") {
-        logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: get MetaData query  for "
-             + path + " with request id " + request_id);
-        response = processGetMetaData(request_id, path);
-      } else if (action == "updateMetaData") {
-        string request_id = root["requestId"].as<string>();
-        logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: update MetaData query  for with request id " + request_id);
-        response = processUpdateMetaData(channel, request_id, path, root["metadata"]);
       } else {
         logger->Log(LogLevel::INFO, "VssCommandProcessor::processQuery: Unknown action " + action);
         return JsonResponses::malFormedRequest("Unknown action requested");

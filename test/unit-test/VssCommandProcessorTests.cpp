@@ -950,6 +950,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  const VSSPath vssPath = VSSPath::fromVSSGen1(path);
 
   // setup
 
@@ -973,7 +974,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(dbMock->getMetaData)
-    .with(path)
+    .with(vssPath)
     .returns(jsonMetadata);
 
   // run UUT
