@@ -38,13 +38,16 @@ class VSSRequestValidator {
 
         void validateGet(jsoncons::json &request);
         void validateSet(jsoncons::json &request);
+        void validateUpdateTree(jsoncons::json &request);
         std::string tryExtractRequestId(jsoncons::json &request);
 
     private:
         std::shared_ptr<jsoncons::jsonschema::json_schema<jsoncons::json> > getSchema;
         std::shared_ptr<jsoncons::jsonschema::json_schema<jsoncons::json> > setSchema;
+        std::shared_ptr<jsoncons::jsonschema::json_schema<jsoncons::json> > updateTreeSchema;
         jsoncons::jsonschema::json_validator<jsoncons::json> *getValidator;
         jsoncons::jsonschema::json_validator<jsoncons::json> *setValidator;
+        jsoncons::jsonschema::json_validator<jsoncons::json> *updateTreeValidator;
         std::shared_ptr<ILogger> logger;
 };
 

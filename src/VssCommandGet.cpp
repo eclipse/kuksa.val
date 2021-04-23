@@ -66,7 +66,16 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
         std::string vssPathStr = vssPath.isGen1Origin()? vssPath.getVSSGen1Path() : vssPath.getVSSPath();
         noPermissionPaths.push_back(vssPathStr);
       } else {
-        valueArray.push_back(database->getSignal(vssPath));
+        // TODO: This will add the "last"  timestamp, changing behavior from previous
+        //"timestamp of the get request" approach 
+        //Both are not very helpful when querying multiple values.
+        //This will be fixed once https://github.com/eclipse/kuksa.val/issues/158
+        //is implemented, as VISS2 will allow attaching individual timestamps to
+        //individual data
+        jsoncons::json signal = database->getSignal(vssPath);
+        answer["timestamp"] = signal["timestamp"].as<string>();
+        signal.erase("timestamp");
+        valueArray.push_back(signal);
       }
     }
     if (vssPaths.size() < 1) {
@@ -97,7 +106,6 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
 
   answer["action"] = "get";
   answer["requestId"] = requestId;
-  answer["timestamp"] = JsonResponses::getTimeStamp();
   stringstream ss;
   ss << pretty_print(answer);
   return ss.str();

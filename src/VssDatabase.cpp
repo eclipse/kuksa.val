@@ -27,55 +27,11 @@
 #include "ISubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
 #include "WsChannel.hpp"
+#include "JsonResponses.hpp"
 
 using namespace std;
 using namespace jsoncons;
 using jsoncons::json;
-
-namespace {
-  
-  // Utility method for setting values to JSON.
-  void setJsonValue(std::shared_ptr<ILogger> logger,
-                    jsoncons::json& dest,
-                    jsoncons::json& source,
-                    string key) {
-    if (!source.contains("type")) {
-      string msg = "Unknown type for signal found at " + key;
-      logger->Log(LogLevel::ERROR, "VssDatabase::setJsonValue : " + msg);
-
-      throw genException(msg);
-    }
-
-    if (source["datatype"] == "uint8")
-      dest[key] = source["value"].as<uint8_t>();
-    else if (source["datatype"] == "int8")
-      dest[key] = source["value"].as<int8_t>();
-    else if (source["datatype"] == "uint16")
-      dest[key] = source["value"].as<uint16_t>();
-    else if (source["datatype"] == "int16")
-      dest[key] = source["value"].as<int16_t>();
-    else if (source["datatype"] == "uint32")
-      dest[key] = source["value"].as<uint32_t>();
-    else if (source["datatype"] == "int32")
-      dest[key] = source["value"].as<int32_t>();
-    else if (source["datatype"] == "uint64")
-      dest[key] = source["value"].as<uint64_t>();
-    else if (source["datatype"] == "int64")
-      dest[key] = source["value"].as<int64_t>();
-    else if (source["datatype"] == "boolean")
-      dest[key] = source["value"].as<bool>();
-    else if (source["datatype"] == "float")
-      dest[key] = source["value"].as<float>();
-    else if (source["datatype"] == "double")
-      dest[key] = source["value"].as<double>();
-    else if (source["datatype"] == "string")
-      dest[key] = source["value"].as<std::string>();
-    else {
-      logger->Log(LogLevel::WARNING, "VSSDatabase unknown datatype \"" + source["datatype"].as<std::string>() + "\". Falling back to string" );
-      dest[key] = source["value"].as<std::string>();
-    }
-  }
-}
 
 // Constructor
 VssDatabase::VssDatabase(std::shared_ptr<ILogger> loggerUtil,
@@ -400,6 +356,8 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
         string value_type = resJson["datatype"].as<string>();
         checkAndSanitizeType(resJson, value);
         resJson.insert_or_assign("value", value);
+        resJson.insert_or_assign("timestamp", JsonResponses::getTimeStamp());
+
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
           subHandler_->updateByPath(path.getVSSPath(), value);
@@ -423,14 +381,17 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
       resArray = jsonpath::json_query(data_tree__, path.getJSONPath());
     }
     jsoncons::json answer;
-    answer["path"] =  path.to_string();
     jsoncons::json result = resArray[0];
     if (result.contains("value")) {
-      setJsonValue(logger_, answer, result, "value");
-      return answer;
+      answer[path.to_string()] = result["value"].to_string();
     } else {
-      answer["value"] = "---";
-      return answer;
+      answer[path.to_string()] = "---";
     }
+    if (result.contains("timestamp")) {
+      answer["timestamp"] = result["timestamp"].as<string>();
+    } else {
+      answer["timestamp"] = "0";
+    }
+    return answer;
 
 }
