@@ -28,7 +28,6 @@
 
 #include "WsChannel.hpp"
 #include "ILoggerMock.hpp"
-#include "IVssDatabaseMock.hpp"
 #include "JsonResponses.hpp"
 #include "exception.hpp"
 

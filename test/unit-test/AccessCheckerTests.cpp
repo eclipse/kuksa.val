@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathAuthorized_Shall_Retur
   permissions.insert_or_assign("Vehicle.Acceleration.Longitudinal", "rw");
   permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
-  VSSPath path  = VSSPath::fromJSON("$['Vehicle']['children']['Acceleration']['children']['Vertical']");
+  VSSPath path  = VSSPath::fromJSON("$['Vehicle']['children']['Acceleration']['children']['Vertical']", false);
  
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotAuthorized_Shall_Re
   permissions.insert_or_assign("Vehicle.Acceleration.Longitudinal", "rw");
   permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
-  VSSPath path = VSSPath::fromJSON("$['Vehicle']['children']['Acceleration']['children']['Vertical']");
+  VSSPath path = VSSPath::fromJSON("$['Vehicle']['children']['Acceleration']['children']['Vertical']", false);
 
   channel.setConnID(11);
   channel.setAuthorized(true);
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotExistent_Shall_Retu
   permissions.insert_or_assign("Vehicle.Acceleration.Longitudinal", "rw");
   permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
-  VSSPath path = VSSPath::fromJSON("$['Vehicle']['children']['Dummy']['children']['Leaf']");
+  VSSPath path = VSSPath::fromJSON("$['Vehicle']['children']['Dummy']['children']['Leaf']", false);
 
   channel.setConnID(11);
   channel.setAuthorized(true);

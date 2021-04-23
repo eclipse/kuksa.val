@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(From_Gen2_Empty) {
 
 
 BOOST_AUTO_TEST_CASE(From_Json_Creation_Simple) {
-    VSSPath p = VSSPath::fromJSON("$['Vehicle']['children']['Speed']");
+    VSSPath p = VSSPath::fromJSON("$['Vehicle']['children']['Speed']", false);
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children']['Speed']");
@@ -93,15 +93,15 @@ BOOST_AUTO_TEST_CASE(From_Json_Creation_Simple) {
 }
 
 BOOST_AUTO_TEST_CASE(From_Json_Creation_Wildcard_End) {
-    VSSPath p = VSSPath::fromJSON("$['Vehicle']['children'][*]");
+    VSSPath p = VSSPath::fromJSON("$['Vehicle']['children'][*]", true);
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]");
-    BOOST_TEST(p.isGen1Origin() == false);
+    BOOST_TEST(p.isGen1Origin() == true);
 }
 
 BOOST_AUTO_TEST_CASE(From_Json_Creation_Wildcard_Middle) {
-    VSSPath p = VSSPath::fromJSON("$['Vehicle']['children'][*]['children']['Speed']");
+    VSSPath p = VSSPath::fromJSON("$['Vehicle']['children'][*]['children']['Speed']", false);
     BOOST_TEST(p.getVSSGen1Path() == "Vehicle.*.Speed");
     BOOST_TEST(p.getVSSPath() == "Vehicle/*/Speed");
     BOOST_TEST(p.getJSONPath() == "$['Vehicle']['children'][*]['children']['Speed']");
