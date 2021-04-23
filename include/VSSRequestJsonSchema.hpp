@@ -74,10 +74,10 @@ static const char* SCHEMA_SET=R"(
 static const char* SCHEMA_UPDATE_TREE=R"(
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Set Request",
-    "description": "Enables the client to set one or more values once.",
+    "title": "Update tree Request",
+    "description": "Enables the client to update data model",
     "type": "object",
-    "required": ["action", "path", "value", "requestId"],
+    "required": ["action", "path", "metadata", "requestId"],
     "properties": {
         "action": {
             "enum": [ "updateMetaData"],
@@ -86,8 +86,8 @@ static const char* SCHEMA_UPDATE_TREE=R"(
         "path": {
             "$ref": "viss#/definitions/path"
         },
-        "value": {
-            "$ref": "viss#/definitions/value"
+        "metadata": {
+            "$ref": "viss#/definitions/metadata"
         },
         "requestId": {
             "$ref": "viss#/definitions/requestId"
@@ -100,7 +100,7 @@ static const char* SCHEMA = (R"(
 {
     "definitions": {
         "action": {
-            "enum": [ "authorize", "getMetaData", "get", "set", "subscribe", "subscription", "unsubscribe", "unsubscribeAll"],
+            "enum": [ "authorize", "getMetaData", "updateMetaData", "get", "set", "subscribe", "subscription", "unsubscribe", "unsubscribeAll"],
             "description": "The type of action requested by the client and/or delivered by the server"
         },
         "requestId": {

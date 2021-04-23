@@ -239,7 +239,7 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
   VSSPath path=VSSPath::fromVSS(request["path"].as_string());
 
   try {
-    requestValidator->validateSet(request);
+    requestValidator->validateUpdateTree(request);
   } catch (jsoncons::jsonschema::schema_error & e) {
     std::string msg=std::string(e.what());
     boost::algorithm::trim(msg);
@@ -449,7 +449,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
     } else if (action == "updateVSSTree") {
       string request_id = root["requestId"].as<string>();
       logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: update MetaData query  for with request id " + request_id);
-      response = processUpdateVSSTree(channel, request_id, root["metadata"]);
+      response = processUpdateVSSTree(channel, request_id, root["updateadata"]);
     } else {
       string path = root["path"].as<string>();
       string request_id = root["requestId"].as<string>();
