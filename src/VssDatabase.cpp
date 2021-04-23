@@ -178,7 +178,8 @@ list<string> VssDatabase::getJSONPaths(const VSSPath &path) {
 
     //recurse if branch
     if (resArray[0].contains("type") && resArray[0]["type"].as<string>() == "branch") {
-      VSSPath recursepath = VSSPath::fromJSON(jpath.as<string>()+"['children'][*]");
+      // TODO check if false here ok or not
+      VSSPath recursepath = VSSPath::fromJSON(jpath.as<string>()+"['children'][*]", false);
       paths.merge(getJSONPaths(recursepath));
       continue;
     }
@@ -382,14 +383,14 @@ jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
 }
 
 
-jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) {
+jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value) {
   jsoncons::json answer;
   
-  answer["path"] = gen1_compat? path.getVSSGen1Path() : path.getVSSPath();
+  answer["path"] = path.to_string();
 
   if (!accessValidator_->checkWriteAccess(channel, path )) {
       stringstream msg;
-      msg << "No write  access to " << path.getVSSPath();
+      msg << "No write access to " << path.getVSSPath();
       throw noPermissionException(msg.str());
   }
 
@@ -419,7 +420,8 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
 
 
 // Returns response JSON for get request, checking authorization.
-jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& path, bool gen1_compat_mode) {
+jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& path) {
+  //bool isBranch = false;
 
   list<string> jPaths;
   {
@@ -437,11 +439,11 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
  
    if (pathsFound == 1) {
     string jPath = jPaths.back();
-    VSSPath path=VSSPath::fromJSON(jPath);
+    VSSPath vsspath=VSSPath::fromJSON(jPath, path.isGen1Origin());
     // check Read access here.
-    if (!accessValidator_->checkReadAccess(channel, path )) {
+    if (!accessValidator_->checkReadAccess(channel, vsspath )) {
       stringstream msg;
-      msg << "No read access to " << VSSPath::fromJSON(jPath).getVSSPath();
+      msg << "No read access to " << vsspath.to_string();
       throw noPermissionException(msg.str());
     }
     jsoncons::json resArray;
@@ -450,7 +452,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
       resArray = jsonpath::json_query(data_tree__, jPath);
     }
     jsoncons::json answer;
-    answer["path"] = gen1_compat_mode? path.getVSSGen1Path() : path.getVSSPath();
+    answer["path"] =  vsspath.to_string();
     jsoncons::json result = resArray[0];
     if (result.contains("value")) {
       setJsonValue(logger_, answer, result, "value");
@@ -467,9 +469,9 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     for (int i = 0; i < pathsFound; i++) {
       jsoncons::json value;
       string jPath = jPaths.back();
-      VSSPath path = VSSPath::fromJSON(jPath);
+      VSSPath vsspath = VSSPath::fromJSON(jPath, path.isGen1Origin());
       // Check access here.
-      if (!accessValidator_->checkReadAccess(channel, path)) {
+      if (!accessValidator_->checkReadAccess(channel, vsspath)) {
         // Allow the permitted signals to return. If exception is enable here,
         // then say only "Signal.OBD.RPM" is permitted and get request is made
         // using wildcard like "Signal.OBD.*" then
@@ -489,7 +491,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
       jPaths.pop_back();
       jsoncons::json result = resArray[0];
       
-      string spath = gen1_compat_mode? path.getVSSGen1Path() : path.getVSSPath();
+      string spath = vsspath.to_string();
       if (result.contains("value")) {
         setJsonValue(logger_, value, result, spath);
       } else {

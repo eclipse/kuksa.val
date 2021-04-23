@@ -56,8 +56,7 @@ SubscriptionId SubscriptionHandler::subscribe(WsChannel& channel,
   // embed connection ID into subID.
   subId = channel.getConnID() + subId;
 
-  VSSPath vssPath=VSSPath::fromVSS(path);
-  string jPath = vssPath.getJSONPath();
+  VSSPath vssPath = VSSPath::fromVSS(path);
 
   if (not db->pathExists(vssPath)) {
     throw noPathFoundonTree(path);
@@ -67,7 +66,7 @@ SubscriptionId SubscriptionHandler::subscribe(WsChannel& channel,
     throw noPermissionException(msg.str());
   }
 
-  jsoncons::json resArray = jsonpath::json_query(db->data_tree__, jPath);
+  jsoncons::json resArray = jsonpath::json_query(db->data_tree__, vssPath.getJSONPath());
 
   if (resArray.is_array() && resArray.size() == 1) {
     std::unique_lock<std::mutex> lock(accessMutex);

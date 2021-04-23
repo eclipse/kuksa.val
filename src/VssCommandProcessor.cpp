@@ -50,7 +50,7 @@ VssCommandProcessor::VssCommandProcessor(
   database = dbase;
   tokenValidator = vdator;
   subHandler = subhandler;
-  accessValidator = accC;
+  accessValidator_ = accC;
   requestValidator = new VSSRequestValidator(logger);
 #ifdef JSON_SIGNING_ON
   // TODO: add signer as dependency
@@ -59,7 +59,7 @@ VssCommandProcessor::VssCommandProcessor(
 }
 
 VssCommandProcessor::~VssCommandProcessor() {
-  accessValidator.reset();
+  accessValidator_.reset();
   delete requestValidator;
 #ifdef JSON_SIGNING_ON
   signer.reset();
