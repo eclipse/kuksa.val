@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_GetSingl
 
   // verify
 
-  BOOST_CHECK_THROW(db->getSignal(channel, signalPath, true), noPermissionException);
+  BOOST_CHECK_THROW(db->getSignal(channel, signalPath), noPermissionException);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_GetBranch_Shall_Throw) {
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_GetBranc
 
   // verify
 
-  BOOST_CHECK_THROW(db->getSignal(channel, signalPath, true), noPermissionException);
+  BOOST_CHECK_THROW(db->getSignal(channel, signalPath), noPermissionException);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSignal_Shall_SetValue) {
@@ -234,9 +234,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   // verify
 
-  BOOST_CHECK_NO_THROW(db->setSignal(channel, signalPath, setValue, true));
+  BOOST_CHECK_NO_THROW(db->setSignal(channel, signalPath, setValue));
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
   BOOST_TEST(returnJson["value"].as<int>() == 10);
 }
 
@@ -264,7 +264,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPath_Sha
 
   // verify
   //Acceleration is a branch, so can not be set
-  BOOST_CHECK_THROW(db->setSignal(channel, vsspath, setValue, true), genException);
+  BOOST_CHECK_THROW(db->setSignal(channel, vsspath, setValue), genException);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_SetPath_Shall_ThrowError) {
@@ -288,7 +288,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_SetPath_
 
   // verify
 
-  BOOST_CHECK_THROW(db->setSignal(channel, vsspath, setValue, true), noPermissionException);
+  BOOST_CHECK_THROW(db->setSignal(channel, vsspath, setValue), noPermissionException);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSignalNoChannel_Shall_SetValue) {
@@ -313,9 +313,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
     .returns(true);
   MOCK_EXPECT(subHandlerMock->updateByUUID).with(mock::any,setValue).returns(0);
 
-  BOOST_CHECK_NO_THROW(db->setSignal(channel,signalPath, setValue,true));
+  BOOST_CHECK_NO_THROW(db->setSignal(channel,signalPath, setValue));
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath));
   BOOST_TEST(returnJson["value"].as<int>() == 10);
 }
 

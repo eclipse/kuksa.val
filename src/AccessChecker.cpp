@@ -65,7 +65,8 @@ bool AccessChecker::checkPathWriteAccess(WsChannel &channel, const json &paths) 
   for (size_t i = 0; i < paths.size(); i++) {
     json item = paths[i];
     string jPath = item["path"].as<string>();
-    VSSPath path = VSSPath::fromJSON(jPath);
+    // TODO check if this function is needed and if false here is correct
+    VSSPath path = VSSPath::fromJSON(jPath, false);
     if (!checkWriteAccess(channel, path)) {
       return false;
     }
