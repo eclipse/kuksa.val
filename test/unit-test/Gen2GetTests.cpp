@@ -531,7 +531,7 @@ MOCK_EXPECT(subHandlerMock->updateByUUID)
       .once()
       .with(mock::any, "100")
       .returns(true);
-  db->setSignal(channel,vss_path,value,false);
+  db->setSignal(channel,vss_path,value);
   
 
   jsonGetRequestForSignal["action"] = "get";

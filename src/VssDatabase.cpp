@@ -440,7 +440,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
   logger_->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + to_string(pathsFound)
               + " signals found under path = \"" + path.getVSSPath() + "\"");
  
-   if (pathsFound == 1) {
+  if (pathsFound == 1) {
     string jPath = jPaths.back();
     VSSPath vsspath=VSSPath::fromJSON(jPath, path.isGen1Origin());
     // check Read access here.
@@ -476,7 +476,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     for (int i = 0; i < pathsFound; i++) {
       jsoncons::json value;
       string jPath = jPaths.back();
-      VSSPath path = VSSPath::fromJSON(jPath, path.isGen1Origin());
+      VSSPath vsspath = VSSPath::fromJSON(jPath, path.isGen1Origin());
       answer["timestamp"]="0";
       // Check access here.
       if (!accessValidator_->checkReadAccess(channel, vsspath)) {
