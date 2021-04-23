@@ -26,7 +26,10 @@ MOCK_BASE_CLASS( IVssDatabaseMock, IVssDatabase )
   MOCK_METHOD(getMetaData, 1)
   MOCK_METHOD(setSignal, 2)
   MOCK_METHOD(getSignal, 1)
-  MOCK_METHOD(checkAndSanitizeType,2)
   MOCK_METHOD(pathExists, 1)
   MOCK_METHOD(pathIsWritable, 1)
+  MOCK_METHOD(getLeafPaths,1)
+  MOCK_METHOD(checkAndSanitizeType,2)
 };
+  
+

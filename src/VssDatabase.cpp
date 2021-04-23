@@ -156,6 +156,7 @@ vector<string> tokenizePath(string path) {
 
 list<VSSPath> VssDatabase::getLeafPaths(const VSSPath &path) {
   list<VSSPath> paths;
+  bool path_is_gen1 = path.isGen1Origin();
 
   //If this is a branch, recures
   jsoncons::json pathRes;
@@ -180,12 +181,12 @@ list<VSSPath> VssDatabase::getLeafPaths(const VSSPath &path) {
 
     //recurse if branch
     if (resArray[0].contains("type") && resArray[0]["type"].as<string>() == "branch") {
-      VSSPath recursepath = VSSPath::fromJSON(jpath.as<string>()+"['children'][*]");
+      VSSPath recursepath = VSSPath::fromJSON(jpath.as<string>()+"['children'][*]", path_is_gen1);
       paths.merge(getLeafPaths(recursepath));
       continue;
     }
     else {
-      paths.push_back(VSSPath::fromJSON(jpath.as<string>()));
+      paths.push_back(VSSPath::fromJSON(jpath.as<string>(), path_is_gen1));
     }
   }
 
@@ -384,10 +385,10 @@ jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
 }
 
 
-jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &value, bool gen1_compat) {
+jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &value) {
   jsoncons::json answer;
   
-  answer["path"] = gen1_compat? path.getVSSGen1Path() : path.getVSSPath();
+  answer["path"] = path.to_string();
 
   jsoncons::json res; 
   {
@@ -415,14 +416,14 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
 
 
 // Returns response JSON for get request, checking authorization.
-jsoncons::json VssDatabase::getSignal(const VSSPath& path, bool gen1_compat_mode) {
+jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
     jsoncons::json resArray;
     {
       std::lock_guard<std::mutex> lock_guard(rwMutex_);
       resArray = jsonpath::json_query(data_tree__, path.getJSONPath());
     }
     jsoncons::json answer;
-    answer["path"] = gen1_compat_mode? path.getVSSGen1Path() : path.getVSSPath();
+    answer["path"] = path.isGen1Origin()? path.getVSSGen1Path() : path.getVSSPath();
     jsoncons::json result = resArray[0];
     if (result.contains("value")) {
       setJsonValue(logger_, answer, result, "value");

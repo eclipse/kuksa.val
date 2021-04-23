@@ -100,10 +100,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignalNew)
+  MOCK_EXPECT(dbMock->getLeafPaths)
     .once()
-    .with(mock::any, mock::equal(path2) ,true)
-    .returns(jsonPathNotFound);
+    .with(mock::equal(path2))
+    .returns(std::list<VSSPath>());
 
   // run UUT
   auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
   // setup
 
-  channel.setAuthorized(false);
+  channel.setAuthorized(true);
   channel.setConnID(1);
 
   jsonGetRequestForSignal["action"] = "get";
@@ -145,9 +145,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignalNew)
+  MOCK_EXPECT(dbMock->getLeafPaths)
     .once()
-    .with(mock::any, path2, true)
+    .with(mock::equal(path2))
+    .returns(std::list<VSSPath>{path2});
+  MOCK_EXPECT(dbMock->getSignal)
+    .once()
+    .with(path2)
     .throws(std::exception());
 
   // run UUT
@@ -189,8 +193,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignalNew)
-    .with(mock::any, path2, true)
+  MOCK_EXPECT(dbMock->getSignal)
+    .with(path2)
     .throws(noPermissionException("No read access to " + path));
 
   // run UUT
@@ -236,8 +240,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignalNew)
-    .with(mock::any, path2, true)
+  MOCK_EXPECT(dbMock->getSignal)
+    .with(path2)
     .returns(jsonSignalValue);
 
   // run UUT
@@ -285,8 +289,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignalNew)
-    .with(mock::any, path2, true)
+  MOCK_EXPECT(dbMock->getSignal)
+    .with(path2)
     .returns(jsonSignalValue);
 
   // run UUT
@@ -340,7 +344,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
   MOCK_EXPECT(dbMock->pathExists)
     .with(vsspath).returns(false);
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, jsonValue, true)
+    .with(vsspath, jsonValue)
     .throws(noPathFoundonTree(""));
 
   // run UUT
@@ -398,7 +402,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
   MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, jsonValue, true)
+    .with(vsspath, jsonValue)
     .throws(outOfBoundException(""));
 
   // run UUT
@@ -450,7 +454,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, jsonValue, true)
+    .with(vsspath, jsonValue)
     .throws(noPermissionException(""));
 
   // run UUT
@@ -506,7 +510,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, jsonValue, true)
+    .with(vsspath, jsonValue)
     .throws(std::exception());
 
   // run UUT
@@ -562,7 +566,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, mock::any, true).returns(jsonSignalValue);
+    .with(vsspath, mock::any).returns(jsonSignalValue);
 
   // run UUT
   auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);

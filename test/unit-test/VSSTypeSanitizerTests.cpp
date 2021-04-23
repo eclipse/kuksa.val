@@ -60,7 +60,7 @@ struct TestSuiteFixture {
     std::string vss_file{"test_vss_rel_2.0.json"};
 
     MOCK_EXPECT(logMock->Log).at_least(0);  // ignore log events
-    db = std::make_shared<VssDatabase>(logMock, subHandlerMock, accCheckMock);
+    db = std::make_shared<VssDatabase>(logMock, subHandlerMock);
     db->initJsonTree(vss_file);
   }
   ~TestSuiteFixture() {

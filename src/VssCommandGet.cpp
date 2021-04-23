@@ -28,8 +28,8 @@
  * compatibility **/
 std::string VssCommandProcessor::processGet2(WsChannel &channel,
                                              jsoncons::json &request) {
-  VSSPath path = VSSPath::fromVSS(request["path"].as_string());
-  bool gen1_compat_mode = path.isGen1Origin();
+  std::string pathStr= request["path"].as_string();
+  VSSPath path = VSSPath::fromVSS(pathStr);
 
   try {
     requestValidator->validateGet(request);
@@ -63,18 +63,18 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
     for (const auto &vssPath : vssPaths) {
       // check Read access here.
       if (!accessValidator_->checkReadAccess(channel, vssPath)) {
-        noPermissionPaths.push_back(vssPath.getVSSPath());
+        std::string vssPathStr = vssPath.isGen1Origin()? vssPath.getVSSGen1Path() : vssPath.getVSSPath();
+        noPermissionPaths.push_back(vssPathStr);
       } else {
-        valueArray.push_back(database->getSignal(vssPath, gen1_compat_mode));
+        valueArray.push_back(database->getSignal(vssPath));
       }
     }
     if (vssPaths.size() < 1) {
-      return JsonResponses::pathNotFound(requestId, "get", path.getVSSPath());
+      return JsonResponses::pathNotFound(requestId, "get", pathStr);
     }
     if (vssPaths.size() == noPermissionPaths.size()) {
       stringstream msg;
-      msg << "No read access to [ "
-          << boost::algorithm::join(noPermissionPaths, ", ") << " ]";
+      msg << "No read access to " << pathStr;
       logger->Log(LogLevel::ERROR, msg.str());
       return JsonResponses::noAccess(requestId, "get", msg.str());
     }

@@ -63,7 +63,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
     if (! accessValidator_->checkWriteAccess(channel, std::get<0>(setTuple) )) {
       stringstream msg;
-      msg << "No write  access to " << std::get<0>(setTuple).getVSSPath();
+      msg << "No write access to " << std::get<0>(setTuple).getVSSPath();
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
     if (! database->pathExists(std::get<0>(setTuple) )) {
@@ -80,7 +80,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   //If all preliminary checks successful, we are setting everything
   try {
     for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
-      database->setSignal(std::get<0>(setTuple), std::get<1>(setTuple), std::get<0>(setTuple).isGen1Origin());
+      database->setSignal(std::get<0>(setTuple), std::get<1>(setTuple));
     }
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
