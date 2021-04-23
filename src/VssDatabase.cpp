@@ -588,7 +588,7 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
         value[spath] = "---";
       }
       valueArray.insert(valueArray.array_range().end(), value);
-      //This will add the "last"  timestamp, changing behavior from previous
+      // TODO: This will add the "last"  timestamp, changing behavior from previous
       //"timestamp of the get request" approach 
       //Both are not very helpful when querying multiple values.
       //This will be fixed once https://github.com/eclipse/kuksa.val/issues/158
