@@ -92,7 +92,7 @@ void VSSRequestValidator::validateUpdateTree(jsoncons::json &request) {
     auto reporter = [&ss,&valid](const jsoncons::jsonschema::validation_output& o)
         {
             valid=false;
-            ss << o.instance_location() << ":testtest " << o.message() << "\n";
+            ss << o.instance_location() << ": " << o.message() << "\n";
     };
 
     this->updateTreeValidator->validate(request, reporter);
