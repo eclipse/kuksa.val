@@ -28,33 +28,36 @@
  * compatibility **/
 std::string VssCommandProcessor::processGet2(WsChannel &channel,
                                              jsoncons::json &request) {
-  VSSPath path=VSSPath::fromVSS(request["path"].as_string());
-  bool  gen1_compat_mode=path.isGen1Origin();
+  std::string pathStr= request["path"].as_string();
+  VSSPath path = VSSPath::fromVSS(pathStr);
 
   try {
     requestValidator->validateGet(request);
-  } catch (jsoncons::jsonschema::schema_error & e) {
-    std::string msg=std::string(e.what());
+  } catch (jsoncons::jsonschema::schema_error &e) {
+    std::string msg = std::string(e.what());
     boost::algorithm::trim(msg);
     logger->Log(LogLevel::ERROR, msg);
-    return JsonResponses::malFormedRequest(requestValidator->tryExtractRequestId(request), "get", string("Schema error: ") + msg);
-  } catch (std::exception &e) {
-    std::string msg=std::string(e.what());
-    boost::algorithm::trim(msg);
-    logger->Log(LogLevel::ERROR, "Unhandled error: " + msg );
     return JsonResponses::malFormedRequest(
-        requestValidator->tryExtractRequestId(request), "get", string("Unhandled error: ") + e.what());
+        requestValidator->tryExtractRequestId(request), "get",
+        string("Schema error: ") + msg);
+  } catch (std::exception &e) {
+    std::string msg = std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + msg);
+    return JsonResponses::malFormedRequest(
+        requestValidator->tryExtractRequestId(request), "get",
+        string("Unhandled error: ") + e.what());
   }
 
   string requestId = request["requestId"].as_string();
-  
-  logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId + " for path: " + path.getVSSPath());
 
+  logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId +
+                                     " for path: " + path.to_string());
 
   //-------------------------------------
   jsoncons::json res;
   try {
-    res = database->getSignal(channel, path, gen1_compat_mode);
+    res = database->getSignal(channel, path);
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
     return JsonResponses::noAccess(requestId, "get", nopermission.what());
@@ -65,7 +68,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   }
 
   if (!res.contains("value")) {
-    return JsonResponses::pathNotFound(requestId, "get", path.getVSSPath());
+    return JsonResponses::pathNotFound(requestId, "get", path.to_string());
   } else {
     res["action"] = "get";
     res["requestId"] = requestId;
