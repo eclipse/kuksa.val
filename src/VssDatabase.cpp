@@ -423,7 +423,7 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
       resArray = jsonpath::json_query(data_tree__, path.getJSONPath());
     }
     jsoncons::json answer;
-    answer["path"] = path.isGen1Origin()? path.getVSSGen1Path() : path.getVSSPath();
+    answer["path"] =  path.to_string();
     jsoncons::json result = resArray[0];
     if (result.contains("value")) {
       setJsonValue(logger_, answer, result, "value");

@@ -42,7 +42,6 @@ class IVssDatabase {
     virtual void checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val) = 0;
 
                            
-
     // TODO: temporary added while components are refactored
     jsoncons::json data_tree__;
     jsoncons::json meta_tree__;

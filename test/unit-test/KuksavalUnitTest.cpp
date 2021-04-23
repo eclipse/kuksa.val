@@ -1015,7 +1015,7 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 
    json expected = json::parse(R"({
                          "action":"get",
-                         "error":{"message":"I can not find Signal/*/RPM1 in my db","number":404,"reason":"Path not found"},
+                         "error":{"message":"I can not find Signal.*.RPM1 in my db","number":404,"reason":"Path not found"},
                          "requestId":"8756"
                          })");
 
@@ -1433,7 +1433,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to Vehicle/OBD/Speed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"No read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
@@ -1476,7 +1476,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
    commandProc_auth->processQuery(authReqJson.as_string(),channel);
    string request(R"({
 		"action": "get",
-		"path": "Vehicle.OBD.EngineSpeed",
+		"path": "Vehicle/OBD/EngineSpeed",
 		"requestId": "8756"
 	})");
 
@@ -1694,7 +1694,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to Vehicle/OBD/EngineSpeed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"No read access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
@@ -1898,7 +1898,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
    commandProc->processQuery(authReqJson.as_string(),channel);
    string request(R"({
 		"action": "set",
-		"path": "Vehicle.OBD.Speed",
+		"path": "Vehicle/OBD/Speed",
                 "value" : 200,
 		"requestId": "8756"
 	})");
@@ -1959,7 +1959,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
 
   json expected = json::parse(R"({
     "action":"set",
-    "error":{"message":"No write  access to Vehicle/OBD/RPM","number":403,"reason":"Forbidden"},
+    "error":{"message":"No write access to Vehicle.OBD.RPM","number":403,"reason":"Forbidden"},
     "requestId":"8756"
     })");
 
@@ -2082,7 +2082,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
    
    string request(R"({
 		"action": "set",
-		"path": "Vehicle.OBD.Speed",
+		"path": "Vehicle/OBD/Speed",
                 "value" : 345,
 		"requestId": "8756"
 	})");
@@ -2099,7 +2099,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
    //childs. So we test accordingly 
    json expected = json::parse(R"({
     "action":"set",
-    "error":{"message":"No write access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
+    "error":{"message":"No write access to Vehicle/OBD/Speed","number":403,"reason":"Forbidden"},
     "requestId":"8756"
     })");
     

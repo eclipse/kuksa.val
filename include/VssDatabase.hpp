@@ -58,9 +58,8 @@ class VssDatabase : public IVssDatabase {
   void updateJsonTree(WsChannel& channel, const jsoncons::json& value) override;
   void updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& newTree) override;
   jsoncons::json getMetaData(const VSSPath& path) override;
-
+  
   jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) override; //gen2 version
-
   jsoncons::json getSignal(const VSSPath &path) override; //Gen2 version
 
 

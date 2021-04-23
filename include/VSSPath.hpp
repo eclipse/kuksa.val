@@ -33,7 +33,7 @@ class VSSPath {
         bool isGen1Origin() const;
         static VSSPath fromVSSGen2(std::string vss); //Expect Gen2 path
         static VSSPath fromVSSGen1(std::string vssgen1); //Expect Gen1 path
-        static VSSPath fromJSON(std::string json, bool gen1 = false); //Expect json path
+        static VSSPath fromJSON(std::string json, bool gen1); //Expect json path
         static VSSPath fromVSS(std::string vss); //Auto decide for Gen1 or Gen2
         inline bool operator==(const VSSPath& other) { return (vsspath == other.vsspath); };
 

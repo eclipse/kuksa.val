@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::pathNotFound(requestId, "get", path2.getVSSPath(), jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "get", path2.getVSSGen1Path(), jsonPathNotFound);
 
   // expectations
 
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
-  VSSPath path2 = VSSPath::fromVSSGen1(path);
+  VSSPath path2 = VSSPath::fromVSS(path);
 
 
   // setup
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["timestamp"] = 11111111;
 
-  JsonResponses::pathNotFound(requestId, "get", path2.getVSSPath(), jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "get", path2.getVSSGen1Path(), jsonPathNotFound);
 
   // expectations
 
@@ -333,7 +333,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
   jsonSetRequestForSignal["value"] = requestValue;
   jsonSetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::pathNotFound(requestId, "set", vsspath.getVSSPath(), jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "set", vsspath.getVSSGen1Path(), jsonPathNotFound);
 
   // expectations
 
@@ -445,7 +445,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["timestamp"] = 11111111;
 
-  JsonResponses::noAccess(requestId, "set", "No write  access to Signal/OBD/DTC1", jsonNoAccess);
+  JsonResponses::noAccess(requestId, "set", "No write access to Signal.OBD.DTC1", jsonNoAccess);
 
   // expectations
 

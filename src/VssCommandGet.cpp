@@ -52,7 +52,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   string requestId = request["requestId"].as_string();
 
   logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId +
-                                     " for path: " + path.getVSSPath());
+                                     " for path: " + path.to_string());
 
   jsoncons::json answer;
   jsoncons::json valueArray = jsoncons::json::array();

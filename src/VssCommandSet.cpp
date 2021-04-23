@@ -50,7 +50,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   string requestId = request["requestId"].as_string();
 
   logger->Log(LogLevel::VERBOSE, "Set request with id " + requestId +
-                                     " for path: " + path.getVSSPath());
+                                     " for path: " + path.to_string());
 
   //unpack any multiset or filters here later as in
   //list of setPairs=expand(VSSPath, filters)
@@ -63,15 +63,15 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
     if (! accessValidator_->checkWriteAccess(channel, std::get<0>(setTuple) )) {
       stringstream msg;
-      msg << "No write access to " << std::get<0>(setTuple).getVSSPath();
+      msg << "No write access to " << std::get<0>(setTuple).to_string();
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
     if (! database->pathExists(std::get<0>(setTuple) )) {
-      return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", std::get<0>(setTuple).getVSSPath());
+      return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", std::get<0>(setTuple).to_string());
     }
     if (! database->pathIsWritable(std::get<0>(setTuple))) {
       stringstream msg;
-      msg << "Can not set " << std::get<0>(setTuple).getVSSPath() << ". Only sensor or actor leaves can be set.";
+      msg << "Can not set " << std::get<0>(setTuple).to_string() << ". Only sensor or actor leaves can be set.";
       logger->Log(LogLevel::VERBOSE,msg.str());
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
@@ -103,7 +103,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   } catch (noPathFoundonTree &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
     return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set",
-                                       path.getVSSPath());
+                                       path.to_string());
   } catch (outOfBoundException &outofboundExp) {
     logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
     return JsonResponses::valueOutOfBounds(request["requestId"].as<string>(),
