@@ -27,6 +27,7 @@
 #include "ISubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
 #include "WsChannel.hpp"
+#include "JsonResponses.hpp"
 
 using namespace std;
 using namespace jsoncons;
@@ -487,6 +488,8 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
         string value_type = resJson["datatype"].as<string>();
         checkAndSanitizeType(resJson, value);
         resJson.insert_or_assign("value", value);
+        resJson.insert_or_assign("timestamp", JsonResponses::getTimeStamp());
+
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
           subHandler_->updateByPath(path.getVSSPath(), value);
@@ -539,11 +542,15 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     jsoncons::json result = resArray[0];
     if (result.contains("value")) {
       setJsonValue(logger_, answer, result, "value");
-      return answer;
     } else {
       answer["value"] = "---";
-      return answer;
     }
+    if (result.contains("timestamp")) {
+      answer["timestamp"] = result["timestamp"].as<string>();
+    } else {
+      answer["timestamp"] = "0";
+    }
+    return answer;
 
   } else if (pathsFound > 1) {
     jsoncons::json answer;
@@ -552,7 +559,8 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     for (int i = 0; i < pathsFound; i++) {
       jsoncons::json value;
       string jPath = jPaths.back();
-      VSSPath vsspath = VSSPath::fromJSON(jPath, path.isGen1Origin());
+      VSSPath path = VSSPath::fromJSON(jPath, path.isGen1Origin());
+      answer["timestamp"]="0";
       // Check access here.
       if (!accessValidator_->checkReadAccess(channel, vsspath)) {
         // Allow the permitted signals to return. If exception is enable here,
@@ -581,6 +589,15 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
         value[spath] = "---";
       }
       valueArray.insert(valueArray.array_range().end(), value);
+      // TODO: This will add the "last"  timestamp, changing behavior from previous
+      //"timestamp of the get request" approach 
+      //Both are not very helpful when querying multiple values.
+      //This will be fixed once https://github.com/eclipse/kuksa.val/issues/158
+      //is implemented, as VISS2 will allow attaching individual timestamps to
+      //individual data
+      if (result.contains("timestamp")) {
+        answer["timestamp"] = result["timestamp"].as<string>();
+      }
     }
     answer["value"] = valueArray;
     return answer;

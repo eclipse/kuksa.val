@@ -364,7 +364,6 @@ string VssCommandProcessor::processQuery(const string &req_json,
 
     if (action == "get") {
         response = processGet2(channel, root);
-        //response = processGet(channel, request_id, path);
 #ifdef JSON_SIGNING_ON
         response = signer->sign(response);
 #endif  
