@@ -43,6 +43,9 @@ VSSRequestValidator::VSSRequestValidator(std::shared_ptr<ILogger> loggerUtil) {
 
     this->setSchema = jsoncons::jsonschema::make_schema(json::parse(VSS_JSON::SCHEMA_SET), vss_resolver);
     this->setValidator =  new jsoncons::jsonschema::json_validator<json>(this->setSchema);
+
+    this->updateTreeSchema = jsoncons::jsonschema::make_schema(json::parse(VSS_JSON::SCHEMA_UPDATE_TREE), vss_resolver);
+    this->updateTreeValidator =  new jsoncons::jsonschema::json_validator<json>(this->updateTreeSchema);
 }
 
 VSSRequestValidator::~VSSRequestValidator() {
@@ -80,6 +83,22 @@ void VSSRequestValidator::validateSet(jsoncons::json &request) {
 
     if (!valid) {
         throw jsoncons::jsonschema::schema_error("VSS set malformed: "+ss.str());
+    }
+}
+
+void VSSRequestValidator::validateUpdateTree(jsoncons::json &request) {
+    std::stringstream ss;
+    bool valid=true;
+    auto reporter = [&ss,&valid](const jsoncons::jsonschema::validation_output& o)
+        {
+            valid=false;
+            ss << o.instance_location() << ": " << o.message() << "\n";
+    };
+
+    this->setValidator->validate(request, reporter);
+
+    if (!valid) {
+        throw jsoncons::jsonschema::schema_error("VSS update tree malformed: "+ss.str());
     }
 }
 

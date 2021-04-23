@@ -70,6 +70,32 @@ static const char* SCHEMA_SET=R"(
 }
 )";
 
+
+static const char* SCHEMA_UPDATE_TREE=R"(
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Set Request",
+    "description": "Enables the client to set one or more values once.",
+    "type": "object",
+    "required": ["action", "path", "value", "requestId"],
+    "properties": {
+        "action": {
+            "enum": [ "updateMetaData"],
+            "description": "The identifier for the set request"
+        },
+        "path": {
+            "$ref": "viss#/definitions/path"
+        },
+        "value": {
+            "$ref": "viss#/definitions/value"
+        },
+        "requestId": {
+            "$ref": "viss#/definitions/requestId"
+        }
+    }
+}
+)";
+
 static const char* SCHEMA = (R"(
 {
     "definitions": {
