@@ -46,33 +46,34 @@ namespace{
       throw genException(msg);
     }
 
+    dest.insert_or_assign(key, source["value"]);
     if (source["datatype"] == "uint8")
-      dest[key] = source.get_value_or<uint8_t>("value", "---");
+      dest[key] = source["value"].as<uint8_t>();
     else if (source["datatype"] == "int8")
-      dest[key] = source.get_value_or<int8_t>("value", "---");
+      dest[key] = source["value"].as<int8_t>();
     else if (source["datatype"] == "uint16")
-      dest[key] = source.get_value_or<uint16_t>("value", "---");
+      dest[key] = source["value"].as<uint16_t>();
     else if (source["datatype"] == "int16")
-      dest[key] = source.get_value_or<int16_t>("value", "---");
+      dest[key] = source["value"].as<int16_t>();
     else if (source["datatype"] == "uint32")
-      dest[key] = source.get_value_or<uint32_t>("value", "---");
+      dest[key] = source["value"].as<uint32_t>();
     else if (source["datatype"] == "int32")
-      dest[key] = source.get_value_or<int32_t>("value", "---");
+      dest[key] = source["value"].as<int32_t>();
     else if (source["datatype"] == "uint64")
-      dest[key] = source.get_value_or<uint64_t>("value", "---");
+      dest[key] = source["value"].as<uint64_t>();
     else if (source["datatype"] == "int64")
-      dest[key] = source.get_value_or<int64_t>("value", "---");
+      dest[key] = source["value"].as<int64_t>();
     else if (source["datatype"] == "boolean")
-      dest[key] = source.get_value_or<bool>("value", "---");
+      dest[key] = source["value"].as<bool>();
     else if (source["datatype"] == "float")
-      dest[key] = source.get_value_or<float>("value", "---");
+      dest[key] = source["value"].as<float>();
     else if (source["datatype"] == "double")
-      dest[key] = source.get_value_or<double>("value", "---");
+      dest[key] = source["value"].as<double>();
     else if (source["datatype"] == "string")
-      dest[key] = source.get_value_or<std::string>("value", "---");
+      dest[key] = source["value"].as<std::string>();
     else {
       logger->Log(LogLevel::WARNING, "VSSDatabase unknown datatype \"" + source["datatype"].as<std::string>() + "\". Falling back to string" );
-      dest[key] = source.get_value_or<std::string>("value", "---");
+      dest[key] = source["value"].as<std::string>();
     }
   }
 }
@@ -425,7 +426,11 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
     }
     jsoncons::json answer;
     jsoncons::json result = resArray[0];
-    setJsonValue(logger_, answer, result, path.to_string());
+    if (result.contains("value")) {
+      setJsonValue(logger_, answer, result, path.to_string());
+    } else {
+      answer[path.to_string()] = "---";
+    }
     if (result.contains("timestamp")) {
       answer["timestamp"] = result["timestamp"].as<string>();
     } else {

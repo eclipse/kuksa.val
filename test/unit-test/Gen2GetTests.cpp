@@ -268,66 +268,11 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   jsonGetRequestForSignal["requestId"] = requestId;
 
   std::string expectedJsonString{R"(
-     {
+    {
     "action": "get", 
     "requestId": "1", 
-    "value": [
-        {
-            "Vehicle/VehicleIdentification/vehicleinteriorType": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleinteriorColor": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleSpecialUsage": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleSeatingCapacity": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleModelDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleConfiguration": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/purchaseDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/productionDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/meetsEmissionStandard": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/knownVehicleDamages": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/dateVehicleFirstRegistered": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/bodyType": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Year": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/WMI": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/VIN": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Model": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Brand": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/ACRISSCode": "---"
-        }
-    ]
-}
+    "value": [{"Vehicle/VehicleIdentification/ACRISSCode":"---"},{"Vehicle/VehicleIdentification/Brand":"---"},{"Vehicle/VehicleIdentification/Model":"---"},{"Vehicle/VehicleIdentification/VIN":"---"},{"Vehicle/VehicleIdentification/WMI":"---"},{"Vehicle/VehicleIdentification/Year":"---"},{"Vehicle/VehicleIdentification/bodyType":"---"},{"Vehicle/VehicleIdentification/dateVehicleFirstRegistered":"---"},{"Vehicle/VehicleIdentification/knownVehicleDamages":"---"},{"Vehicle/VehicleIdentification/meetsEmissionStandard":"---"},{"Vehicle/VehicleIdentification/productionDate":"---"},{"Vehicle/VehicleIdentification/purchaseDate":"---"},{"Vehicle/VehicleIdentification/vehicleConfiguration":"---"},{"Vehicle/VehicleIdentification/vehicleModelDate":"---"},{"Vehicle/VehicleIdentification/vehicleSeatingCapacity":"---"},{"Vehicle/VehicleIdentification/vehicleSpecialUsage":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorColor":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorType":"---"}]
+    }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
@@ -376,66 +321,11 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   jsonGetRequestForSignal["requestId"] = requestId;
 
   std::string expectedJsonString{R"(
-     {
+    {
     "action": "get", 
     "requestId": "1", 
-    "value": [
-        {
-            "Vehicle/VehicleIdentification/vehicleinteriorType": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleinteriorColor": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleSpecialUsage": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleSeatingCapacity": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleModelDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleConfiguration": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/purchaseDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/productionDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/meetsEmissionStandard": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/knownVehicleDamages": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/dateVehicleFirstRegistered": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/bodyType": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Year": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/WMI": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/VIN": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Model": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Brand": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/ACRISSCode": "---"
-        }
-    ]
-}
+    "value": [{"Vehicle/VehicleIdentification/ACRISSCode":"---"},{"Vehicle/VehicleIdentification/Brand":"---"},{"Vehicle/VehicleIdentification/Model":"---"},{"Vehicle/VehicleIdentification/VIN":"---"},{"Vehicle/VehicleIdentification/WMI":"---"},{"Vehicle/VehicleIdentification/Year":"---"},{"Vehicle/VehicleIdentification/bodyType":"---"},{"Vehicle/VehicleIdentification/dateVehicleFirstRegistered":"---"},{"Vehicle/VehicleIdentification/knownVehicleDamages":"---"},{"Vehicle/VehicleIdentification/meetsEmissionStandard":"---"},{"Vehicle/VehicleIdentification/productionDate":"---"},{"Vehicle/VehicleIdentification/purchaseDate":"---"},{"Vehicle/VehicleIdentification/vehicleConfiguration":"---"},{"Vehicle/VehicleIdentification/vehicleModelDate":"---"},{"Vehicle/VehicleIdentification/vehicleSeatingCapacity":"---"},{"Vehicle/VehicleIdentification/vehicleSpecialUsage":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorColor":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorType":"---"}]
+    }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
@@ -531,7 +421,7 @@ MOCK_EXPECT(subHandlerMock->updateByUUID)
       .once()
       .with(mock::any, "100")
       .returns(true);
-  db->setSignal(channel,vss_path,value);
+  db->setSignal(vss_path,value);
   
 
   jsonGetRequestForSignal["action"] = "get";

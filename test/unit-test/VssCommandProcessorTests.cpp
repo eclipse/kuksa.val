@@ -26,7 +26,7 @@
 #include "IAuthenticatorMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
 
-#include "AccessChecker.hpp"
+#include "IAccessCheckerMock.hpp"
 
 #include "VSSPath.hpp"
 
@@ -39,7 +39,7 @@ namespace {
   std::shared_ptr<ILoggerMock> logMock;
   std::shared_ptr<IVssDatabaseMock> dbMock;
   std::shared_ptr<IAuthenticatorMock> authMock;
-  std::shared_ptr<IAccessChecker> accCheck;
+  std::shared_ptr<IAccessCheckerMock> accCheckMock;
 
   std::shared_ptr<ISubscriptionHandlerMock> subsHndlMock;
 
@@ -53,9 +53,9 @@ namespace {
       authMock = std::make_shared<IAuthenticatorMock>();
       subsHndlMock = std::make_shared<ISubscriptionHandlerMock>();
       //real auth checker, becasue this test module has been written before this could be mocked
-      accCheck = std::make_shared<AccessChecker>(authMock);
+      accCheckMock = std::make_shared<IAccessCheckerMock>();
 
-      processor = std::make_unique<VssCommandProcessor>(logMock, dbMock, authMock, accCheck, subsHndlMock);
+      processor = std::make_unique<VssCommandProcessor>(logMock, dbMock, authMock, accCheckMock, subsHndlMock);
     }
     ~TestSuiteFixture() {
       logMock.reset();
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
   // setup
 
-  channel.setAuthorized(true);
+  channel.setAuthorized(false);
   channel.setConnID(1);
 
   jsonGetRequestForSignal["action"] = "get";
@@ -149,6 +149,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
     .once()
     .with(mock::equal(path2))
     .returns(std::list<VSSPath>{path2});
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+    .once()
+    .with(mock::any, mock::equal(path2))
+    .returns(true);
   MOCK_EXPECT(dbMock->getSignal)
     .once()
     .with(path2)
@@ -192,6 +196,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
+  MOCK_EXPECT(dbMock->getLeafPaths)
+    .once()
+    .with(mock::equal(path2))
+    .returns(std::list<VSSPath>{path2});
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+    .once()
+    .with(mock::any, mock::equal(path2))
+    .returns(false);
 
   MOCK_EXPECT(dbMock->getSignal)
     .with(path2)
@@ -239,6 +251,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
+  MOCK_EXPECT(dbMock->getLeafPaths)
+    .once()
+    .with(mock::equal(path2))
+    .returns(std::list<VSSPath>{path2});
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+    .once()
+    .with(mock::any, mock::equal(path2))
+    .returns(true);
 
   MOCK_EXPECT(dbMock->getSignal)
     .with(path2)
@@ -289,9 +309,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignal)
-    .with(path2)
-    .returns(jsonSignalValue);
+  MOCK_EXPECT(dbMock->getLeafPaths)
+    .once()
+    .with(mock::equal(path2))
+    .returns(std::list<VSSPath>{});
 
   // run UUT
   auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
@@ -339,13 +360,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
-
+  
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->pathExists)
     .with(vsspath).returns(false);
-  MOCK_EXPECT(dbMock->setSignal)
-    .with(vsspath, jsonValue)
-    .throws(noPathFoundonTree(""));
 
   // run UUT
   auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);

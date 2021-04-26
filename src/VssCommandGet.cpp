@@ -63,8 +63,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
     for (const auto &vssPath : vssPaths) {
       // check Read access here.
       if (!accessValidator_->checkReadAccess(channel, vssPath)) {
-        std::string vssPathStr = vssPath.isGen1Origin()? vssPath.getVSSGen1Path() : vssPath.getVSSPath();
-        noPermissionPaths.push_back(vssPathStr);
+        noPermissionPaths.push_back(vssPath.to_string());
       } else {
         // TODO: This will add the "last"  timestamp, changing behavior from previous
         //"timestamp of the get request" approach 
@@ -87,16 +86,17 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
       logger->Log(LogLevel::ERROR, msg.str());
       return JsonResponses::noAccess(requestId, "get", msg.str());
     }
+    if (vssPaths.size() == 1) {
+      answer["path"] = (pathStr);
+      answer.insert_or_assign("value", valueArray[0][pathStr]);
+    } else {
+      answer["value"] = valueArray;
+    }
     if (noPermissionPaths.size() > 0) {
       stringstream msg;
       msg << "No read access to [ "
           << boost::algorithm::join(noPermissionPaths, ",") << " ]";
       answer["warning"] = std::string(msg.str());
-    }
-    if (vssPaths.size() == 1) {
-      answer.merge(valueArray[0]);
-    } else {
-      answer["value"] = valueArray;
     }
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
