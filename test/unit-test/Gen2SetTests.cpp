@@ -384,6 +384,42 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
   BOOST_TEST(res == expectedJson);
 }
 
+BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
+  WsChannel channel;
+
+  jsoncons::json jsonSetRequestForSignal;
+  jsoncons::json jsonNoAccess;
+
+  string requestId = "1";
+  const VSSPath vss_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
+
+  // setup
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["path"] = vss_path.to_string();
+  jsonSetRequestForSignal["requestId"] = requestId;
+  jsonSetRequestForSignal["value"] = 100;
+
+  JsonResponses::noAccess(requestId, "set", "No write access to " + vss_path.to_string(), jsonNoAccess);
+
+
+  // expectations
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .returns(false);
+
+  // run UUT
+  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+
+  // timestamp must not be zero
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  jsonNoAccess["timestamp"] = res["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res == jsonNoAccess);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

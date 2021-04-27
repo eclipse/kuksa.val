@@ -228,6 +228,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonSignalValue;
+  jsoncons::json jsonGetResponseForSignal;
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
@@ -242,10 +243,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  jsonSignalValue["action"] = "get";
-  jsonSignalValue["requestId"] = requestId;
+  jsonSignalValue["path"] = path;
   jsonSignalValue["value"] = 123;
   jsonSignalValue["timestamp"] = 11111111;
+
+  jsonGetResponseForSignal = jsonGetRequestForSignal;
+  jsonGetResponseForSignal["value"] = 123;
+  jsonGetResponseForSignal["timestamp"] = 11111111;
+
 
   // expectations
 
@@ -270,10 +275,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
-  BOOST_TEST(res == jsonSignalValue);
+  BOOST_TEST(res == jsonGetResponseForSignal);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
@@ -418,6 +420,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(true);
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   MOCK_EXPECT(dbMock->setSignal)
     .with(vsspath, jsonValue)
@@ -469,6 +475,11 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
+  MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(false);
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->setSignal)
@@ -522,9 +533,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
-
-  jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(true);
+  jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   
   MOCK_EXPECT(dbMock->setSignal)
@@ -582,6 +596,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   //as db is mocked, this test basically only checks if the command proccesor routes the query accordingly
   MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(true);
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   MOCK_EXPECT(dbMock->setSignal)
     .with(vsspath, mock::any).returns(jsonSignalValue);

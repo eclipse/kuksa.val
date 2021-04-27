@@ -72,9 +72,10 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
         //is implemented, as VISS2 will allow attaching individual timestamps to
         //individual data
         jsoncons::json signal = database->getSignal(vssPath);
-        answer["timestamp"] = signal["timestamp"].as<string>();
-        signal.erase("timestamp");
-        valueArray.push_back(signal);
+        jsoncons::json arrayValue;
+        arrayValue.insert_or_assign(signal["path"].as_string(), signal["value"]);
+        answer.insert_or_assign("timestamp", signal["timestamp"]);
+        valueArray.push_back(arrayValue);
       }
     }
     if (vssPaths.size() < 1) {
@@ -87,8 +88,8 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
       return JsonResponses::noAccess(requestId, "get", msg.str());
     }
     if (vssPaths.size() == 1) {
-      answer["path"] = (pathStr);
-      answer.insert_or_assign("value", valueArray[0][pathStr]);
+      answer.insert_or_assign("path", vssPaths.front().to_string());
+      answer.insert_or_assign("value", valueArray[0][vssPaths.front().to_string()]);
     } else {
       answer["value"] = valueArray;
     }
