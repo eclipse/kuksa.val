@@ -93,12 +93,6 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
     } else {
       answer["value"] = valueArray;
     }
-    if (noPermissionPaths.size() > 0) {
-      stringstream msg;
-      msg << "No read access to [ "
-          << boost::algorithm::join(noPermissionPaths, ",") << " ]";
-      answer["warning"] = std::string(msg.str());
-    }
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(

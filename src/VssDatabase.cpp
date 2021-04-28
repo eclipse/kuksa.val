@@ -104,12 +104,8 @@ vector<string> getPathTokens(string path) {
   return tokens;
 }
 
-vector<string> tokenizePath(string path) {
-  vector<string> tokens;
-  boost::split(tokens,path, boost::is_any_of("/"));
-  return tokens;
-}
-
+// Return a list of path of all leaf nodes, which are the children of the given path
+// If the given path is already a leaf node, the to returned list contains only the given nodes 
 list<VSSPath> VssDatabase::getLeafPaths(const VSSPath &path) {
   list<VSSPath> paths;
   bool path_is_gen1 = path.isGen1Origin();
@@ -174,6 +170,7 @@ vector<string> getVSSTokens(string path) {
 }
 
 
+// Apply changes for the given sourceTree
 void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree){
   std::error_code ec;
 
@@ -341,6 +338,7 @@ jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
 }
 
 
+// Set signal value of given path
 jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &value) {
   jsoncons::json answer;
   
@@ -372,7 +370,7 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
 }
 
 
-// Returns response JSON for get request, checking authorization.
+// Returns signal in JSON format
 jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
     jsoncons::json resArray;
     {
