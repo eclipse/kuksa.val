@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::noAccess(requestId, "get", "No read access to " + path, jsonNoAccess);
+  JsonResponses::noAccess(requestId, "get", "No enough read access to " + path, jsonNoAccess);
 
   // expectations
 
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
   MOCK_EXPECT(dbMock->getSignal)
     .with(path2)
-    .throws(noPermissionException("No read access to " + path));
+    .throws(noPermissionException("No enough read access to " + path));
 
   // run UUT
   auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);

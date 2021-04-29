@@ -56,14 +56,16 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
 
   jsoncons::json answer;
   jsoncons::json valueArray = jsoncons::json::array();
-  std::vector<std::string> noPermissionPaths;
 
   try {
     list<VSSPath> vssPaths = database->getLeafPaths(path);
     for (const auto &vssPath : vssPaths) {
       // check Read access here.
       if (!accessValidator_->checkReadAccess(channel, vssPath)) {
-        noPermissionPaths.push_back(vssPath.to_string());
+        stringstream msg;
+        msg << "No enough read access to " << pathStr;
+        logger->Log(LogLevel::ERROR, msg.str());
+        return JsonResponses::noAccess(requestId, "get", msg.str());
       } else {
         // TODO: This will add the "last"  timestamp, changing behavior from previous
         //"timestamp of the get request" approach 
@@ -80,12 +82,6 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
     }
     if (vssPaths.size() < 1) {
       return JsonResponses::pathNotFound(requestId, "get", pathStr);
-    }
-    if (vssPaths.size() == noPermissionPaths.size()) {
-      stringstream msg;
-      msg << "No read access to " << pathStr;
-      logger->Log(LogLevel::ERROR, msg.str());
-      return JsonResponses::noAccess(requestId, "get", msg.str());
     }
     if (vssPaths.size() == 1) {
       answer.insert_or_assign("path", vssPaths.front().to_string());
