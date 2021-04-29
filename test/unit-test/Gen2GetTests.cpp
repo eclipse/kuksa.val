@@ -67,7 +67,7 @@ struct TestSuiteFixture {
     std::string vss_file{"test_vss_rel_2.0.json"};
 
     MOCK_EXPECT(logMock->Log).at_least(0);  // ignore log events
-    db = std::make_shared<VssDatabase>(logMock, subHandlerMock, accCheckMock);
+    db = std::make_shared<VssDatabase>(logMock, subHandlerMock);
     db->initJsonTree(vss_file);
 
     processor = std::make_unique<VssCommandProcessor>(
@@ -268,78 +268,18 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   jsonGetRequestForSignal["requestId"] = requestId;
 
   std::string expectedJsonString{R"(
-     {
+    {
     "action": "get", 
     "requestId": "1", 
-    "value": [
-        {
-            "Vehicle/VehicleIdentification/vehicleinteriorType": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleinteriorColor": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleSpecialUsage": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleSeatingCapacity": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleModelDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleConfiguration": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/purchaseDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/productionDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/meetsEmissionStandard": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/knownVehicleDamages": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/dateVehicleFirstRegistered": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/bodyType": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Year": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/WMI": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/VIN": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Model": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Brand": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/ACRISSCode": "---"
-        }
-    ]
-}
+    "value": [{"Vehicle/VehicleIdentification/ACRISSCode":"---"},{"Vehicle/VehicleIdentification/Brand":"---"},{"Vehicle/VehicleIdentification/Model":"---"},{"Vehicle/VehicleIdentification/VIN":"---"},{"Vehicle/VehicleIdentification/WMI":"---"},{"Vehicle/VehicleIdentification/Year":"---"},{"Vehicle/VehicleIdentification/bodyType":"---"},{"Vehicle/VehicleIdentification/dateVehicleFirstRegistered":"---"},{"Vehicle/VehicleIdentification/knownVehicleDamages":"---"},{"Vehicle/VehicleIdentification/meetsEmissionStandard":"---"},{"Vehicle/VehicleIdentification/productionDate":"---"},{"Vehicle/VehicleIdentification/purchaseDate":"---"},{"Vehicle/VehicleIdentification/vehicleConfiguration":"---"},{"Vehicle/VehicleIdentification/vehicleModelDate":"---"},{"Vehicle/VehicleIdentification/vehicleSeatingCapacity":"---"},{"Vehicle/VehicleIdentification/vehicleSpecialUsage":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorColor":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorType":"---"}]
+    }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // it needs to check all elements in subtree. Expect one example explicitely,
   // and allow for others
-  auto vss_access_path =
-      VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
   MOCK_EXPECT(accCheckMock->checkReadAccess)
-      .once()
-      .with(mock::any, vss_access_path)
-      .returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+      .exactly(18)
       .with(mock::any, mock::any)
       .returns(true);
 
@@ -368,7 +308,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   const VSSPath vss_path = VSSPath::fromVSSGen2(path);
 
   // setup
-  channel.setAuthorized(false);
+  channel.setAuthorized(true);
   channel.setConnID(1);
 
   jsonGetRequestForSignal["action"] = "get";
@@ -376,78 +316,18 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   jsonGetRequestForSignal["requestId"] = requestId;
 
   std::string expectedJsonString{R"(
-     {
+    {
     "action": "get", 
     "requestId": "1", 
-    "value": [
-        {
-            "Vehicle/VehicleIdentification/vehicleinteriorType": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleinteriorColor": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleSpecialUsage": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleSeatingCapacity": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleModelDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/vehicleConfiguration": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/purchaseDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/productionDate": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/meetsEmissionStandard": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/knownVehicleDamages": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/dateVehicleFirstRegistered": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/bodyType": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Year": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/WMI": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/VIN": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Model": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/Brand": "---"
-        }, 
-        {
-            "Vehicle/VehicleIdentification/ACRISSCode": "---"
-        }
-    ]
-}
+    "value": [{"Vehicle/VehicleIdentification/ACRISSCode":"---"},{"Vehicle/VehicleIdentification/Brand":"---"},{"Vehicle/VehicleIdentification/Model":"---"},{"Vehicle/VehicleIdentification/VIN":"---"},{"Vehicle/VehicleIdentification/WMI":"---"},{"Vehicle/VehicleIdentification/Year":"---"},{"Vehicle/VehicleIdentification/bodyType":"---"},{"Vehicle/VehicleIdentification/dateVehicleFirstRegistered":"---"},{"Vehicle/VehicleIdentification/knownVehicleDamages":"---"},{"Vehicle/VehicleIdentification/meetsEmissionStandard":"---"},{"Vehicle/VehicleIdentification/productionDate":"---"},{"Vehicle/VehicleIdentification/purchaseDate":"---"},{"Vehicle/VehicleIdentification/vehicleConfiguration":"---"},{"Vehicle/VehicleIdentification/vehicleModelDate":"---"},{"Vehicle/VehicleIdentification/vehicleSeatingCapacity":"---"},{"Vehicle/VehicleIdentification/vehicleSpecialUsage":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorColor":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorType":"---"}]
+    }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // it needs to check all elements in subtree. Expect one example explicitely,
   // and allow for others
-  auto vss_access_path =
-      VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
   MOCK_EXPECT(accCheckMock->checkReadAccess)
-      .once()
-      .with(mock::any, vss_access_path)
-      .returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
+      .exactly(18)
       .with(mock::any, mock::any)
       .returns(true);
 
@@ -473,7 +353,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
 
   string requestId = "1";
   std::string path{"Vehicle/*/FluxCapacitorCharge"};
-  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
+  const VSSPath vss_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
 
   // setup
   channel.setAuthorized(false);
@@ -498,6 +378,42 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
   BOOST_TEST(res == jsonPathNotFound);
 }
 
+BOOST_AUTO_TEST_CASE(Gen2_Get_noPermissionException) {
+  WsChannel channel;
+
+  jsoncons::json jsonGetRequestForSignal;
+  jsoncons::json jsonNoAccess;
+
+  string requestId = "1";
+  const VSSPath vss_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
+
+  // setup
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+
+  jsonGetRequestForSignal["action"] = "get";
+  jsonGetRequestForSignal["path"] = vss_path.to_string();
+  jsonGetRequestForSignal["requestId"] = requestId;
+
+  JsonResponses::noAccess(requestId, "get", "Insufficient read access to " + vss_path.to_string(), jsonNoAccess);
+
+
+  // expectations
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+    .returns(false);
+
+  // run UUT
+  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+
+  // timestamp must not be zero
+  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  jsonNoAccess["timestamp"] = res["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res == jsonNoAccess);
+
+}
 
 /** Differnt calls to get a specific path should yield the same timestamp
  *  if the value associated with the path has not been updated in
@@ -518,20 +434,16 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
   channel.setConnID(1);
 
   //Setting data (to put a valid timestamp into tree)
-  jsoncons::json value="100";
-  MOCK_EXPECT(accCheckMock->checkWriteAccess)
-      .once()
-      .with(mock::any, vss_path)
-      .returns(true);
+  jsoncons::json value=100;
   MOCK_EXPECT(subHandlerMock->updateByPath)
       .once()
-      .with(path, "100")
+      .with(path, value)
       .returns(true);
-MOCK_EXPECT(subHandlerMock->updateByUUID)
+  MOCK_EXPECT(subHandlerMock->updateByUUID)
       .once()
-      .with(mock::any, "100")
+      .with(mock::any, value)
       .returns(true);
-  db->setSignal(channel,vss_path,value);
+  db->setSignal(vss_path,value);
   
 
   jsonGetRequestForSignal["action"] = "get";

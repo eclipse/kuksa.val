@@ -38,20 +38,16 @@ class VssDatabase : public IVssDatabase {
   std::shared_ptr<ILogger> logger_;
   std::mutex rwMutex_;
   std::shared_ptr<ISubscriptionHandler> subHandler_;
-  std::shared_ptr<IAccessChecker> accessValidator_;
-
-  std::list<std::string> getJSONPaths(const VSSPath& path);
-
 
  public:
   VssDatabase(std::shared_ptr<ILogger> loggerUtil,
-              std::shared_ptr<ISubscriptionHandler> subHandle,
-              std::shared_ptr<IAccessChecker> accValidator);
+              std::shared_ptr<ISubscriptionHandler> subHandle);
   ~VssDatabase();
 
   //helpers
   bool pathExists(const VSSPath &path) override;
   bool pathIsWritable(const VSSPath &path) override;
+  std::list<VSSPath> getLeafPaths(const VSSPath& path) override;
 
   void checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val) override;
 
@@ -62,11 +58,10 @@ class VssDatabase : public IVssDatabase {
   void updateJsonTree(WsChannel& channel, const jsoncons::json& value) override;
   void updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& newTree) override;
   jsoncons::json getMetaData(const VSSPath& path) override;
+  
+  jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) override; //gen2 version
+  jsoncons::json getSignal(const VSSPath &path) override; //Gen2 version
 
-  jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value) override; //gen2 version
-
-
-  jsoncons::json getSignal(WsChannel& channel, const VSSPath &path) override; //Gen2 version
 
 };
 #endif

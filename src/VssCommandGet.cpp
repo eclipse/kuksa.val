@@ -13,16 +13,16 @@
  */
 
 #include "JsonResponses.hpp"
+#include "VSSPath.hpp"
 #include "VSSRequestValidator.hpp"
 #include "VssCommandProcessor.hpp"
-#include "VSSPath.hpp"
 #include "exception.hpp"
 
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <vector>
 #include "ILogger.hpp"
 #include "IVssDatabase.hpp"
-
-#include <boost/algorithm/string.hpp>
-
 
 /** Implements the Websocket get request accroding to GEN2, with GEN1 backwards
  * compatibility **/
@@ -54,26 +54,50 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
   logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId +
                                      " for path: " + path.to_string());
 
-  //-------------------------------------
-  jsoncons::json res;
+  jsoncons::json answer;
+  jsoncons::json valueArray = jsoncons::json::array();
+
   try {
-    res = database->getSignal(channel, path);
-  } catch (noPermissionException &nopermission) {
-    logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(requestId, "get", nopermission.what());
+    list<VSSPath> vssPaths = database->getLeafPaths(path);
+    for (const auto &vssPath : vssPaths) {
+      // check Read access here.
+      if (!accessValidator_->checkReadAccess(channel, vssPath)) {
+        stringstream msg;
+        msg << "Insufficient read access to " << pathStr;
+        logger->Log(LogLevel::ERROR, msg.str());
+        return JsonResponses::noAccess(requestId, "get", msg.str());
+      } else {
+        // TODO: This will add the "last"  timestamp, changing behavior from previous
+        //"timestamp of the get request" approach 
+        //Both are not very helpful when querying multiple values.
+        //This will be fixed once https://github.com/eclipse/kuksa.val/issues/158
+        //is implemented, as VISS2 will allow attaching individual timestamps to
+        //individual data
+        jsoncons::json signal = database->getSignal(vssPath);
+        jsoncons::json arrayValue;
+        arrayValue.insert_or_assign(signal["path"].as_string(), signal["value"]);
+        answer.insert_or_assign("timestamp", signal["timestamp"]);
+        valueArray.push_back(arrayValue);
+      }
+    }
+    if (vssPaths.size() < 1) {
+      return JsonResponses::pathNotFound(requestId, "get", pathStr);
+    }
+    if (vssPaths.size() == 1) {
+      answer.insert_or_assign("path", vssPaths.front().to_string());
+      answer.insert_or_assign("value", valueArray[0][vssPaths.front().to_string()]);
+    } else {
+      answer["value"] = valueArray;
+    }
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
         requestId, "get", string("Unhandled error: ") + e.what());
   }
 
-  if (!res.contains("value")) {
-    return JsonResponses::pathNotFound(requestId, "get", path.to_string());
-  } else {
-    res["action"] = "get";
-    res["requestId"] = requestId;
-    stringstream ss;
-    ss << pretty_print(res);
-    return ss.str();
-  }
+  answer["action"] = "get";
+  answer["requestId"] = requestId;
+  stringstream ss;
+  ss << pretty_print(answer);
+  return ss.str();
 }

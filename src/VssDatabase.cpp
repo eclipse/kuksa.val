@@ -33,58 +33,11 @@ using namespace std;
 using namespace jsoncons;
 using jsoncons::json;
 
-namespace {
-  
-  // Utility method for setting values to JSON.
-  void setJsonValue(std::shared_ptr<ILogger> logger,
-                    jsoncons::json& dest,
-                    jsoncons::json& source,
-                    string key) {
-    if (!source.contains("type")) {
-      string msg = "Unknown type for signal found at " + key;
-      logger->Log(LogLevel::ERROR, "VssDatabase::setJsonValue : " + msg);
-
-      throw genException(msg);
-    }
-
-    if (source["datatype"] == "uint8")
-      dest[key] = source["value"].as<uint8_t>();
-    else if (source["datatype"] == "int8")
-      dest[key] = source["value"].as<int8_t>();
-    else if (source["datatype"] == "uint16")
-      dest[key] = source["value"].as<uint16_t>();
-    else if (source["datatype"] == "int16")
-      dest[key] = source["value"].as<int16_t>();
-    else if (source["datatype"] == "uint32")
-      dest[key] = source["value"].as<uint32_t>();
-    else if (source["datatype"] == "int32")
-      dest[key] = source["value"].as<int32_t>();
-    else if (source["datatype"] == "uint64")
-      dest[key] = source["value"].as<uint64_t>();
-    else if (source["datatype"] == "int64")
-      dest[key] = source["value"].as<int64_t>();
-    else if (source["datatype"] == "boolean")
-      dest[key] = source["value"].as<bool>();
-    else if (source["datatype"] == "float")
-      dest[key] = source["value"].as<float>();
-    else if (source["datatype"] == "double")
-      dest[key] = source["value"].as<double>();
-    else if (source["datatype"] == "string")
-      dest[key] = source["value"].as<std::string>();
-    else {
-      logger->Log(LogLevel::WARNING, "VSSDatabase unknown datatype \"" + source["datatype"].as<std::string>() + "\". Falling back to string" );
-      dest[key] = source["value"].as<std::string>();
-    }
-  }
-}
-
 // Constructor
 VssDatabase::VssDatabase(std::shared_ptr<ILogger> loggerUtil,
-                         std::shared_ptr<ISubscriptionHandler> subHandle,
-                         std::shared_ptr<IAccessChecker> accValidator) {
+                         std::shared_ptr<ISubscriptionHandler> subHandle) {
   logger_ = loggerUtil;
   subHandler_ = subHandle;
-  accessValidator_ = accValidator;
 }
 
 VssDatabase::~VssDatabase() {}
@@ -135,7 +88,7 @@ bool VssDatabase::pathIsWritable(const VSSPath &path) {
 
 //returns true if the given path contains usable leafs
 bool VssDatabase::checkPathValid(const VSSPath & path){
-    return !getJSONPaths(path).empty();
+    return !getLeafPaths(path).empty();
 }
 
 // Tokenizes path with '.' as separator.
@@ -151,18 +104,16 @@ vector<string> getPathTokens(string path) {
   return tokens;
 }
 
-vector<string> tokenizePath(string path) {
-  vector<string> tokens;
-  boost::split(tokens,path, boost::is_any_of("/"));
-  return tokens;
-}
-
-list<string> VssDatabase::getJSONPaths(const VSSPath &path) {
-  list<string> paths;
+// Return a list of path of all leaf nodes, which are the children of the given path
+// If the given path is already a leaf node, the to returned list contains only the given nodes 
+list<VSSPath> VssDatabase::getLeafPaths(const VSSPath &path) {
+  list<VSSPath> paths;
+  bool path_is_gen1 = path.isGen1Origin();
 
   //If this is a branch, recures
   jsoncons::json pathRes;
   try {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
     pathRes = jsonpath::json_query(data_tree__, path.getJSONPath(), jsonpath::result_type::path);
   }
   catch (jsonpath::jsonpath_error &e) { //no valid path, return empty list
@@ -170,22 +121,24 @@ list<string> VssDatabase::getJSONPaths(const VSSPath &path) {
     return paths;
   }
 
-  string json = pathRes.as_string();
   for (auto jpath : pathRes.array_range()) {
-    jsoncons::json resArray = jsonpath::json_query(data_tree__, jpath.as<string>());
+    jsoncons::json resArray;
+    {
+      std::lock_guard<std::mutex> lock_guard(rwMutex_);
+      resArray = jsonpath::json_query(data_tree__, jpath.as<string>());
+    }
     if (resArray.size() == 0) {
       continue;
     }
 
     //recurse if branch
     if (resArray[0].contains("type") && resArray[0]["type"].as<string>() == "branch") {
-      // TODO check if false here ok or not
-      VSSPath recursepath = VSSPath::fromJSON(jpath.as<string>()+"['children'][*]", false);
-      paths.merge(getJSONPaths(recursepath));
+      VSSPath recursepath = VSSPath::fromJSON(jpath.as<string>()+"['children'][*]", path_is_gen1);
+      paths.merge(getLeafPaths(recursepath));
       continue;
     }
     else {
-      paths.push_back(jpath.as<string>());
+      paths.push_back(VSSPath::fromJSON(jpath.as<string>(), path_is_gen1));
     }
   }
 
@@ -217,6 +170,7 @@ vector<string> getVSSTokens(string path) {
 }
 
 
+// Apply changes for the given sourceTree
 void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree){
   std::error_code ec;
 
@@ -384,25 +338,19 @@ jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
 }
 
 
-jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value) {
+// Set signal value of given path
+jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &value) {
   jsoncons::json answer;
   
   answer["path"] = path.to_string();
-
-  if (!accessValidator_->checkWriteAccess(channel, path )) {
-      stringstream msg;
-      msg << "No write access to " << path.getVSSPath();
-      throw noPermissionException(msg.str());
-  }
 
   jsoncons::json res; 
   {
     std::lock_guard<std::mutex> lock_guard(rwMutex_);
     res = jsonpath::json_query(data_tree__, path.getJSONPath());
     if (res.is_array() && res.size() == 1) {
-    jsoncons::json resJson = res[0];
+      jsoncons::json resJson = res[0];
       if (resJson.contains("datatype")) {
-        string value_type = resJson["datatype"].as<string>();
         checkAndSanitizeType(resJson, value);
         resJson.insert_or_assign("value", value);
         resJson.insert_or_assign("timestamp", JsonResponses::getTimeStamp());
@@ -422,43 +370,18 @@ jsoncons::json  VssDatabase::setSignal(WsChannel& channel, const VSSPath &path, 
 }
 
 
-// Returns response JSON for get request, checking authorization.
-jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& path) {
-  //bool isBranch = false;
-
-  list<string> jPaths;
-  {
-    std::lock_guard<std::mutex> lock_guard(rwMutex_);
-    jPaths = getJSONPaths(path);
-  }
-  int pathsFound = jPaths.size();
-  if (pathsFound == 0) {
-    jsoncons::json answer;
-    return answer;
-  }
-
-  logger_->Log(LogLevel::VERBOSE, "VssDatabase::getSignal: " + to_string(pathsFound)
-              + " signals found under path = \"" + path.getVSSPath() + "\"");
- 
-  if (pathsFound == 1) {
-    string jPath = jPaths.back();
-    VSSPath vsspath=VSSPath::fromJSON(jPath, path.isGen1Origin());
-    // check Read access here.
-    if (!accessValidator_->checkReadAccess(channel, vsspath )) {
-      stringstream msg;
-      msg << "No read access to " << vsspath.to_string();
-      throw noPermissionException(msg.str());
-    }
+// Returns signal in JSON format
+jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
     jsoncons::json resArray;
     {
       std::lock_guard<std::mutex> lock_guard(rwMutex_);
-      resArray = jsonpath::json_query(data_tree__, jPath);
+      resArray = jsonpath::json_query(data_tree__, path.getJSONPath());
     }
     jsoncons::json answer;
-    answer["path"] =  vsspath.to_string();
+    answer.insert_or_assign("path", path.to_string());
     jsoncons::json result = resArray[0];
     if (result.contains("value")) {
-      setJsonValue(logger_, answer, result, "value");
+      answer.insert_or_assign("value", result["value"]);
     } else {
       answer["value"] = "---";
     }
@@ -469,55 +392,4 @@ jsoncons::json VssDatabase::getSignal(class WsChannel& channel, const VSSPath& p
     }
     return answer;
 
-  } else if (pathsFound > 1) {
-    jsoncons::json answer;
-    jsoncons::json valueArray = jsoncons::json::array();
-
-    for (int i = 0; i < pathsFound; i++) {
-      jsoncons::json value;
-      string jPath = jPaths.back();
-      VSSPath vsspath = VSSPath::fromJSON(jPath, path.isGen1Origin());
-      answer["timestamp"]="0";
-      // Check access here.
-      if (!accessValidator_->checkReadAccess(channel, vsspath)) {
-        // Allow the permitted signals to return. If exception is enable here,
-        // then say only "Signal.OBD.RPM" is permitted and get request is made
-        // using wildcard like "Signal.OBD.*" then
-        // an error would be returned. By disabling the exception the value for
-        // Signal.OBD.RPM (only) will be returned.
-        /*stringstream msg;
-        msg << "No read access to  " << getReadablePath(jPath);
-        throw genException (msg.str());*/
-        jPaths.pop_back();
-        continue;
-      }
-      jsoncons::json resArray;
-      {
-        std::lock_guard<std::mutex> lock_guard(rwMutex_);
-        resArray = jsonpath::json_query(data_tree__, jPath);
-      }
-      jPaths.pop_back();
-      jsoncons::json result = resArray[0];
-      
-      string spath = vsspath.to_string();
-      if (result.contains("value")) {
-        setJsonValue(logger_, value, result, spath);
-      } else {
-        value[spath] = "---";
-      }
-      valueArray.insert(valueArray.array_range().end(), value);
-      // TODO: This will add the "last"  timestamp, changing behavior from previous
-      //"timestamp of the get request" approach 
-      //Both are not very helpful when querying multiple values.
-      //This will be fixed once https://github.com/eclipse/kuksa.val/issues/158
-      //is implemented, as VISS2 will allow attaching individual timestamps to
-      //individual data
-      if (result.contains("timestamp")) {
-        answer["timestamp"] = result["timestamp"].as<string>();
-      }
-    }
-    answer["value"] = valueArray;
-    return answer;
-  }
-  return NULL;
 }
