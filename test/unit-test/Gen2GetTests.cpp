@@ -395,7 +395,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_noPermissionException) {
   jsonGetRequestForSignal["path"] = vss_path.to_string();
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::noAccess(requestId, "get", "insufficient read access to " + vss_path.to_string(), jsonNoAccess);
+  JsonResponses::noAccess(requestId, "get", "Insufficient read access to " + vss_path.to_string(), jsonNoAccess);
 
 
   // expectations

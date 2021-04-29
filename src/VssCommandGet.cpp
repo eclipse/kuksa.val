@@ -63,7 +63,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
       // check Read access here.
       if (!accessValidator_->checkReadAccess(channel, vssPath)) {
         stringstream msg;
-        msg << "insufficient read access to " << pathStr;
+        msg << "Insufficient read access to " << pathStr;
         logger->Log(LogLevel::ERROR, msg.str());
         return JsonResponses::noAccess(requestId, "get", msg.str());
       } else {
