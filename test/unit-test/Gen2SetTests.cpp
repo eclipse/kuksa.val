@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2020 Robert Bosch GmbH.
+ * Copyright (c) 2020-2021 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -18,6 +18,8 @@
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <turtle/mock.hpp>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
+
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <memory>
 #include <string>
@@ -80,6 +82,15 @@ struct TestSuiteFixture {
 };
 }  // namespace
 
+//Verifies a timestamp exists and is of type string. Copies it to the
+//expected answers
+static inline void verify_timestamp(json &expected, const json &result) {
+  BOOST_TEST(result.contains("timestamp"));
+  BOOST_TEST(result["timestamp"].is_string());
+  BOOST_CHECK_NO_THROW(boost::posix_time::from_iso_extended_string(result["timestamp"].as_string()));
+  expected["timestamp"]=result["timestamp"].as_string(); 
+}
+
 // Define name of test suite and define test suite fixture for pre and post test
 // handling
 BOOST_FIXTURE_TEST_SUITE(Gen2SetTests, TestSuiteFixture);
@@ -130,11 +141,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -174,11 +181,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -214,11 +217,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -267,11 +266,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
 
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -321,11 +316,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
 
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -375,11 +366,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
 
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -414,10 +401,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
   auto res = json::parse(resStr);
 
   // verify
+  verify_timestamp(jsonNoAccess,res);
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  jsonNoAccess["timestamp"] = res["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonNoAccess);
 }
 
