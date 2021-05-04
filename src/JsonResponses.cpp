@@ -12,8 +12,9 @@
  * *****************************************************************************
  */
 #include "JsonResponses.hpp"
-#include <chrono>
-#include <boost/date_time/posix_time/posix_time.hpp>
+
+#include <time.h>
+
 
 namespace JsonResponses {
   void malFormedRequest(std::string request_id,
@@ -147,8 +148,9 @@ namespace JsonResponses {
      TZD  = time zone designator (Z or +hh:mm or -hh:mm)
 */
   std::string getTimeStamp(){
-    using namespace boost::posix_time;
-    ptime t = microsec_clock::universal_time();
-    return to_iso_extended_string(t)+"Z";
+    auto itt=std::time(nullptr);
+    std::ostringstream ss;
+    ss << std::put_time(gmtime(&itt), "%FT%T.%sZ");
+    return ss.str();
   }
 }
