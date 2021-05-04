@@ -17,7 +17,8 @@
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/test/included/unit_test.hpp>
 //can not undefine here, needs to be on for whole compilation unit to prevent warning
- 
+
+#include "UnitTestHelpers.hpp" 
 
 #include <string>
 #include <memory>
@@ -826,9 +827,8 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
      )");
 
 
-   BOOST_TEST(set_response_json.contains("timestamp") == true);
-   // remove timestamp to match
-   set_response_json.erase("timestamp");
+   verify_timestamp(set_response_expected, set_response_json);
+
 
    BOOST_TEST(set_response_json == set_response_expected);
 
@@ -853,11 +853,8 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected,response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -894,13 +891,8 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected,response_json);
 
-
-
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1018,11 +1010,8 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1202,10 +1191,6 @@ BOOST_AUTO_TEST_CASE(json_SigningHandler)
 #endif
    json response_json = json::parse(response);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-   // remove timestamp to match
-   response_json.erase("timestamp");
-
    json expected = json::parse(R"({
     "action": "get",
     "path": "Vehicle.OBD.EngineSpeed",
@@ -1213,6 +1198,7 @@ BOOST_AUTO_TEST_CASE(json_SigningHandler)
     "value": 2345
     })");
 
+   verify_timestamp(expected, response_json);
    // Pre-check
    BOOST_TEST(response_json == expected);
 
@@ -1278,11 +1264,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1331,11 +1314,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1383,11 +1363,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1436,11 +1413,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   //BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1486,10 +1460,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
         })");
 
    json response_json = json::parse(response);
-   BOOST_TEST(response_json.contains("timestamp") == true);
 
-   // remove timestamp to match
-   response_json.erase("timestamp");
+   verify_timestamp(expected, response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1539,11 +1511,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1592,11 +1561,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1645,11 +1611,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1696,10 +1659,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
         })");
 
    json response_json = json::parse(response);
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
+   
+   verify_timestamp(expected, response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1748,12 +1709,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_wildcard_req
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
-   response_json.erase("warning");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1801,12 +1758,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_branch_path_
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
-   response_json.erase("warning");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1855,11 +1808,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1909,11 +1859,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1962,11 +1909,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected,response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -2014,11 +1958,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 
    // verify with a get request
@@ -2040,11 +1981,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 
    json get_response_json = json::parse(get_response);
 
+   verify_timestamp(get_expected, get_response_json);
 
-   BOOST_TEST(get_response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   get_response_json.erase("timestamp");
    BOOST_TEST(get_response_json == get_expected);
 }
 
@@ -2103,11 +2041,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
    json response_json = json::parse(response);
 
+   verify_timestamp(expected, response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 
    // verify with a get request
@@ -2131,11 +2066,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
    json get_response_json = json::parse(get_response);
 
+   verify_timestamp(get_expected, get_response_json);
 
-   BOOST_TEST(get_response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   get_response_json.erase("timestamp");
    BOOST_TEST(get_response_json == get_expected);
 
 }
@@ -2352,7 +2284,6 @@ BOOST_AUTO_TEST_CASE(subscription_test)
      "requestId":"8778"
     })");
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
    BOOST_TEST(response_json.contains("subscriptionId") == true);
 
    int subID = response_json["subscriptionId"].as<int>();
@@ -2360,9 +2291,8 @@ BOOST_AUTO_TEST_CASE(subscription_test)
    // checked if subid is available. now remove to assert.
    response_json.erase("subscriptionId");
 
+   verify_timestamp(expected, response_json);
 
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 
 
@@ -2378,21 +2308,20 @@ BOOST_AUTO_TEST_CASE(subscription_test)
    string unsub_response = commandProc->processQuery(temp_unsubreq.as_string(),channel);
    json unsub_response_json = json::parse(unsub_response);
 
-   // assert timestamp and subid.
-   BOOST_TEST(unsub_response_json.contains("timestamp") == true);
    BOOST_TEST(unsub_response_json.contains("subscriptionId") == true);
 
    // compare the subit passed and returned.
    BOOST_TEST(unsub_response_json["subscriptionId"].as<int>() == subID);
 
-   // remove timestamp and subid to assert other part of the response.because these are variables.
+   // remove subid to assert other part of the response.because these are variables.
    unsub_response_json.erase("subscriptionId");
-   unsub_response_json.erase("timestamp");
 
    json expected_unsub = json::parse(R"({
      "action":"unsubscribe",
      "requestId":"8779"
     })");
+
+   verify_timestamp(expected_unsub, unsub_response_json);
 
    BOOST_TEST(unsub_response_json == expected_unsub);
 }
@@ -2443,7 +2372,6 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
      "requestId":"8778"
     })");
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
    BOOST_TEST(response_json.contains("subscriptionId") == true);
 
    int subID = response_json["subscriptionId"].as<int>();
@@ -2451,9 +2379,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
    // checked if subid is available. now remove to assert.
    response_json.erase("subscriptionId");
 
+   verify_timestamp(expected, response_json);
 
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 
 
@@ -2469,21 +2396,21 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
    string unsub_response = commandProc->processQuery(temp_unsubreq.as_string(),channel);
    json unsub_response_json = json::parse(unsub_response);
 
-   // assert timestamp and subid.
-   BOOST_TEST(unsub_response_json.contains("timestamp") == true);
+   // assert subid.
    BOOST_TEST(unsub_response_json.contains("subscriptionId") == true);
 
    // compare the subit passed and returned.
    BOOST_TEST(unsub_response_json["subscriptionId"].as<int>() == subID);
 
-   // remove timestamp and subid to assert other part of the response.because these are variables.
+   // remove subid to assert other part of the response.because these are variables.
    unsub_response_json.erase("subscriptionId");
-   unsub_response_json.erase("timestamp");
 
    json expected_unsub = json::parse(R"({
      "action":"unsubscribe",
      "requestId":"8779"
     })");
+
+   verify_timestamp(expected_unsub, unsub_response_json);
 
    BOOST_TEST(unsub_response_json == expected_unsub);
 }
@@ -2533,10 +2460,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission)
                    "requestId":"8778"
                    })");
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   verify_timestamp(expected, response_json);
 
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -2586,10 +2511,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath)
                    "requestId":"8778"
                    })");
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   verify_timestamp(expected, response_json);
 
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -2637,12 +2560,12 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
 
     json response_json = json::parse(response);
     json request_json = json::parse(request);
-    BOOST_TEST(response_json.contains("timestamp") == true);
     BOOST_TEST(response_json.contains("subscriptionId") == true);
-    // remove timestamp to match
-    response_json.erase("timestamp");
     response_json.erase("subscriptionId");
     request_json.erase("path");
+
+    verify_timestamp(expected, response_json);
+
     BOOST_TEST(response_json == expected);
 }
 
@@ -2693,14 +2616,14 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
     json response_json = json::parse(response);
     json request_json = json::parse(request);
     // TEST response for parameters
-    BOOST_TEST(response_json.contains("timestamp") == true);
     BOOST_TEST(response_json.contains("subscriptionId") == true);
     // TEST request for parameters
     BOOST_TEST(request_json.contains("path") == true);
-    // remove timestamp to match
-    response_json.erase("timestamp");
     response_json.erase("subscriptionId");
     request_json.erase("path");
+
+    verify_timestamp(expected, response_json);
+
     BOOST_TEST(response_json == expected);
 }
 
@@ -2750,8 +2673,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard)
                                 "requestId":"878787"
                                 })");
 
-    BOOST_TEST(response_json.contains("timestamp") == true);
-    // remove timestamp to match
-    response_json.erase("timestamp");
+   verify_timestamp(expected, response_json);
+
     BOOST_TEST(response_json == expected);
 }
