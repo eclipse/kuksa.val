@@ -62,6 +62,8 @@ namespace JsonResponses {
                         jsoncons::json& jsonResponse);
 
   std::string getTimeStamp();
+
+  std::string getTimeStampZero();
 }
 
 #endif
