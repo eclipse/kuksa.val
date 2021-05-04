@@ -19,7 +19,7 @@
 #include <turtle/mock.hpp>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include "UnitTestHelpers.hpp"
 
 #include <thread>
 
@@ -85,14 +85,6 @@ struct TestSuiteFixture {
 }  // namespace
 
 
-//Verifies a timestamp exists and is of type string. Copies it to the
-//expected answers
-static inline void verify_timestamp(json &expected, const json &result) {
-  BOOST_TEST(result.contains("timestamp"));
-  BOOST_TEST(result["timestamp"].is_string());
-  BOOST_CHECK_NO_THROW(boost::posix_time::from_iso_extended_string(result["timestamp"].as_string()));
-  expected["timestamp"]=result["timestamp"].as_string(); 
-}
 
 // Define name of test suite and define test suite fixture for pre and post test
 // handling
