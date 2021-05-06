@@ -16,6 +16,8 @@
 #include <turtle/mock.hpp>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
+#include "UnitTestHelpers.hpp"
+
 #include <memory>
 #include <string>
 
@@ -190,6 +192,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
   // verify
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
+
+  verify_timestamp(expectedJson, returnJson);
+
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -208,6 +213,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
   // verify
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
+
+  verify_timestamp(expectedJson, returnJson);
+
   BOOST_TEST(returnJson == expectedJson);
 }
 

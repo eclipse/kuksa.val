@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2020 Robert Bosch GmbH.
+ * Copyright (c) 2020-2021 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -19,7 +19,8 @@
 #include <turtle/mock.hpp>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
-#include <chrono>
+#include "UnitTestHelpers.hpp"
+
 #include <thread>
 
 #include <memory>
@@ -82,6 +83,8 @@ struct TestSuiteFixture {
   }
 };
 }  // namespace
+
+
 
 // Define name of test suite and define test suite fixture for pre and post test
 // handling
@@ -168,12 +171,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
-
+  verify_timestamp(expectedJson,res);
+  
   BOOST_TEST(res == expectedJson);
 }
 
@@ -208,11 +207,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON_NoRequestID) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
-
+  verify_timestamp(expectedJson,res);
+  
   BOOST_TEST(res == expectedJson);
 }
 
@@ -242,10 +238,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_NonExistingPath) {
   auto res = json::parse(resStr);
 
   // verify
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] =
-      jsonPathNotFound["timestamp"]
-          .as<int64_t>();  // ignoring timestamp difference for response
+  verify_timestamp(jsonPathNotFound,res);
+
   BOOST_TEST(res == jsonPathNotFound);
 }
 
@@ -371,10 +365,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
   auto res = json::parse(resStr);
 
   // verify
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] =
-      jsonPathNotFound["timestamp"]
-          .as<int64_t>();  // ignoring timestamp difference for response
+  verify_timestamp(jsonPathNotFound,res);
+
   BOOST_TEST(res == jsonPathNotFound);
 }
 
@@ -409,8 +401,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_noPermissionException) {
   // verify
 
   // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  jsonNoAccess["timestamp"] = res["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  verify_timestamp(jsonNoAccess,res);
   BOOST_TEST(res == jsonNoAccess);
 
 }
@@ -471,11 +462,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
+  verify_timestamp(expectedJson,res);
 
-  // Remove timestamp for comparision purposes
-  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
   BOOST_TEST(res == expectedJson);
 
   //wait 20ms (timestamps should be 1 ms resolution, but 20 ms should

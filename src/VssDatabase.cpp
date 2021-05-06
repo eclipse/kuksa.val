@@ -388,7 +388,7 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
     if (result.contains("timestamp")) {
       answer["timestamp"] = result["timestamp"].as<string>();
     } else {
-      answer["timestamp"] = "0";
+      answer["timestamp"] = JsonResponses::getTimeStampZero();
     }
     return answer;
 

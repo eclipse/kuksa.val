@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2020 Robert Bosch GmbH.
+ * Copyright (c) 2020-2021 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -18,6 +18,8 @@
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <turtle/mock.hpp>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
+
+#include "UnitTestHelpers.hpp"
 
 #include <memory>
 #include <string>
@@ -130,11 +132,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -174,11 +172,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -214,11 +208,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -267,11 +257,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
 
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -321,11 +307,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
 
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -375,11 +357,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
 
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_timestamp(expectedJson,res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -414,10 +392,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
   auto res = json::parse(resStr);
 
   // verify
+  verify_timestamp(jsonNoAccess,res);
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  jsonNoAccess["timestamp"] = res["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonNoAccess);
 }
 
