@@ -248,16 +248,17 @@ void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::jso
 
 }
 
-void VssDatabase::updateJsonTree(WsChannel& channel, const jsoncons::json& jsonTree){
+void VssDatabase::updateJsonTree(WsChannel& channel,  jsoncons::json& jsonTree){
   if (! channel.authorizedToModifyTree()) {
      stringstream msg;
      msg << "do not have write access for updating json tree or is invalid";
      throw noPermissionException(msg.str());
   }
-
+  if (jsonTree.contains("Vehicle")) {
+    applyDefaultValues(jsonTree["Vehicle"], VSSPath::fromVSS(""));
+  }
   updateJsonTree(meta_tree__, jsonTree);
   updateJsonTree(data_tree__, jsonTree);
-
 }
 
 // update a metadata in tree, which will only do one-level-deep shallow merge/update.

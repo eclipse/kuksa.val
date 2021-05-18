@@ -155,7 +155,7 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
   }
 }
 
-string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, const string& request_id, const jsoncons::json& metaData){
+string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, const string& request_id,  jsoncons::json& metaData){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateVSSTree");
   
   jsoncons::json answer;

@@ -28,7 +28,7 @@ class IVssDatabase {
     virtual ~IVssDatabase() {}
 
     virtual void initJsonTree(const boost::filesystem::path &fileName) = 0;
-    virtual void updateJsonTree(WsChannel& channel, const jsoncons::json& value) = 0;
+    virtual void updateJsonTree(WsChannel& channel, jsoncons::json& value) = 0;
     virtual void updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& value) = 0;
     virtual jsoncons::json getMetaData(const VSSPath &path) = 0;
   
