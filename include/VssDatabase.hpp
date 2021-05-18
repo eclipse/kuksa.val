@@ -53,7 +53,12 @@ class VssDatabase : public IVssDatabase {
 
 
   void initJsonTree(const boost::filesystem::path &fileName) override;
+  
   bool checkPathValid(const VSSPath& path);
+  static bool isActor(const jsoncons::json &element);
+  static bool isSensor(const jsoncons::json &element);
+
+
   void updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree);
   void updateJsonTree(WsChannel& channel, const jsoncons::json& value) override;
   void updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& newTree) override;
@@ -62,6 +67,7 @@ class VssDatabase : public IVssDatabase {
   jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) override; //gen2 version
   jsoncons::json getSignal(const VSSPath &path) override; //Gen2 version
 
+  void applyDefaultValues(jsoncons::json &tree, VSSPath currentPath);
 
 };
 #endif

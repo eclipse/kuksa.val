@@ -42,6 +42,48 @@ VssDatabase::VssDatabase(std::shared_ptr<ILogger> loggerUtil,
 
 VssDatabase::~VssDatabase() {}
 
+/** Returns true if the json structure is of VSS type sensor */
+bool VssDatabase::isActor(const json &element) {
+  return element.contains("type") && element["type"]=="actuator";
+}
+
+/** Returns true if the json structure is of VSS type sensor */
+bool VssDatabase::isSensor(const json &element) {
+  return element.contains("type") && element["type"]=="sensor";
+}
+
+
+/** Iterates over a given VSS tree and checks for sensors and actuators specifying the "default"
+ *  metadata. If a default is present, it will be used as "value" (and thus returned upon get
+ *  even if there has been no previous set)
+ */ 
+void VssDatabase::applyDefaultValues(json &tree, VSSPath path) {
+  //logger_->Log(LogLevel::VERBOSE, "Applying default values in "+path.to_string());
+
+  if ( isSensor(tree) || isActor(tree) ) {
+    if (tree.contains("default")) {
+      logger_->Log(LogLevel::INFO, "Setting default for "+path.to_string()+" to "+tree["default"].as<string>());
+      /** Not using setSignal, as that always operates on the complete tree. However applyDefaultValues shall also
+       *  be applied to layers or metadata loaded later at runtime, before joining, so that defaults are not applied
+       *  several times.
+       *  Always add as string is correct, as VISS standard demands representation of all values, irrespective of 
+       *  VSS datatype as string 
+       */ 
+      tree.insert_or_assign("value",tree["default"].as<string>());
+      return;
+    }
+  }
+
+  //need to iterate?
+  if (tree.contains("children")) {
+    //logger_->Log(LogLevel::VERBOSE, "Recurse into "+path.to_string());
+    for (auto subtree : tree["children"].object_range() ) {
+      /** Note: can not recurse on subtree.value(), as that seems to create a copy... */
+      applyDefaultValues(tree["children"][subtree.key()], VSSPath::fromVSS(path.getVSSPath()+"/"+subtree.key()));
+    }
+  }
+}
+
 // Initializer
 void VssDatabase::initJsonTree(const boost::filesystem::path &fileName) {
   try {
@@ -58,6 +100,8 @@ void VssDatabase::initJsonTree(const boost::filesystem::path &fileName) {
                 + string(e.what()));
     throw e;
   }
+
+  applyDefaultValues(data_tree__["Vehicle"], VSSPath::fromVSS("Vehicle"));
 }
 
 //Check if a path exists, doesn't care about the type
