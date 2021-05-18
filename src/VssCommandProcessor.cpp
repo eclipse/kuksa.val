@@ -448,7 +448,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
     } else if (action == "updateVSSTree") {
       string request_id = root["requestId"].as<string>();
       logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: update MetaData query  for with request id " + request_id);
-      response = processUpdateVSSTree(channel, request_id, root["updateadata"]);
+      response = processUpdateVSSTree(channel, request_id, root["metadata"]);
     } else {
       string path = root["path"].as<string>();
       string request_id = root["requestId"].as<string>();
