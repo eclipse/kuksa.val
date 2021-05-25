@@ -3,3 +3,4 @@ cantools
 python-can
 pyyaml
 websockets
+j1939
