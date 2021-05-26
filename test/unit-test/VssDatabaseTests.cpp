@@ -267,4 +267,248 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 }
 
 
+/*********************** isActor() tests ************************/
+BOOST_AUTO_TEST_CASE(Check_IsActor_ForActor) {
+    std::string inputJsonString{R"({
+  "datatype": "boolean",
+  "description": "Is brake light on",
+  "type": "actuator",
+  "uuid": "7b8b136ec8aa59cb8773aa3c455611a4"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isActor(inputJson) == true);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsActor_ForSensor) {
+    std::string inputJsonString{R"({
+  "datatype": "uint8",
+  "description": "Rain intensity. 0 = Dry, No Rain. 100 = Covered.",
+  "type": "sensor",
+  "unit": "percent",
+  "uuid": "02828e9e5f7b593fa2160e7b6dbad157"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isActor(inputJson) == false);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsActor_ForAttribute) {
+    std::string inputJsonString{R"(
+    {
+      "datatype": "uint16",
+      "description": "Gross capacity of the battery",
+      "type": "attribute",
+      "unit": "kWh",
+      "uuid": "7b5402cc647454b49ee019e8689d3737"
+    }
+    )"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isActor(inputJson) == false);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsActor_ForInvalid) {
+    std::string inputJsonString{R"({
+  "element": "invalidVSSJSon"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isActor(inputJson) == false);
+}
+
+/*********************** isSensor() tests ************************/
+BOOST_AUTO_TEST_CASE(Check_IsSensor_ForSensor) {
+    std::string inputJsonString{R"({
+  "datatype": "uint8",
+  "description": "Rain intensity. 0 = Dry, No Rain. 100 = Covered.",
+  "type": "sensor",
+  "unit": "percent",
+  "uuid": "02828e9e5f7b593fa2160e7b6dbad157"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isSensor(inputJson) == true);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsSensor_ForActor) {
+    std::string inputJsonString{R"({
+  "datatype": "boolean",
+  "description": "Is brake light on",
+  "type": "actuator",
+  "uuid": "7b8b136ec8aa59cb8773aa3c455611a4"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isSensor(inputJson) == false);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsSensor_ForAttribute) {
+  std::string inputJsonString{R"(
+  {
+    "datatype": "uint16",
+    "description": "Gross capacity of the battery",
+    "type": "attribute",
+    "unit": "kWh",
+    "uuid": "7b5402cc647454b49ee019e8689d3737"
+  }    
+  )"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isSensor(inputJson) == false);
+}
+
+
+BOOST_AUTO_TEST_CASE(Check_IsSensor_ForInvalid) {
+    std::string inputJsonString{R"({
+  "element": "invalidVSSJSon"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isSensor(inputJson) == false);
+}
+
+/*********************** isAttribute() tests ************************/
+BOOST_AUTO_TEST_CASE(Check_IsAttribute_ForSensor) {
+    std::string inputJsonString{R"({
+  "datatype": "uint8",
+  "description": "Rain intensity. 0 = Dry, No Rain. 100 = Covered.",
+  "type": "sensor",
+  "unit": "percent",
+  "uuid": "02828e9e5f7b593fa2160e7b6dbad157"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isAttribute(inputJson) == false);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsAttribute_ForActor) {
+    std::string inputJsonString{R"({
+  "datatype": "boolean",
+  "description": "Is brake light on",
+  "type": "actuator",
+  "uuid": "7b8b136ec8aa59cb8773aa3c455611a4"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isAttribute(inputJson) == false);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsAttribute_ForAttribute) {
+  std::string inputJsonString{R"(
+  {
+    "datatype": "uint16",
+    "description": "Gross capacity of the battery",
+    "type": "attribute",
+    "unit": "kWh",
+    "uuid": "7b5402cc647454b49ee019e8689d3737"
+  }    
+  )"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isAttribute(inputJson) == true);
+}
+
+
+BOOST_AUTO_TEST_CASE(Check_IsAttribute_ForInvalid) {
+  std::string inputJsonString{R"({
+  "element": "invalidVSSJSon"
+  })"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isAttribute(inputJson) == false);
+}
+
+
+/*** applyDefaultValue Checks **/
+BOOST_AUTO_TEST_CASE(applyDefaultValues_withDefault) {
+  std::string inputJsonString{R"(
+    {
+      "datatype": "uint8",
+      "default": 0,
+      "description": "Number of doors in vehicle",
+      "type": "attribute",
+      "uuid": "49a445e112f35283b4be6ec82812b29b"
+    }
+  )"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+
+  std::string expectedJsonString{R"(
+  {
+    "datatype": "uint8",
+    "default": 0,
+    "value": "0",
+    "description": "Number of doors in vehicle",
+    "type": "attribute",
+    "uuid": "49a445e112f35283b4be6ec82812b29b"
+  }
+  )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  db->applyDefaultValues(inputJson,VSSPath::fromVSS(""));
+  BOOST_TEST(inputJson == expectedJson);
+}
+
+
+BOOST_AUTO_TEST_CASE(applyDefaultValues_Recurse) {
+  std::string inputJsonString{R"(
+  {
+    "children": {
+      "ChargePlugType": {
+        "datatype": "string",
+        "default": "ccs",
+        "description": "Type of charge plug available on the vehicle (CSS includes Type2).",
+        "enum": [
+          "type 1",
+          "type 2",
+          "ccs",
+          "chademo"
+        ],
+        "type": "attribute",
+        "uuid": "0c4cf2b3979456928967e73b646bda05"
+      },
+      "ChargePortFlap": {
+        "datatype": "string",
+        "default": "closed",
+        "description": "Signal indicating if charge port cover is open or closed, can potentially be controlled manually.",
+        "enum": [
+          "open",
+          "closed"
+        ],
+        "type": "actuator",
+        "uuid": "528e53ad98c1546b90bb48f24f04815a"
+      }
+    }
+  }
+  )"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+
+  std::string expectedJsonString{R"(
+   {
+    "children": {
+      "ChargePlugType": {
+        "datatype": "string",
+        "default": "ccs",
+        "value": "ccs",
+        "description": "Type of charge plug available on the vehicle (CSS includes Type2).",
+        "enum": [
+          "type 1",
+          "type 2",
+          "ccs",
+          "chademo"
+        ],
+        "type": "attribute",
+        "uuid": "0c4cf2b3979456928967e73b646bda05"
+      },
+      "ChargePortFlap": {
+        "datatype": "string",
+        "default": "closed",
+        "value": "closed",
+        "description": "Signal indicating if charge port cover is open or closed, can potentially be controlled manually.",
+        "enum": [
+          "open",
+          "closed"
+        ],
+        "type": "actuator",
+        "uuid": "528e53ad98c1546b90bb48f24f04815a"
+      }
+    }
+  }
+  )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  db->applyDefaultValues(inputJson,VSSPath::fromVSS(""));
+  BOOST_TEST(inputJson == expectedJson);
+}
+
+
+
 BOOST_AUTO_TEST_SUITE_END()
