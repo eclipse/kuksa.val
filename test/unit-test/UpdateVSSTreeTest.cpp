@@ -399,7 +399,7 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_brokenrequest) {
   {
   "action": "updateVSSTree",
   "error": {
-    "message": "Schema error: VSS get malformed: #: Required property \"metadata\" not found\n#/path.",
+    "message": "Schema error: #: Required property \"metadata\" not found",
     "number": 400,
     "reason": "Bad Request"
   },
