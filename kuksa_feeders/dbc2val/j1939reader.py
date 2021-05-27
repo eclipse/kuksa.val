@@ -55,10 +55,11 @@ class J1939Reader(j1939.ControllerApplication):
         # adaptation
         self.queue=rxqueue
         self.cfg=cfg
-        self.db = cantools.database.load_file(cfg['vss.dbcfile'])
+        self.db = cantools.database.load_file(cfg['dbcfile'])
         self.mapper=mapper
         self.canidwl = self.get_whitelist()
         self.parseErr=0
+        self.run = True
 
     def start(self):
         """Starts the CA
@@ -123,11 +124,11 @@ class J1939Reader(j1939.ControllerApplication):
         return None
 
     def start_listening(self):
-        print("Open CAN device {}".format(self.cfg['can.port']))
+        print("Open CAN device {}".format(self.cfg['port']))
         # create the ElectronicControlUnit (one ECU can hold multiple ControllerApplications)
         ecu = j1939.ElectronicControlUnit()
         # Connect to the CAN bus
-        ecu.connect(bustype='socketcan', channel=self.cfg['can.port'])
+        ecu.connect(bustype='socketcan', channel=self.cfg['port'])
         # add CA to the ECU
         ecu.add_ca(controller_application=self)
         self.start()

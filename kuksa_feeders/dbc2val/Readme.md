@@ -35,15 +35,27 @@ When using the OBD chipset, take special attention to the `obdcanack` configurat
 When the target DBC file and ECU follow the SAE-J1939 standard, the CAN reader application of the feeder should read PGN(Parameter Group Number)-based Data rather than CAN frames directly. Otherwise it is possible to miss signals from large-sized messages that are delivered with more than one CAN frame because the size of each of these messages is bigger than a CAN frame's maximum payload of 8 bytes. To enable the J1939 mode, simply put `--j1939` in the command when running `dbcfeeder.py`.
 Prior to using this feature, j1939 and the relevant wheel-packages should be installed first:
 
-$ pip3 install j1939
-$ git clone https://github.com/benkfra/j1939.git
-$ cd j1939
-$ pip install .
+```
+pip3 install j1939
+git clone https://github.com/benkfra/j1939.git
+cd j1939
+pip install .
+```
 
 The detailed documentation to this feature can be found here https://dias-kuksa-doc.readthedocs.io/en/latest/contents/j1939.html
 
+## Testing using virtual can bus
+You can use the following command to create an virtual can interface and replay recorded candump log to test the dbc feeder:
+
+```
+./createvcan.sh
+canplayer vcan0=elmcan -v -I ~/vm-share/candump.log -l i -g 1
+./dbcfeeder.py
+```
+
 ## Configuration
-Look at config.ini and mapping.yml to figure it out. The example is configured for a Tesla Model 3 using the DBC found here https://github.com/joshwardell/model3dbc 
+Look at config.ini and mapping.yml to figure it out.
+The example is configured for a Tesla Model 3 using the [Model3CAN.dbc](./Model3CAN.dbc) from [here](https://github.com/joshwardell/model3dbc)
 
 
 ## Limitations

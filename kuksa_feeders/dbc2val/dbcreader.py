@@ -21,17 +21,16 @@ class DBCReader:
         self.mapper=mapper
         self.cfg=cfg
         print("Reading dbc file")
-        self.db = cantools.database.load_file(cfg['vss.dbcfile'])
+        self.db = cantools.database.load_file(cfg['dbcfile'])
 
         self.canidwl = self.get_whitelist()
 
-        self.parseErr=0
-
-
+        self.parseErr = 0
+        self.run = True
 
     def start_listening(self):
-        print("Open CAN device {}".format(self.cfg['can.port']))
-        self.bus = can.interface.Bus(self.cfg['can.port'], bustype='socketcan')
+        print("Open CAN device {}".format(self.cfg['port']))
+        self.bus = can.interface.Bus(self.cfg['port'], bustype='socketcan')
         rxThread = threading.Thread(target=self.rxWorker)
         rxThread.start()
 
@@ -57,7 +56,7 @@ class DBCReader:
 
     def rxWorker(self):
         print("Starting thread")
-        while True:
+        while self.run:
             msg=self.bus.recv()
             try:
                 decode=self.db.decode_message(msg.arbitration_id, msg.data)
@@ -72,6 +71,9 @@ class DBCReader:
                     if self.mapper.minUpdateTimeElapsed(k, rxTime):
                         self.queue.put((k,v))
 
+
+    def stop(self):
+        self.run = False
 
 
 

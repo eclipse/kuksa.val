@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
 ########################################################################
 # Copyright (c) 2020 Robert Bosch GmbH
@@ -11,160 +11,81 @@
 ########################################################################
 
 
-import sys
-import argparse
+import os, sys, signal
 import configparser
 import queue
 
 import dbc2vssmapper
 import dbcreader
 import j1939reader
-import websocketconnector
 import elm2canbridge
 
-
-cfg = {}
-
-
-def getConfig():
-    global cfg
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--device", help="CAN port. Choose \"elmcsn\" for ELM adapter", type=str)
-
-    parser.add_argument("--obdbaudrate", help="Baudrate to ELM if CAN port is \"elmcan\"", type=int)
-    parser.add_argument("--obdcanspeed", help="CAN bus speed if CAN port is \"elmcan\"", type=int)
-    parser.add_argument("--noobdcanack",
-                        help="Do not acknowledge CAN messages be  Only if CAN port is \"elmcan\"",  dest='nocanack_override', action='store_true')
-    parser.add_argument("--obdcanack",
-                        help="Acknowledge CAN messages be  Only if CAN port is \"elmcan\"",  dest='canack_override', action='store_true')
-
-
-
-    parser.add_argument("--obdport", help="Serial port where ELM is connected. Only if CAN port is \"elmcan\"",
-                        type=str)
-
-    parser.add_argument("--dbc", help="DBC file used to parse CAN messages", type=str)
-
-    parser.add_argument("-s", "--server", help="VSS server", type=str)
-    parser.add_argument("-j", "--jwt", help="JWT security token file", type=str)
-    parser.add_argument("--mapping", help="VSS mapping file", type=str)
-    parser.add_argument("--j1939", action='store_true', help="(Optional) Enable SAE-J1939 Mode. Normal_Mode: ignore, J1939_Mode: \'--j1939\' (No argument needed after)")
-
-    args = parser.parse_args()
-
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-
-    vsscfg = config['vss']
-    cfg['vss.server'] = vsscfg.get("server", "ws://localhost:8090")
-    if args.server:
-        cfg['vss.server'] = args.server
-
-    cfg['vss.jwttoken'] = vsscfg.get("jwttoken", "jwt.token")
-    if args.jwt:
-        cfg['vss.jwttoken'] = args.jwt
-
-    cfg['vss.mapping'] = vsscfg.get("mapping", "mapping.yaml")
-    if args.mapping:
-        cfg['vss.mapping'] = args.mapping
-
-    cfg['vss.dbcfile'] = vsscfg.get("dbcfile", "example.dbc")
-    if args.dbc:
-        cfg['vss.dbcfile'] = args.dbc
-
-    cancfg = config['can']
-    cfg['can.port'] = cancfg.get("port", "can0")
-    if args.device:
-        cfg['can.port'] = args.device
-
-    cfg['can.j1939'] = cancfg.getboolean("j1939", False)
-    if args.j1939:
-    	cfg['can.j1939'] = args.j1939
-
-    elmcfg = config['elmcan']
-    cfg['elm.port'] = elmcfg.get("port", "/dev/ttyS0")
-    if args.obdport:
-        cfg['elm.port'] = args.obdport
-
-    cfg['elm.baudrate'] = elmcfg.getint("baudrate", 2000000)
-    if args.obdbaudrate:
-        cfg['elm.baudrate'] = args.obdbaudrate
-
-    cfg['elm.canspeed'] = elmcfg.getint("speed", 500000)
-    if args.obdcanspeed:
-        cfg['elm.canspeed'] = args.obdcanspeed
-
-    cfg['elm.canack'] = elmcfg.getboolean("canack", False)
-
-    # Can override CAN ACK setting from commandline. Safe choice, no ack, is dominant
-    if args.canack_override:
-        cfg['elm.canack'] = True
-    if args.nocanack_override:
-        cfg['elm.canack'] = False
-
-
-def publishData(vss):
-    print("Publish data")
-    for obdval, config in mapping.map():
-
-        if config['value'] is None:
-            continue
-        print("Publish {}: to ".format(obdval), end='')
-        for path in config['targets']:
-            vss.push(path, config['value'].magnitude)
-            print(path, end=' ')
-        print("")
-
+scriptDir= os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(scriptDir, "../../"))
+from kuksa_viss_client import KuksaClientThread
 
 print("kuksa.val DBC example feeder")
-getConfig()
+config_candidates=['/config/dbc_feeder.ini', '/etc/dbc_feeder.ini', os.path.join(scriptDir, 'config/dbc_feeder.ini')]
+for candidate in config_candidates:
+    if os.path.isfile(candidate):
+        configfile=candidate
+        break
+if configfile is None:
+    print("No configuration file found. Exiting")
+    sys.exit(-1)
+config = configparser.ConfigParser()
+config.read(configfile)
 
-print("VSS server           : {}".format(cfg['vss.server']))
-print("JWT token file       : {}".format(cfg['vss.jwttoken']))
-print("DBC  file            : {}".format(cfg['vss.dbcfile']))
-print("VSS mapping file     : {}".format(cfg['vss.mapping']))
-print("CAN port             : {}".format(cfg['can.port']))
-print("J1939 mode           : {}".format(cfg['can.j1939']))
-if cfg['can.port'] == "elmcan":
-    print("ELM serial port     : {}".format(cfg['elm.port']))
-    print("ELM serial baudrate : {}".format(cfg['elm.baudrate']))
-    print("ELM CAN Speed       : {}".format(cfg['elm.canspeed']))
-    print("ELM Ack CAN frames  : {}".format(cfg['elm.canack']))
+kuksaconfig = config
+if "kuksa_val" in config:
+    kuksaconfig = config["kuksa_val"]
+kuksa = KuksaClientThread(kuksaconfig)
+kuksa.start()
+kuksa.authorize()
 
-
-with open(cfg['vss.jwttoken'], 'r') as f:
-    token = f.readline().rstrip('\n')
-
-mapping = dbc2vssmapper.mapper(cfg['vss.mapping'])
-
-vss = websocketconnector.vssclient(cfg['vss.server'], token)
+mapping = dbc2vssmapper.mapper(kuksaconfig.get('mapping', "mapping.yml"))
 canQueue = queue.Queue()
 
-if cfg['can.j1939']:
-    j1939R = j1939reader.J1939Reader(cfg,canQueue,mapping)
+if "can" not in config:
+    print("can section missing from configuration, exiting")
+    sys.exit(-1)
 
-    if cfg['can.port'] == 'elmcan':
-        print("Using elmcan. Trying to set up elm2can bridge")
-        elmbr=elm2canbridge.elm2canbridge(cfg, j1939R.canidwl)
+cancfg = config['can']
+canport = cancfg['port']
 
-    j1939R.start_listening()
-
+if config["can"].getboolean("j1939", False):
+    print("Use j1939 reader")
+    reader = j1939reader.J1939Reader(cancfg,canQueue,mapping)
 else:
-    dbcR = dbcreader.DBCReader(cfg,canQueue,mapping)
+    print("Use dbc reader")
+    reader = dbcreader.DBCReader(cancfg, canQueue,mapping)
 
-    if cfg['can.port'] == 'elmcan':
-        print("Using elmcan. Trying to set up elm2can bridge")
-        elmbr=elm2canbridge.elm2canbridge(cfg, dbcR.canidwl)
+if canport == 'elmcan':
+    if canport not in config:
+        print("section {} missing from configuration, exiting".format(canport))
+        sys.exit(-1)
 
-    dbcR.start_listening()
+    print("Using elmcan. Trying to set up elm2can bridge")
+    elmbr=elm2canbridge.elm2canbridge(canport, config[canport], reader.canidwl)
 
-while True:
+reader.start_listening()
+running = True
+
+def terminationSignalreceived(signalNumber, frame):
+    global running, kuksa, reader
+    print("Received termination signal. Shutting down")
+    running = False
+    kuksa.stop()
+    reader.stop()
+    print("Received termination signal. Finish")
+
+signal.signal(signal.SIGINT, terminationSignalreceived)
+signal.signal(signal.SIGQUIT, terminationSignalreceived)
+signal.signal(signal.SIGTERM, terminationSignalreceived)
+
+while running:
     signal, value=canQueue.get()
     print("Update signal {} to {}".format(signal, value))
     for target in mapping[signal]['targets']:
-        #print("Publish {} to {}".format(signal,target))
-        vss.push(target, value)
+        kuksa.setValue(target, value)
 
-
-sys.exit(0)

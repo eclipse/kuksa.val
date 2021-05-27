@@ -22,15 +22,16 @@ QUEUE_MAX_ELEMENTS = 2048
 
 
 class elm2canbridge:
-    def __init__(self,cfg, whitelist=None):
+    def __init__(self, canport, cfg, whitelist=None):
         print("Try setting up elm2can bridge")
         print("Creating virtual CAN interface")
         os.system("./createelmcanvcan.sh")
 
+        self.canport = canport
         self.whitelist=whitelist
         elm = serial.Serial()
-        elm.baudrate = cfg['elm.baudrate']
-        elm.port = cfg['elm.port']
+        elm.baudrate = cfg['baud']
+        elm.port = cfg['port']
         elm.timeout = 10
         elm.open()
 
@@ -38,7 +39,7 @@ class elm2canbridge:
             print("elm2canbridge: Can not open serial port")
             sys.exit(-1)
 
-        self.initelm(elm,cfg['elm.canspeed'], cfg['elm.canack'])
+        self.initelm(elm,cfg['canspeed'], cfg['canack'])
         can = self.initcan(cfg)
 
         serQueue = Queue(QUEUE_MAX_ELEMENTS)
@@ -182,7 +183,7 @@ class elm2canbridge:
 
     #open vcan where we mirror the elmcan monitor output
     def initcan(self, cfg):
-        return can.interface.Bus(cfg['can.port'], bustype='socketcan')
+        return can.interface.Bus(self.canport, bustype='socketcan')
 
     def waitforprompt(self,elm):
         while elm.read() != b'>':
