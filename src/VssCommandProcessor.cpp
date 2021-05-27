@@ -250,7 +250,7 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
   VSSPath path=VSSPath::fromVSS(request["path"].as_string());
 
   try {
-    requestValidator->validateUpdateTree(request);
+    requestValidator->validateUpdateMetadata(request);
   } catch (jsoncons::jsonschema::schema_error & e) {
     std::string msg=std::string(e.what());
     boost::algorithm::trim(msg);

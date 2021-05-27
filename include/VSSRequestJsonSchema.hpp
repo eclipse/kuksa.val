@@ -93,7 +93,7 @@ static const char* SCHEMA_UPDATE_VSS_TREE=R"(
 )";
 
 
-static const char* SCHEMA_UPDATE_TREE=R"(
+static const char* SCHEMA_UPDATE_METADATA=R"(
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Update tree Request",

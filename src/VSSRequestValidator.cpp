@@ -63,16 +63,16 @@ class VSSRequestValidator::MessageValidator {
 VSSRequestValidator::VSSRequestValidator(std::shared_ptr<ILogger> loggerUtil)  {
   this->logger = loggerUtil;
 
-  this->getValidator           = new MessageValidator(VSS_JSON::SCHEMA_GET);
-  this->setValidator           = new MessageValidator(VSS_JSON::SCHEMA_SET);
-  this->updateTreeValidator    = new MessageValidator(VSS_JSON::SCHEMA_UPDATE_TREE);
-  this->updateVSSTreeValidator = new MessageValidator(VSS_JSON::SCHEMA_UPDATE_VSS_TREE);
+  this->getValidator            = new MessageValidator(VSS_JSON::SCHEMA_GET);
+  this->setValidator            = new MessageValidator(VSS_JSON::SCHEMA_SET);
+  this->updateMetadataValidator = new MessageValidator(VSS_JSON::SCHEMA_UPDATE_METADATA);
+  this->updateVSSTreeValidator  = new MessageValidator(VSS_JSON::SCHEMA_UPDATE_VSS_TREE);
 }
 
 VSSRequestValidator::~VSSRequestValidator() {  
     delete getValidator;
     delete setValidator;
-    delete updateTreeValidator;
+    delete updateMetadataValidator;
     delete updateVSSTreeValidator;
 }
 
@@ -84,8 +84,8 @@ void VSSRequestValidator::validateSet(jsoncons::json& request) {
   setValidator->validate(request);
 }
 
-void VSSRequestValidator::validateUpdateTree(jsoncons::json& request) {
-  updateTreeValidator->validate(request);
+void VSSRequestValidator::validateUpdateMetadata(jsoncons::json& request) {
+  updateMetadataValidator->validate(request);
 }
 
 void VSSRequestValidator::validateUpdateVSSTree(jsoncons::json& request) {

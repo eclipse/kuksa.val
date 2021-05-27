@@ -36,7 +36,7 @@ class VSSRequestValidator {
 
         void validateGet(jsoncons::json &request);
         void validateSet(jsoncons::json &request);
-        void validateUpdateTree(jsoncons::json &request);
+        void validateUpdateMetadata(jsoncons::json &request);
         void validateUpdateVSSTree(jsoncons::json &request);
 
         std::string tryExtractRequestId(jsoncons::json &request);
@@ -45,7 +45,7 @@ class VSSRequestValidator {
         class MessageValidator;
         VSSRequestValidator::MessageValidator *getValidator;
         VSSRequestValidator::MessageValidator *setValidator;
-        VSSRequestValidator::MessageValidator *updateTreeValidator;
+        VSSRequestValidator::MessageValidator *updateMetadataValidator;
         VSSRequestValidator::MessageValidator *updateVSSTreeValidator;
 
         std::shared_ptr<ILogger> logger;
