@@ -41,6 +41,7 @@ if(BUILD_UNIT_TEST)
     VSSPathTests.cpp
     KuksavalUnitTest.cpp
     UpdateVSSTreeTest.cpp
+    UpdateMetadataTest.cpp
   )
 
   # declares a test with our executable
