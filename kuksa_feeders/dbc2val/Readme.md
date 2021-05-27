@@ -50,6 +50,7 @@ You can use the following command to create an virtual can interface and replay 
 ```
 ./createvcan.sh
 canplayer vcan0=elmcan -v -I ~/vm-share/candump.log -l i -g 1
+./dbcfeeder.py
 ```
 
 ## Configuration
