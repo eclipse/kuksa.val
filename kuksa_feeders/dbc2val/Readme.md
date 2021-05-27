@@ -49,7 +49,7 @@ You can use the following command to create an virtual can interface and replay 
 
 ```
 ./createvcan.sh vcan0
-canplayer vcan0=elmcan -v -I ~/vm-share/candump.log -l i -g 1
+canplayer vcan0=elmcan -v -I candump.log -l i -g 1
 pip install -r requirements.txt
 ./dbcfeeder.py
 ```
