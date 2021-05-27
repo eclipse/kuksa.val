@@ -73,19 +73,21 @@ running = True
 
 def terminationSignalreceived(signalNumber, frame):
     global running, kuksa, reader
-    print("Received termination signal. Shutting down")
     running = False
     kuksa.stop()
     reader.stop()
-    print("Received termination signal. Finish")
+    print("Received termination signal. Shutting down")
 
 signal.signal(signal.SIGINT, terminationSignalreceived)
 signal.signal(signal.SIGQUIT, terminationSignalreceived)
 signal.signal(signal.SIGTERM, terminationSignalreceived)
 
 while running:
-    signal, value=canQueue.get()
-    print("Update signal {} to {}".format(signal, value))
-    for target in mapping[signal]['targets']:
-        kuksa.setValue(target, value)
+    try:
+        signal, value=canQueue.get(timeout=1)
+        print("Update signal {} to {}".format(signal, value))
+        for target in mapping[signal]['targets']:
+            kuksa.setValue(target, value)
+    except queue.Empty:
+        pass
 

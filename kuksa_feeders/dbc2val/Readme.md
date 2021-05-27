@@ -36,7 +36,7 @@ When the target DBC file and ECU follow the SAE-J1939 standard, the CAN reader a
 Prior to using this feature, j1939 and the relevant wheel-packages should be installed first:
 
 ```
-pip3 install j1939
+pip install j1939
 git clone https://github.com/benkfra/j1939.git
 cd j1939
 pip install .
@@ -48,8 +48,9 @@ The detailed documentation to this feature can be found here https://dias-kuksa-
 You can use the following command to create an virtual can interface and replay recorded candump log to test the dbc feeder:
 
 ```
-./createvcan.sh
-canplayer vcan0=elmcan -v -I ~/vm-share/candump.log -l i -g 1
+./createvcan.sh vcan0
+canplayer vcan0=elmcan -v -I candump.log -l i -g 1
+pip install -r requirements.txt
 ./dbcfeeder.py
 ```
 
@@ -59,5 +60,4 @@ The example is configured for a Tesla Model 3 using the [Model3CAN.dbc](./Model3
 
 
 ## Limitations
- * currently only works with VSS server in `--insecure` mode
  * No data conversions supported

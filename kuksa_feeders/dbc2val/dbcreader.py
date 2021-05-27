@@ -57,19 +57,20 @@ class DBCReader:
     def rxWorker(self):
         print("Starting thread")
         while self.run:
-            msg=self.bus.recv()
-            try:
-                decode=self.db.decode_message(msg.arbitration_id, msg.data)
-                #print("Decod" +str(decode))
-            except Exception as e:
-                self.parseErr+=1
-                #print("Error Decoding: "+str(e))
-                continue
-            rxTime=time.time()
-            for k,v in decode.items():
-                if k in self.mapper:
-                    if self.mapper.minUpdateTimeElapsed(k, rxTime):
-                        self.queue.put((k,v))
+            msg=self.bus.recv(timeout=1)
+            if msg:
+                try:
+                    decode=self.db.decode_message(msg.arbitration_id, msg.data)
+                    #print("Decod" +str(decode))
+                except Exception as e:
+                    self.parseErr+=1
+                    #print("Error Decoding: "+str(e))
+                    continue
+                rxTime=time.time()
+                for k,v in decode.items():
+                    if k in self.mapper:
+                        if self.mapper.minUpdateTimeElapsed(k, rxTime):
+                            self.queue.put((k,v))
 
 
     def stop(self):
