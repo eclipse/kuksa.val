@@ -12,5 +12,4 @@ WORKDIR /kuksa_dbc_feeder
 RUN pip install --no-cache-dir -r requirements.txt 
 ENV PYTHONUNBUFFERED=yes
 
-EXPOSE 29998/udp
 CMD ./dbcfeeder.py

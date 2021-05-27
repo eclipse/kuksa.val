@@ -30,7 +30,7 @@ class elm2canbridge:
         self.canport = canport
         self.whitelist=whitelist
         elm = serial.Serial()
-        elm.baudrate = cfg['baudrate']
+        elm.baudrate = cfg['baud']
         elm.port = cfg['port']
         elm.timeout = 10
         elm.open()

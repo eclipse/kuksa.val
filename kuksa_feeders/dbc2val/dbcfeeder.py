@@ -61,8 +61,12 @@ else:
     reader = dbcreader.DBCReader(cancfg, canQueue,mapping)
 
 if canport == 'elmcan':
+    if canport not in config:
+        print("section {} missing from configuration, exiting".format(canport))
+        sys.exit(-1)
+
     print("Using elmcan. Trying to set up elm2can bridge")
-    elmbr=elm2canbridge.elm2canbridge(canport, cancfg, reader.canidwl)
+    elmbr=elm2canbridge.elm2canbridge(canport, config[canport], reader.canidwl)
 
 reader.start_listening()
 running = True
