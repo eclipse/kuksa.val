@@ -155,17 +155,30 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
   }
 }
 
-string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, const string& request_id,  jsoncons::json& metaData){
+string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, jsoncons::json &request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateVSSTree");
   
+  try {
+    requestValidator->validateUpdateVSSTree(request);
+  } catch (jsoncons::jsonschema::schema_error &e) {
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, msg);
+    return JsonResponses::malFormedRequest( requestValidator->tryExtractRequestId(request), "updateVSSTree", string("Schema error: ") + msg);
+  } catch (std::exception &e) {
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
+    return JsonResponses::malFormedRequest(
+        requestValidator->tryExtractRequestId(request) , "updateVSSTree", string("Unhandled error: ") + e.what());
+  }
+
   jsoncons::json answer;
   answer["action"] = "updateVSSTree";
-  answer["requestId"] = request_id;
+  answer.insert_or_assign("requestId", request["requestId"]);
   answer["timestamp"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   try {
-    database->updateJsonTree(channel, metaData);
+    database->updateJsonTree(channel, request["metadata"]);
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json error;
@@ -180,16 +193,14 @@ string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, const strin
     return ss.str();
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request_id, "updateVSSTree", nopermission.what());
+    return JsonResponses::noAccess(request["requestId"].as<std::string>(), "updateVSSTree", nopermission.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
-    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
+    return JsonResponses::malFormedRequest(request["requestId"].as<std::string>(), "get", string("Unhandled error: ") + e.what());
   }
-
 
   ss << pretty_print(answer);
   return ss.str();
-  
 }
 
 string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
@@ -210,11 +221,9 @@ string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
         requestValidator->tryExtractRequestId(request), "getMetaData", string("Unhandled error: ") + e.what());
   }
 
-  string requestId = request["requestId"].as_string();
   jsoncons::json result;
   result["action"] = "getMetaData";
-  result["requestId"] = requestId;
-
+  result.insert_or_assign("requestId", request["requestId"]);
   jsoncons::json st = database->getMetaData(path);
   result["timestamp"] = JsonResponses::getTimeStamp();
   if (0 == st.size()){
@@ -239,7 +248,7 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
   VSSPath path=VSSPath::fromVSS(request["path"].as_string());
 
   try {
-    requestValidator->validateUpdateTree(request);
+    requestValidator->validateUpdateMetadata(request);
   } catch (jsoncons::jsonschema::schema_error & e) {
     std::string msg=std::string(e.what());
     boost::algorithm::trim(msg);
@@ -255,8 +264,7 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
 
   jsoncons::json answer;
   answer["action"] = "updateMetaData";
-  string requestId = request["requestId"].as_string();
-  answer["requestId"] = requestId;
+  answer.insert_or_assign("requestId", request["requestId"]);
   answer["timestamp"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
@@ -276,10 +284,10 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
     return ss.str();
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(requestId, "updateMetaData", nopermission.what());
+    return JsonResponses::noAccess(request["requestId"].as<string>(), "updateMetaData", nopermission.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
-    return JsonResponses::malFormedRequest(requestId, "get", string("Unhandled error: ") + e.what());
+    return JsonResponses::malFormedRequest(request["requestId"].as<string>(), "get", string("Unhandled error: ") + e.what());
   } 
 
   ss << pretty_print(answer);
@@ -446,9 +454,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
            + clientID + " with secret " + clientSecret);
       response = processAuthorizeWithPermManager(channel, request_id, clientID, clientSecret);
     } else if (action == "updateVSSTree") {
-      string request_id = root["requestId"].as<string>();
-      logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: update MetaData query  for with request id " + request_id);
-      response = processUpdateVSSTree(channel, request_id, root["metadata"]);
+      response = processUpdateVSSTree(channel,root);
     } else {
       string path = root["path"].as<string>();
       string request_id = root["requestId"].as<string>();

@@ -70,8 +70,30 @@ static const char* SCHEMA_SET=R"(
 }
 )";
 
+static const char* SCHEMA_UPDATE_VSS_TREE=R"(
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Update tree Request",
+    "description": "Enables the client to update data model",
+    "type": "object",
+    "required": ["action", "metadata", "requestId"],
+    "properties": {
+        "action": {
+            "enum": [ "updateVSSTree"],
+            "description": "The identifier for the set request"
+        },
+        "metadata": {
+            "$ref": "viss#/definitions/metadata"
+        },
+        "requestId": {
+            "$ref": "viss#/definitions/requestId"
+        }
+    }
+}
+)";
 
-static const char* SCHEMA_UPDATE_TREE=R"(
+
+static const char* SCHEMA_UPDATE_METADATA=R"(
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Update tree Request",
@@ -95,6 +117,7 @@ static const char* SCHEMA_UPDATE_TREE=R"(
     }
 }
 )";
+
 
 static const char* SCHEMA = (R"(
 {
