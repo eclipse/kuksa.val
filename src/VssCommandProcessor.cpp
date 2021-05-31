@@ -173,7 +173,7 @@ string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, jsoncons::j
 
   jsoncons::json answer;
   answer["action"] = "updateVSSTree";
-  answer["requestId"] = request["requestId"].as<std::string>();
+  answer.insert_or_assign("requestId", request["requestId"]);
   answer["timestamp"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
@@ -221,11 +221,9 @@ string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
         requestValidator->tryExtractRequestId(request), "getMetaData", string("Unhandled error: ") + e.what());
   }
 
-  string requestId = request["requestId"].as_string();
   jsoncons::json result;
   result["action"] = "getMetaData";
-  result["requestId"] = requestId;
-
+  result.insert_or_assign("requestId", request["requestId"]);
   jsoncons::json st = database->getMetaData(path);
   result["timestamp"] = JsonResponses::getTimeStamp();
   if (0 == st.size()){
@@ -266,8 +264,7 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
 
   jsoncons::json answer;
   answer["action"] = "updateMetaData";
-  string requestId = request["requestId"].as_string();
-  answer["requestId"] = requestId;
+  answer.insert_or_assign("requestId", request["requestId"]);
   answer["timestamp"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
@@ -287,10 +284,10 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
     return ss.str();
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(requestId, "updateMetaData", nopermission.what());
+    return JsonResponses::noAccess(request["requestId"].as<string>(), "updateMetaData", nopermission.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
-    return JsonResponses::malFormedRequest(requestId, "get", string("Unhandled error: ") + e.what());
+    return JsonResponses::malFormedRequest(request["requestId"].as<string>(), "get", string("Unhandled error: ") + e.what());
   } 
 
   ss << pretty_print(answer);
