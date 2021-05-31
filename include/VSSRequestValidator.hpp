@@ -43,10 +43,10 @@ class VSSRequestValidator {
 
     private:
         class MessageValidator;
-        VSSRequestValidator::MessageValidator *getValidator;
-        VSSRequestValidator::MessageValidator *setValidator;
-        VSSRequestValidator::MessageValidator *updateMetadataValidator;
-        VSSRequestValidator::MessageValidator *updateVSSTreeValidator;
+        std::unique_ptr<VSSRequestValidator::MessageValidator> getValidator;
+        std::unique_ptr<VSSRequestValidator::MessageValidator> setValidator;
+        std::unique_ptr<VSSRequestValidator::MessageValidator> updateMetadataValidator;
+        std::unique_ptr<VSSRequestValidator::MessageValidator> updateVSSTreeValidator;
 
         std::shared_ptr<ILogger> logger;
 };

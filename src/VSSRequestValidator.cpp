@@ -27,12 +27,12 @@
 class VSSRequestValidator::MessageValidator {
   private:
     std::shared_ptr<jsoncons::jsonschema::json_schema<jsoncons::json> > schema;
-    jsoncons::jsonschema::json_validator<jsoncons::json>* validator;
+    std::unique_ptr<jsoncons::jsonschema::json_validator<jsoncons::json>> validator;
 
   public: 
     MessageValidator(const char* SCHEMA) {
         this->schema = jsoncons::jsonschema::make_schema(jsoncons::json::parse(SCHEMA), vss_resolver);
-        this->validator = new jsoncons::jsonschema::json_validator<jsoncons::json>(this->schema);
+        this->validator = std::make_unique<jsoncons::jsonschema::json_validator<jsoncons::json>>(this->schema);
     }
 
   void validate(jsoncons::json& request) {
@@ -60,20 +60,16 @@ class VSSRequestValidator::MessageValidator {
 };
 
 
-VSSRequestValidator::VSSRequestValidator(std::shared_ptr<ILogger> loggerUtil)  {
-  this->logger = loggerUtil;
-
-  this->getValidator            = new MessageValidator(VSS_JSON::SCHEMA_GET);
-  this->setValidator            = new MessageValidator(VSS_JSON::SCHEMA_SET);
-  this->updateMetadataValidator = new MessageValidator(VSS_JSON::SCHEMA_UPDATE_METADATA);
-  this->updateVSSTreeValidator  = new MessageValidator(VSS_JSON::SCHEMA_UPDATE_VSS_TREE);
+VSSRequestValidator::VSSRequestValidator(std::shared_ptr<ILogger> loggerUtil) : 
+  logger(loggerUtil) {
+  
+  this->getValidator            = std::make_unique<MessageValidator>( VSS_JSON::SCHEMA_GET);
+  this->setValidator            = std::make_unique<MessageValidator>( VSS_JSON::SCHEMA_SET);
+  this->updateMetadataValidator = std::make_unique<MessageValidator>( VSS_JSON::SCHEMA_UPDATE_METADATA);
+  this->updateVSSTreeValidator  = std::make_unique<MessageValidator>( VSS_JSON::SCHEMA_UPDATE_VSS_TREE);
 }
 
 VSSRequestValidator::~VSSRequestValidator() {  
-    delete getValidator;
-    delete setValidator;
-    delete updateMetadataValidator;
-    delete updateVSSTreeValidator;
 }
 
 void VSSRequestValidator::validateGet(jsoncons::json& request) {
