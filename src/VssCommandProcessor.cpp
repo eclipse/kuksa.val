@@ -19,7 +19,6 @@
 #include <sstream>
 #include <string>
 
-#include "permmclient.hpp"
 #include "exception.hpp"
 #include "WsChannel.hpp"
 
@@ -295,73 +294,6 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
   
 }
 
-// Talks to the permission management daemon and processes the token received.
-string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
-                                                            const string & request_id,
-                                                            const string & client, 
-                                                            const string & clientSecret) {
-
-  jsoncons::json response;
-  // Get Token from permission management daemon.
-  try {
-     response = getPermToken(logger, client, clientSecret);
-  } catch (genException &exp) {
-    logger->Log(LogLevel::ERROR, exp.what());
-    jsoncons::json result;
-    jsoncons::json error;
-    result["action"] = "kuksa-authorize";
-    result["requestId"] = request_id;
-    error["number"] = 501;
-    error["reason"] = "No token received from permission management daemon";
-    error["message"] = "Check if the permission managemnt daemon is running";
-
-    result["error"] = error;
-    result["timestamp"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(result);
-    return ss.str();
-  }
-  int ttl = -1;
-  if (response.contains("token") && response.contains("pubkey")) {
-     try {
-        tokenValidator->updatePubKey(response["pubkey"].as<string>());
-        ttl = tokenValidator->validate(channel, response["token"].as<string>());
-     } catch (exception &e) {
-        logger->Log(LogLevel::ERROR, e.what());
-        ttl = -1;
-     }
-  }
-
-  if (ttl == -1) {
-    jsoncons::json result;
-    jsoncons::json error;
-    result["action"] = "kuksa-authorize";
-    result["requestId"] = request_id;
-    error["number"] = 401;
-    error["reason"] = "Invalid Token";
-    error["message"] = "Check the JWT token passed";
-
-    result["error"] = error;
-    result["timestamp"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(result);
-    return ss.str();
-
-  } else {
-    jsoncons::json result;
-    result["action"] = "kuksa-authorize";
-    result["requestId"] = request_id;
-    result["TTL"] = ttl;
-    result["timestamp"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(result);
-    return ss.str();
-  }
-}
-
 string VssCommandProcessor::processAuthorize(WsChannel &channel,
                                              const string & request_id,
                                              const string & token) {
@@ -445,14 +377,6 @@ string VssCommandProcessor::processQuery(const string &req_json,
               + to_string(subscribeID) + " with request id " + request_id);
 
       response = processUnsubscribe(request_id, subscribeID);
-    } else if ( action == "kuksa-authorize") {
-      string clientID = root["clientid"].as<string>();
-      string clientSecret = root["secret"].as<string>();
-      //string request_id = root["requestId"].as<int>();
-      string request_id = root["requestId"].as<string>();
-      logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: kuksa authorize query with clientID = "
-           + clientID + " with secret " + clientSecret);
-      response = processAuthorizeWithPermManager(channel, request_id, clientID, clientSecret);
     } else if (action == "updateVSSTree") {
       response = processUpdateVSSTree(channel,root);
     } else {
