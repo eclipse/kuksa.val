@@ -12,7 +12,6 @@ import asyncio,json,time
 from threading import Thread
 import websockets
 
-
 class vssclient:
     def __init__(self, uri, token):
         self.uri=uri
@@ -42,7 +41,7 @@ class vssclient:
     async def authorize(self):
         print("Authorize")
         auth={}
-        auth['requestId']=1
+        auth['requestId']=str(1)
         auth['action']="authorize"
         auth['tokens']=self.token
         
@@ -76,7 +75,7 @@ class vssclient:
 
     def push(self,path,value):
         req={}
-        req['requestId']=self.request
+        req['requestId']=str(self.request)
         self.request+=1
         req['action']="set"
         req['path']=path
