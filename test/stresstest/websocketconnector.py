@@ -12,6 +12,8 @@ import asyncio,json,time
 from threading import Thread
 import websockets
 
+#Soll diese datei auf den viss-client umgeschrieben werden?
+
 class vssclient:
     def __init__(self, uri, token):
         self.uri=uri
