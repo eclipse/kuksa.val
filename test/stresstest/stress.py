@@ -17,12 +17,13 @@ import stressClient
 vissClient = stressClient.StressClient()
 count=0
 
+print("VSS Server       : {}".format(vissClient.cfg['ip']+':'+vissClient.cfg['port']))
+print("JWT token file   : {}".format(vissClient.cfg['token']))
+print("Timeout [s]      : {}".format(vissClient.cfg['timeout']))
+
 while True:
-    vissClient.commThread.setValue("Vehicle.OBD.EngineLoad", (count%110)-10,timeout=vissClient.cfg['timeout'])
+    vissClient.commThread.setValue("Vehicle.OBD.EngineLoad", (count%110)+1,timeout=vissClient.cfg['timeout'])
     vissClient.commThread.setValue("Vehicle.Speed", count,timeout=vissClient.cfg['timeout'])
     vissClient.commThread.setValue("Vehicle.Cabin.Door.Row1.Right.Shade.Switch", "Open",timeout=vissClient.cfg['timeout'])
-    if count < 100:
-        count += 1
-    else:
-        count = 0
+    
     time.sleep(vissClient.cfg['timeout'])
