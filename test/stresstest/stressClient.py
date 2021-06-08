@@ -13,14 +13,6 @@ class StressClient():
 
     def getConfig(self):
 
-        parser = argparse.ArgumentParser()
-
-        parser.add_argument("-s", "--server", help="VSS server", type=str)
-        parser.add_argument("-j", "--jwt", help="JWT security token file", type=str)
-        parser.add_argument("-t", "--timeout", help="Timeout between requests", type=float)
-
-        args = parser.parse_args()
-
         config = configparser.ConfigParser()
         config.read('config.ini')
 
@@ -42,10 +34,6 @@ class StressClient():
             if self.commThread != None:
                 self.commThread.stop()
                 self.commThread = None
-        config = {'ip':self.cfg['ip'],
-        'port': self.cfg['port'],
-        'insecure' : self.cfg['insecure']
-        }
         self.commThread = KuksaClientThread(self.cfg)       #make new thread
         self.commThread.start()                             #start thread
 
@@ -67,4 +55,4 @@ class StressClient():
     def __init__(self):
         self.getConfig()
         self.connect(self.cfg)
-        self.commThread.authorize(token=self.cfg['token'],timeout=self.cfg['timeout'])
+        self.commThread.authorize(token=self.cfg['token'])
