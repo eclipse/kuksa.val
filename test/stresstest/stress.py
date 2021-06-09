@@ -17,13 +17,13 @@ import stressClient
 vissClient = stressClient.StressClient()
 count=0
 
-print("VSS Server       : {}".format(vissClient.cfg['ip']+':'+vissClient.cfg['port']))
-print("JWT token file   : {}".format(vissClient.cfg['token']))
-print("Timeout [s]      : {}".format(vissClient.cfg['timeout']))
+print("VSS Server       : {}".format(vissClient.commThread.serverIP+':'+str(vissClient.commThread.serverPort)))
+print("JWT token file   : {}".format(vissClient.commThread.tokenfile))
+print("Timeout [s]      : {}".format(vissClient.commThread.timeout))
 
 while True:
-    vissClient.commThread.setValue("Vehicle.OBD.EngineLoad", (count%110)+1,timeout=vissClient.cfg['timeout'])
-    vissClient.commThread.setValue("Vehicle.Speed", count,timeout=vissClient.cfg['timeout'])
-    vissClient.commThread.setValue("Vehicle.Cabin.Door.Row1.Right.Shade.Switch", "Open",timeout=vissClient.cfg['timeout'])
+    vissClient.commThread.setValue("Vehicle.OBD.EngineLoad", (count%110)+1,timeout=vissClient.commThread.timeout)
+    vissClient.commThread.setValue("Vehicle.Speed", count,timeout=vissClient.commThread.timeout)
+    vissClient.commThread.setValue("Vehicle.Cabin.Door.Row1.Right.Shade.Switch", "Open",timeout=vissClient.commThread.timeout)
     
-    time.sleep(vissClient.cfg['timeout'])
+    time.sleep(vissClient.commThread.timeout)
