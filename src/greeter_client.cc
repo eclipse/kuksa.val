@@ -22,7 +22,7 @@
 
 #include <grpcpp/grpcpp.h>
 
-#include "helloworld.grpc.pb.h"
+#include "../build/src/helloworld.grpc.pb.h"
 
 
 using grpc::Channel;

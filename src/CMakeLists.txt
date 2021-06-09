@@ -183,11 +183,11 @@ if(BUILD_EXE)
 
   # Include generated *.pb.h files
   add_library(proto 
-    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.grpc.pb.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.grpc.pb.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.pb.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.pb.h)
-  message(STATUS "${_REFLECTION}")
+    ../build/src/helloworld.grpc.pb.cc
+    ../build/src/helloworld.grpc.pb.h
+    ../build/src/helloworld.pb.cc
+    ../build/src/helloworld.pb.h)
+
   target_link_libraries(proto
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
@@ -196,13 +196,13 @@ if(BUILD_EXE)
   foreach(_target
   greeter_client greeter_server)
   add_executable(${_target} "${_target}.cc"
-    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.pb.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.grpc.pb.cc)
+    ../build/src/helloworld.pb.cc
+    ../build/src/helloworld.grpc.pb.cc)
   target_link_libraries(${_target}
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
   endforeach()
-  message(STATUS "Targets for grpc build")
+  message(STATUS "Build target files for grpc server and client")
 
   endif(BUILD_EXE)
