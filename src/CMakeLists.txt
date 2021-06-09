@@ -104,7 +104,6 @@ target_include_directories(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${
 target_link_libraries(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
 target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
 
-
 if(BUILD_EXE)
   add_executable(${SERVER_EXE_NAME} main.cpp)
   # using static library to simplify existing packaging and maintainance
@@ -165,4 +164,45 @@ if(BUILD_EXE)
   set(CPACK_DEBIAN_PACKAGE_MAINTAINER "John Argerus")
 
   INCLUDE(CPack)
-endif(BUILD_EXE)
+  
+  #grpc build server and client target
+  # Protobuf
+  set(protobuf_MODULE_COMPATIBLE TRUE)
+  find_package(Protobuf CONFIG REQUIRED)
+  message(STATUS "Using protobuf ${Protobuf_VERSION}")
+
+  # Protobuf-compiler
+  set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
+
+  # gRPC
+  find_package(gRPC CONFIG REQUIRED)
+  message(STATUS "Using gRPC ${gRPC_VERSION}")
+  set(_GRPC_GRPCPP gRPC::grpc++)
+  set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
+  set(_REFLECTION gRPC::grpc++_reflection)
+
+  # Include generated *.pb.h files
+  add_library(proto 
+    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.grpc.pb.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.grpc.pb.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.pb.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.pb.h)
+  message(STATUS "${_REFLECTION}")
+  target_link_libraries(proto
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
+  
+  foreach(_target
+  greeter_client greeter_server)
+  add_executable(${_target} "${_target}.cc"
+    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.pb.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.grpc.pb.cc)
+  target_link_libraries(${_target}
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
+  endforeach()
+  message(STATUS "Targets for grpc build")
+
+  endif(BUILD_EXE)

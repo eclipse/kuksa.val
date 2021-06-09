@@ -61,7 +61,7 @@ include(boost.cmake)
 
 # OpenSSL
 find_package(OpenSSL REQUIRED)
-message(STATUS " openssl libraries ${OPENSSL_LIBRARIES}")
+message(STATUS "openssl libraries ${OPENSSL_LIBRARIES}")
 
 FIND_PACKAGE(PkgConfig)
 
@@ -88,6 +88,15 @@ target_include_directories(jwt-cpp SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/
 add_library(turtle INTERFACE)
 target_include_directories(turtle SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/turtle/include)
 
+add_library(grpc INTERFACE)
+target_include_directories(grpc SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/grpc/include/)
+
+add_library(grpc++ INTERFACE)
+target_include_directories(grpc++ SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/grpc/include/grpc++)
+
+add_library(grpcpp INTERFACE)
+target_include_directories(grpcpp SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/grpc/include/grpcpp)
+
 ###
 # Add project subdirectories to build
 
@@ -96,3 +105,6 @@ enable_testing()
 include(CTest)
 add_subdirectory(test)
 add_subdirectory(test/unit-test)
+add_subdirectory(protos)
+
+
