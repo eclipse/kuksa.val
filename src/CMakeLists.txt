@@ -167,8 +167,7 @@ if(BUILD_EXE)
   
   #grpc build server and client target
   # Protobuf
-  set(protobuf_MODULE_COMPATIBLE TRUE)
-  find_package(Protobuf CONFIG REQUIRED)
+  find_package(Protobuf REQUIRED)
   message(STATUS "Using protobuf ${Protobuf_VERSION}")
 
   # Protobuf-compiler
