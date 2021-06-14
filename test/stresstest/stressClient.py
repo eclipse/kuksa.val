@@ -1,6 +1,5 @@
 import configparser
 import sys
-import ssl
 import argparse
 import time
 from pickle import FALSE
@@ -12,24 +11,14 @@ class StressClient():
     appClient = {}
     cfg = {}
 
-
     def getConfig(self):
 
         config = configparser.ConfigParser()
         config.read('config.ini')
 
         vsscfg = config['vss']      #get data from config file
-        """self.cfg['ip'] = vsscfg.get("ip")
-        self.cfg['port'] = vsscfg.get("port","8090")
-        self.cfg['insecure'] = vsscfg.get("insecure",FALSE)
-        self.cfg['token'] = vsscfg.get("token", "jwt.token")
-        self.cfg['timeout'] = vsscfg.getfloat("timeout", 0.1)
-        self.cfg['certificate'] = vsscfg.get("certificate", "../../kuksa_certificates/Client.pem")
-        self.cfg['cacertificate'] = vsscfg.get("cacertificate", "../../kuksa_certificates/CA.pem")
-        self.cfg['key'] = vsscfg.get("key", "../../kuksa_certificates/Server.key")"""
 
         return vsscfg
-
 
     def connect(self,cfg):
         """Connect to the VISS Server"""
@@ -62,5 +51,5 @@ class StressClient():
             self.commThread.timeout = cfg.getfloat("timeout", 0.1)                       #get necessary timeout for stresstest
             self.commThread.authorize(token=self.commThread.tokenfile)
         except:
-            print("Could not connect successfully, try using insecure mode on your server")
+            print("Could not connect successfully")
             sys.exit(-1)
