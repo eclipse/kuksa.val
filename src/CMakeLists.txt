@@ -179,29 +179,38 @@ if(BUILD_EXE)
   set(_GRPC_GRPCPP gRPC::grpc++)
   set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
   set(_REFLECTION gRPC::grpc++_reflection)
-
+  
   # Include generated *.pb.h files
   add_library(proto 
-    ../build/src/helloworld.grpc.pb.cc
-    ../build/src/helloworld.grpc.pb.h
-    ../build/src/helloworld.pb.cc
-    ../build/src/helloworld.pb.h)
-
+    ../build/src/kuksa.grpc.pb.cc
+    ../build/src/kuksa.grpc.pb.h
+    ../build/src/kuksa.pb.cc
+    ../build/src/kuksa.pb.h)
+  
   target_link_libraries(proto
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
-  
+    
   foreach(_target
-  greeter_client greeter_server)
+  kuksa_viss_grpc_client kuksa_viss_grpc_server)
+  
+  # use .cc because otherwise you need to change the sources in line 38 and exclude the grpc files
   add_executable(${_target} "${_target}.cc"
-    ../build/src/helloworld.pb.cc
-    ../build/src/helloworld.grpc.pb.cc)
+    ../build/src/kuksa.pb.cc
+    ../build/src/kuksa.grpc.pb.cc)
   target_link_libraries(${_target}
+    jsoncons
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
+  target_include_directories(${_target}
+    PUBLIC
+      $<INSTALL_INTERFACE:include>
+      $<INSTALL_INTERFACE:include/interface>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/interface>
+  )
   endforeach()
   message(STATUS "Build target files for grpc server and client")
-
-  endif(BUILD_EXE)
+endif(BUILD_EXE)
