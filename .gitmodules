@@ -7,7 +7,3 @@
 [submodule "3rd-party-libs/turtle"]
 	path = 3rd-party-libs/turtle
 	url = https://github.com/mat007/turtle.git
-[submodule "3rd-party-libs/grpc"]
-	path = 3rd-party-libs/grpc
-	url = https://github.com/grpc/grpc
-	branch = v1.38.x

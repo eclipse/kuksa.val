@@ -176,9 +176,6 @@ if(BUILD_EXE)
   INCLUDE(CPack)
   
   #grpc build server and client target
-  # Protobuf
-  find_package(Protobuf REQUIRED)
-  message(STATUS "Using protobuf ${Protobuf_VERSION}")
 
   # Protobuf-compiler
   set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
@@ -192,10 +189,10 @@ if(BUILD_EXE)
   
   # Include generated *.pb.h files
   add_library(proto 
-    ../build/src/kuksa.grpc.pb.cc
-    ../build/src/kuksa.grpc.pb.h
-    ../build/src/kuksa.pb.cc
-    ../build/src/kuksa.pb.h)
+    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.h
+    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.h)
   
   target_link_libraries(proto
     ${_REFLECTION}
@@ -207,8 +204,8 @@ if(BUILD_EXE)
   
   # use .cc because otherwise you need to change the sources in line 38 and exclude the grpc files
   add_executable(${_target} "${_target}.cc"
-    ../build/src/kuksa.pb.cc
-    ../build/src/kuksa.grpc.pb.cc)
+    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.cc)
   target_link_libraries(${_target}
     jsoncons
     ${_REFLECTION}
