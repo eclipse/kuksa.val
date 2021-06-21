@@ -176,6 +176,7 @@ if(BUILD_EXE)
   INCLUDE(CPack)
   
   #grpc build server and client target
+  list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_BINARY_DIR}+"/_deps/grpc-src/cmake")
 
   # Protobuf-compiler
   set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
