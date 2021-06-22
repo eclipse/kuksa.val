@@ -174,20 +174,14 @@ if(BUILD_EXE)
   set(CPACK_DEBIAN_PACKAGE_MAINTAINER "John Argerus")
 
   INCLUDE(CPack)
-  
-  #grpc build server and client target
-  set(GRPC_DIR \"${CMAKE_CURRENT_BINARY_DIR}/_deps/grpc-src/cmake\")
-  list(APPEND CMAKE_PREFIX_PATH GRPC_DIR)
 
   # Protobuf-compiler
   set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
 
   # gRPC
-  find_package(gRPC CONFIG REQUIRED)
-  message(STATUS "Using gRPC ${gRPC_VERSION}")
-  set(_GRPC_GRPCPP gRPC::grpc++)
+  set(_GRPC_GRPCPP grpc++)
   set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
-  set(_REFLECTION gRPC::grpc++_reflection)
+  set(_REFLECTION grpc++_reflection)
   
   # Include generated *.pb.h files
   add_library(proto 
@@ -219,6 +213,7 @@ if(BUILD_EXE)
       $<INSTALL_INTERFACE:include/interface>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/interface>
+      ${CMAKE_CURRENT_BINARY_DIR}
   )
   endforeach()
   message(STATUS "Build target files for grpc server and client")
