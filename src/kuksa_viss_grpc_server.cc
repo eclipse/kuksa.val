@@ -1,20 +1,17 @@
 /*
+ * ******************************************************************************
+ * Copyright (c) 2021 Robert Bosch GmbH.
  *
- * Copyright 2015 gRPC authors.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/org/documents/epl-2.0/index.php
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
+ *  Contributors:
+ *      Robert Bosch GmbH
+ * *****************************************************************************
  */
+
 
 #include <iostream>
 #include <memory>
@@ -25,13 +22,10 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
 
-#include "../build/src/kuksa.grpc.pb.h"
-#include "WsChannel.hpp"
-#include "IVssCommandProcessor.hpp"
-#include "IServer.hpp"
-#include "VssDatabase.hpp"
+#include "kuksa.grpc.pb.h"
 #include "BasicLogger.hpp"
 #include "VssCommandProcessor.hpp"
+#include "VssDatabase.hpp"
 
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -44,8 +38,7 @@ using kuksa::ConnectRequest;
 using kuksa::ConnectReply;
 
 using namespace std;
-
-std::vector<std::pair<ObserverType,std::shared_ptr<IVssCommandProcessor>>> listeners_;
+using namespace boost;
 
 // Logic and data behind the server's behavior.
 class ConnectServiceImpl final : public viss_client::Service {
@@ -59,7 +52,7 @@ class ConnectServiceImpl final : public viss_client::Service {
     cout << "Action:" << action << "\n";
     path = temp[1];
     cout << "Path:" << path << "\n";
-    _str = "{\"action\": \"" + action + "\",\"path\": \"" + path + "\"";
+    _str = "{\"action\": \"" + action + "\",\"path\": \"" + path + "\"" + "}";
     response = _str;
     cout << "Response: " << response << endl;
 
