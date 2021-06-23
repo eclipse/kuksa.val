@@ -63,6 +63,7 @@ class KuksaClientThread(threading.Thread):
     def authorize(self, token=None, timeout = 2):
         if token == None:
             token = self.tokenfile
+        token = os.path.expanduser(token)
         if os.path.isfile(token):
             with open(token, "r") as f:
                 token = f.readline()
