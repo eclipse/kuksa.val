@@ -106,13 +106,26 @@ target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVE
 
 # grpc repository and submodule fetch
 include(FetchContent)
+## PROTOBUF
+FetchContent_Declare(
+        protobuf
+        GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
+        GIT_TAG        v3.17.3
+        SOURCE_SUBDIR  cmake
+)
+## END PROTOBUF ##
+
+## GRPC ##
 FetchContent_Declare(
   gRPC
   GIT_REPOSITORY https://github.com/grpc/grpc
   GIT_TAG        v1.38.0
 )
+## END GRPC ##
+
 set(FETCHCONTENT_QUIET OFF)
-FetchContent_MakeAvailable(gRPC)
+
+FetchContent_MakeAvailable(gRPC protobuf)
 
 if(BUILD_EXE)
   add_executable(${SERVER_EXE_NAME} main.cpp)
@@ -175,38 +188,49 @@ if(BUILD_EXE)
 
   INCLUDE(CPack)
 
-  # Protobuf-compiler
-  set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
+  ## GRPC targets
 
   # gRPC
   set(_GRPC_GRPCPP grpc++)
-  set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
+  set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
   set(_REFLECTION grpc++_reflection)
-  
-  # Include generated *.pb.h files
-  add_library(proto 
-    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.cc
-    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.h
-    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.cc
-    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.h)
-  
-  target_link_libraries(proto
-    ${_REFLECTION}
-    ${_GRPC_GRPCPP}
-    ${_PROTOBUF_LIBPROTOBUF})
+  set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+
+  #
+  # Generate Protobuf/Grpc source files
+  #
+  get_filename_component(k_proto "../protos/kuksa.proto" ABSOLUTE)
+  get_filename_component(k_proto_path "${k_proto}" PATH)
+
+  set(k_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.cc")
+  set(k_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.h")
+  set(k_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.cc")
+  set(k_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.h")
+
+
+  add_custom_command(
+        OUTPUT "${k_proto_srcs}" "${k_proto_hdrs}" "${k_grpc_srcs}" "${k_grpc_hdrs}"
+        COMMAND ${_PROTOBUF_PROTOC}
+        ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
+          --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
+          -I "${k_proto_path}"
+          --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
+          "${k_proto}"
+        DEPENDS "${k_proto}"
+  )
+
+  message(STATUS "generated *.pb.cc and *.pb.h files for ${k_proto}")
+
+  include_directories("${CMAKE_CURRENT_BINARY_DIR}")
     
   foreach(_target
   kuksa_viss_grpc_client kuksa_viss_grpc_server)
-  
+
   # use .cc because otherwise you need to change the sources in line 38 and exclude the grpc files
   add_executable(${_target} "${_target}.cc"
-    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.cc
-    ${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.cc)
-  target_link_libraries(${_target}
-    jsoncons
-    ${_REFLECTION}
-    ${_GRPC_GRPCPP}
-    ${_PROTOBUF_LIBPROTOBUF})
+    ${k_proto_srcs}
+    ${k_grpc_srcs})
+
   target_include_directories(${_target}
     PUBLIC
       $<INSTALL_INTERFACE:include>
@@ -215,6 +239,12 @@ if(BUILD_EXE)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/interface>
       ${CMAKE_CURRENT_BINARY_DIR}
   )
+
+  target_link_libraries(${_target}
+    jsoncons
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
   endforeach()
   message(STATUS "Build target files for grpc server and client")
 endif(BUILD_EXE)
