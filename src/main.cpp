@@ -23,6 +23,7 @@
 #include <boost/filesystem.hpp>
 #include <jsoncons/json.hpp>
 #include <jsonpath/json_query.hpp>
+#include <thread>                                                               
 
 #include "AccessChecker.hpp"
 #include "Authenticator.hpp"
@@ -34,6 +35,7 @@
 #include "WebSockHttpFlexServer.hpp"
 #include "MQTTPublisher.hpp"
 #include "exception.hpp"
+#include "grpcHandler.hpp"
 
 #include "../buildinfo.h"
 
@@ -48,14 +50,13 @@ using jsoncons::json;
 
 static VssDatabase *gDatabase = NULL;
 
-
 static void print_usage(const char *prog_name,
                         program_options::options_description &desc) {
   cerr << "Usage: " << prog_name << " OPTIONS" << endl;
   cerr << desc << std::endl;
 }
 
-int main(int argc, const char *argv[]) {
+int httpRunServer(int argc, const char *argv[]){
   vector<string> logLevels{"NONE"};
   uint8_t logLevelsActive = static_cast<uint8_t>(LogLevel::NONE);
 
@@ -158,7 +159,6 @@ int main(int argc, const char *argv[]) {
     auto port = variables["port"].as<int>();
     auto insecure = variables[("insecure")].as<bool>();
     auto vss_path = variables["vss"].as<boost::filesystem::path>();
-
     // initialize pseudo random number generator
     std::srand(std::time(nullptr));
 
@@ -172,12 +172,6 @@ int main(int argc, const char *argv[]) {
         variables["cert-path"].as<boost::filesystem::path>() / "jwt.key.pub";
     string jwtPubkey =
         Authenticator::getPublicKeyFromFile(pubKeyFile.string(), logger);
-    if (jwtPubkey == "") {
-      logger->Log(LogLevel::ERROR,
-                  "Could not read valid JWT pub key. Terminating.");
-      return -1;
-    }
-
     auto rest2JsonConverter =
         std::make_shared<RestV1ApiHandler>(logger, docRoot);
     auto httpServer = std::make_shared<WebSockHttpFlexServer>(
@@ -243,5 +237,12 @@ int main(int argc, const char *argv[]) {
     logger->Log(LogLevel::ERROR, "Fatal runtime error: " + string(ex.what()));
     return -1;
   }
+}
+
+int main(int argc, const char *argv[]) {
+  thread http(httpRunServer, argc, argv);
+  thread grpc(grpcHandler::RunServer);
+  http.join();
+  grpc.join();
   return 0;
 }

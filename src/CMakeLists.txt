@@ -24,6 +24,62 @@ set(SERVER_OBJ_LIB_NAME ${SERVER_EXE_NAME}-object )
 set(SERVER_LIB_NAME ${SERVER_EXE_NAME}-core )
 set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
 
+### grpc repository and submodule fetch
+include(FetchContent)
+## PROTOBUF ##
+FetchContent_Declare(
+        protobuf
+        GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
+        GIT_TAG        v3.17.3
+        SOURCE_SUBDIR  cmake
+)
+## END PROTOBUF ##
+
+## GRPC ##
+FetchContent_Declare(
+  gRPC
+  GIT_REPOSITORY https://github.com/grpc/grpc
+  GIT_TAG        v1.38.0
+)
+## END GRPC ##
+
+set(FETCHCONTENT_QUIET OFF)
+
+FetchContent_MakeAvailable(gRPC protobuf)
+
+# gRPC and Protobuf variables
+set(_GRPC_GRPCPP grpc++)
+set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
+set(_REFLECTION grpc++_reflection)
+set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+
+#
+# Generate Protobuf/Grpc source files
+#
+get_filename_component(k_proto "../protos/kuksa.proto" ABSOLUTE)
+get_filename_component(k_proto_path "${k_proto}" PATH)
+
+set(k_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.cc")
+set(k_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.h")
+set(k_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.cc")
+set(k_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.h")
+
+
+add_custom_command(
+      OUTPUT "${k_proto_srcs}" "${k_proto_hdrs}" "${k_grpc_srcs}" "${k_grpc_hdrs}"
+      COMMAND ${_PROTOBUF_PROTOC}
+      ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
+        --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
+        -I "${k_proto_path}"
+        --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
+        "${k_proto}"
+      DEPENDS "${k_proto}"
+)
+
+message(STATUS "generated *.pb.cc and *.pb.h files for ${k_proto}")
+
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+
 
 ###
 # Setup command-line options
@@ -40,7 +96,8 @@ list(REMOVE_ITEM LIB_SOURCES "${PROJECT_SOURCE_DIR}/main.cpp")
 
 ###
 # set main 'object library' as target to prevent multiple compilations of same sources
-add_library(${SERVER_OBJ_LIB_NAME} OBJECT ${LIB_SOURCES})
+add_library(${SERVER_OBJ_LIB_NAME} OBJECT ${LIB_SOURCES} ${k_proto_srcs}
+${k_grpc_srcs})
 
 target_compile_features(${SERVER_OBJ_LIB_NAME} PUBLIC cxx_std_14)
 
@@ -101,34 +158,19 @@ add_library(${SERVER_LIB_STATIC_NAME} STATIC $<TARGET_OBJECTS:${SERVER_OBJ_LIB_N
 target_include_directories(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
 target_include_directories(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
 # re-use link libraries from object library
-target_link_libraries(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
-target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
-
-# grpc repository and submodule fetch
-include(FetchContent)
-## PROTOBUF
-FetchContent_Declare(
-        protobuf
-        GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-        GIT_TAG        v3.17.3
-        SOURCE_SUBDIR  cmake
-)
-## END PROTOBUF ##
-
-## GRPC ##
-FetchContent_Declare(
-  gRPC
-  GIT_REPOSITORY https://github.com/grpc/grpc
-  GIT_TAG        v1.38.0
-)
-## END GRPC ##
-
-set(FETCHCONTENT_QUIET OFF)
-
-FetchContent_MakeAvailable(gRPC protobuf)
+target_link_libraries(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES> 
+                                                       ${_REFLECTION}
+                                                       ${_GRPC_GRPCPP}
+                                                       ${_PROTOBUF_LIBPROTOBUF})
+target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>
+                                                       ${_REFLECTION}
+                                                       ${_GRPC_GRPCPP}
+                                                       ${_PROTOBUF_LIBPROTOBUF})
 
 if(BUILD_EXE)
-  add_executable(${SERVER_EXE_NAME} main.cpp)
+  add_executable(${SERVER_EXE_NAME} main.cpp
+  ${k_proto_srcs}
+  ${k_grpc_srcs})
   # using static library to simplify existing packaging and maintainance
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${SERVER_LIB_STATIC_NAME})
 
@@ -189,42 +231,9 @@ if(BUILD_EXE)
   INCLUDE(CPack)
 
   ## GRPC targets
-
-  # gRPC
-  set(_GRPC_GRPCPP grpc++)
-  set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
-  set(_REFLECTION grpc++_reflection)
-  set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
-
-  #
-  # Generate Protobuf/Grpc source files
-  #
-  get_filename_component(k_proto "../protos/kuksa.proto" ABSOLUTE)
-  get_filename_component(k_proto_path "${k_proto}" PATH)
-
-  set(k_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.cc")
-  set(k_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.h")
-  set(k_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.cc")
-  set(k_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.h")
-
-
-  add_custom_command(
-        OUTPUT "${k_proto_srcs}" "${k_proto_hdrs}" "${k_grpc_srcs}" "${k_grpc_hdrs}"
-        COMMAND ${_PROTOBUF_PROTOC}
-        ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
-          --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
-          -I "${k_proto_path}"
-          --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-          "${k_proto}"
-        DEPENDS "${k_proto}"
-  )
-
-  message(STATUS "generated *.pb.cc and *.pb.h files for ${k_proto}")
-
-  include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-    
+  
   foreach(_target
-  kuksa_viss_grpc_client kuksa_viss_grpc_server)
+  kuksa_viss_grpc_client)
 
   # use .cc because otherwise you need to change the sources in line 38 and exclude the grpc files
   add_executable(${_target} "${_target}.cc"
@@ -241,10 +250,9 @@ if(BUILD_EXE)
   )
 
   target_link_libraries(${_target}
-    jsoncons
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
   endforeach()
-  message(STATUS "Build target files for grpc server and client")
+  message(STATUS "Build target files for grpc client")
 endif(BUILD_EXE)

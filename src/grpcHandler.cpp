@@ -12,21 +12,11 @@
  * *****************************************************************************
  */
 
-
-#include <iostream>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include <grpcpp/ext/proto_server_reflection_plugin.h>
-#include <grpcpp/grpcpp.h>
-#include <grpcpp/health_check_service_interface.h>
+#include "grpcHandler.hpp"
 
 #include "kuksa.grpc.pb.h"
-#include "BasicLogger.hpp"
-#include "VssCommandProcessor.hpp"
-#include "VssDatabase.hpp"
 
+using namespace std;
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
@@ -34,26 +24,34 @@ using grpc::Status;
 using kuksa::viss_client;
 using kuksa::CommandReply;
 using kuksa::CommandRequest;
-using kuksa::ConnectRequest;
-using kuksa::ConnectReply;
 
-using namespace std;
-using namespace boost;
 
 // Logic and data behind the server's behavior.
-class ConnectServiceImpl final : public viss_client::Service {
+class RequestServiceImpl final : public viss_client::Service {
   Status HandleRequest(ServerContext* context, const CommandRequest* request,
                   CommandReply* reply) override {
     // Get the request from the client
     string command = request->command();
     cout << "Command:" << command << "\n";
     temp =  split(command);
-    action = temp[0];
-    cout << "Action:" << action << "\n";
-    path = temp[1];
-    cout << "Path:" << path << "\n";
-    _str = "{\"action\": \"" + action + "\",\"path\": \"" + path + "\"" + "}";
+    if(temp.size() > 0) {
+      action = temp[0];
+      cout << "Action:" << action << "\n";
+      _str = "{\"action\": \"" + action + "}";
+    }
+    if(temp.size() > 1) {
+      path = temp[1];
+      cout << "Path:" << path << "\n";
+      _str = "{\"action\": \"" + action + "\",\"path\": \"" + path + "\"" + "}";
+    }
+    multimap<grpc::string_ref, grpc::string_ref> metadata = context->client_metadata();
     response = _str;
+    multimap <grpc::string_ref, grpc::string_ref >::iterator it;
+
+    for (it = metadata.begin(); it != metadata.end(); ++it)
+    {
+        cout << it->first << endl << endl << it->second << endl << endl;
+    }
     cout << "Response: " << response << endl;
 
     return Status::OK;
@@ -81,9 +79,11 @@ class ConnectServiceImpl final : public viss_client::Service {
   }
 };
 
-void RunServer() {
+void grpcHandler::RunServer() {
   string server_address("0.0.0.0:50051");
-  ConnectServiceImpl service;
+  RequestServiceImpl service;
+
+  grpcHandler handler;
 
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -94,16 +94,18 @@ void RunServer() {
   // clients. In this case it corresponds to an *synchronous* service.
   builder.RegisterService(&service);
   // Finally assemble the server.
-  unique_ptr<Server> server(builder.BuildAndStart());
+  std::shared_ptr<Server> server(builder.BuildAndStart());
+  handler.grpcServer = server;
   cout << "Kuksa viss grpc server Version 1.0.0" << endl;
   cout << "Server listening on " << server_address << endl;
 
   // Wait for the server to shutdown. Note that some other thread must be
   // responsible for shutting down the server for this call to ever return.
-  server->Wait();
+  handler.grpcServer->Wait();
 }
 
-int main(int argc, char** argv) {
-  RunServer();
-  return 0;
+grpcHandler::grpcHandler() = default;
+
+grpcHandler::~grpcHandler(){
+    grpcServer->Shutdown();
 }
