@@ -132,8 +132,11 @@ int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
 int SubscriptionHandler::updateByUUID(const string &signalUUID,
                                       const jsoncons::json &value) {
   std::stringstream ss;
+  ss << "SubscriptionHandler::updateByUUID: set value "
+     << pretty_print(value)
+     << " for UUID " << signalUUID;
   ss << pretty_print(value);
-  logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByUUID: new value set at path " + signalUUID + ss.str());
+  logger->Log(LogLevel::VERBOSE, ss.str());
   std::unique_lock<std::mutex> lock(accessMutex);
   auto handle = subscribeHandle.find(signalUUID);
   if (handle == subscribeHandle.end()) {
@@ -163,8 +166,10 @@ int SubscriptionHandler::updateByPath(const string &path, const json &value) {
   (void) value;
   
   std::stringstream ss;
-  ss << pretty_print(value);
-  logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByPath: new value set at path " + path + ss.str());
+  ss << "SubscriptionHandler::updateByPath: set value "
+     << pretty_print(value)
+     << " in path " << path;
+  logger->Log(LogLevel::VERBOSE, ss.str());
   for(auto & publisher: publishers_){
     publisher->sendPathValue(path, value);
   }
