@@ -23,6 +23,8 @@ set(SERVER_EXE_NAME "${PROJECT_NAME}" )
 set(SERVER_OBJ_LIB_NAME ${SERVER_EXE_NAME}-object )
 set(SERVER_LIB_NAME ${SERVER_EXE_NAME}-core )
 set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
+set(GRPC_CLIENT_EXE_NAME kuksa_viss_grpc_client) 
+set(gRPC_SSL_PROVIDER "package" CACHE STRING "Provider of ssl library")
 
 ### grpc repository and submodule fetch
 include(FetchContent)
@@ -144,7 +146,7 @@ endif(BUILD_UNIT_TEST)
 target_link_libraries(${SERVER_OBJ_LIB_NAME}  PUBLIC jwt-cpp jsonpath jsoncons ${CMAKE_THREAD_LIBS_INIT} -Wl,-z,stack-size=8388608)
 
 if ("${ADDRESS_SAN}" STREQUAL "ON" AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -fsanitize=address -fno-omit-frame-pointer)
+  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -fsanitize=address -fno-omit-frame-pointer -DGRPC_BUILD_WITH_BORING_SSL_ASM=0)
   target_link_libraries(${SERVER_OBJ_LIB_NAME} PUBLIC "-g -fsanitize=address ")
 endif()
 
@@ -155,8 +157,8 @@ endif()
 add_library(${SERVER_LIB_NAME}        SHARED $<TARGET_OBJECTS:${SERVER_OBJ_LIB_NAME}>)
 add_library(${SERVER_LIB_STATIC_NAME} STATIC $<TARGET_OBJECTS:${SERVER_OBJ_LIB_NAME}>)
 # re-use include directories from object library
-target_include_directories(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
-target_include_directories(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
+target_include_directories(${SERVER_LIB_NAME}        PUBLIC ${_gRPC_SSL_INCLUDE_DIR} $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
+target_include_directories(${SERVER_LIB_STATIC_NAME} PUBLIC ${_gRPC_SSL_INCLUDE_DIR} $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
 # re-use link libraries from object library
 target_link_libraries(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES> 
                                                        ${_REFLECTION}
@@ -171,6 +173,9 @@ if(BUILD_EXE)
   add_executable(${SERVER_EXE_NAME} main.cpp
   ${k_proto_srcs}
   ${k_grpc_srcs})
+  ## GRPC targets
+  add_executable(${GRPC_CLIENT_EXE_NAME} "${GRPC_CLIENT_EXE_NAME}.cpp")
+
   # using static library to simplify existing packaging and maintainance
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${SERVER_LIB_STATIC_NAME})
 
@@ -196,6 +201,19 @@ if(BUILD_EXE)
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.pem DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.key DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../data/vss-core/vss_release_2.0.json DESTINATION bin/${SERVER_EXE_NAME})
+
+  #GRPC
+  # using static library to simplify existing packaging and maintainance
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${SERVER_LIB_STATIC_NAME})
+
+  # link executable dependencies
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE Threads::Threads)
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE "-ldl")
+  target_include_directories(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIR})
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_LIBRARY})
+  message(STATUS "Build target files for grpc client")
 
   # CPack
   INCLUDE(InstallRequiredSystemLibraries)
@@ -229,30 +247,4 @@ if(BUILD_EXE)
   set(CPACK_DEBIAN_PACKAGE_MAINTAINER "John Argerus")
 
   INCLUDE(CPack)
-
-  ## GRPC targets
-  
-  foreach(_target
-  kuksa_viss_grpc_client)
-
-  # use .cc because otherwise you need to change the sources in line 38 and exclude the grpc files
-  add_executable(${_target} "${_target}.cc"
-    ${k_proto_srcs}
-    ${k_grpc_srcs})
-
-  target_include_directories(${_target}
-    PUBLIC
-      $<INSTALL_INTERFACE:include>
-      $<INSTALL_INTERFACE:include/interface>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/interface>
-      ${CMAKE_CURRENT_BINARY_DIR}
-  )
-
-  target_link_libraries(${_target}
-    ${_REFLECTION}
-    ${_GRPC_GRPCPP}
-    ${_PROTOBUF_LIBPROTOBUF})
-  endforeach()
-  message(STATUS "Build target files for grpc client")
 endif(BUILD_EXE)
