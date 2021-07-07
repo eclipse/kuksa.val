@@ -403,7 +403,7 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
       if (resJson.contains("datatype")) {
         checkAndSanitizeType(resJson, value);
         resJson.insert_or_assign("value", value);
-        resJson.insert_or_assign("timestamp", JsonResponses::getTimeStamp());
+        resJson.insert_or_assign("ts", JsonResponses::getTimeStamp());
 
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
@@ -428,18 +428,20 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
       resArray = jsonpath::json_query(data_tree__, path.getJSONPath());
     }
     jsoncons::json answer;
+    jsoncons::json datapoint;
     answer.insert_or_assign("path", path.to_string());
     jsoncons::json result = resArray[0];
     if (result.contains("value")) {
-      answer.insert_or_assign("value", result["value"]);
+      datapoint.insert_or_assign("value", result["value"]);
     } else {
-      answer["value"] = "---";
+      datapoint["value"] = "---";
     }
-    if (result.contains("timestamp")) {
-      answer["timestamp"] = result["timestamp"].as<string>();
+    if (result.contains("ts")) {
+      datapoint["ts"] = result["ts"].as<string>();
     } else {
-      answer["timestamp"] = JsonResponses::getTimeStampZero();
+      datapoint["ts"] = JsonResponses::getTimeStampZero();
     }
+    answer.insert_or_assign("dp", datapoint);
     return answer;
 
 }

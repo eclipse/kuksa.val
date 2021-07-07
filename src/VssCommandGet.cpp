@@ -55,7 +55,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
                                      " for path: " + path.to_string());
 
   jsoncons::json answer;
-  jsoncons::json valueArray = jsoncons::json::array();
+  jsoncons::json datapoints = jsoncons::json::array();
 
   try {
     list<VSSPath> vssPaths = database->getLeafPaths(path);
@@ -67,32 +67,21 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
         logger->Log(LogLevel::WARNING, msg.str());
         return JsonResponses::noAccess(requestId, "get", msg.str());
       } else {
-        // TODO: This will add the "last"  timestamp, changing behavior from previous
-        //"timestamp of the get request" approach 
-        //Both are not very helpful when querying multiple values.
-        //This will be fixed once https://github.com/eclipse/kuksa.val/issues/158
-        //is implemented, as VISS2 will allow attaching individual timestamps to
-        //individual data
-        jsoncons::json signal = database->getSignal(vssPath);
-        jsoncons::json arrayValue;
-        arrayValue.insert_or_assign(signal["path"].as_string(), signal["value"]);
-        answer.insert_or_assign("timestamp", signal["timestamp"]);
-        valueArray.push_back(arrayValue);
+        datapoints.push_back(database->getSignal(vssPath));
       }
     }
     if (vssPaths.size() < 1) {
       return JsonResponses::pathNotFound(requestId, "get", pathStr);
     }
     if (vssPaths.size() == 1) {
-      answer.insert_or_assign("path", vssPaths.front().to_string());
-      answer.insert_or_assign("value", valueArray[0][vssPaths.front().to_string()]);
+      answer["data"] = datapoints[0];
     } else {
-      answer["value"] = valueArray;
+      answer["data"] = datapoints;
     }
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
-        requestId, "get", string("Unhandled error: ") + e.what());
+    requestId, "get", string("Unhandled error: ") + e.what());
   }
 
   answer["action"] = "get";
