@@ -282,7 +282,7 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
     ss << pretty_print(answer);
     return ss.str();
   } catch (noPermissionException &nopermission) {
-    logger->Log(LogLevel::ERROR, string(nopermission.what()));
+    logger->Log(LogLevel::WARNING, string(nopermission.what()));
     return JsonResponses::noAccess(request["requestId"].as<string>(), "updateMetaData", nopermission.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
@@ -388,18 +388,18 @@ string VssCommandProcessor::processQuery(const string &req_json,
         response =
             processSubscribe(channel, request_id, path);
       } else {
-        logger->Log(LogLevel::INFO, "VssCommandProcessor::processQuery: Unknown action " + action);
+        logger->Log(LogLevel::WARNING, "VssCommandProcessor::processQuery: Unknown action " + action);
         return JsonResponses::malFormedRequest("Unknown action requested");
       }
     }
   } catch (jsoncons::ser_error &e) {
-    logger->Log(LogLevel::ERROR, "JSON parse error");
+    logger->Log(LogLevel::WARNING, "JSON parse error");
     return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::key_not_found &e) {
-    logger->Log(LogLevel::ERROR, "JSON key not found error");
+    logger->Log(LogLevel::WARNING, "JSON key not found error");
     return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::not_an_object &e) {
-    logger->Log(LogLevel::ERROR, "JSON not an object error");
+    logger->Log(LogLevel::WARNING, "JSON not an object error");
     return JsonResponses::malFormedRequest(e.what());
   }
 

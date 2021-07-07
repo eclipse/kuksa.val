@@ -62,17 +62,21 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   //(set all or none)
   for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
     if (! database->pathExists(std::get<0>(setTuple) )) {
+      stringstream msg;
+      msg << "Path " << std::get<0>(setTuple).to_string() << " does not exist";
+      logger->Log(LogLevel::WARNING,msg.str());
       return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", std::get<0>(setTuple).to_string());
     }
     if (! accessValidator_->checkWriteAccess(channel, std::get<0>(setTuple) )) {
       stringstream msg;
       msg << "No write access to " << std::get<0>(setTuple).to_string();
+      logger->Log(LogLevel::WARNING,msg.str());
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
     if (! database->pathIsWritable(std::get<0>(setTuple))) {
       stringstream msg;
       msg << "Can not set " << std::get<0>(setTuple).to_string() << ". Only sensor or actor leaves can be set.";
-      logger->Log(LogLevel::VERBOSE,msg.str());
+      logger->Log(LogLevel::WARNING,msg.str());
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
   }
