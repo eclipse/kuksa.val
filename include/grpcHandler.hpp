@@ -20,11 +20,17 @@
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
+#include "VssCommandProcessor.hpp"
 
 class grpcHandler{
+    private:
+        std::shared_ptr<grpc::Server> grpcServer;
+        std::shared_ptr<VssCommandProcessor> grpcProcessor;
     public:
         grpcHandler();
         virtual ~grpcHandler();
-        static void RunServer();
-        std::shared_ptr<grpc::Server> grpcServer;
+        static void RunServer(std::shared_ptr<VssCommandProcessor> Processor);
+        std::shared_ptr<VssCommandProcessor> getGrpcProcessor() {
+          return this->grpcProcessor;
+        }
 };

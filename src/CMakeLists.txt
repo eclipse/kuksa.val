@@ -113,6 +113,12 @@ target_include_directories(${SERVER_OBJ_LIB_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/interface>
 )
 
+target_link_libraries(${SERVER_OBJ_LIB_NAME}
+  PUBLIC
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
+
 if(CMAKE_COMPILER_IS_GNUCXX)
   target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=unused-parameter -Wno-error=deprecated-declarations)
 else(CMAKE_COMPILER_IS_GNUCXX)
@@ -157,17 +163,11 @@ endif()
 add_library(${SERVER_LIB_NAME}        SHARED $<TARGET_OBJECTS:${SERVER_OBJ_LIB_NAME}>)
 add_library(${SERVER_LIB_STATIC_NAME} STATIC $<TARGET_OBJECTS:${SERVER_OBJ_LIB_NAME}>)
 # re-use include directories from object library
-target_include_directories(${SERVER_LIB_NAME}        PUBLIC ${_gRPC_SSL_INCLUDE_DIR} $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
-target_include_directories(${SERVER_LIB_STATIC_NAME} PUBLIC ${_gRPC_SSL_INCLUDE_DIR} $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
+target_include_directories(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
+target_include_directories(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
 # re-use link libraries from object library
-target_link_libraries(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES> 
-                                                       ${_REFLECTION}
-                                                       ${_GRPC_GRPCPP}
-                                                       ${_PROTOBUF_LIBPROTOBUF})
-target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>
-                                                       ${_REFLECTION}
-                                                       ${_GRPC_GRPCPP}
-                                                       ${_PROTOBUF_LIBPROTOBUF})
+target_link_libraries(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
+target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
 
 if(BUILD_EXE)
   add_executable(${SERVER_EXE_NAME} main.cpp

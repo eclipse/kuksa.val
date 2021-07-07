@@ -15,18 +15,10 @@ service viss_client {
   rpc HandleRequest (CommandRequest) returns (CommandReply) {}
 }
 
-message ConnectRequest {
-  string name = 1;
-}
-
-message ConnectReply {
-  string name = 1;
-}
-
 message CommandRequest {
   string command = 1;
 }
 
 message CommandReply {
-  string name = 1;
+  string message = 1;
 }

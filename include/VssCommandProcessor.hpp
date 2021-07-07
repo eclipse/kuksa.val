@@ -67,6 +67,7 @@ class VssCommandProcessor : public IVssCommandProcessor {
   ~VssCommandProcessor();
 
   std::string processQuery(const std::string &req_json, WsChannel& channel);
+  std::string processQuery(const std::string &req_json);
 };
 
 #endif

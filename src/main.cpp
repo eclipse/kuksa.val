@@ -56,7 +56,22 @@ static void print_usage(const char *prog_name,
   cerr << desc << std::endl;
 }
 
-int httpRunServer(int argc, const char *argv[]){
+int httpRunServer(boost::program_options::variables_map variables, std::shared_ptr<WebSockHttpFlexServer> httpServer, std::string docRoot, std::shared_ptr<VssCommandProcessor> cmdProcessor){
+
+    auto port = variables["port"].as<int>();
+    auto insecure = variables[("insecure")].as<bool>();
+    httpServer->AddListener(ObserverType::ALL, cmdProcessor);
+    httpServer->Initialize(variables["address"].as<string>(), port,
+                           std::move(docRoot),
+                           variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
+    httpServer->Start();
+
+    while (1) {
+      usleep(1000000);
+    }
+}
+
+int main(int argc, const char *argv[]) {
   vector<string> logLevels{"NONE"};
   uint8_t logLevelsActive = static_cast<uint8_t>(LogLevel::NONE);
 
@@ -155,9 +170,6 @@ int httpRunServer(int argc, const char *argv[]){
 
   try {
     // initialize server
-
-    auto port = variables["port"].as<int>();
-    auto insecure = variables[("insecure")].as<bool>();
     auto vss_path = variables["vss"].as<boost::filesystem::path>();
     // initialize pseudo random number generator
     std::srand(std::time(nullptr));
@@ -217,18 +229,11 @@ int httpRunServer(int argc, const char *argv[]){
           }
         }
       }
+      thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
+      thread grpc(grpcHandler::RunServer, cmdProcessor);
+      http.join();
+      grpc.join();
     }
-
-    httpServer->AddListener(ObserverType::ALL, cmdProcessor);
-    httpServer->Initialize(variables["address"].as<string>(), port,
-                           std::move(docRoot),
-                           variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
-    httpServer->Start();
-
-    while (1) {
-      usleep(1000000);
-    }
-
   } catch (const program_options::error &ex) {
     print_usage(argv[0], desc);
     cerr << ex.what() << std::endl;
@@ -237,12 +242,5 @@ int httpRunServer(int argc, const char *argv[]){
     logger->Log(LogLevel::ERROR, "Fatal runtime error: " + string(ex.what()));
     return -1;
   }
-}
-
-int main(int argc, const char *argv[]) {
-  thread http(httpRunServer, argc, argv);
-  thread grpc(grpcHandler::RunServer);
-  http.join();
-  grpc.join();
   return 0;
 }

@@ -29,8 +29,6 @@ using grpc::Status;
 using kuksa::viss_client;
 using kuksa::CommandRequest;
 using kuksa::CommandReply;
-using kuksa::ConnectRequest;
-using kuksa::ConnectReply;
 
 class GrpcConnection {
  public:
@@ -49,7 +47,13 @@ class GrpcConnection {
     ClientContext context;
     // The actual RPC
     Status status = stub_->HandleRequest(&context, request, &reply);
-    return command;
+    if (status.ok()) {
+      return reply.message();
+    } else {
+      std::cout << status.error_code() << ": " << status.error_message()
+                << std::endl;
+      return "RPC failed";
+    }
   }
  private:
   std::unique_ptr<viss_client::Stub> stub_;
@@ -84,12 +88,13 @@ int main(int argc, char** argv) {
   }
   GrpcConnection connGrpcSes(
       grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()));
-  std::string request;
+  std::string reply;
   std::string abort = "quit";
   // prepare for getting a command while command is not quit
-  while(abort.compare(request) != 0){
+  while(abort.compare(reply) != 0){
     std::cout << "Test-Client>";
-    request = connGrpcSes.HandleRequest();
+    reply = connGrpcSes.HandleRequest();
+    std::cout << reply << std::endl;
   }
 
   return 0;

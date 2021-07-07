@@ -25,6 +25,7 @@ using kuksa::viss_client;
 using kuksa::CommandReply;
 using kuksa::CommandRequest;
 
+grpcHandler handler;
 
 // Logic and data behind the server's behavior.
 class RequestServiceImpl final : public viss_client::Service {
@@ -36,23 +37,15 @@ class RequestServiceImpl final : public viss_client::Service {
     temp =  split(command);
     if(temp.size() > 0) {
       action = temp[0];
-      cout << "Action:" << action << "\n";
       _str = "{\"action\": \"" + action + "}";
     }
     if(temp.size() > 1) {
       path = temp[1];
-      cout << "Path:" << path << "\n";
-      _str = "{\"action\": \"" + action + "\",\"path\": \"" + path + "\"" + "}";
+      _str = "{\"action\": \"" + action + "\",\"path\": \"" + path + "\",\"requestId\": \"12345\"}";
     }
-    multimap<grpc::string_ref, grpc::string_ref> metadata = context->client_metadata();
-    response = _str;
-    multimap <grpc::string_ref, grpc::string_ref >::iterator it;
-
-    for (it = metadata.begin(); it != metadata.end(); ++it)
-    {
-        cout << it->first << endl << endl << it->second << endl << endl;
-    }
-    cout << "Response: " << response << endl;
+    auto Processor = handler.getGrpcProcessor();
+    response = Processor->processQuery(_str);
+    reply->set_message(response);
 
     return Status::OK;
   }
@@ -79,11 +72,9 @@ class RequestServiceImpl final : public viss_client::Service {
   }
 };
 
-void grpcHandler::RunServer() {
+void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor) {
   string server_address("0.0.0.0:50051");
   RequestServiceImpl service;
-
-  grpcHandler handler;
 
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -96,6 +87,7 @@ void grpcHandler::RunServer() {
   // Finally assemble the server.
   std::shared_ptr<Server> server(builder.BuildAndStart());
   handler.grpcServer = server;
+  handler.grpcProcessor = Processor;
   cout << "Kuksa viss grpc server Version 1.0.0" << endl;
   cout << "Server listening on " << server_address << endl;
 
