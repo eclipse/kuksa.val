@@ -130,10 +130,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
 
   // Assign timestamp for comparision purposes
-  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
+  expectedJson.insert_or_assign("ts",res["ts"]);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON) {
     "reason": "Bad Request"
   },
   "requestId": "100",
-  "timestamp": 0
+  "ts": 0
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON_NoRequestID) {
     "reason": "Bad Request"
   },
   "requestId": "UNKNOWN",
-  "timestamp": 0
+  "ts": 0
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -283,10 +283,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
 
   // Insert timestamp for comparision purposes
-  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
+  expectedJson.insert_or_assign("ts",res["ts"]);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -331,10 +331,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
 
   // Assign timestamp for comparision purposes
-  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
+  expectedJson.insert_or_assign("ts",res["ts"]);
 
   BOOST_TEST(res == expectedJson);
 }

@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
     "reason": "Bad Request"
   },
   "requestId": "100",
-  "timestamp": 0
+  "ts": 0
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
     "reason": "Bad Request"
   },
   "requestId": "UNKNOWN",
-  "timestamp": 0
+  "ts": 0
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
     "reason": "Path not found"
   },
   "requestId": "1",
-  "timestamp": 0
+  "ts": 0
   }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
     "reason": "Forbidden"
   },
   "requestId": "1",
-  "timestamp": 0
+  "ts": 0
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -341,7 +341,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
     "reason": "Forbidden"
   },
   "requestId": "1",
-  "timestamp": 0
+  "ts": 0
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);

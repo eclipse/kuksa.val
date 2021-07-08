@@ -45,7 +45,7 @@ KUKSA.val supports VSS1 (dot-seperated) and VSS2 paths (slash-seperated) paths, 
     "action": "get", 
     "path": "Vehicle.Speed", 
     "requestId": "82176895204605218443916772566374508384", 
-    "timestamp": 1608121891, 
+    "ts": 1608121891, 
     "value": "100"
 }
 ```
@@ -69,7 +69,7 @@ The same works with VSS2 paths
     "action": "get", 
     "path": "Vehicle/Speed", 
     "requestId": "231543026388962994917867358932055791655", 
-    "timestamp": 1608121887, 
+    "ts": 1608121887, 
     "value": "100"
 }
 ```
@@ -98,7 +98,7 @@ __Response__
     "action": "get", 
     "path": "Vehicle/OBD/Speed", 
     "requestId": "103931565265046680818323224498857767104", 
-    "timestamp": 1608377104, 
+    "ts": 1608377104, 
     "value": "100"
 }
 ```
@@ -122,7 +122,7 @@ __Query__
         "reason": "Path not found"
     }, 
     "requestId": "313075168675422297716541347645557507871", 
-    "timestamp": 1608377239
+    "ts": 1608377239
 }
 ```
 
@@ -144,7 +144,7 @@ A more interesting example:
 {
     "action": "get", 
     "requestId": "311508011343524723835336189899358414689", 
-    "timestamp": 1608377507, 
+    "ts": 1608377507, 
     "value": [
         {
             "Vehicle/Cabin/Door/Row4/Right/IsLocked": "---"
@@ -195,7 +195,7 @@ gives
         "reason": "Path not found"
     }, 
     "requestId": "45465648527119404680377594999611835141", 
-    "timestamp": 1608377632
+    "ts": 1608377632
 }
 ```
 
@@ -220,7 +220,7 @@ leads to
 {
     "action": "get", 
     "requestId": "221484597038784548242607265463583217704", 
-    "timestamp": 1608377709, 
+    "ts": 1608377709, 
     "value": [
         {
             "Vehicle/Cabin/Door/Row4/Right/Window/isOpen": "---"
@@ -480,7 +480,7 @@ As mentioned, wildcard queries only return the visible subset depending on your 
     "action": "get", 
     "path": "Vehicle/Speed",
     "requestId": "68009472116763267974316500807917391601", 
-    "timestamp": 1608378047
+    "ts": 1608378047
 }
 ```
 
@@ -493,7 +493,7 @@ As mentioned, wildcard queries only return the visible subset depending on your 
         "reason": "Forbidden"
     }, 
     "requestId": "68009472116763267974316500807917391601", 
-    "timestamp": 1608378047
+    "ts": 1608378047
 }
 ```
 
@@ -512,7 +512,7 @@ While
 {
     "action": "get", 
     "requestId": "42417702951003321129172344096154765930", 
-    "timestamp": 1608378219, 
+    "ts": 1608378219, 
     "value": [
         {
             "Vehicle/Drivetrain/Transmission/DriveType": "unknown"

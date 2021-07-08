@@ -424,7 +424,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
   }
 
   answer["action"] = "subscribe";
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   // verify that each updated signal for which single client is subscribed to is called
   for (unsigned index = 0; index < paths; index++) {
@@ -511,7 +511,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   }
 
   answer["action"] = "subscribe";
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   // custom verifier for returned JSON message
   auto jsonVerify = [&resMap, &answer]( const std::string &actual ) -> bool {
@@ -520,7 +520,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
     ret = (answer["action"] == response["action"]);
     if (ret) {
-      ret = (response["timestamp"] >= answer["timestamp"] );
+      ret = (response["ts"] >= answer["ts"] );
     }
 
     if (ret) {
@@ -596,7 +596,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
     BOOST_TEST(ret = (answer["action"] == response["action"]));
     if (ret) {
-      BOOST_TEST(ret = (response["timestamp"] != 0));
+      BOOST_TEST(ret = (response["ts"] != 0));
     }
 
     if (ret) {
@@ -644,7 +644,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   }
 
   answer["action"] = "subscribe";
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {

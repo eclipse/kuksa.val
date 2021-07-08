@@ -1,4 +1,4 @@
-{"version": 2, "width": 80, "height": 33, "timestamp": 1599119755, "env": {"SHELL": "/usr/bin/fish", "TERM": "rxvt-unicode-256color"}}
+{"version": 2, "width": 80, "height": 33, "ts": 1599119755, "env": {"SHELL": "/usr/bin/fish", "TERM": "rxvt-unicode-256color"}}
 [0.028694, "o", "\u001b]0;fish /home/wenwen/tools/kuksa.val"]
 [0.029339, "o", "/kuksa_viss_client\u0007\u001b[38;5;0m\u001b[m\u001b(B"]
 [0.029441, "o", "\u001b[38;5;237m⏎\u001b[m\u001b(B                                                                           \r⏎ \r\u001b[K"]

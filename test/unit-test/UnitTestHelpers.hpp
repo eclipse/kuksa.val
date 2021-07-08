@@ -22,8 +22,8 @@
 //Verifies a timestamp exists and is of type string. Copies it to the
 //expected answer
 static inline void verify_timestamp(jsoncons::json &expected, const jsoncons::json &result)  {
-  BOOST_TEST(result.contains("timestamp"));
-  BOOST_TEST(result["timestamp"].is_string());
-  BOOST_CHECK_NO_THROW(boost::posix_time::from_iso_extended_string(result["timestamp"].as_string()));
-  expected["timestamp"]=result["timestamp"].as_string(); 
+  BOOST_TEST(result.contains("ts"));
+  BOOST_TEST(result["ts"].is_string());
+  BOOST_CHECK_NO_THROW(boost::posix_time::from_iso_extended_string(result["ts"].as_string()));
+  expected["ts"]=result["ts"].as_string(); 
 }

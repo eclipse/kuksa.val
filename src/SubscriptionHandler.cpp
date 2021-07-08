@@ -194,7 +194,7 @@ void* SubscriptionHandler::subThreadRunner() {
       answer["action"] = "subscribe";
       answer["subscriptionId"] = std::get<0>(newSub);
       answer.insert_or_assign("value", value);
-      answer["timestamp"] = JsonResponses::getTimeStamp();
+      answer["ts"] = JsonResponses::getTimeStamp();
 
       stringstream ss;
       ss << pretty_print(answer);

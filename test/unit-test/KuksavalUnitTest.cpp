@@ -928,9 +928,9 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
      )");
 
 
-   BOOST_TEST(set_response_json.contains("timestamp") == true);
+   BOOST_TEST(set_response_json.contains("ts") == true);
    // remove timestamp to match
-   set_response_json.erase("timestamp");
+   set_response_json.erase("ts");
 
    BOOST_TEST(set_response_json == set_response_expected);
 
@@ -971,10 +971,10 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
 
    json response_json = json::parse(response);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 }
 */
@@ -1046,10 +1046,10 @@ BOOST_AUTO_TEST_CASE(process_query_set_withwildcard_invalid)
    json response_json = json::parse(response);
 
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 }
 */
@@ -1086,10 +1086,10 @@ BOOST_AUTO_TEST_CASE(process_query_set_invalid_value)
    json response_json = json::parse(response);
 
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 }
 */
@@ -1126,10 +1126,10 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
    json response_json = json::parse(response);
 
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 
 
@@ -1156,10 +1156,10 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
    json response_response_getvalid_json = json::parse(response_getvalid);
 
 
-   BOOST_TEST(response_response_getvalid_json.contains("timestamp") == true);
+   BOOST_TEST(response_response_getvalid_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_response_getvalid_json.erase("timestamp");
+   response_response_getvalid_json.erase("ts");
    BOOST_TEST(response_response_getvalid_json == expected_getvalid);
 }
 */
@@ -2121,10 +2121,10 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_permitted_path)
    json response_json = json::parse(response);
 
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 
    // verify with a get request the the previous set has not worked.
@@ -2147,10 +2147,10 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_permitted_path)
    json get_response_json = json::parse(get_response);
 
 
-   BOOST_TEST(get_response_json.contains("timestamp") == true);
+   BOOST_TEST(get_response_json.contains("ts") == true);
 
    // remove timestamp to match
-   get_response_json.erase("timestamp");
+   get_response_json.erase("ts");
    BOOST_TEST(get_response_json == get_expected);
 }
 */
@@ -2204,10 +2204,10 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path)
    json response_json = json::parse(response);
 
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 
    // verify with a get request the the previous set has not worked.
@@ -2230,10 +2230,10 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path)
    json get_response_json = json::parse(get_response);
 
 
-   BOOST_TEST(get_response_json.contains("timestamp") == true);
+   BOOST_TEST(get_response_json.contains("ts") == true);
 
    // remove timestamp to match
-   get_response_json.erase("timestamp");
+   get_response_json.erase("ts");
    BOOST_TEST(get_response_json == get_expected);
 }
 */

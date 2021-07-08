@@ -20,11 +20,11 @@ app = App()
 @app.subscribe(pubsub_name='pubsub', topic='Vehicle.Speed')
 def mytopic(event: v1.Event) -> None:
     data = json.loads(event.Data())
-    print(f'Subscriber received: value="{data["value"]}", timestamp = "{data["timestamp"]}", topic="{data["topic"]}", content_type="{event.content_type}"',flush=True)
+    print(f'Subscriber received: value="{data["value"]}", timestamp = "{data["ts"]}", topic="{data["topic"]}", content_type="{event.content_type}"',flush=True)
 
 @app.subscribe(pubsub_name='pubsub', topic='Vehicle.OBD.Speed')
 def mytopic(event: v1.Event) -> None:
     data = json.loads(event.Data())
-    print(f'Subscriber received: value="{data["value"]}", timestamp = "{data["timestamp"]}", topic="{data["topic"]}", content_type="{event.content_type}"',flush=True)
+    print(f'Subscriber received: value="{data["value"]}", timestamp = "{data["ts"]}", topic="{data["topic"]}", content_type="{event.content_type}"',flush=True)
 
 app.run(50051)

@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // expectations
 
-  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","value":"---","timestamp":"0"})"};
+  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","value":"---","ts":"0"})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   // expectations
 
-  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration","value":"---","timestamp":"0"})"};
+  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration","value":"---","ts":"0"})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify

@@ -66,7 +66,7 @@ class Dapr_Publisher():
             jsonMsg = json.loads(kuksa_message) 
             req_data = {
                 'id': 0,
-                'timestamp': jsonMsg["timestamp"],
+                'timestamp': jsonMsg["ts"],
                 'value': jsonMsg["value"],
                 'topic': topic
                 }
@@ -81,7 +81,7 @@ class Dapr_Publisher():
 
         req_data = {
             'id': jsonMsg["subscriptionId"],
-            'timestamp': jsonMsg["timestamp"],
+            'timestamp': jsonMsg["ts"],
             'value': jsonMsg["value"],
             'topic': topic
             }
