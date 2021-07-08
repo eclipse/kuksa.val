@@ -85,9 +85,12 @@ signal.signal(signal.SIGTERM, terminationSignalreceived)
 while running:
     try:
         signal, value=canQueue.get(timeout=1)
-        print("Update signal {} to {}".format(signal, value))
         for target in mapping[signal]['targets']:
-            kuksa.setValue(target, value)
+            tv=mapping.transform(signal,target,value)
+            if tv is not None: #none indicates the transform decided to not set the value
+                print("Update VSS path {} to {} based on signal {}".format(target, tv, signal))
+                kuksa.setValue(target, tv)
+            pass
     except queue.Empty:
         pass
 
