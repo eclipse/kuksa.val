@@ -31,6 +31,7 @@
 #include "SubscriptionHandler.hpp"
 #include "VssCommandProcessor.hpp"
 #include "VssDatabase.hpp"
+#include "VssDatabase_Record.hpp"
 #include "WebSockHttpFlexServer.hpp"
 #include "MQTTPublisher.hpp"
 #include "exception.hpp"
@@ -196,12 +197,18 @@ int main(int argc, const char *argv[]) {
         logger, httpServer, tokenValidator, accessCheck);
     subHandler->addPublisher(mqttPublisher);
 
-    auto database =
-        std::make_shared<VssDatabase>(logger, subHandler);
+    std::shared_ptr<IVssDatabase> database = std::make_shared<VssDatabase>(logger,subHandler);
+
+    if(variables["record"].as<bool>())
+    {
+      std::cout << "Recording in- and outputs\n";
+      database.reset(new VssDatabase_Record(logger,subHandler));
+    }
+
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(
         logger, database, tokenValidator, accessCheck, subHandler);
 
-    gDatabase = database.get();
+    gDatabase = static_cast<VssDatabase*>(database.get());
 
     database->initJsonTree(vss_path);
 
