@@ -14,6 +14,7 @@
 import os, sys, signal
 import configparser
 import queue
+import json
 
 import dbc2vssmapper
 import dbcreader
@@ -89,7 +90,12 @@ while running:
             tv=mapping.transform(signal,target,value)
             if tv is not None: #none indicates the transform decided to not set the value
                 print("Update VSS path {} to {} based on signal {}".format(target, tv, signal))
-                kuksa.setValue(target, tv)
+                resp=json.loads(kuksa.setValue(target, tv))
+                if "error" in resp:
+                    if "message" in resp["error"]: 
+                        print("Error setting {}: {}".format(target, resp["error"]["message"]))
+                    else:
+                        print("Unknown error setting {}: {}".format(target, resp))
             pass
     except queue.Empty:
         pass
