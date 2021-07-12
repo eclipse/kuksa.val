@@ -1,11 +1,15 @@
 #include "VssDatabase_Record.hpp"
 
+#include <string>
+#include <memory>
+#include <iostream>
+
 VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle)
+:overClass_(loggerUtil,subHandle)
 {
-    overBase = make_unique<VssDatabase>(loggerUtil,subHandle);
-    logfile_name = "sample_log%Y%m%d_%H%M%S.log";
-    target_name = "logs";
-    dir = "logs";
+    logfile_name_ = "record-%Y%m%d_%H%M%S.log";
+    target_name_ = "./logs";
+    dir_ = "./logs";
 
     logger_init();
     logging::core::get() -> add_global_attribute("TimeStamp",attrs::local_clock());
@@ -18,12 +22,13 @@ void VssDatabase_Record::logger_init()
     (
         new file_sink
         (
-            keywords::file_name = logfile_name,
-            keywords::target_file_name = logfile_name,
-            keywords::target=target_name
+            keywords::file_name = logfile_name_,
+            keywords::target_file_name = logfile_name_,
+            keywords::target = target_name_,
+            keywords::auto_flush = true
         )
     );
-    sink->locked_backend()->set_file_collector(sinks::file::make_collector(keywords::target = target_name));
+    sink->locked_backend()->set_file_collector(sinks::file::make_collector(keywords::target = target_name_));
     sink->locked_backend()->scan_for_files();
     //rotates files for every start of application
 
@@ -42,3 +47,32 @@ void VssDatabase_Record::log(std::string msg)
     BOOST_LOG(lg) << msg;
 }
 
+jsoncons::json VssDatabase_Record::setSignal(const VSSPath &path, jsoncons::json &value)
+{
+    std::string json_val;
+    value.dump_pretty(json_val);
+    log("action:set " + path.to_string() + " to " + json_val);
+    std::cout << "action:set " << path.to_string() << " to " << "value" << std::endl;
+    return overClass_.setSignal(path,value);
+}
+
+jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path)
+{
+    log("action:get " + path.to_string());
+    std::cout << "action:get " << path.to_string() << std::endl;
+    return overClass_.getSignal(path);
+}
+
+bool VssDatabase_Record::pathExists(const VSSPath &path){return overClass_.pathExists(path);}
+bool VssDatabase_Record::pathIsWritable(const VSSPath &path){return overClass_.pathIsWritable(path);}
+std::list<VSSPath> VssDatabase_Record::getLeafPaths(const VSSPath& path){return overClass_.getLeafPaths(path);}
+void VssDatabase_Record::checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val){overClass_.checkAndSanitizeType(meta,val);}
+void VssDatabase_Record::initJsonTree(const boost::filesystem::path &fileName){overClass_.initJsonTree(fileName);}
+bool VssDatabase_Record::checkPathValid(const VSSPath& path){return overClass_.checkPathValid(path);}
+bool VssDatabase_Record::isActor(const jsoncons::json &element){return overClass_.isActor(element);}
+bool VssDatabase_Record::isSensor(const jsoncons::json &element){return overClass_.isSensor(element);}
+bool VssDatabase_Record::isAttribute(const jsoncons::json &element){return overClass_.isAttribute(element);}
+void VssDatabase_Record::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree){overClass_.updateJsonTree(sourceTree,jsonTree);}
+void VssDatabase_Record::updateJsonTree(WsChannel& channel, jsoncons::json& value){overClass_.updateJsonTree(channel,value);}
+void VssDatabase_Record::updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& newTree){overClass_.updateMetaData(channel,path,newTree);}
+jsoncons::json VssDatabase_Record::getMetaData(const VSSPath& path){return overClass_.getMetaData(path);}

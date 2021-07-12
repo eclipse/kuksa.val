@@ -14,7 +14,8 @@
 set(Boost_USE_STATIC_LIBS OFF)
 set(BOOST_VER 1.75.0)
 set(Boost_NO_BOOST_CMAKE ON)
-set(BOOST_COMPONENTS filesystem program_options system)
+set(BOOST_COMPONENTS filesystem program_options system log thread)
+ADD_DEFINITIONS(-DBOOST_LOG_DYN_LINK)
 
 # Workaround function to allow cmake call `find_package` twice. Avoide side effects from local variables, which are produced be `find_package`
 function(findBoost Required)
