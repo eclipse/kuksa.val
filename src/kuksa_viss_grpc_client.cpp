@@ -19,45 +19,12 @@
 #include <string>
 
 #include <grpcpp/grpcpp.h>
+#include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 
-#include "kuksa.grpc.pb.h"
+#include "grpcHandler.hpp"
 
 
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::Status;
-using kuksa::viss_client;
-using kuksa::CommandRequest;
-using kuksa::CommandReply;
-
-class GrpcConnection {
- public:
-  GrpcConnection(std::shared_ptr<Channel> channel)
-      : stub_(viss_client::NewStub(channel)) {}
-  // get the command from the terminal and request the server
-  std::string HandleRequest(){
-    // Container for the data we send to the server.
-    CommandRequest request;
-    // Container for the data we expect from the server.
-    CommandReply reply;
-    std::string command;
-    // Get command input from input
-    std::getline(std::cin,command);
-    request.set_command(command);
-    ClientContext context;
-    // The actual RPC
-    Status status = stub_->HandleRequest(&context, request, &reply);
-    if (status.ok()) {
-      return reply.message();
-    } else {
-      std::cout << status.error_code() << ": " << status.error_message()
-                << std::endl;
-      return "RPC failed";
-    }
-  }
- private:
-  std::unique_ptr<viss_client::Stub> stub_;
-};
 
 int main(int argc, char** argv) {
   // Instantiate the client. It requires a channel, out of which the actual RPCs
@@ -65,37 +32,41 @@ int main(int argc, char** argv) {
   // the argument "--target=" which is the only expected argument.
   // We indicate that the channel isn't authenticated (use of
   // InsecureChannelCredentials()).
-  std::string target_str;
-  std::string arg_str("--target");
-  if (argc > 1) {
-    std::string arg_val = argv[1];
-    size_t start_pos = arg_val.find(arg_str);
-    if (start_pos != std::string::npos) {
-      start_pos += arg_str.size();
-      if (arg_val[start_pos] == '=') {
-        target_str = arg_val.substr(start_pos + 1);
-      } else {
-        std::cout << "The only correct argument syntax is --target="
-                  << std::endl;
-        return 0;
-      }
-    } else {
-      std::cout << "The only acceptable argument is --target=" << std::endl;
-      return 0;
+  boost::program_options::options_description desc{"OPTIONS"};
+  desc.add_options()
+    ("help,h", "Help screen")
+    ("config-file,c", boost::program_options::value<boost::filesystem::path>()->default_value(boost::filesystem::path{"config_grpc_client.ini"}),
+      "Configuration file with `kuksa-val-server` input parameters."
+      "Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup)."
+      "Sample of configuration file parameters looks like:\n"
+      "cert-path = . \n")
+    ("cert-path", boost::program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
+      "[mandatory] Directory path where 'Client.pem', 'Client.key', and 'CA.pem' are located. ")
+    ("log-level","Log Level")
+    ("target",boost::program_options::value<std::string>()->default_value("127.0.0.1:50051"),"Value for a server connection");
+  boost::program_options::variables_map var;
+  boost::program_options::store(parse_command_line(argc, argv, desc), var);
+  if (var.count("config-file")) {
+    auto configFile = var["config-file"].as<boost::filesystem::path>();
+    auto configFilePath = boost::filesystem::path(configFile);
+    std::cout << "Read configs from " <<  configFile.string() <<std::endl;
+    std::ifstream ifs(configFile.string());
+    if (ifs) {
+      // update path only, if these options is not defined via command line, but
+      // via config file
+      boost::program_options::store(parse_config_file(ifs, desc), var);
+      auto cert_path = var["cert-path"].as<boost::filesystem::path>();
+      var.at("cert-path").value() =
+          boost::filesystem::absolute(cert_path, configFilePath.parent_path());
+      std::cout << "Update cert-path to "
+                << var["cert-path"].as<boost::filesystem::path>().string()
+                << std::endl;
+    } else if (!var["config-file"].defaulted()) {
+      std::cerr << "Could not open config file: " << configFile << std::endl;
     }
-  } else {
-    target_str = "localhost:50051";
+    // store again, because command line argument prefered
+    boost::program_options::store(parse_command_line(argc, argv, desc), var);
   }
-  GrpcConnection connGrpcSes(
-      grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()));
-  std::string reply;
-  std::string abort = "quit";
-  // prepare for getting a command while command is not quit
-  while(abort.compare(reply) != 0){
-    std::cout << "Test-Client>";
-    reply = connGrpcSes.HandleRequest();
-    std::cout << reply << std::endl;
-  }
-
+  grpcHandler::startClient(var["target"].as<std::string>(),var["cert-path"].as<boost::filesystem::path>().string());
   return 0;
 }

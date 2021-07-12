@@ -133,12 +133,10 @@ int main(int argc, const char *argv[]) {
                 << std::endl;
     } else if (!variables["config-file"].defaulted()) {
       std::cerr << "Could not open config file: " << configFile << std::endl;
-      return -1;
     }
     // store again, because command line argument prefered
     program_options::store(parse_command_line(argc, argv, desc), variables);
   }
-
   // print usage
   if (variables.count("help")) {
     print_usage(argv[0], desc);
@@ -230,7 +228,7 @@ int main(int argc, const char *argv[]) {
         }
       }
       thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
-      thread grpc(grpcHandler::RunServer, cmdProcessor);
+      thread grpc(grpcHandler::RunServer, cmdProcessor, variables["cert-path"].as<boost::filesystem::path>().string());
       http.join();
       grpc.join();
     }
