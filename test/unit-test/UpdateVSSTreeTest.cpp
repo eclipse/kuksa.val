@@ -283,6 +283,7 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
   res = json::parse(resStr);
 
   // Does result have a timestamp?
+  verify_and_erase_timestamp(res);
   verify_and_erase_timestamp(res["data"]["dp"]);
 
   BOOST_TEST(res == getValueResponse);

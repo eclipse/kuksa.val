@@ -134,6 +134,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
+  verify_and_erase_timestamp(res);
   verify_and_erase_timestamp(res["data"]["dp"]);
 
   BOOST_TEST(res == expectedJson);
@@ -298,6 +299,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
+  verify_and_erase_timestamp(res);
   for (auto &  dataRes : res["data"].array_range()) {
     verify_and_erase_timestamp(dataRes["dp"]);
   }
@@ -364,6 +366,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
+  verify_and_erase_timestamp(res);
   for (auto &  dataRes : res["data"].array_range()) {
     verify_and_erase_timestamp(dataRes["dp"]);
   }
@@ -493,6 +496,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
+  verify_and_erase_timestamp(res);
   verify_and_erase_timestamp(res["data"]["dp"]);
 
   BOOST_TEST(res == expectedJson);
@@ -508,6 +512,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
   resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
   res = json::parse(resStr);
 
+  verify_and_erase_timestamp(res);
   verify_and_erase_timestamp(res["data"]["dp"]);
 
   //Answer should be identical

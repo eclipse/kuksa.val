@@ -855,6 +855,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
@@ -895,6 +896,7 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
@@ -1204,6 +1206,7 @@ BOOST_AUTO_TEST_CASE(json_SigningHandler)
     }
     })");
 
+   verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
    // Pre-check
    BOOST_TEST(response_json == expected);
@@ -1272,6 +1275,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
@@ -1339,13 +1343,14 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
         ]
     })");
 
-   json response_json = json::parse(response);
+  json response_json = json::parse(response);
 
+  verify_and_erase_timestamp(response_json);
   for (auto &  dataRes : response_json["data"].array_range()) {
     verify_and_erase_timestamp(dataRes["dp"]);
   }
 
-   BOOST_TEST(response_json == expected);
+  BOOST_TEST(response_json == expected);
 }
 
 BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
@@ -1409,13 +1414,14 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
                         ]
         })");
 
-   json response_json = json::parse(response);
-
+  json response_json = json::parse(response);
+ 
+  verify_and_erase_timestamp(response_json);
   for (auto &  dataRes : response_json["data"].array_range()) {
     verify_and_erase_timestamp(dataRes["dp"]);
   }
 
-   BOOST_TEST(response_json == expected);
+  BOOST_TEST(response_json == expected);
 }
 
 BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
@@ -1563,6 +1569,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
@@ -1616,6 +1623,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
@@ -1668,6 +1676,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
@@ -1867,6 +1876,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
@@ -2042,6 +2052,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 
    json get_response_json = json::parse(get_response);
 
+   verify_and_erase_timestamp(get_response_json);
    verify_and_erase_timestamp(get_response_json["data"]["dp"]);
 
    BOOST_TEST(get_response_json == get_expected);

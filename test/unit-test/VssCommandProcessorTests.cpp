@@ -33,6 +33,7 @@
 #include "exception.hpp"
 #include "JsonResponses.hpp"
 #include "VssCommandProcessor.hpp"
+#include "UnitTestHelpers.hpp" 
 
 namespace {
   // common resources for tests
@@ -277,6 +278,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   auto res = json::parse(resStr);
 
   // verify
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == jsonGetResponseForSignal);
 }

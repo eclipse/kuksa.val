@@ -86,6 +86,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
 
   answer["action"] = "get";
   answer["requestId"] = requestId;
+  answer["ts"] = JsonResponses::getTimeStamp();
   stringstream ss;
   ss << pretty_print(answer);
   return ss.str();
