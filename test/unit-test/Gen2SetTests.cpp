@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  verify_timestamp(expectedJson,res);
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -154,17 +154,16 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
   jsonSetRequestForSignal["value"] = 100;
 
   std::string expectedJsonString{R"(
-      {
-  "action": "set",
-  "error": {
-    "message": "Schema error: #/requestId: Expected string, found uint64",
-    "number": 400,
-    "reason": "Bad Request"
-  },
-  "requestId": "100",
-  "ts": 0
-}
-      )"};
+  {
+    "action": "set",
+    "error": {
+      "message": "Schema error: #/requestId: Expected string, found uint64",
+      "number": 400,
+      "reason": "Bad Request"
+    },
+    "requestId": "100"
+  }
+  )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // run UUT
@@ -172,7 +171,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  verify_timestamp(expectedJson,res);
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -197,8 +196,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
     "number": 400,
     "reason": "Bad Request"
   },
-  "requestId": "UNKNOWN",
-  "ts": 0
+  "requestId": "UNKNOWN"
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -208,7 +206,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  verify_timestamp(expectedJson,res);
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -240,8 +238,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
     "number": 404,
     "reason": "Path not found"
   },
-  "requestId": "1",
-  "ts": 0
+  "requestId": "1"
   }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -257,7 +254,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
 
   auto res = json::parse(resStr);
 
-  verify_timestamp(expectedJson,res);
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -290,8 +287,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
     "number": 403,
     "reason": "Forbidden"
   },
-  "requestId": "1",
-  "ts": 0
+  "requestId": "1"
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -307,7 +303,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
 
   auto res = json::parse(resStr);
 
-  verify_timestamp(expectedJson,res);
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -340,8 +336,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
     "number": 403,
     "reason": "Forbidden"
   },
-  "requestId": "1",
-  "ts": 0
+  "requestId": "1"
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -357,7 +352,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
 
   auto res = json::parse(resStr);
 
-  verify_timestamp(expectedJson,res);
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -392,7 +387,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
   auto res = json::parse(resStr);
 
   // verify
-  verify_timestamp(jsonNoAccess,res);
+  verify_and_erase_timestamp(res);
+  verify_and_erase_timestamp(jsonNoAccess);
 
   BOOST_TEST(res == jsonNoAccess);
 }

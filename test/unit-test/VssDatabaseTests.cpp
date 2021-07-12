@@ -186,14 +186,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // expectations
 
-  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","value":"---","ts":"0"})"};
+  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","dp":{"value":"---"}})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
 
-  verify_timestamp(expectedJson, returnJson);
+  verify_and_erase_timestamp(returnJson["dp"]);
 
   BOOST_TEST(returnJson == expectedJson);
 }
@@ -207,14 +207,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   // expectations
 
-  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration","value":"---","ts":"0"})"};
+  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration","dp":{"value":"---"}})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
 
-  verify_timestamp(expectedJson, returnJson);
+  verify_and_erase_timestamp(returnJson["dp"]);
 
   BOOST_TEST(returnJson == expectedJson);
 }
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
-  BOOST_TEST(returnJson["value"].as<int>() == 10);
+  BOOST_TEST(returnJson["dp"]["value"].as<int>() == 10);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSignalNoChannel_Shall_SetValue) {
@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
-  BOOST_TEST(returnJson["value"].as<int>() == 10);
+  BOOST_TEST(returnJson["dp"]["value"].as<int>() == 10);
 }
 
 

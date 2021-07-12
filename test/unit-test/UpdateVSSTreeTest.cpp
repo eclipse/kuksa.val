@@ -255,9 +255,13 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
   std::string getValueResponseString{R"(
     {
     "action": "get",
-    "path": "Vehicle.Private.TestAttribute",
     "requestId": "1",
-    "value": "100"
+    "data":{
+        "path": "Vehicle.Private.TestAttribute",
+        "dp":{
+            "value": "100"
+        }
+    }
     }
     )"};
   jsoncons::json getValueResponse =
@@ -279,9 +283,7 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
   res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("ts"));
-  // Assign timestamp for comparision purposes
-  getValueResponse.insert_or_assign("ts", res["ts"]);
+  verify_and_erase_timestamp(res["data"]["dp"]);
 
   BOOST_TEST(res == getValueResponse);
 }

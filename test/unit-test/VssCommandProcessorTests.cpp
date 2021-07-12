@@ -228,7 +228,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   WsChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
-  jsoncons::json jsonSignalValue;
+  jsoncons::json jsonSignalData;
+  jsoncons::json jsonSignalDataPoint;
   jsoncons::json jsonGetResponseForSignal;
 
   string requestId = "1";
@@ -244,13 +245,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  jsonSignalValue["path"] = path;
-  jsonSignalValue["value"] = 123;
-  jsonSignalValue["ts"] = 11111111;
+  jsonSignalData["path"] = path;
+  jsonSignalDataPoint["value"] = 123;
+  jsonSignalDataPoint["ts"] = 11111111;
+  jsonSignalData["dp"] = jsonSignalDataPoint;
 
-  jsonGetResponseForSignal = jsonGetRequestForSignal;
-  jsonGetResponseForSignal["value"] = 123;
-  jsonGetResponseForSignal["ts"] = 11111111;
+  jsonGetResponseForSignal["action"] = "get";
+  jsonGetResponseForSignal["requestId"] = requestId;
+  jsonGetResponseForSignal["data"] = jsonSignalData;
 
 
   // expectations
@@ -268,7 +270,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   MOCK_EXPECT(dbMock->getSignal)
     .with(path2)
-    .returns(jsonSignalValue);
+    .returns(jsonSignalData);
 
   // run UUT
   auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);

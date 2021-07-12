@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Uint8, test_value_Uint8_boundary_low);
     result = database->getSignal(vss_test_path_Uint8);
 
-    BOOST_TEST(result["value"].as<uint8_t>() == numeric_limits<uint8_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<uint8_t>() == numeric_limits<uint8_t>::min());
 
     json test_value_Uint8_boundary_high;
     test_value_Uint8_boundary_high = numeric_limits<uint8_t>::max();
@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Uint8, test_value_Uint8_boundary_high);
     result = database->getSignal(vss_test_path_Uint8);
 
-   BOOST_TEST(result["value"].as<uint8_t>() == numeric_limits<uint8_t>::max());
+   BOOST_TEST(result["dp"]["value"].as<uint8_t>() == numeric_limits<uint8_t>::max());
 
     json test_value_Uint8_boundary_middle;
     test_value_Uint8_boundary_middle = numeric_limits<uint8_t>::max() / 2;
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Uint8, test_value_Uint8_boundary_middle);
     result = database->getSignal(vss_test_path_Uint8);
 
-    BOOST_TEST(result["value"].as<uint8_t>() == numeric_limits<uint8_t>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<uint8_t>() == numeric_limits<uint8_t>::max() / 2);
 
     // Test out of bound
     bool isExceptionThrown = false;
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Uint16, test_value_Uint16_boundary_low);
     result = database->getSignal(vss_test_path_Uint16);
 
-    BOOST_TEST(result["value"].as<uint16_t>() == numeric_limits<uint16_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<uint16_t>() == numeric_limits<uint16_t>::min());
 
     json test_value_Uint16_boundary_high;
     test_value_Uint16_boundary_high = numeric_limits<uint16_t>::max();
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Uint16, test_value_Uint16_boundary_high);
     result = database->getSignal(vss_test_path_Uint16);
 
-    BOOST_TEST(result["value"].as<uint16_t>() == numeric_limits<uint16_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<uint16_t>() == numeric_limits<uint16_t>::max());
 
     json test_value_Uint16_boundary_middle;
     test_value_Uint16_boundary_middle = numeric_limits<uint16_t>::max() / 2;
@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Uint16, test_value_Uint16_boundary_middle);
     result = database->getSignal(vss_test_path_Uint16);
 
-    BOOST_TEST(result["value"].as<uint16_t>() == numeric_limits<uint16_t>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<uint16_t>() == numeric_limits<uint16_t>::max() / 2);
 
     // Test out of bound
     isExceptionThrown = false;
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Uint32, test_value_Uint32_boundary_low);
     result = database->getSignal(vss_test_path_Uint32);
 
-    BOOST_TEST(result["value"].as<uint32_t>() == numeric_limits<uint32_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<uint32_t>() == numeric_limits<uint32_t>::min());
 
     json test_value_Uint32_boundary_high;
     test_value_Uint32_boundary_high = numeric_limits<uint32_t>::max();
@@ -285,7 +285,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Uint32, test_value_Uint32_boundary_high);
     result = database->getSignal(vss_test_path_Uint32);
 
-    BOOST_TEST(result["value"].as<uint32_t>() == numeric_limits<uint32_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<uint32_t>() == numeric_limits<uint32_t>::max());
 
     json test_value_Uint32_boundary_middle;
     test_value_Uint32_boundary_middle = numeric_limits<uint32_t>::max() / 2;
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Uint32, test_value_Uint32_boundary_middle);
     result = database->getSignal(vss_test_path_Uint32);
 
-    BOOST_TEST(result["value"].as<uint32_t>() == numeric_limits<uint32_t>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<uint32_t>() == numeric_limits<uint32_t>::max() / 2);
 
     // Test out of bound
     isExceptionThrown = false;
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int8, test_value_int8_boundary_low);
     result = database->getSignal(vss_test_path_int8);
 
-    BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<int8_t>() == numeric_limits<int8_t>::min());
 
     json test_value_int8_boundary_high;
     test_value_int8_boundary_high = numeric_limits<int8_t>::max();
@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int8, test_value_int8_boundary_high);
     result = database->getSignal(vss_test_path_int8);
 
-    BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<int8_t>() == numeric_limits<int8_t>::max());
 
     json test_value_int8_boundary_middle;
     test_value_int8_boundary_middle = numeric_limits<int8_t>::max() / 2;
@@ -343,7 +343,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int8, test_value_int8_boundary_middle);
     result = database->getSignal(vss_test_path_int8);
 
-    BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<int8_t>() == numeric_limits<int8_t>::max() / 2);
 
     json test_value_int8_boundary_middle_neg;
     test_value_int8_boundary_middle_neg = numeric_limits<int8_t>::min() / 2;
@@ -351,7 +351,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int8, test_value_int8_boundary_middle_neg);
     result = database->getSignal(vss_test_path_int8);
 
-    BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::min() / 2);
+    BOOST_TEST(result["dp"]["value"].as<int8_t>() == numeric_limits<int8_t>::min() / 2);
 
     // Test out of bound
     isExceptionThrown = false;
@@ -384,7 +384,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int16, test_value_int16_boundary_low);
     result = database->getSignal(vss_test_path_int16);
 
-    BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<int16_t>() == numeric_limits<int16_t>::min());
 
     json test_value_int16_boundary_high;
     test_value_int16_boundary_high = numeric_limits<int16_t>::max();
@@ -392,7 +392,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int16, test_value_int16_boundary_high);
     result = database->getSignal(vss_test_path_int16);
 
-    BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<int16_t>() == numeric_limits<int16_t>::max());
 
     json test_value_int16_boundary_middle;
     test_value_int16_boundary_middle = numeric_limits<int16_t>::max()/2;
@@ -400,7 +400,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int16, test_value_int16_boundary_middle);
     result = database->getSignal(vss_test_path_int16);
 
-    BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::max()/2);
+    BOOST_TEST(result["dp"]["value"].as<int16_t>() == numeric_limits<int16_t>::max()/2);
 
     json test_value_int16_boundary_middle_neg;
     test_value_int16_boundary_middle_neg = numeric_limits<int16_t>::min()/2;
@@ -408,7 +408,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int16, test_value_int16_boundary_middle_neg);
     result = database->getSignal(vss_test_path_int16);
 
-    BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::min()/2);
+    BOOST_TEST(result["dp"]["value"].as<int16_t>() == numeric_limits<int16_t>::min()/2);
 
     // Test out of bound
     isExceptionThrown = false;
@@ -442,7 +442,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int32, test_value_int32_boundary_low);
     result = database->getSignal(vss_test_path_int32);
 
-    BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<int32_t>() == numeric_limits<int32_t>::min());
 
     json test_value_int32_boundary_high;
     test_value_int32_boundary_high = numeric_limits<int32_t>::max() ;
@@ -450,7 +450,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int32, test_value_int32_boundary_high);
     result = database->getSignal(vss_test_path_int32);
 
-    BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<int32_t>() == numeric_limits<int32_t>::max());
 
     json test_value_int32_boundary_middle;
     test_value_int32_boundary_middle = numeric_limits<int32_t>::max() / 2;
@@ -458,7 +458,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int32, test_value_int32_boundary_middle);
     result = database->getSignal(vss_test_path_int32);
 
-    BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<int32_t>() == numeric_limits<int32_t>::max() / 2);
 
     json test_value_int32_boundary_middle_neg;
     test_value_int32_boundary_middle_neg = numeric_limits<int32_t>::min() / 2;
@@ -466,7 +466,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_int32, test_value_int32_boundary_middle_neg);
     result = database->getSignal(vss_test_path_int32);
 
-    BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::min() / 2);
+    BOOST_TEST(result["dp"]["value"].as<int32_t>() == numeric_limits<int32_t>::min() / 2);
 
     // Test out of bound
     isExceptionThrown = false;
@@ -501,7 +501,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     result = database->getSignal(vss_test_path_Float);
 
 
-    BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::min());
+    BOOST_TEST(result["dp"]["value"].as<float>() == std::numeric_limits<float>::min());
 
     json test_value_Float_boundary_high;
     test_value_Float_boundary_high = std::numeric_limits<float>::max();
@@ -509,7 +509,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Float, test_value_Float_boundary_high);
     result = database->getSignal(vss_test_path_Float);
 
-    BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::max());
+    BOOST_TEST(result["dp"]["value"].as<float>() == std::numeric_limits<float>::max());
 
 
     json test_value_Float_boundary_middle;
@@ -519,7 +519,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     result = database->getSignal(vss_test_path_Float);
 
 
-    BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<float>() == std::numeric_limits<float>::max() / 2);
 
     json test_value_Float_boundary_middle_neg;
     test_value_Float_boundary_middle_neg = std::numeric_limits<float>::min() * 2;
@@ -527,7 +527,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Float, test_value_Float_boundary_middle_neg);
     result = database->getSignal(vss_test_path_Float);
 
-    BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::min() * 2);
+    BOOST_TEST(result["dp"]["value"].as<float>() == std::numeric_limits<float>::min() * 2);
 
 
     
@@ -539,7 +539,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Double, test_value_Double_boundary_low);
     result = database->getSignal(vss_test_path_Double);
 
-    BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::min());
+    BOOST_TEST(result["dp"]["value"].as<double>() == std::numeric_limits<double>::min());
 
     json test_value_Double_boundary_high;
     test_value_Double_boundary_high = std::numeric_limits<double>::max();
@@ -547,7 +547,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Double, test_value_Double_boundary_high);
     result = database->getSignal(vss_test_path_Double);
 
-    BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::max());
+    BOOST_TEST(result["dp"]["value"].as<double>() == std::numeric_limits<double>::max());
 
 
     json test_value_Double_boundary_middle;
@@ -556,7 +556,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Double, test_value_Double_boundary_middle);
     result = database->getSignal(vss_test_path_Double);
 
-    BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<double>() == std::numeric_limits<double>::max() / 2);
 
     json test_value_Double_boundary_middle_neg;
     test_value_Double_boundary_middle_neg = std::numeric_limits<double>::min() * 2;
@@ -564,7 +564,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Double, test_value_Double_boundary_middle_neg);
     result = database->getSignal(vss_test_path_Double);
 
-    BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::min() * 2);
+    BOOST_TEST(result["dp"]["value"].as<double>() == std::numeric_limits<double>::min() * 2);
 
     
 
@@ -577,7 +577,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_string, test_value_String_empty);
     result = database->getSignal(vss_test_path_string);
 
-    BOOST_TEST(result["value"].as<std::string>() == "");
+    BOOST_TEST(result["dp"]["value"].as<std::string>() == "");
 
     json test_value_String_null;
     test_value_String_null = "\0";
@@ -585,7 +585,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_string, test_value_String_null);
     result = database->getSignal(vss_test_path_string);
 
-    BOOST_TEST(result["value"].as<std::string>() == "\0");
+    BOOST_TEST(result["dp"]["value"].as<std::string>() == "\0");
 
     json test_value_String_long;
     test_value_String_long = "hello to w3c vis server unit test with boost libraries! This is a test string to test string data type without special characters, but this string is pretty long";
@@ -593,7 +593,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_string, test_value_String_long);
     result = database->getSignal(vss_test_path_string);
 
-    BOOST_TEST(result["value"].as<std::string>() == test_value_String_long);
+    BOOST_TEST(result["dp"]["value"].as<std::string>() == test_value_String_long);
 
     json test_value_String_long_with_special_chars;
     test_value_String_long_with_special_chars = "hello to w3c vis server unit test with boost libraries! This is a test string conatains special chars like üö Ä? $ % #";
@@ -601,7 +601,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_string, test_value_String_long_with_special_chars);
     result = database->getSignal(vss_test_path_string);
 
-    BOOST_TEST(result["value"].as<std::string>() == test_value_String_long_with_special_chars);
+    BOOST_TEST(result["dp"]["value"].as<std::string>() == test_value_String_long_with_special_chars);
 
 //---------------------  Boolean SET/GET TEST ------------------------------------
     json test_value_bool_false;
@@ -610,7 +610,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_boolean, test_value_bool_false);
     result = database->getSignal(vss_test_path_boolean);
 
-    BOOST_TEST(result["value"].as<bool>() == test_value_bool_false);
+    BOOST_TEST(result["dp"]["value"].as<bool>() == test_value_bool_false);
 
     json test_value_bool_true;
     test_value_bool_true = true;
@@ -618,7 +618,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_boolean, test_value_bool_true);
     result = database->getSignal(vss_test_path_boolean);
 
-    BOOST_TEST(result["value"].as<bool>() == test_value_bool_true);
+    BOOST_TEST(result["dp"]["value"].as<bool>() == test_value_bool_true);
 }
 
 
@@ -814,7 +814,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 		"action": "set",
 		"path": "Vehicle.OBD.EngineSpeed",
 		"requestId": "8750",
-                "value" : 2345.0
+                "value" : "2345.0"
 	})");
 
    string set_response = commandProc->processQuery(set_request,channel);
@@ -827,7 +827,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
      )");
 
 
-   verify_timestamp(set_response_expected, set_response_json);
+   verify_and_erase_timestamp(set_response_json);
 
 
    BOOST_TEST(set_response_json == set_response_expected);
@@ -846,14 +846,16 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 
    json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345.0
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected,response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
 }
@@ -880,9 +882,11 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
 
    json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
 #ifdef JSON_SIGNING_ON
@@ -891,7 +895,7 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected,response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1010,7 +1014,7 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1193,12 +1197,14 @@ BOOST_AUTO_TEST_CASE(json_SigningHandler)
 
    json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
    // Pre-check
    BOOST_TEST(response_json == expected);
 
@@ -1257,14 +1263,16 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
 
    json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1309,12 +1317,33 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
    json expected = json::parse(R"({
     "action": "get",
     "requestId": "8756",
-    "value":[{"Vehicle.VehicleIdentification.ACRISSCode":"---"},{"Vehicle.VehicleIdentification.Brand":"---"},{"Vehicle.VehicleIdentification.Model":"---"},{"Vehicle.VehicleIdentification.VIN":"---"},{"Vehicle.VehicleIdentification.WMI":"---"},{"Vehicle.VehicleIdentification.Year":"---"},{"Vehicle.VehicleIdentification.bodyType":"---"},{"Vehicle.VehicleIdentification.dateVehicleFirstRegistered":"---"},{"Vehicle.VehicleIdentification.knownVehicleDamages":"---"},{"Vehicle.VehicleIdentification.meetsEmissionStandard":"---"},{"Vehicle.VehicleIdentification.productionDate":"---"},{"Vehicle.VehicleIdentification.purchaseDate":"---"},{"Vehicle.VehicleIdentification.vehicleConfiguration":"---"},{"Vehicle.VehicleIdentification.vehicleModelDate":"---"},{"Vehicle.VehicleIdentification.vehicleSeatingCapacity":"---"},{"Vehicle.VehicleIdentification.vehicleSpecialUsage":"---"},{"Vehicle.VehicleIdentification.vehicleinteriorColor":"---"},{"Vehicle.VehicleIdentification.vehicleinteriorType":"---"}]
+    "data":[
+        {"path": "Vehicle.VehicleIdentification.ACRISSCode", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.Brand", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.Model", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.VIN", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.WMI", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.Year", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.bodyType", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.dateVehicleFirstRegistered", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.knownVehicleDamages", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.meetsEmissionStandard", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.productionDate", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.purchaseDate", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleConfiguration", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleModelDate", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleSeatingCapacity", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleSpecialUsage", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleinteriorColor", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleinteriorType", "dp":{"value": "---"}}
+        ]
     })");
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+  for (auto &  dataRes : response_json["data"].array_range()) {
+    verify_and_erase_timestamp(dataRes["dp"]);
+  }
 
    BOOST_TEST(response_json == expected);
 }
@@ -1358,12 +1387,33 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
    json expected = json::parse(R"({
                    "action":"get",
                    "requestId":"8756",
-                   "value":[{"Vehicle.VehicleIdentification.ACRISSCode":"---"},{"Vehicle.VehicleIdentification.Brand":"---"},{"Vehicle.VehicleIdentification.Model":"---"},{"Vehicle.VehicleIdentification.VIN":"---"},{"Vehicle.VehicleIdentification.WMI":"---"},{"Vehicle.VehicleIdentification.Year":"---"},{"Vehicle.VehicleIdentification.bodyType":"---"},{"Vehicle.VehicleIdentification.dateVehicleFirstRegistered":"---"},{"Vehicle.VehicleIdentification.knownVehicleDamages":"---"},{"Vehicle.VehicleIdentification.meetsEmissionStandard":"---"},{"Vehicle.VehicleIdentification.productionDate":"---"},{"Vehicle.VehicleIdentification.purchaseDate":"---"},{"Vehicle.VehicleIdentification.vehicleConfiguration":"---"},{"Vehicle.VehicleIdentification.vehicleModelDate":"---"},{"Vehicle.VehicleIdentification.vehicleSeatingCapacity":"---"},{"Vehicle.VehicleIdentification.vehicleSpecialUsage":"---"},{"Vehicle.VehicleIdentification.vehicleinteriorColor":"---"},{"Vehicle.VehicleIdentification.vehicleinteriorType":"---"}]
+                   "data":[
+                        {"path": "Vehicle.VehicleIdentification.ACRISSCode", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.Brand", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.Model", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.VIN", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.WMI", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.Year", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.bodyType", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.dateVehicleFirstRegistered", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.knownVehicleDamages", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.meetsEmissionStandard", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.productionDate", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.purchaseDate", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleConfiguration", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleModelDate", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleSeatingCapacity", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleSpecialUsage", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleinteriorColor", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleinteriorType", "dp":{"value": "---"}}
+                        ]
         })");
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+  for (auto &  dataRes : response_json["data"].array_range()) {
+    verify_and_erase_timestamp(dataRes["dp"]);
+  }
 
    BOOST_TEST(response_json == expected);
 }
@@ -1413,7 +1463,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1461,7 +1511,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1504,14 +1554,16 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
 
   json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1525,7 +1577,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
   "sub": "Example JWT",
   "iss": "Eclipse kuksa",
   "admin": true,
-  "iat": 1516239022,
+  "i
+  at": 1516239022,
   "exp": 1609372800,
   "kuksa-vss": {
     "Vehicle.OBD.*": "r"    (branch permission with a *)
@@ -1554,14 +1607,16 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
 
   json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1604,14 +1659,16 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
 
   json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1660,7 +1717,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
 
    json response_json = json::parse(response);
    
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1709,7 +1766,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_wildcard_req
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1758,7 +1815,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_branch_path_
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1801,14 +1858,16 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
 
   json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1859,7 +1918,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1909,7 +1968,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected,response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1944,8 +2003,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
    commandProc->processQuery(authReqJson.as_string(),channel);
    string request(R"({
 		"action": "set",
-		"path": "Vehicle.OBD.Speed",
-                "value" : 345,
+        "path": "Vehicle.OBD.Speed",
+        "value" : "345",
 		"requestId": "8756"
 	})");
 
@@ -1958,7 +2017,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 
@@ -1974,14 +2033,16 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 
   json get_expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.Speed",
     "requestId": "8756",
-    "value": 345
+    "data":{
+        "path": "Vehicle.OBD.Speed",
+        "dp":{"value": "345"}
+    }
     })");
 
    json get_response_json = json::parse(get_response);
 
-   verify_timestamp(get_expected, get_response_json);
+   verify_and_erase_timestamp(get_response_json["data"]["dp"]);
 
    BOOST_TEST(get_response_json == get_expected);
 }
@@ -2041,7 +2102,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
    json response_json = json::parse(response);
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 
@@ -2066,7 +2127,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
    json get_response_json = json::parse(get_response);
 
-   verify_timestamp(get_expected, get_response_json);
+   verify_and_erase_timestamp(get_response_json);
 
    BOOST_TEST(get_response_json == get_expected);
 
@@ -2291,7 +2352,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
    // checked if subid is available. now remove to assert.
    response_json.erase("subscriptionId");
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 
@@ -2321,7 +2382,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
      "requestId":"8779"
     })");
 
-   verify_timestamp(expected_unsub, unsub_response_json);
+   verify_and_erase_timestamp(unsub_response_json);
 
    BOOST_TEST(unsub_response_json == expected_unsub);
 }
@@ -2379,7 +2440,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
    // checked if subid is available. now remove to assert.
    response_json.erase("subscriptionId");
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 
@@ -2410,7 +2471,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
      "requestId":"8779"
     })");
 
-   verify_timestamp(expected_unsub, unsub_response_json);
+   verify_and_erase_timestamp(unsub_response_json);
 
    BOOST_TEST(unsub_response_json == expected_unsub);
 }
@@ -2460,7 +2521,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission)
                    "requestId":"8778"
                    })");
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -2511,7 +2572,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath)
                    "requestId":"8778"
                    })");
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -2564,7 +2625,7 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
     response_json.erase("subscriptionId");
     request_json.erase("path");
 
-    verify_timestamp(expected, response_json);
+    verify_and_erase_timestamp(response_json);
 
     BOOST_TEST(response_json == expected);
 }
@@ -2622,7 +2683,7 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
     response_json.erase("subscriptionId");
     request_json.erase("path");
 
-    verify_timestamp(expected, response_json);
+    verify_and_erase_timestamp(response_json);
 
     BOOST_TEST(response_json == expected);
 }
@@ -2673,7 +2734,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard)
                                 "requestId":"878787"
                                 })");
 
-   verify_timestamp(expected, response_json);
+   verify_and_erase_timestamp(response_json);
 
     BOOST_TEST(response_json == expected);
 }
