@@ -108,7 +108,7 @@ class Kuksa_Client():
         return metadata
 
     def getValue(self, path):
-        dataset = json.loads(self.client.getValue(path))["value"]
+        dataset = json.loads(self.client.getValue(path))["data"]["dp"]["value"]
         # convert to strings to Arrays, which is required by pyarrow.from_pydict
         if not isinstance(dataset, dict):
             dataset= {path: [dataset]}
