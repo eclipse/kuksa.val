@@ -66,8 +66,8 @@ class Dapr_Publisher():
             jsonMsg = json.loads(kuksa_message) 
             req_data = {
                 'id': 0,
-                'timestamp': jsonMsg["ts"],
-                'value': jsonMsg["value"],
+                'timestamp': jsonMsg["data"]["dp"]["ts"],
+                'value': jsonMsg["data"]["dp"]["value"],
                 'topic': topic
                 }
             self.publisherTopic(topic, req_data)
