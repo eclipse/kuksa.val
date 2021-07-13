@@ -458,7 +458,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
   jsoncons::json value="100";
   MOCK_EXPECT(subHandlerMock->updateByUUID)
       .once()
-      .with(mock::any, value)
+      .with(mock::any, mock::any)
       .returns(true);
   db->setSignal(vss_path,value);
   

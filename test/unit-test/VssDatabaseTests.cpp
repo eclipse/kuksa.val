@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   MOCK_EXPECT(subHandlerMock->updateByUUID)
     .at_least(1)
-    .with(mock::any, 10)
+    .with(mock::any, mock::any)
     .returns(0);
 
   // verify
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   setValue = 10;
 
   // verify
-  MOCK_EXPECT(subHandlerMock->updateByUUID).with(mock::any,setValue).returns(0);
+  MOCK_EXPECT(subHandlerMock->updateByUUID).with(mock::any, mock::any).returns(0);
 
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
 

@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
   // Notify subscribers
   MOCK_EXPECT(subHandlerMock->updateByUUID)
       .once()
-      .with(mock::any, 100)
+      .with(mock::any, mock::any)
       .returns(true);
 
   // run UUT

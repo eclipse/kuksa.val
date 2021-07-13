@@ -18,6 +18,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <jsoncons/json.hpp>
+#include "JsonResponses.hpp"
+#include "VSSPath.hpp"
 
 //Verifies a timestamp exists and is of type string.
 static inline void verify_timestamp(const jsoncons::json &result) {
@@ -37,4 +39,13 @@ static inline void verify_timestamp(const jsoncons::json &result) {
 static inline void verify_and_erase_timestamp(jsoncons::json &result) { 
   verify_timestamp(result);
   result.erase("ts");
+}
+
+static inline jsoncons::json packDataInJson(const VSSPath& path, const std::string& value) { 
+  jsoncons::json data, datapoint;
+  data.insert_or_assign("path", path.to_string());
+  datapoint.insert_or_assign("value", value);
+  datapoint.insert_or_assign("ts", JsonResponses::getTimeStamp());
+  data.insert_or_assign("dp", datapoint);
+  return data;
 }
