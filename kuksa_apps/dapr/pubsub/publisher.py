@@ -81,8 +81,8 @@ class Dapr_Publisher():
 
         req_data = {
             'id': jsonMsg["subscriptionId"],
-            'timestamp': jsonMsg["ts"],
-            'value': jsonMsg["value"],
+            'timestamp': jsonMsg["data"]["dp"]["ts"],
+            'value': jsonMsg["data"]["dp"]["value"],
             'topic': topic
             }
         self.publisherTopic(topic, req_data)
