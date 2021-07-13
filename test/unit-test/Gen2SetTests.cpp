@@ -117,11 +117,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
       .returns(true);
 
   // Notify subscribers
-  MOCK_EXPECT(subHandlerMock->updateByPath)
-      .once()
-      .with(path, 100)
-      .returns(true);
-
   MOCK_EXPECT(subHandlerMock->updateByUUID)
       .once()
       .with(mock::any, 100)

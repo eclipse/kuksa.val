@@ -129,13 +129,15 @@ int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
   return 0;
 }
 
-int SubscriptionHandler::updateByUUID(const string &signalUUID,
-                                      const jsoncons::json &value) {
+std::shared_ptr<IServer> SubscriptionHandler::getServer() {
+  return server;
+}
+
+int SubscriptionHandler::updateByUUID(const string &signalUUID, const json &data) {
   std::stringstream ss;
-  ss << "SubscriptionHandler::updateByUUID: set value "
-     << pretty_print(value)
+  ss << "SubscriptionHandler::update: set value "
+     << pretty_print(data)
      << " for UUID " << signalUUID;
-  ss << pretty_print(value);
   logger->Log(LogLevel::VERBOSE, ss.str());
   std::unique_lock<std::mutex> lock(accessMutex);
   auto handle = subscribeHandle.find(signalUUID);
@@ -148,30 +150,14 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID,
     std::lock_guard<std::mutex> lock(subMutex);
     tuple<SubscriptionId, ConnectionId, json> newSub;
     logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByUUID: new value set at path " + std::to_string(subID.first) + ss.str());
-    newSub = std::make_tuple(subID.first, subID.second, value);
+    newSub = std::make_tuple(subID.first, subID.second, data);
     buffer.push(newSub);
     c.notify_one();
   }
 
-  return 0;
-}
 
-std::shared_ptr<IServer> SubscriptionHandler::getServer() {
-  return server;
-}
-
-int SubscriptionHandler::updateByPath(const string &path, const json &value) {
-  /* TODO: Implement */
-  (void) path;
-  (void) value;
-  
-  std::stringstream ss;
-  ss << "SubscriptionHandler::updateByPath: set value "
-     << pretty_print(value)
-     << " in path " << path;
-  logger->Log(LogLevel::VERBOSE, ss.str());
   for(auto & publisher: publishers_){
-    publisher->sendPathValue(path, value);
+    publisher->sendPathValue(data["path"].to_string(), data["dp"]["value"]);
   }
 
 
@@ -188,13 +174,12 @@ void* SubscriptionHandler::subThreadRunner() {
       buffer.pop();
 
       auto connId = std::get<1>(newSub);
-      jsoncons::json value = std::get<2>(newSub);
+      jsoncons::json data = std::get<2>(newSub);
 
       jsoncons::json answer;
-      answer["action"] = "subscribe";
+      answer["action"] = "subscription";
       answer["subscriptionId"] = std::get<0>(newSub);
-      answer.insert_or_assign("value", value);
-      answer["ts"] = JsonResponses::getTimeStamp();
+      answer.insert_or_assign("data", data);
 
       stringstream ss;
       ss << pretty_print(answer);

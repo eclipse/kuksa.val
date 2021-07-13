@@ -230,7 +230,6 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   jsoncons::json setValue, returnJson;
   setValue = 10;
 
-  MOCK_EXPECT(subHandlerMock->updateByPath).with(signalPath.getVSSPath(),mock::any).returns(0);
   MOCK_EXPECT(subHandlerMock->updateByUUID)
     .at_least(1)
     .with(mock::any, 10)
@@ -253,9 +252,6 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   jsoncons::json setValue, returnJson;
   setValue = 10;
-
-  MOCK_EXPECT(subHandlerMock->updateByPath).with(signalPath.getVSSPath(),mock::any).returns(0);
-
 
   // verify
   MOCK_EXPECT(subHandlerMock->updateByUUID).with(mock::any,setValue).returns(0);

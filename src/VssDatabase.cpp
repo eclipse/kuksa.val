@@ -390,9 +390,10 @@ jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
 
 // Set signal value of given path
 jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &value) {
-  jsoncons::json answer;
+  jsoncons::json data;
+  jsoncons::json datapoint;
   
-  answer["path"] = path.to_string();
+  data["path"] = path.to_string();
 
   jsoncons::json res; 
   {
@@ -404,11 +405,13 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
         checkAndSanitizeType(resJson, value);
         resJson.insert_or_assign("value", value);
         resJson.insert_or_assign("ts", JsonResponses::getTimeStamp());
+        datapoint.insert_or_assign("value", value);
+        datapoint.insert_or_assign("ts", JsonResponses::getTimeStamp());
+        data.insert_or_assign("dp", datapoint);
 
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
-          subHandler_->updateByPath(path.getVSSPath(), value);
-          subHandler_->updateByUUID(resJson["uuid"].as<string>(),value);
+          subHandler_->updateByUUID(resJson["uuid"].as<string>(), data);
         }
       }
       else {
@@ -416,7 +419,7 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
       }
     }
   }
-  return answer;
+  return data;
 }
 
 
