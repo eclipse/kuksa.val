@@ -60,9 +60,14 @@ class RequestServiceImpl final : public viss_client::Service {
       thirdarg = temp[2];
       _str = "{\"action\": \"" + firstarg + "\",\"path\": \"" + secarg + "\",\"value\": \""+ thirdarg + "\",\"requestId\": \"" + reqID + "\"}";
     }
-    auto Processor = handler.getGrpcProcessor();
-    request_json = Processor->processQuery(_str);
-    reply->set_message(request_json);
+    if(firstarg == "quit"){
+      reply->set_message(firstarg);
+    }
+    else{
+      auto Processor = handler.getGrpcProcessor();
+      request_json = Processor->processQuery(_str);
+      reply->set_message(request_json);
+    }
 
     return Status::OK;
   }
@@ -104,6 +109,9 @@ void grpcHandler::read (const std::string& filename, std::string& data)
 
 		data = ss.str();
 	}
+  else{
+    std::cout << "Failed to read SSL certificate" << filename << std::endl;
+  }
 	return;
 }
 

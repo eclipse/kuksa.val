@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
   if (var.count("config-file")) {
     auto configFile = var["config-file"].as<boost::filesystem::path>();
     auto configFilePath = boost::filesystem::path(configFile);
-    std::cout << "Read configs from " <<  configFile.string() <<std::endl;
+    std::cout << "Read configs from " <<  configFile.string() << std::endl;
     std::ifstream ifs(configFile.string());
     if (ifs) {
       // update path only, if these options is not defined via command line, but
@@ -61,12 +61,13 @@ int main(int argc, char** argv) {
       std::cout << "Update cert-path to "
                 << var["cert-path"].as<boost::filesystem::path>().string()
                 << std::endl;
-    } else if (!var["config-file"].defaulted()) {
+    } else{
       std::cerr << "Could not open config file: " << configFile << std::endl;
     }
     // store again, because command line argument prefered
     boost::program_options::store(parse_command_line(argc, argv, desc), var);
   }
+  std::cout << var["cert-path"].as<boost::filesystem::path>().string() << std::endl;
   grpcHandler::startClient(var["target"].as<std::string>(),var["cert-path"].as<boost::filesystem::path>().string());
   return 0;
 }
