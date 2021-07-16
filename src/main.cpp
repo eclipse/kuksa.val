@@ -18,6 +18,7 @@
 #include <exception>
 #include <iostream>
 #include <string>
+#include <csignal>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
@@ -48,7 +49,14 @@ using jsoncons::json;
 #define PORT 8090
 
 static VssDatabase *gDatabase = NULL;
+bool ctrlC_flag = false;
 
+void ctrlC_Handler(sig_atomic_t signal)
+{
+  cout << "\nExectuting exit\n";
+  delete gDatabase;
+  ctrlC_flag = true;
+}
 
 static void print_usage(const char *prog_name,
                         program_options::options_description &desc) {
@@ -65,6 +73,8 @@ int main(int argc, const char *argv[]) {
   if (GIT_IS_DIRTY)
     std::cout << "-dirty";
   std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
+
+  signal(SIGINT,ctrlC_Handler);
 
   program_options::options_description desc{"OPTIONS"};
   desc.add_options()
@@ -240,7 +250,7 @@ int main(int argc, const char *argv[]) {
                            variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
     httpServer->Start();
 
-    while (1) {
+    while (!ctrlC_flag) {
       usleep(1000000);
     }
 

@@ -30,13 +30,11 @@ class VssDatabase_Record : public IVssDatabase
   friend class w3cunittest;
 #endif
 
-  friend class VssDatabase;
-
 public:
     VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle);
-    ~VssDatabase_Record() {};
+    ~VssDatabase_Record();
 
-    src::logger lg;
+    src::logger_mt lg;
 
     //helpers
     bool pathExists(const VSSPath &path) override;
@@ -68,6 +66,7 @@ private:
     VssDatabase overClass_;
 
     void logger_init();
+    std::string getexepath();
     void log(std::string msg);
 
     std::string dir_;

@@ -7,13 +7,20 @@
 VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle)
 :overClass_(loggerUtil,subHandle)
 {
+    std::string workingDir = getexepath();
+    workingDir.replace(workingDir.find("kuksa-val-server"),workingDir.size()-workingDir.find("kuksa-val-server"),"");
     logfile_name_ = "record-%Y%m%d_%H%M%S.log";
-    target_name_ = "./logs";
-    dir_ = "./logs";
+    target_name_ = "logs";
+    dir_ = workingDir + "logs";
+    std::cout << dir_ << std::endl; //debugging
 
     logger_init();
     logging::core::get() -> add_global_attribute("TimeStamp",attrs::local_clock());
     logging::core::get() -> add_global_attribute("RecordID",attrs::counter<unsigned int>());
+}
+VssDatabase_Record::~VssDatabase_Record()
+{
+    log("Destructor called");
 }
 
 void VssDatabase_Record::logger_init()
@@ -36,7 +43,7 @@ void VssDatabase_Record::logger_init()
         expr::format("[\"%1%\"]ID=\"%2%\" \"%3%\"") 
         % expr::attr< boost::posix_time::ptime >("TimeStamp")
         % expr::attr< unsigned int > ("RecordID")
-        % expr::xml_decor[ expr::stream << expr::smessage ]
+        % expr::smessage
     );
 
     logging::core::get() -> add_sink(sink);
@@ -61,6 +68,13 @@ jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path)
     log("action:get " + path.to_string());
     std::cout << "action:get " << path.to_string() << std::endl;
     return overClass_.getSignal(path);
+}
+
+std::string VssDatabase_Record::getexepath()
+{
+    char result[ PATH_MAX ];
+    ssize_t count = readlink( "/proc/self/exe", result, PATH_MAX );
+    return std::string( result, (count > 0) ? count : 0 );
 }
 
 bool VssDatabase_Record::pathExists(const VSSPath &path){return overClass_.pathExists(path);}
