@@ -9,7 +9,7 @@ VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std:
 {
     std::string workingDir = getexepath();
     workingDir.replace(workingDir.find("kuksa-val-server"),workingDir.size()-workingDir.find("kuksa-val-server"),"");
-    logfile_name_ = "record-%Y%m%d_%H%M%S.log";
+    logfile_name_ = "record-%Y%m%d_%H%M%S.log.csv";
     target_name_ = "logs";
     dir_ = workingDir + "logs";
     std::cout << dir_ << std::endl; //debugging
@@ -20,7 +20,7 @@ VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std:
 }
 VssDatabase_Record::~VssDatabase_Record()
 {
-    log("Destructor called");
+    
 }
 
 void VssDatabase_Record::logger_init()
@@ -40,7 +40,7 @@ void VssDatabase_Record::logger_init()
     //rotates files for every start of application
 
     sink->set_formatter(
-        expr::format("[\"%1%\"]ID=\"%2%\" \"%3%\"") 
+        expr::format("%1%;%2%;%3%") 
         % expr::attr< boost::posix_time::ptime >("TimeStamp")
         % expr::attr< unsigned int > ("RecordID")
         % expr::smessage
@@ -58,15 +58,13 @@ jsoncons::json VssDatabase_Record::setSignal(const VSSPath &path, jsoncons::json
 {
     std::string json_val;
     value.dump_pretty(json_val);
-    log("action:set " + path.to_string() + " to " + json_val);
-    std::cout << "action:set " << path.to_string() << " to " << "value" << std::endl;
+    log("set;" + path.to_string() + ";" + json_val);
     return overClass_.setSignal(path,value);
 }
 
 jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path)
 {
-    log("action:get " + path.to_string());
-    std::cout << "action:get " << path.to_string() << std::endl;
+    log("get;" + path.to_string() + "");
     return overClass_.getSignal(path);
 }
 
