@@ -139,6 +139,11 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID, const json &data
      << pretty_print(data)
      << " for UUID " << signalUUID;
   logger->Log(LogLevel::VERBOSE, ss.str());
+
+  for(auto & publisher: publishers_){
+    publisher->sendPathValue(data["path"].to_string(), data["dp"]["value"]);
+  }
+
   std::unique_lock<std::mutex> lock(accessMutex);
   auto handle = subscribeHandle.find(signalUUID);
   if (handle == subscribeHandle.end()) {
@@ -153,11 +158,6 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID, const json &data
     newSub = std::make_tuple(subID.first, subID.second, data);
     buffer.push(newSub);
     c.notify_one();
-  }
-
-
-  for(auto & publisher: publishers_){
-    publisher->sendPathValue(data["path"].to_string(), data["dp"]["value"]);
   }
 
 
