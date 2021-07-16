@@ -109,13 +109,17 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   jsonGetRequestForSignal["requestId"] = requestId;
 
   std::string expectedJsonString{R"(
-      {
-    "action": "get", 
-    "path": "Vehicle/Speed", 
-    "requestId": "1", 
-    "value": "---"
+    {
+        "action": "get", 
+        "requestId": "1", 
+        "data": {
+            "path": "Vehicle/Speed", 
+            "dp": {
+                "value": "---"
+            }
+        }
     }
-      )"};
+  )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // Read access has been checked
@@ -130,10 +134,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
-
-  // Assign timestamp for comparision purposes
-  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
+  verify_and_erase_timestamp(res);
+  verify_and_erase_timestamp(res["data"]["dp"]);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -153,16 +155,15 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON) {
   jsonSetRequestForSignal["requestId"] = 100;  // int is invalid here;
 
   std::string expectedJsonString{R"(
-      {
-  "action": "get",
-  "error": {
-    "message": "Schema error: #/requestId: Expected string, found uint64",
-    "number": 400,
-    "reason": "Bad Request"
-  },
-  "requestId": "100",
-  "timestamp": 0
-}
+    {
+      "action": "get",
+      "error": {
+        "message": "Schema error: #/requestId: Expected string, found uint64",
+        "number": 400,
+        "reason": "Bad Request"
+      },
+      "requestId": "100"
+    }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
@@ -171,8 +172,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  verify_timestamp(expectedJson,res);
-  
+  // Does result have a timestamp?
+  verify_and_erase_timestamp(res);
+
   BOOST_TEST(res == expectedJson);
 }
 
@@ -189,15 +191,14 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON_NoRequestID) {
 
   std::string expectedJsonString{R"(
   {
-  "action": "get",
-  "error": {
-    "message": "Schema error: #: Required property \"requestId\" not found\n#/path: Expected string, found uint64",
-    "number": 400,
-    "reason": "Bad Request"
-  },
-  "requestId": "UNKNOWN",
-  "timestamp": 0
-}
+      "action": "get",
+      "error": {
+        "message": "Schema error: #: Required property \"requestId\" not found\n#/path: Expected string, found uint64",
+        "number": 400,
+        "reason": "Bad Request"
+      },
+      "requestId": "UNKNOWN"
+    }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
@@ -205,10 +206,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON_NoRequestID) {
   auto resStr =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
-
   // Does result have a timestamp?
-  verify_timestamp(expectedJson,res);
-  
+  verify_and_erase_timestamp(res);
+
   BOOST_TEST(res == expectedJson);
 }
 
@@ -237,9 +237,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_NonExistingPath) {
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // verify
-  verify_timestamp(jsonPathNotFound,res);
-
   BOOST_TEST(res == jsonPathNotFound);
 }
 
@@ -263,11 +260,30 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
 
   std::string expectedJsonString{R"(
     {
-    "action": "get", 
-    "requestId": "1", 
-    "value": [{"Vehicle/VehicleIdentification/ACRISSCode":"---"},{"Vehicle/VehicleIdentification/Brand":"---"},{"Vehicle/VehicleIdentification/Model":"---"},{"Vehicle/VehicleIdentification/VIN":"---"},{"Vehicle/VehicleIdentification/WMI":"---"},{"Vehicle/VehicleIdentification/Year":"---"},{"Vehicle/VehicleIdentification/bodyType":"---"},{"Vehicle/VehicleIdentification/dateVehicleFirstRegistered":"---"},{"Vehicle/VehicleIdentification/knownVehicleDamages":"---"},{"Vehicle/VehicleIdentification/meetsEmissionStandard":"---"},{"Vehicle/VehicleIdentification/productionDate":"---"},{"Vehicle/VehicleIdentification/purchaseDate":"---"},{"Vehicle/VehicleIdentification/vehicleConfiguration":"---"},{"Vehicle/VehicleIdentification/vehicleModelDate":"---"},{"Vehicle/VehicleIdentification/vehicleSeatingCapacity":"---"},{"Vehicle/VehicleIdentification/vehicleSpecialUsage":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorColor":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorType":"---"}]
+        "action": "get", 
+        "requestId": "1", 
+        "data": [
+            {"path": "Vehicle/VehicleIdentification/ACRISSCode","dp": {"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/Brand", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/Model", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/VIN", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/WMI", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/Year", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/bodyType", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/dateVehicleFirstRegistered", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/knownVehicleDamages", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/meetsEmissionStandard", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/productionDate", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/purchaseDate", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleConfiguration", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleModelDate", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleSeatingCapacity", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleSpecialUsage", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleinteriorColor", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleinteriorType", "dp":{"value": "---"}}
+        ]
     }
-      )"};
+  )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // it needs to check all elements in subtree. Expect one example explicitely,
@@ -283,10 +299,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
-
-  // Insert timestamp for comparision purposes
-  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
+  verify_and_erase_timestamp(res);
+  for (auto &  dataRes : res["data"].array_range()) {
+    verify_and_erase_timestamp(dataRes["dp"]);
+  }
 
   BOOST_TEST(res == expectedJson);
 }
@@ -311,11 +327,30 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
 
   std::string expectedJsonString{R"(
     {
-    "action": "get", 
-    "requestId": "1", 
-    "value": [{"Vehicle/VehicleIdentification/ACRISSCode":"---"},{"Vehicle/VehicleIdentification/Brand":"---"},{"Vehicle/VehicleIdentification/Model":"---"},{"Vehicle/VehicleIdentification/VIN":"---"},{"Vehicle/VehicleIdentification/WMI":"---"},{"Vehicle/VehicleIdentification/Year":"---"},{"Vehicle/VehicleIdentification/bodyType":"---"},{"Vehicle/VehicleIdentification/dateVehicleFirstRegistered":"---"},{"Vehicle/VehicleIdentification/knownVehicleDamages":"---"},{"Vehicle/VehicleIdentification/meetsEmissionStandard":"---"},{"Vehicle/VehicleIdentification/productionDate":"---"},{"Vehicle/VehicleIdentification/purchaseDate":"---"},{"Vehicle/VehicleIdentification/vehicleConfiguration":"---"},{"Vehicle/VehicleIdentification/vehicleModelDate":"---"},{"Vehicle/VehicleIdentification/vehicleSeatingCapacity":"---"},{"Vehicle/VehicleIdentification/vehicleSpecialUsage":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorColor":"---"},{"Vehicle/VehicleIdentification/vehicleinteriorType":"---"}]
+        "action": "get", 
+        "requestId": "1", 
+        "data": [
+            {"path": "Vehicle/VehicleIdentification/ACRISSCode","dp": {"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/Brand", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/Model", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/VIN", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/WMI", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/Year", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/bodyType", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/dateVehicleFirstRegistered", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/knownVehicleDamages", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/meetsEmissionStandard", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/productionDate", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/purchaseDate", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleConfiguration", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleModelDate", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleSeatingCapacity", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleSpecialUsage", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleinteriorColor", "dp":{"value": "---"}},
+            {"path": "Vehicle/VehicleIdentification/vehicleinteriorType", "dp":{"value": "---"}}
+        ]
     }
-      )"};
+  )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // it needs to check all elements in subtree. Expect one example explicitely,
@@ -331,10 +366,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
-
-  // Assign timestamp for comparision purposes
-  expectedJson.insert_or_assign("timestamp",res["timestamp"]);
+  verify_and_erase_timestamp(res);
+  for (auto &  dataRes : res["data"].array_range()) {
+    verify_and_erase_timestamp(dataRes["dp"]);
+  }
 
   BOOST_TEST(res == expectedJson);
 }
@@ -363,9 +398,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
   auto resStr =
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
-
-  // verify
-  verify_timestamp(jsonPathNotFound,res);
 
   BOOST_TEST(res == jsonPathNotFound);
 }
@@ -400,8 +432,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_noPermissionException) {
 
   // verify
 
-  // timestamp must not be zero
-  verify_timestamp(jsonNoAccess,res);
   BOOST_TEST(res == jsonNoAccess);
 
 }
@@ -425,14 +455,10 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
   channel.setConnID(1);
 
   //Setting data (to put a valid timestamp into tree)
-  jsoncons::json value=100;
-  MOCK_EXPECT(subHandlerMock->updateByPath)
-      .once()
-      .with(path, value)
-      .returns(true);
+  jsoncons::json value="100";
   MOCK_EXPECT(subHandlerMock->updateByUUID)
       .once()
-      .with(mock::any, value)
+      .with(mock::any, mock::any)
       .returns(true);
   db->setSignal(vss_path,value);
   
@@ -443,12 +469,16 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
 
   std::string expectedJsonString{R"(
       {
-    "action": "get", 
-    "path": "Vehicle/Speed", 
-    "requestId": "1", 
-    "value": 100
+        "action": "get", 
+        "requestId": "1", 
+        "data": {
+            "path": "Vehicle/Speed", 
+            "dp": {
+                "value": "100"
+            }
+        }
     }
-      )"};
+  )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // Read access has been checked
@@ -462,7 +492,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  verify_timestamp(expectedJson,res);
+  verify_and_erase_timestamp(res);
+  verify_and_erase_timestamp(res["data"]["dp"]);
 
   BOOST_TEST(res == expectedJson);
 
@@ -476,6 +507,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
       .returns(true);
   resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
   res = json::parse(resStr);
+
+  verify_and_erase_timestamp(res);
+  verify_and_erase_timestamp(res["data"]["dp"]);
 
   //Answer should be identical
   BOOST_TEST(res == expectedJson);

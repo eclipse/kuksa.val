@@ -175,9 +175,9 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_add) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
   // Assign timestamp for comparision purposes
-  expectedupdateVSSTreeAnswer.insert_or_assign("timestamp", res["timestamp"]);
+  expectedupdateVSSTreeAnswer.insert_or_assign("ts", res["ts"]);
 
   BOOST_TEST(res == expectedupdateVSSTreeAnswer);
 
@@ -186,9 +186,9 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_add) {
   res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
   // Assign timestamp for comparision purposes
-  getMetadataResponse.insert_or_assign("timestamp", res["timestamp"]);
+  getMetadataResponse.insert_or_assign("ts", res["ts"]);
 
   BOOST_TEST(res == getMetadataResponse);
 }
@@ -255,9 +255,13 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
   std::string getValueResponseString{R"(
     {
     "action": "get",
-    "path": "Vehicle.Private.TestAttribute",
     "requestId": "1",
-    "value": "100"
+    "data":{
+        "path": "Vehicle.Private.TestAttribute",
+        "dp":{
+            "value": "100"
+        }
+    }
     }
     )"};
   jsoncons::json getValueResponse =
@@ -268,9 +272,9 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
   // Assign timestamp for comparision purposes
-  expectedupdateVSSTreeAnswer.insert_or_assign("timestamp", res["timestamp"]);
+  expectedupdateVSSTreeAnswer.insert_or_assign("ts", res["ts"]);
 
   BOOST_TEST(res == expectedupdateVSSTreeAnswer);
 
@@ -279,9 +283,8 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
   res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
-  // Assign timestamp for comparision purposes
-  getValueResponse.insert_or_assign("timestamp", res["timestamp"]);
+  verify_and_erase_timestamp(res);
+  verify_and_erase_timestamp(res["data"]["dp"]);
 
   BOOST_TEST(res == getValueResponse);
 }
@@ -362,9 +365,9 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_override) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
   // Assign timestamp for comparision purposes
-  expectedupdateVSSTreeAnswer.insert_or_assign("timestamp", res["timestamp"]);
+  expectedupdateVSSTreeAnswer.insert_or_assign("ts", res["ts"]);
 
   BOOST_TEST(res == expectedupdateVSSTreeAnswer);
 
@@ -373,9 +376,9 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_override) {
   res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
   // Assign timestamp for comparision purposes
-  getMetadataResponse.insert_or_assign("timestamp", res["timestamp"]);
+  getMetadataResponse.insert_or_assign("ts", res["ts"]);
 
   BOOST_TEST(res == getMetadataResponse);
 }
@@ -414,9 +417,9 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_brokenrequest) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
   // Assign timestamp for comparision purposes
-  expectedupdateVSSTreeAnswer.insert_or_assign("timestamp", res["timestamp"]);
+  expectedupdateVSSTreeAnswer.insert_or_assign("ts", res["ts"]);
 
   BOOST_TEST(res == expectedupdateVSSTreeAnswer);
 }
