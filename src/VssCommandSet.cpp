@@ -99,7 +99,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
     error["message"] = e.what();
 
     root["error"] = error;
-    root["timestamp"] = JsonResponses::getTimeStamp();
+    root["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(root);
@@ -126,7 +126,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   jsoncons::json answer;
   answer["action"] = "set";
   answer.insert_or_assign("requestId", request["requestId"]);
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   ss << pretty_print(answer);

@@ -28,7 +28,7 @@ namespace JsonResponses {
     error["reason"] = "Bad Request";
     error["message"] = message;
     jsonResponse["error"] = error;
-    jsonResponse["timestamp"] = getTimeStamp();
+    jsonResponse["ts"] = getTimeStamp();
   }
   std::string malFormedRequest(std::string request_id,
                                const std::string action,
@@ -48,7 +48,7 @@ namespace JsonResponses {
     error["reason"] = "Bad Request";
     error["message"] = message;
     jsonResponse["error"] = error;
-    jsonResponse["timestamp"] = getTimeStamp();
+    jsonResponse["ts"] = getTimeStamp();
   }
   std::string malFormedRequest(std::string message) {
     jsoncons::json answer;
@@ -71,7 +71,7 @@ namespace JsonResponses {
     error["reason"] = "Path not found";
     error["message"] = "I can not find " + path + " in my db";
     jsonResponse["error"] = error;
-    jsonResponse["timestamp"] = getTimeStamp();
+    jsonResponse["ts"] = getTimeStamp();
   }
   std::string pathNotFound(std::string request_id,
                            const std::string action,
@@ -95,7 +95,7 @@ namespace JsonResponses {
     error["reason"] = "Forbidden";
     error["message"] = message;
     jsonResponse["error"] = error;
-    jsonResponse["timestamp"] = getTimeStamp();
+    jsonResponse["ts"] = getTimeStamp();
   }
   std::string noAccess(std::string request_id,
                        const std::string action,
@@ -119,7 +119,7 @@ namespace JsonResponses {
     error["reason"] = "Value passed is out of bounds";
     error["message"] = message;
     jsonResponse["error"] = error;
-    jsonResponse["timestamp"] = getTimeStamp();
+    jsonResponse["ts"] = getTimeStamp();
   }
   std::string valueOutOfBounds(std::string request_id,
                                const std::string action,

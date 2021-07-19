@@ -108,7 +108,7 @@ class Kuksa_Client():
         return metadata
 
     def getValue(self, path):
-        dataset = json.loads(self.client.getValue(path))["value"]
+        dataset = json.loads(self.client.getValue(path))["data"]["dp"]["value"]
         # convert to strings to Arrays, which is required by pyarrow.from_pydict
         if not isinstance(dataset, dict):
             dataset= {path: [dataset]}
@@ -169,7 +169,7 @@ class Parquet_Packer():
         return fields
 
     def genSchema(self, path):
-        fields = [pa.field("timestamp", pa.timestamp('us'))]
+        fields = [pa.field("ts", pa.timestamp('us'))]
         for p in path:
             metadata = self.dataprovider.getMetaData(p)
             fields += (self.genFields(metadata))
@@ -179,7 +179,7 @@ class Parquet_Packer():
 
     def writeTable(self, data):
         table = pa.Table.from_pydict(data)
-        table = table.add_column(0, "timestamp", [[datetime.now()]])
+        table = table.add_column(0, "ts", [[datetime.now()]])
         try:
             table = table.cast(self.schema)
             self.pqwriter.write_table(table)

@@ -45,7 +45,7 @@ KUKSA.val supports VSS1 (dot-seperated) and VSS2 paths (slash-seperated) paths, 
     "action": "get", 
     "path": "Vehicle.Speed", 
     "requestId": "82176895204605218443916772566374508384", 
-    "timestamp": 1608121891, 
+    "ts": 1608121891, 
     "value": "100"
 }
 ```
@@ -57,7 +57,7 @@ The same works with VSS2 paths
 {
     "action": "get", 
     "path": "Vehicle/Speed", 
-    "requestId": "231543026388962994917867358932055791655", 
+    "requestId": "52dd3aea-c311-42f3-9c90-d7421a7d1315", 
 }
 ```
 
@@ -67,10 +67,15 @@ The same works with VSS2 paths
 ```json 
 {
     "action": "get", 
-    "path": "Vehicle/Speed", 
-    "requestId": "231543026388962994917867358932055791655", 
-    "timestamp": 1608121887, 
-    "value": "100"
+    "data": {
+        "dp": {
+            "ts": "2021-07-13T20:27:17.1626204437Z", 
+            "value": "200"
+        }, 
+        "path": "Vehicle/Speed"
+    }, 
+    "requestId": "52dd3aea-c311-42f3-9c90-d7421a7d1315", 
+    "ts": "2021-07-13T20:33:12.1626204792Z"
 }
 ```
 
@@ -88,7 +93,7 @@ __Query__
 {
     "action": "get", 
     "path": "Vehicle/*/Speed", 
-    "requestId": "103931565265046680818323224498857767104"
+    "requestId": "1ce80162-04b9-4ac4-b054-eecfcee72b4e"
 }
 ```
 
@@ -96,10 +101,16 @@ __Response__
 ```json
 {
     "action": "get", 
-    "path": "Vehicle/OBD/Speed", 
-    "requestId": "103931565265046680818323224498857767104", 
-    "timestamp": 1608377104, 
-    "value": "100"
+    "data": {
+        "dp": {
+            "ts": "1981-01-01T00:00:00.0000000000Z", 
+            "value": "---"
+        }, 
+        "path": "Vehicle/OBD/Speed"
+    }, 
+    "requestId": "1ce80162-04b9-4ac4-b054-eecfcee72b4e", 
+    "ts": "2021-07-13T20:36:16.1626204976Z"
+
 }
 ```
 Note, how this is _not_ matching `Vehicle/Speed`, as the match can not be empty. Likewise
@@ -109,7 +120,7 @@ __Query__
 {
     "action": "get", 
     "path": "Vehicle/Spee*", 
-    "requestId": "313075168675422297716541347645557507871" 
+    "requestId": "f17c5fc6-2308-4f4d-8a51-2171b56b61e8"
 }
 ```
 
@@ -121,8 +132,9 @@ __Query__
         "number": 404, 
         "reason": "Path not found"
     }, 
-    "requestId": "313075168675422297716541347645557507871", 
-    "timestamp": 1608377239
+    "requestId": "f17c5fc6-2308-4f4d-8a51-2171b56b61e8", 
+    "ts": "2021-07-13T20:37:57.1626205077Z"
+
 }
 ```
 
@@ -134,7 +146,7 @@ A more interesting example:
 {
     "action": "get", 
     "path": "Vehicle/Cabin/Door/*/*/IsLocked", 
-    "requestId": "311508011343524723835336189899358414689",
+    "requestId": "fcc7a27d-eda8-4bf9-ba7f-aa69120b1b88", 
 ```
  leads to 
 <details>
@@ -143,34 +155,66 @@ A more interesting example:
 ```json
 {
     "action": "get", 
-    "requestId": "311508011343524723835336189899358414689", 
-    "timestamp": 1608377507, 
-    "value": [
+    "data": [
         {
-            "Vehicle/Cabin/Door/Row4/Right/IsLocked": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Left/IsLocked"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Left/IsLocked": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Right/IsLocked"
         }, 
         {
-            "Vehicle/Cabin/Door/Row3/Right/IsLocked": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row2/Left/IsLocked"
         }, 
         {
-            "Vehicle/Cabin/Door/Row3/Left/IsLocked": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row2/Right/IsLocked"
         }, 
         {
-            "Vehicle/Cabin/Door/Row2/Right/IsLocked": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row3/Left/IsLocked"
         }, 
         {
-            "Vehicle/Cabin/Door/Row2/Left/IsLocked": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row3/Right/IsLocked"
         }, 
         {
-            "Vehicle/Cabin/Door/Row1/Right/IsLocked": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row4/Left/IsLocked"
         }, 
         {
-            "Vehicle/Cabin/Door/Row1/Left/IsLocked": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row4/Right/IsLocked"
         }
-    ]
+    ], 
+    "requestId": "fcc7a27d-eda8-4bf9-ba7f-aa69120b1b88", 
+    "ts": "2021-07-13T20:36:51.1626205011Z"
 }
 ```
 </details>
@@ -182,7 +226,7 @@ However
 {
     "action": "get", 
     "path": "Vehicle/*/IsLocked", 
-    "requestId": "45465648527119404680377594999611835141",
+    "requestId": "b8a5da94-0c2c-4f9c-8911-366cebff59f1"
 }
 ```
 gives 
@@ -194,8 +238,8 @@ gives
         "number": 404, 
         "reason": "Path not found"
     }, 
-    "requestId": "45465648527119404680377594999611835141", 
-    "timestamp": 1608377632
+    "requestId": "b8a5da94-0c2c-4f9c-8911-366cebff59f1", 
+    "ts": "2021-07-13T20:39:20.1626205160Z"
 }
 ```
 
@@ -206,8 +250,8 @@ A wildcard at the end of a path, does recurse, i.e.
 ```json
 {
     "action": "get", 
-    "path": "Vehicle/Cabin/Door/*", 
-    "requestId": "221484597038784548242607265463583217704",
+    "path": "Vehicle/Cabin/Door/Row1/*", 
+    "requestId": "06606a24-27e7-4717-b967-4211de1a5b00"
 }
 ```
  
@@ -219,229 +263,150 @@ leads to
 ```json
 {
     "action": "get", 
-    "requestId": "221484597038784548242607265463583217704", 
-    "timestamp": 1608377709, 
-    "value": [
+    "data": [
         {
-            "Vehicle/Cabin/Door/Row4/Right/Window/isOpen": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Left/IsChildLockActive"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Right/Window/Switch": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Left/IsLocked"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Right/Window/Position": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Left/IsOpen"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Right/Window/ChildLock": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Left/Shade/Position"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Right/Shade/Switch": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Left/Shade/Switch"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Right/Shade/Position": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Left/Window/ChildLock"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Right/IsOpen": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Left/Window/Position"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Right/IsLocked": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Left/Window/Switch"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Right/IsChildLockActive": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Left/Window/isOpen"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Left/Window/isOpen": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "0"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/LeftCount"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Left/Window/Switch": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Right/IsChildLockActive"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Left/Window/Position": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Right/IsLocked"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Left/Window/ChildLock": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Right/IsOpen"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Left/Shade/Switch": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Right/Shade/Position"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Left/Shade/Position": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Right/Shade/Switch"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Left/IsOpen": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Right/Window/ChildLock"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Left/IsLocked": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Right/Window/Position"
         }, 
         {
-            "Vehicle/Cabin/Door/Row4/Left/IsChildLockActive": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Right/Window/Switch"
         }, 
         {
-            "Vehicle/Cabin/Door/Row3/Right/Window/isOpen": "---"
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "---"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/Right/Window/isOpen"
         }, 
         {
-            "Vehicle/Cabin/Door/Row3/Right/Window/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Right/Window/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Right/Window/ChildLock": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Right/Shade/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Right/Shade/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Right/IsOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Right/IsLocked": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Right/IsChildLockActive": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Left/Window/isOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Left/Window/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Left/Window/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Left/Window/ChildLock": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Left/Shade/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Left/Shade/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Left/IsOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Left/IsLocked": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row3/Left/IsChildLockActive": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Right/Window/isOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Right/Window/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Right/Window/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Right/Window/ChildLock": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Right/Shade/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Right/Shade/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Right/IsOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Right/IsLocked": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Right/IsChildLockActive": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Left/Window/isOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Left/Window/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Left/Window/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Left/Window/ChildLock": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Left/Shade/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Left/Shade/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Left/IsOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Left/IsLocked": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row2/Left/IsChildLockActive": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Right/Window/isOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Right/Window/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Right/Window/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Right/Window/ChildLock": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Right/Shade/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Right/Shade/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Right/IsOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Right/IsLocked": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Right/IsChildLockActive": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Left/Window/isOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Left/Window/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Left/Window/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Left/Window/ChildLock": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Left/Shade/Switch": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Left/Shade/Position": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Left/IsOpen": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Left/IsLocked": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Row1/Left/IsChildLockActive": "---"
-        }, 
-        {
-            "Vehicle/Cabin/Door/Count": 0
+            "dp": {
+                "ts": "1981-01-01T00:00:00.0000000000Z", 
+                "value": "0"
+            }, 
+            "path": "Vehicle/Cabin/Door/Row1/RightCount"
         }
-    ]
+    ], 
+    "requestId": "06606a24-27e7-4717-b967-4211de1a5b00", 
+    "ts": "2021-07-13T20:42:22.1626205342Z"
 }
 ```
 
@@ -454,8 +419,8 @@ The same effect can be achieved by querying a branch, i.e. the following query y
 ```json
 {
     "action": "get", 
-    "path": "Vehicle/Cabin/Door", 
-    "requestId": "221484597038784548242607265463583217704",
+    "path": "Vehicle/Cabin/Door/Row1", 
+    "requestId": "06606a24-27e7-4717-b967-4211de1a5b00"
 }
 ```
 
@@ -471,7 +436,7 @@ As mentioned, wildcard queries only return the visible subset depending on your 
   "iat": 1516239022,
   "exp": 1767225599,
   "kuksa-vss":  {
-     "Vehicle.Drivetrain.Transmission.DriveType": "r"
+     "Vehicle.Powertrain.Transmission.DriveType": "r"
   }
   ```
 
@@ -479,22 +444,23 @@ As mentioned, wildcard queries only return the visible subset depending on your 
 {
     "action": "get", 
     "path": "Vehicle/Speed",
-    "requestId": "68009472116763267974316500807917391601", 
-    "timestamp": 1608378047
+    "requestId": "6d3ce665-4ad5-4ce7-9065-6d89f455e5e7", 
+    "ts": "2021-07-13T20:44:38.1626205469Z"
 }
 ```
 
 ```json
-  {
+{
     "action": "get", 
     "error": {
-        "message": "No read access to Vehicle.Speed", 
+        "message": "Insufficient read access to Vehicle/Speed", 
         "number": 403, 
         "reason": "Forbidden"
     }, 
-    "requestId": "68009472116763267974316500807917391601", 
-    "timestamp": 1608378047
+    "requestId": "6d3ce665-4ad5-4ce7-9065-6d89f455e5e7", 
+    "ts": "2021-07-13T20:44:39.1626205479Z"
 }
+
 ```
 
 While
@@ -502,8 +468,8 @@ While
 ```json
 {
     "action": "get", 
-    "requestId": "42417702951003321129172344096154765930", 
-    "path": "Vehicle/Drivetrain", 
+    "requestId": "4927055b-0864-49f0-b2b8-20d18dc9eeb7", 
+    "path": "Vehicle/Powertrain", 
 }
 ````
  yields a result
@@ -511,18 +477,20 @@ While
 ```json
 {
     "action": "get", 
-    "requestId": "42417702951003321129172344096154765930", 
-    "timestamp": 1608378219, 
-    "value": [
-        {
-            "Vehicle/Drivetrain/Transmission/DriveType": "unknown"
-        }
-    ]
+    "data": {
+        "dp": {
+            "ts": "1981-01-01T00:00:00.0000000000Z", 
+            "value": "unknown"
+        }, 
+        "path": "Vehicle/Powertrain/Transmission/DriveType"
+    }, 
+    "requestId": "4927055b-0864-49f0-b2b8-20d18dc9eeb7", 
+    "ts": "2021-07-13T20:47:16.1626205636Z"
 }
 ```
 
 Wildcard expansion also respects visibility/access rights according to the token. Therefore, with the example token, the following paths would yield the same result
- * `Vehicle/Drivetrain/Transmission/*`
+ * `Vehicle/Powertrain/Transmission/*`
  * `Vehicle/*/*/*` 
  * `Vehicle/*/*/DriveType`
 

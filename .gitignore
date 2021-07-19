@@ -22,5 +22,5 @@ node_modules/
 .config.*.json.backup
 .flows.json.backup
 flows_cred.json
-
+*.backup
 

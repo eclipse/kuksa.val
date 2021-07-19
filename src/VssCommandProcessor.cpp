@@ -95,7 +95,7 @@ string VssCommandProcessor::processSubscribe(WsChannel &channel,
     answer["action"] = "subscribe";
     answer["requestId"] = request_id;
     answer["subscriptionId"] = subId;
-    answer["timestamp"] = JsonResponses::getTimeStamp();
+    answer["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(answer);
@@ -112,7 +112,7 @@ string VssCommandProcessor::processSubscribe(WsChannel &channel,
     error["message"] = "Unknown";
 
     root["error"] = error;
-    root["timestamp"] = JsonResponses::getTimeStamp();
+    root["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
 
@@ -129,7 +129,7 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
     answer["action"] = "unsubscribe";
     answer["requestId"] = request_id;
     answer["subscriptionId"] = subscribeID;
-    answer["timestamp"] = JsonResponses::getTimeStamp();
+    answer["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(answer);
@@ -146,7 +146,7 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
     error["message"] = "Error while unsubscribing";
 
     root["error"] = error;
-    root["timestamp"] = JsonResponses::getTimeStamp();
+    root["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(root);
@@ -173,7 +173,7 @@ string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, jsoncons::j
   jsoncons::json answer;
   answer["action"] = "updateVSSTree";
   answer.insert_or_assign("requestId", request["requestId"]);
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   try {
@@ -224,7 +224,7 @@ string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
   result["action"] = "getMetaData";
   result.insert_or_assign("requestId", request["requestId"]);
   jsoncons::json st = database->getMetaData(path);
-  result["timestamp"] = JsonResponses::getTimeStamp();
+  result["ts"] = JsonResponses::getTimeStamp();
   if (0 == st.size()){
     jsoncons::json error;
     error["number"] = 404;
@@ -264,7 +264,7 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
   jsoncons::json answer;
   answer["action"] = "updateMetaData";
   answer.insert_or_assign("requestId", request["requestId"]);
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   try {
@@ -309,7 +309,7 @@ string VssCommandProcessor::processAuthorize(WsChannel &channel,
     error["message"] = "Check the JWT token passed";
 
     result["error"] = error;
-    result["timestamp"] = JsonResponses::getTimeStamp();
+    result["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
@@ -320,7 +320,7 @@ string VssCommandProcessor::processAuthorize(WsChannel &channel,
     result["action"] = "authorize";
     result["requestId"] = request_id;
     result["TTL"] = ttl;
-    result["timestamp"] = JsonResponses::getTimeStamp();
+    result["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
