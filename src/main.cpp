@@ -23,6 +23,7 @@
 #include <boost/filesystem.hpp>
 #include <jsoncons/json.hpp>
 #include <jsonpath/json_query.hpp>
+#include <thread>                                                               
 
 #include "AccessChecker.hpp"
 #include "Authenticator.hpp"
@@ -34,6 +35,7 @@
 #include "WebSockHttpFlexServer.hpp"
 #include "MQTTPublisher.hpp"
 #include "exception.hpp"
+#include "grpcHandler.hpp"
 
 #include "../buildinfo.h"
 
@@ -48,11 +50,25 @@ using jsoncons::json;
 
 static VssDatabase *gDatabase = NULL;
 
-
 static void print_usage(const char *prog_name,
                         program_options::options_description &desc) {
   cerr << "Usage: " << prog_name << " OPTIONS" << endl;
   cerr << desc << std::endl;
+}
+
+int httpRunServer(boost::program_options::variables_map variables, std::shared_ptr<WebSockHttpFlexServer> httpServer, std::string docRoot, std::shared_ptr<VssCommandProcessor> cmdProcessor){
+
+    auto port = variables["port"].as<int>();
+    auto insecure = variables[("insecure")].as<bool>();
+    httpServer->AddListener(ObserverType::ALL, cmdProcessor);
+    httpServer->Initialize(variables["address"].as<string>(), port,
+                           std::move(docRoot),
+                           variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
+    httpServer->Start();
+
+    while (1) {
+      usleep(1000000);
+    }
 }
 
 int main(int argc, const char *argv[]) {
@@ -117,12 +133,10 @@ int main(int argc, const char *argv[]) {
                 << std::endl;
     } else if (!variables["config-file"].defaulted()) {
       std::cerr << "Could not open config file: " << configFile << std::endl;
-      return -1;
     }
     // store again, because command line argument prefered
     program_options::store(parse_command_line(argc, argv, desc), variables);
   }
-
   // print usage
   if (variables.count("help")) {
     print_usage(argv[0], desc);
@@ -154,11 +168,7 @@ int main(int argc, const char *argv[]) {
 
   try {
     // initialize server
-
-    auto port = variables["port"].as<int>();
-    auto insecure = variables[("insecure")].as<bool>();
     auto vss_path = variables["vss"].as<boost::filesystem::path>();
-
     // initialize pseudo random number generator
     std::srand(std::time(nullptr));
 
@@ -172,12 +182,6 @@ int main(int argc, const char *argv[]) {
         variables["cert-path"].as<boost::filesystem::path>() / "jwt.key.pub";
     string jwtPubkey =
         Authenticator::getPublicKeyFromFile(pubKeyFile.string(), logger);
-    if (jwtPubkey == "") {
-      logger->Log(LogLevel::ERROR,
-                  "Could not read valid JWT pub key. Terminating.");
-      return -1;
-    }
-
     auto rest2JsonConverter =
         std::make_shared<RestV1ApiHandler>(logger, docRoot);
     auto httpServer = std::make_shared<WebSockHttpFlexServer>(
@@ -223,18 +227,11 @@ int main(int argc, const char *argv[]) {
           }
         }
       }
+      thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
+      thread grpc(grpcHandler::RunServer, cmdProcessor, variables["cert-path"].as<boost::filesystem::path>().string());
+      http.join();
+      grpc.join();
     }
-
-    httpServer->AddListener(ObserverType::ALL, cmdProcessor);
-    httpServer->Initialize(variables["address"].as<string>(), port,
-                           std::move(docRoot),
-                           variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
-    httpServer->Start();
-
-    while (1) {
-      usleep(1000000);
-    }
-
   } catch (const program_options::error &ex) {
     print_usage(argv[0], desc);
     cerr << ex.what() << std::endl;

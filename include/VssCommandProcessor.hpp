@@ -57,7 +57,6 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::string processSet2(WsChannel &channel, jsoncons::json &request);
   std::string processUpdateVSSTree(WsChannel& channel, jsoncons::json &request);
 
-
  public:
   VssCommandProcessor(std::shared_ptr<ILogger> loggerUtil,
                       std::shared_ptr<IVssDatabase> database,
@@ -67,6 +66,7 @@ class VssCommandProcessor : public IVssCommandProcessor {
   ~VssCommandProcessor();
 
   std::string processQuery(const std::string &req_json, WsChannel& channel);
+  std::string processQuery(const std::string &req_json);
 };
 
 #endif

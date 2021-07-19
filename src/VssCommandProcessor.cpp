@@ -407,5 +407,39 @@ string VssCommandProcessor::processQuery(const string &req_json,
   return response;
 }
 
+string VssCommandProcessor::processQuery(const string &req_json) {
+  jsoncons::json root;
+  string response;
+  try 
+  {
+    root = jsoncons::json::parse(req_json);
+    string action = root["action"].as<string>();
+    logger->Log(LogLevel::VERBOSE, "Receive action: " + action);
+
+    if (action == "getMetaData") 
+    {
+        response = processGetMetaData(root);
+        #ifdef JSON_SIGNING_ON
+                response = signer->sign(response);
+        #endif
+    }
+    else 
+    {
+        logger->Log(LogLevel::INFO, "VssCommandProcessor::processQuery: Unknown action " + action);
+        return JsonResponses::malFormedRequest("Unknown action requested");
+    }
+  } catch (jsoncons::ser_error &e) {
+    logger->Log(LogLevel::ERROR, "JSON parse error");
+    return JsonResponses::malFormedRequest(e.what());
+  } catch (jsoncons::key_not_found &e) {
+    logger->Log(LogLevel::ERROR, "JSON key not found error");
+    return JsonResponses::malFormedRequest(e.what());
+  } catch (jsoncons::not_an_object &e) {
+    logger->Log(LogLevel::ERROR, "JSON not an object error");
+    return JsonResponses::malFormedRequest(e.what());
+  }
+  return response;
+}
+
 
 

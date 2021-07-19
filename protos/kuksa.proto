@@ -1,0 +1,24 @@
+// Copyright Robert Bosch GmbH, 2021. Part of the Eclipse Kuksa Project.
+//
+// All rights reserved. This configuration file is provided to you under the
+// terms and conditions of the Eclipse Distribution License v1.0 which
+// accompanies this distribution, and is available at
+// http://www.eclipse.org/org/documents/edl-v10.php
+
+
+syntax = "proto3";
+
+package kuksa;
+
+// The connecting service definition.
+service viss_client {
+  rpc HandleRequest (CommandRequest) returns (CommandReply) {}
+}
+
+message CommandRequest {
+  string command = 1;
+}
+
+message CommandReply {
+  string message = 1;
+}
