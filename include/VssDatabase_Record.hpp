@@ -31,7 +31,7 @@ class VssDatabase_Record : public IVssDatabase
 #endif
 
 public:
-    VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle);
+    VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, std::string recordPath);
     ~VssDatabase_Record();
 
     src::logger_mt lg;
@@ -70,7 +70,6 @@ private:
     void log(std::string msg);
 
     std::string dir_;
-    std::string target_name_;
     std::string logfile_name_;
 
     std::shared_ptr<ILogger> logger_;

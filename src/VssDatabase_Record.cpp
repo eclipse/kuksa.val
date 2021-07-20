@@ -4,14 +4,23 @@
 #include <memory>
 #include <iostream>
 
-VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle)
+VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, std::string recordPath)
 :overClass_(loggerUtil,subHandle)
 {
-    std::string workingDir = getexepath();
-    workingDir.replace(workingDir.find("kuksa-val-server"),workingDir.size()-workingDir.find("kuksa-val-server"),"");
+    
+    std::string workingDir = recordPath;
+
+    if(workingDir.empty())
+    {
+        workingDir = getexepath();
+        workingDir.replace(workingDir.find("kuksa-val-server"),workingDir.size()-workingDir.find("kuksa-val-server"),"");
+        workingDir += "logs";
+    }
+
+    std::cout << workingDir << std::endl;
+
     logfile_name_ = "record-%Y%m%d_%H%M%S.log.csv";
-    target_name_ = "logs";
-    dir_ = workingDir + "logs";
+    dir_ = workingDir;
     std::cout << dir_ << std::endl; //debugging
 
     logger_init();
@@ -31,11 +40,11 @@ void VssDatabase_Record::logger_init()
         (
             keywords::file_name = logfile_name_,
             keywords::target_file_name = logfile_name_,
-            keywords::target = target_name_,
+            keywords::target = dir_,
             keywords::auto_flush = true
         )
     );
-    sink->locked_backend()->set_file_collector(sinks::file::make_collector(keywords::target = target_name_));
+    sink->locked_backend()->set_file_collector(sinks::file::make_collector(keywords::target = dir_));
     sink->locked_backend()->scan_for_files();
     //rotates files for every start of application
 

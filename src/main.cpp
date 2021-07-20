@@ -53,7 +53,6 @@ bool ctrlC_flag = false;
 
 void ctrlC_Handler(sig_atomic_t signal)
 {
-  cout << "\nExectuting exit\n";
   delete gDatabase;
   ctrlC_flag = true;
 }
@@ -97,6 +96,8 @@ int main(int argc, const char *argv[]) {
         "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
     ("record", program_options::value<bool>() -> default_value(0), 
         "Enables recording into log file, for later being replayed into the server (under development)")
+    ("record-path",program_options::value<string>() -> default_value(""),
+        "Specifies record file path")
     ("log-level",
       program_options::value<vector<string>>(&logLevels)->composing(),
       "Enable selected log level value. To allow for different log level "
@@ -212,7 +213,7 @@ int main(int argc, const char *argv[]) {
     if(variables["record"].as<bool>())
     {
       std::cout << "Recording in- and outputs\n";
-      database.reset(new VssDatabase_Record(logger,subHandler));
+      database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>()));
     }
 
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(
