@@ -17,11 +17,10 @@ VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std:
         workingDir += "logs";
     }
 
-    std::cout << workingDir << std::endl;
-
     logfile_name_ = "record-%Y%m%d_%H%M%S.log.csv";
     dir_ = workingDir;
-    std::cout << dir_ << std::endl; //debugging
+
+    std::cout << "Saving record file to " << dir_ << std::endl;
 
     logger_init();
     logging::core::get() -> add_global_attribute("TimeStamp",attrs::local_clock());
