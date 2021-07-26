@@ -64,7 +64,7 @@ std::string VssCommandProcessor::processGet2(WsChannel &channel,
       if (!accessValidator_->checkReadAccess(channel, vssPath)) {
         stringstream msg;
         msg << "Insufficient read access to " << pathStr;
-        logger->Log(LogLevel::ERROR, msg.str());
+        logger->Log(LogLevel::WARNING, msg.str());
         return JsonResponses::noAccess(requestId, "get", msg.str());
       } else {
         // TODO: This will add the "last"  timestamp, changing behavior from previous
