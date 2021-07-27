@@ -196,7 +196,7 @@ void grpcHandler::startClient(std::string port, std::string certPath){
   std::string clientkeyfile_ = certPath + "/Client.key";
   std::string clientrootfile_ = certPath + "/CA.pem";
   read (clientpemfile_, cert);
-	read (clientkeyfile_, key);
+  read (clientkeyfile_, key);
   read (clientrootfile_, root);
   grpc::SslCredentialsOptions opts; 
   opts.pem_cert_chain = cert;
