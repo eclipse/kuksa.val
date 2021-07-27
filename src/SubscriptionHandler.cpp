@@ -136,12 +136,13 @@ std::shared_ptr<IServer> SubscriptionHandler::getServer() {
 int SubscriptionHandler::updateByUUID(const string &signalUUID, const json &data) {
   std::stringstream ss;
   ss << "SubscriptionHandler::update: set value "
-     << pretty_print(data)
+     << data["dp"]["value"]
+     << " for path " << data["path"].to_string()
      << " for UUID " << signalUUID;
   logger->Log(LogLevel::VERBOSE, ss.str());
 
   for(auto & publisher: publishers_){
-    publisher->sendPathValue(data["path"].to_string(), data["dp"]["value"]);
+    publisher->sendPathValue(data["path"].as<string>(), data["dp"]["value"]);
   }
 
   std::unique_lock<std::mutex> lock(accessMutex);
