@@ -1347,7 +1347,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
 
   verify_and_erase_timestamp(response_json);
   for (auto &  dataRes : response_json["data"].array_range()) {
-    verify_and_erase_timestamp(dataRes["dp"]);
+    verify_and_erase_timestampZero(dataRes["dp"]);
   }
 
   BOOST_TEST(response_json == expected);
@@ -1418,7 +1418,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
  
   verify_and_erase_timestamp(response_json);
   for (auto &  dataRes : response_json["data"].array_range()) {
-    verify_and_erase_timestamp(dataRes["dp"]);
+    verify_and_erase_timestampZero(dataRes["dp"]);
   }
 
   BOOST_TEST(response_json == expected);

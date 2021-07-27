@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
-  verify_and_erase_timestamp(res["data"]["dp"]);
+  verify_and_erase_timestampZero(res["data"]["dp"]);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -301,7 +301,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
   for (auto &  dataRes : res["data"].array_range()) {
-    verify_and_erase_timestamp(dataRes["dp"]);
+    verify_and_erase_timestampZero(dataRes["dp"]);
   }
 
   BOOST_TEST(res == expectedJson);
@@ -368,7 +368,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
   for (auto &  dataRes : res["data"].array_range()) {
-    verify_and_erase_timestamp(dataRes["dp"]);
+    verify_and_erase_timestampZero(dataRes["dp"]);
   }
 
   BOOST_TEST(res == expectedJson);

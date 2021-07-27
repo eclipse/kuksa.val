@@ -25,19 +25,31 @@
 static inline void verify_timestamp(const jsoncons::json &result) {
   std::string timestampKeyWord = "ts";
   BOOST_TEST(result.contains(timestampKeyWord));
-  if(!result.contains(timestampKeyWord)){
-    std::cout << pretty_print(result)<< std::endl;
-  }
   BOOST_TEST(result[timestampKeyWord].is_string());
   BOOST_CHECK_NO_THROW(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()));
-  boost::posix_time::ptime const time_epoch(boost::gregorian::date(1970, 1, 1));
-  BOOST_TEST(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()) > time_epoch);
-  BOOST_TEST(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()) <= boost::posix_time::microsec_clock::local_time());
+  BOOST_TEST(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()) > boost::posix_time::from_iso_extended_string(JsonResponses::getTimeStampZero()));
+  BOOST_TEST(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()) <= boost::posix_time::from_iso_extended_string(JsonResponses::getTimeStamp()));
 }
+
+//Verifies a timestamp exists and is of type string.
+static inline void verify_timestampZero(const jsoncons::json &result) {
+  std::string timestampKeyWord = "ts";
+  BOOST_TEST(result.contains(timestampKeyWord));
+  BOOST_TEST(result[timestampKeyWord].is_string());
+  BOOST_CHECK_NO_THROW(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()));
+  BOOST_TEST(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()) == boost::posix_time::from_iso_extended_string(JsonResponses::getTimeStampZero()));
+}
+
 
 //Verifies a timestamp exists and is of type string and erase the item for easy comparison
 static inline void verify_and_erase_timestamp(jsoncons::json &result) { 
   verify_timestamp(result);
+  result.erase("ts");
+}
+
+//Verifies a timestamp exists and is of type string and erase the item for easy comparison
+static inline void verify_and_erase_timestampZero(jsoncons::json &result) { 
+  verify_timestampZero(result);
   result.erase("ts");
 }
 

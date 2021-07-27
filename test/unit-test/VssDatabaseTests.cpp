@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
 
-  verify_and_erase_timestamp(returnJson["dp"]);
+  verify_and_erase_timestampZero(returnJson["dp"]);
 
   BOOST_TEST(returnJson == expectedJson);
 }
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
 
-  verify_and_erase_timestamp(returnJson["dp"]);
+  verify_and_erase_timestampZero(returnJson["dp"]);
 
   BOOST_TEST(returnJson == expectedJson);
 }

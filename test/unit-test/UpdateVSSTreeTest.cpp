@@ -271,11 +271,8 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
   auto resStr = processor->processQuery(updateRequest.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res.contains("ts"));
-  // Assign timestamp for comparision purposes
-  expectedupdateVSSTreeAnswer.insert_or_assign("ts", res["ts"]);
 
+  verify_and_erase_timestamp(res);
   BOOST_TEST(res == expectedupdateVSSTreeAnswer);
 
   // verify metadata
@@ -284,7 +281,7 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
-  verify_and_erase_timestamp(res["data"]["dp"]);
+  verify_and_erase_timestampZero(res["data"]["dp"]);
 
   BOOST_TEST(res == getValueResponse);
 }
