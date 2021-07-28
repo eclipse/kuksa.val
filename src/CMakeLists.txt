@@ -28,14 +28,6 @@ set(gRPC_SSL_PROVIDER "package" CACHE STRING "Provider of ssl library")
 
 ### grpc repository and submodule fetch
 include(FetchContent)
-## PROTOBUF ##
-FetchContent_Declare(
-        protobuf
-        GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-        GIT_TAG        v3.17.3
-        SOURCE_SUBDIR  cmake
-)
-## END PROTOBUF ##
 
 ## GRPC ##
 FetchContent_Declare(
@@ -47,7 +39,7 @@ FetchContent_Declare(
 
 set(FETCHCONTENT_QUIET OFF)
 
-FetchContent_MakeAvailable(gRPC protobuf)
+FetchContent_MakeAvailable(gRPC)
 
 # gRPC and Protobuf variables
 set(_GRPC_GRPCPP grpc++)
@@ -61,17 +53,21 @@ set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
 get_filename_component(k_proto "../protos/kuksa.proto" ABSOLUTE)
 get_filename_component(k_proto_path "${k_proto}" PATH)
 
-set(k_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.cc")
-set(k_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.pb.h")
-set(k_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.cc")
-set(k_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/kuksa.grpc.pb.h")
+set(k_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.pb.cc")
+set(k_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.pb.h")
+set(k_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.grpc.pb.cc")
+set(k_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.grpc.pb.h")
+set(proto_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/proto")
+
+file(MAKE_DIRECTORY ${proto_gen_dir})
 
 
 add_custom_command(
       OUTPUT "${k_proto_srcs}" "${k_proto_hdrs}" "${k_grpc_srcs}" "${k_grpc_hdrs}"
       COMMAND ${_PROTOBUF_PROTOC}
-      ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
-        --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
+      ARGS
+        --grpc_out "${proto_gen_dir}"
+        --cpp_out "${proto_gen_dir}"
         -I "${k_proto_path}"
         --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
         "${k_proto}"
@@ -80,7 +76,7 @@ add_custom_command(
 
 message(STATUS "generated *.pb.cc and *.pb.h files for ${k_proto}")
 
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories("${proto_gen_dir}")
 
 
 ###
