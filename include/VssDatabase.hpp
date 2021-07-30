@@ -54,10 +54,10 @@ class VssDatabase : public IVssDatabase {
 
   void initJsonTree(const boost::filesystem::path &fileName) override;
   
-  bool checkPathValid(const VSSPath& path) override;
-  bool isActor(const jsoncons::json &element);
-  bool isSensor(const jsoncons::json &element);
-  bool isAttribute(const jsoncons::json &element);
+  bool checkPathValid(const VSSPath& path);
+  static bool isActor(const jsoncons::json &element);
+  static bool isSensor(const jsoncons::json &element);
+  static bool isAttribute(const jsoncons::json &element);
 
 
   void updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree);

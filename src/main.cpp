@@ -48,13 +48,20 @@ using jsoncons::json;
 // Websocket port
 #define PORT 8090
 
-static VssDatabase *gDatabase = NULL;
+static VssDatabase* gDatabase = NULL;
 bool ctrlC_flag = false;
 
 void ctrlC_Handler(sig_atomic_t signal)
 {
-  delete gDatabase;
-  ctrlC_flag = true;
+  try
+  {
+    delete gDatabase;
+    ctrlC_flag = true;
+  }
+  catch(const std::exception& e)
+  {
+    std::cerr << e.what() << '\n';
+  }
 }
 
 static void print_usage(const char *prog_name,
@@ -94,10 +101,10 @@ int main(int argc, const char *argv[]) {
       "If provided, `kuksa-val-server` shall use different server address than default _'localhost'_")
     ("port", program_options::value<int>()->default_value(8090),
         "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
-    ("record", program_options::value<bool>() -> default_value(0), 
-        "Enables recording into log file, for later being replayed into the server (under development)")
-    ("record-path",program_options::value<string>() -> default_value(""),
-        "Specifies record file path")
+    ("record", program_options::value<RecordDef_t>() -> default_value(noRecord), 
+        "Enables recording into log file, for later being replayed into the server \n1: record set Value only\n2: record get Value and set Value")
+    ("record-path",program_options::value<string>() -> default_value("."),
+        "Specifies record file path.")
     ("log-level",
       program_options::value<vector<string>>(&logLevels)->composing(),
       "Enable selected log level value. To allow for different log level "
@@ -208,18 +215,22 @@ int main(int argc, const char *argv[]) {
         logger, httpServer, tokenValidator, accessCheck);
     subHandler->addPublisher(mqttPublisher);
 
-    std::shared_ptr<IVssDatabase> database = std::make_shared<VssDatabase>(logger,subHandler);
+    std::shared_ptr<VssDatabase> database = std::make_shared<VssDatabase>(logger,subHandler);
 
-    if(variables["record"].as<bool>())
+    if(variables["record"].as<RecordDef_t>())
     {
-      std::cout << "Recording in- and outputs\n";
-      database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>()));
+      if(variables["record"].as<RecordDef_t>() == 1)
+        std::cout << "Recording inputs\n";
+      else if(variables["record"].as<RecordDef_t>() == 2)
+        std::cout << "Recording in- and outputs\n";
+      
+      database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),variables["record"].as<RecordDef_t>()));
     }
+
+    gDatabase = database.get();
 
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(
         logger, database, tokenValidator, accessCheck, subHandler);
-
-    gDatabase = static_cast<VssDatabase*>(database.get());
 
     database->initJsonTree(vss_path);
 

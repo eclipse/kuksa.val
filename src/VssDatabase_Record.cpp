@@ -4,18 +4,21 @@
 #include <memory>
 #include <iostream>
 
-VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, std::string recordPath)
-:overClass_(loggerUtil,subHandle)
+namespace logging = boost::log;
+namespace attrs = boost::log::attributes;
+namespace src = boost::log::sources;
+namespace sinks = boost::log::sinks;
+namespace expr = boost::log::expressions;
+namespace keywords = boost::log::keywords;
+
+VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, const std::string recordPath, RecordDef_t logMode)
+:VssDatabase(loggerUtil,subHandle), logMode_(logMode)
 {
     
     std::string workingDir = recordPath;
 
-    if(workingDir.empty())
-    {
-        workingDir = getexepath();
-        workingDir.replace(workingDir.find("kuksa-val-server"),workingDir.size()-workingDir.find("kuksa-val-server"),"");
-        workingDir += "logs";
-    }
+    if(workingDir==".")
+        workingDir += "/logs";
 
     logfile_name_ = "record-%Y%m%d_%H%M%S.log.csv";
     dir_ = workingDir;
@@ -57,42 +60,35 @@ void VssDatabase_Record::logger_init()
     logging::core::get() -> add_sink(sink);
 }
 
-void VssDatabase_Record::log(std::string msg)
-{
-    BOOST_LOG(lg) << msg;
-}
-
 jsoncons::json VssDatabase_Record::setSignal(const VSSPath &path, jsoncons::json &value)
 {
     std::string json_val;
     value.dump_pretty(json_val);
-    log("set;" + path.to_string() + ";" + json_val);
-    return overClass_.setSignal(path,value);
+    BOOST_LOG(lg) << "set;" << path.to_string() << ";" + json_val;
+    return VssDatabase::setSignal(path,value);
 }
 
 jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path)
 {
-    log("get;" + path.to_string() + "");
-    return overClass_.getSignal(path);
+    if(logMode_ == withGet)
+        BOOST_LOG(lg) << "get;" << path.to_string();
+
+    return VssDatabase::getSignal(path);
 }
 
-std::string VssDatabase_Record::getexepath()
+std::istream& operator>>(std::istream& in, RecordDef_t& enumType)
 {
-    char result[ PATH_MAX ];
-    ssize_t count = readlink( "/proc/self/exe", result, PATH_MAX );
-    return std::string( result, (count > 0) ? count : 0 );
-}
+    std::string token;
+    in >> token;
 
-bool VssDatabase_Record::pathExists(const VSSPath &path){return overClass_.pathExists(path);}
-bool VssDatabase_Record::pathIsWritable(const VSSPath &path){return overClass_.pathIsWritable(path);}
-std::list<VSSPath> VssDatabase_Record::getLeafPaths(const VSSPath& path){return overClass_.getLeafPaths(path);}
-void VssDatabase_Record::checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val){overClass_.checkAndSanitizeType(meta,val);}
-void VssDatabase_Record::initJsonTree(const boost::filesystem::path &fileName){overClass_.initJsonTree(fileName);}
-bool VssDatabase_Record::checkPathValid(const VSSPath& path){return overClass_.checkPathValid(path);}
-bool VssDatabase_Record::isActor(const jsoncons::json &element){return overClass_.isActor(element);}
-bool VssDatabase_Record::isSensor(const jsoncons::json &element){return overClass_.isSensor(element);}
-bool VssDatabase_Record::isAttribute(const jsoncons::json &element){return overClass_.isAttribute(element);}
-void VssDatabase_Record::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree){overClass_.updateJsonTree(sourceTree,jsonTree);}
-void VssDatabase_Record::updateJsonTree(WsChannel& channel, jsoncons::json& value){overClass_.updateJsonTree(channel,value);}
-void VssDatabase_Record::updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& newTree){overClass_.updateMetaData(channel,path,newTree);}
-jsoncons::json VssDatabase_Record::getMetaData(const VSSPath& path){return overClass_.getMetaData(path);}
+    if(token=="0")
+        enumType = noRecord;
+    else if(token == "1")
+        enumType = noGet;
+    else if(token == "3")
+        enumType = withGet;
+    else
+        in.setstate(std::ios::failbit);
+    
+    return in;
+}

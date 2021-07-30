@@ -15,67 +15,41 @@
 #include <boost/log/sinks.hpp>
 #include <boost/log/sources/logger.hpp>
 
-namespace logging = boost::log;
-namespace attrs = boost::log::attributes;
-namespace src = boost::log::sources;
-namespace sinks = boost::log::sinks;
-namespace expr = boost::log::expressions;
-namespace keywords = boost::log::keywords;
+typedef enum
+{
+  noRecord=0,
+  noGet = 1,
+  withGet = 2
+} RecordDef_t;
 
-typedef sinks::synchronous_sink< sinks::text_file_backend > file_sink;
+typedef boost::log::sinks::synchronous_sink< boost::log::sinks::text_file_backend > file_sink;
 
-class VssDatabase_Record : public IVssDatabase
+class VssDatabase_Record : public VssDatabase
 {
 #ifdef UNIT_TEST
   friend class w3cunittest;
 #endif
 
 public:
-    VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, std::string recordPath);
+    VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, const std::string recordPath, RecordDef_t logMode);
     ~VssDatabase_Record();
 
-    src::logger_mt lg;
-
-    //helpers
-    bool pathExists(const VSSPath &path) override;
-    bool pathIsWritable(const VSSPath &path) override;
-    std::list<VSSPath> getLeafPaths(const VSSPath& path) override;
-
-    void checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val) override;
-
-    void initJsonTree(const boost::filesystem::path &fileName) override;
-  
-    bool checkPathValid(const VSSPath& path) override;
-    bool isActor(const jsoncons::json &element);
-    bool isSensor(const jsoncons::json &element);
-    bool isAttribute(const jsoncons::json &element);
-
-
-    void updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree);
-    void updateJsonTree(WsChannel& channel, jsoncons::json& value) override;
-    void updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& newTree) override;
-    jsoncons::json getMetaData(const VSSPath& path) override;
+    boost::log::sources::logger_mt lg;
   
     jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) override; //gen2 version
     jsoncons::json getSignal(const VSSPath &path) override; //Gen2 version
 
-    void applyDefaultValues(jsoncons::json &tree, VSSPath currentPath);
 
 private:
 
-    VssDatabase overClass_;
-
     void logger_init();
-    std::string getexepath();
-    void log(std::string msg);
 
     std::string dir_;
     std::string logfile_name_;
-
-    std::shared_ptr<ILogger> logger_;
-    std::mutex rwMutex_;
-    std::shared_ptr<ISubscriptionHandler> subHandler_;
+    RecordDef_t logMode_;
 
 };
+
+std::istream& operator>>(std::istream& in, RecordDef_t& enumType);
 
 #endif
