@@ -1,18 +1,36 @@
-# Map OBD values to tree
-
+# Mapping Speed
 UIspeed_signed257:
   minupdatedelay: 100
   targets: 
-    - Vehicle.OBD.Speed
+    Vehicle.Speed: {}
+    Vehicle.OBD.Speed: {}
 
 
-#RearPower266:
-#  minupdatedelay: 100
-#  targets:
-#    - Vehicle.OBD.EngineLoad
+#this is kW, do some magic to get in 0-100 int range
+RearPower266:
+  minupdatedelay: 100
+  targets:
+    Vehicle.OBD.EngineLoad:
+      transform:
+        math: "floor(abs(x/5))"
 
-#Change this to type string in VSS file to work with M3 DBC
+#Mapping to numeriv VSS gears, and extract parking state
 DIgear118:
   minupdatedelay: 100
   targets:
-    - Vehicle.Drivetrain.Transmission.Gear
+    Vehicle.Powertrain.Transmission.Gear:
+      transform:
+        fullmapping:
+          Neutral: 0
+          Idle: 0
+          Park: 0
+          Reverse: -1
+          Drive: 1
+    Vehicle.Chassis.ParkingBrake.IsEngaged:
+      transform:
+        fullmapping:
+          Neutral: "false"
+          Idle: "false"
+          Park: "true"
+          Reverse: "false"
+          Drive: "false"
