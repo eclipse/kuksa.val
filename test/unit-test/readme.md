@@ -20,7 +20,10 @@ make
 you can execute using
 
 ```
-./w3c-unit-test
+cd test/unit-test
+
+./kuksaval-unit-test
+
 ```
 
 Obviously, there should be no errors :)
