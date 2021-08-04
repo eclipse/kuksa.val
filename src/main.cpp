@@ -55,12 +55,13 @@ void ctrlC_Handler(sig_atomic_t signal)
 {
   try
   {
-    delete gDatabase;
+    delete gDatabase;             //explicit delete for boost::log to save log files to the correct location
     ctrlC_flag = true;
   }
   catch(const std::exception& e)
   {
     std::cerr << e.what() << '\n';
+    std::cerr << "Try searching for log file in src folder \n";
   }
 }
 
@@ -71,6 +72,7 @@ static void print_usage(const char *prog_name,
 }
 
 int main(int argc, const char *argv[]) {
+  RecordDef_t RecordOption;
   vector<string> logLevels{"NONE"};
   uint8_t logLevelsActive = static_cast<uint8_t>(LogLevel::NONE);
 
@@ -101,7 +103,7 @@ int main(int argc, const char *argv[]) {
       "If provided, `kuksa-val-server` shall use different server address than default _'localhost'_")
     ("port", program_options::value<int>()->default_value(8090),
         "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
-    ("record", program_options::value<RecordDef_t>() -> default_value(noRecord), 
+    ("record", program_options::value<int>() -> default_value(noRecord), 
         "Enables recording into log file, for later being replayed into the server \n1: record set Value only\n2: record get Value and set Value")
     ("record-path",program_options::value<string>() -> default_value("."),
         "Specifies record file path.")
@@ -217,14 +219,14 @@ int main(int argc, const char *argv[]) {
 
     std::shared_ptr<VssDatabase> database = std::make_shared<VssDatabase>(logger,subHandler);
 
-    if(variables["record"].as<RecordDef_t>())
+    if(variables["record"].as<int>())
     {
-      if(variables["record"].as<RecordDef_t>() == 1)
+      if(variables["record"].as<int>() == noGet)
         std::cout << "Recording inputs\n";
-      else if(variables["record"].as<RecordDef_t>() == 2)
+      else if(variables["record"].as<int>() == withGet)
         std::cout << "Recording in- and outputs\n";
       
-      database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),variables["record"].as<RecordDef_t>()));
+      database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),variables["record"].as<int>()));
     }
 
     gDatabase = database.get();

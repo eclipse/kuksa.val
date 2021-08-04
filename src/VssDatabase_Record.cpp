@@ -11,7 +11,7 @@ namespace sinks = boost::log::sinks;
 namespace expr = boost::log::expressions;
 namespace keywords = boost::log::keywords;
 
-VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, const std::string recordPath, RecordDef_t logMode)
+VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, const std::string recordPath, int logMode)
 :VssDatabase(loggerUtil,subHandle), logMode_(logMode)
 {
     
@@ -74,21 +74,4 @@ jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path)
         BOOST_LOG(lg) << "get;" << path.to_string();
 
     return VssDatabase::getSignal(path);
-}
-
-std::istream& operator>>(std::istream& in, RecordDef_t& enumType)
-{
-    std::string token;
-    in >> token;
-
-    if(token=="0")
-        enumType = noRecord;
-    else if(token == "1")
-        enumType = noGet;
-    else if(token == "3")
-        enumType = withGet;
-    else
-        in.setstate(std::ios::failbit);
-    
-    return in;
 }
