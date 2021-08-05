@@ -248,8 +248,8 @@ void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::jso
 
 }
 
-void VssDatabase::updateJsonTree(WsChannel& channel,  jsoncons::json& jsonTree){
-  if (! channel.authorizedToModifyTree()) {
+void VssDatabase::updateJsonTree(kuksa::kuksaChannel& channel,  jsoncons::json& jsonTree){
+  if (! channel.modifytree()) {
      stringstream msg;
      msg << "do not have write access for updating json tree or is invalid";
      throw noPermissionException(msg.str());
@@ -263,8 +263,8 @@ void VssDatabase::updateJsonTree(WsChannel& channel,  jsoncons::json& jsonTree){
 
 // update a metadata in tree, which will only do one-level-deep shallow merge/update.
 // If deep merge/update are expected, use `updateJsonTree` instead.
-void VssDatabase::updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& metadata){
-  if (! channel.authorizedToModifyTree()) {
+void VssDatabase::updateMetaData(kuksa::kuksaChannel& channel, const VSSPath& path, const jsoncons::json& metadata){
+  if (! channel.modifytree()) {
      stringstream msg;
      msg << "do not have write access for updating MetaData or is invalid";
      throw noPermissionException(msg.str());

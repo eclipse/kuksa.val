@@ -48,13 +48,13 @@ SubscriptionHandler::~SubscriptionHandler() {
   stopThread();
 }
 
-SubscriptionId SubscriptionHandler::subscribe(WsChannel& channel,
+SubscriptionId SubscriptionHandler::subscribe(kuksa::kuksaChannel& channel,
                                               std::shared_ptr<IVssDatabase> db,
                                               const string &path) {
   // generate subscribe ID "randomly".
   SubscriptionId subId = rand() % 9999999;
   // embed connection ID into subID.
-  subId = channel.getConnID() + subId;
+  subId = channel.connectionid() + subId;
 
   VSSPath vssPath = VSSPath::fromVSS(path);
 
@@ -79,7 +79,7 @@ SubscriptionId SubscriptionHandler::subscribe(WsChannel& channel,
                   + string("ID with a new one"));
     }
 
-    subscribeHandle[sigUUID][subId] = channel.getConnID();
+    subscribeHandle[sigUUID][subId] = channel.connectionid();
 
     return subId;
   } else if (resArray.is_array()) {

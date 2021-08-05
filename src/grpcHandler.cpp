@@ -16,6 +16,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 
 #include "grpcHandler.hpp"
+#include "WsChannel.hpp"
 
 #include "kuksa.grpc.pb.h"
 
@@ -27,75 +28,18 @@ using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
 using kuksa::viss_client;
-using kuksa::CommandReply;
-using kuksa::CommandRequest;
 
 grpcHandler handler;
 
-// Logic and data behind the server's behavior.
-class RequestServiceImpl final : public viss_client::Service {
-  Status HandleRequest(ServerContext* context, const CommandRequest* request,
-                  CommandReply* reply) override {
-    // Get the request from the client
-    string command = request->command();
-    temp =  split(command);
-    boost::uuids::uuid uuid = boost::uuids::random_generator()();
-    std::stringstream ss;
-    ss << uuid;
-    reqID = ss.str();
-    if(temp.size() > 0) {
-      firstarg = temp[0];
-      _str = "{\"action\": \"" + firstarg + "}";
-    }
-    if(temp.size() > 1) {
-      secarg = temp[1];
-      if(firstarg == "authorize"){
-        _str = "{\"action\": \"" + firstarg + "\",\"tokens\": \"" + secarg + "\",\"requestId\": \"" + reqID + "\"}";
-      }
-      else{
-         _str = "{\"action\": \"" + firstarg + "\",\"path\": \"" + secarg + "\",\"requestId\": \"" + reqID + "\"}";
-      }
-    }
-    if(temp.size() > 2){
-      thirdarg = temp[2];
-      _str = "{\"action\": \"" + firstarg + "\",\"path\": \"" + secarg + "\",\"value\": \""+ thirdarg + "\",\"requestId\": \"" + reqID + "\"}";
-    }
-    if(firstarg == "quit"){
-      reply->set_message(firstarg);
-    }
-    else{
-      auto Processor = handler.getGrpcProcessor();
-      request_json = Processor->processQuery(_str);
-      reply->set_message(request_json);
-    }
+kuksa::kuksaChannel& addClient(boost::uuids::uuid &uuid){
+  auto newChannel = std::make_shared<kuksa::kuksaChannel>();
+  uint64_t value = reinterpret_cast<uint64_t>(uuid.data);
+  newChannel->set_connectionid(value);
+  newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_GRPC);
+  return *newChannel;
+}
 
-    return Status::OK;
-  }
-  private:
-  std::string request_json;
-  std::string reqID;
-  vector<string> temp;
-  string firstarg;
-  string secarg;
-  string thirdarg;
-  string _str;
-
-  vector<string> split(string const& input, string const& separator = " ")
-  {
-    vector<string> result;
-    string::size_type position, start = 0;
-  
-    while (string::npos != (position = input.find(separator, start)))
-    {
-      result.push_back(input.substr(start, position-start));
-      start = position + separator.size();
-    }
-  
-    result.push_back(input.substr(start));
-    return result;
-  }
-};
-
+// class for reading certificates
 void grpcHandler::read (const std::string& filename, std::string& data)
 {
   std::ifstream file ( filename.c_str (), std::ios::in );
@@ -114,6 +58,59 @@ void grpcHandler::read (const std::string& filename, std::string& data)
   }
 	return;
 }
+
+// Logic and data behind the servers behaviour
+// implementation of the rpc interfaces server side
+class RequestServiceImpl final : public viss_client::Service {                                          
+  Status GetMetaData(ServerContext* context, const kuksa::commandRequest* request,
+                  kuksa::data* reply) override {
+                    jsoncons::json req_json;
+                    req_json["action"] = "getMetaData";
+                    req_json["path"] = request->path_();
+                    req_json["requestId"] = request->reqid_();
+                    auto Processor = handler.getGrpcProcessor();
+                    auto result = Processor->processGetMetaData(req_json);
+                    reply->set_value_(result);
+                    return Status::OK;}
+
+  Status AuthorizeChannel(ServerContext* context, const kuksa::commandRequest* request,
+                  kuksa::data* reply) override {
+                    auto Processor = handler.getGrpcProcessor();
+                    std::string token;
+                    grpcHandler::read(request->path_(),token);
+                    auto channel = request->channel_();
+                    auto result = Processor->processAuthorize(channel,request->reqid_(),token);
+                    reply->mutable_channel_()->MergeFrom(channel);
+                    reply->set_value_(result);
+                    return Status::OK;}
+
+  Status SetValue(ServerContext* context, const kuksa::commandRequest* request,
+                  kuksa::data* reply) override {
+                    auto Processor = handler.getGrpcProcessor();
+                    jsoncons::json req_json;
+                    req_json["action"] = "set";
+                    req_json["path"] = request->path_();
+                    req_json["value"] = request->value_();
+                    req_json["requestId"] = request->reqid_();
+                    auto channel = request->channel_();
+                    auto result = Processor->processSet2(channel,req_json);
+                    reply->mutable_channel_()->MergeFrom(channel);
+                    reply->set_value_(result);
+                    return Status::OK;}
+
+  Status GetValue(ServerContext* context, const kuksa::commandRequest* request,
+                  kuksa::data* reply) override {
+                    auto Processor = handler.getGrpcProcessor();
+                    jsoncons::json req_json;
+                    req_json["action"] = "get";
+                    req_json["path"] = request->path_();
+                    req_json["requestId"] = request->reqid_();
+                    auto channel = request->channel_();
+                    auto result = Processor->processGet2(channel,req_json);
+                    reply->mutable_channel_()->MergeFrom(channel);
+                    reply->set_value_(result);
+                    return Status::OK;}
+};
 
 void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::string certPath) {
   string server_address("127.0.0.1:50051");
@@ -162,22 +159,67 @@ void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std:
 class GrpcConnection {
  public:
   GrpcConnection(std::shared_ptr<Channel> channel)
-      : stub_(viss_client::NewStub(channel)) {}
-  // get the command from the terminal and request the server
-  std::string HandleRequest(){
-    // Container for the data we send to the server.
-    CommandRequest request;
-    // Container for the data we expect from the server.
-    CommandReply reply;
-    std::string command;
-    // Get command input from input
-    std::getline(std::cin,command);
-    request.set_command(command);
+      : stub_(viss_client::NewStub(channel)) {
+        boost::uuids::uuid uuid = boost::uuids::random_generator()();
+        std::stringstream ss;
+        ss << uuid;
+        reqID = ss.str();
+        kuksa_channel = addClient(uuid);
+        request.set_reqid_(reqID);
+  }
+
+  std::string GetMetaData(std::string vssPath){
     ClientContext context;
-    // The actual RPC
-    Status status = stub_->HandleRequest(&context, request, &reply);
+    request.set_path_(vssPath);
+    Status status = stub_->GetMetaData(&context, request, &reply);
     if (status.ok()) {
-      return reply.message();
+      return reply.value_();
+    } else {
+      std::cout << status.error_code() << ": " << status.error_message()
+                << std::endl;
+      return "RPC failed";
+    }
+  }
+
+  std::string AuthorizeChannel(std::string file){
+    ClientContext context;
+    request.set_path_(file);
+    request.mutable_channel_()->MergeFrom(kuksa_channel);
+    Status status = stub_->AuthorizeChannel(&context, request, &reply);
+    if (status.ok()) {
+      kuksa_channel = reply.channel_();
+      return reply.value_();
+    } else {
+      std::cout << status.error_code() << ": " << status.error_message()
+                << std::endl;
+      return "RPC failed";
+    }
+  }
+
+  std::string getValue(std::string vssPath){
+    ClientContext context;
+    request.set_path_(vssPath);
+    request.mutable_channel_()->MergeFrom(kuksa_channel);
+    Status status = stub_->GetValue(&context, request, &reply);
+    if (status.ok()) {
+      kuksa_channel = reply.channel_();
+      return reply.value_();
+    } else {
+      std::cout << status.error_code() << ": " << status.error_message()
+                << std::endl;
+      return "RPC failed";
+    }
+  }
+
+  std::string setValue(std::string vssPath, std::int32_t value){
+    ClientContext context;
+    request.set_path_(vssPath);
+    request.set_value_(value);
+    request.mutable_channel_()->MergeFrom(kuksa_channel);
+    Status status = stub_->SetValue(&context, request, &reply);
+    if (status.ok()) {
+      kuksa_channel = reply.channel_();
+      return reply.value_();
     } else {
       std::cout << status.error_code() << ": " << status.error_message()
                 << std::endl;
@@ -185,8 +227,29 @@ class GrpcConnection {
     }
   }
  private:
+  // Container for the data we send to the server.
+  kuksa::commandRequest request;
+  // Container for the data we expect from the server.
+  kuksa::data reply;
   std::unique_ptr<viss_client::Stub> stub_;
+  kuksa::kuksaChannel kuksa_channel;
+  std::string reqID;
 };
+
+vector<string> split(string const& input, string const& separator = " ")
+{
+    vector<string> result;
+    string::size_type position, start = 0;
+  
+    while (string::npos != (position = input.find(separator, start)))
+    {
+      result.push_back(input.substr(start, position-start));
+      start = position + separator.size();
+    }
+  
+    result.push_back(input.substr(start));
+    return result;
+}
 
 void grpcHandler::startClient(std::string port, std::string certPath){
   std::string cert; 
@@ -204,13 +267,39 @@ void grpcHandler::startClient(std::string port, std::string certPath){
   opts.pem_root_certs = root;
   GrpcConnection connGrpcSes(
       grpc::CreateChannel(port, grpc::SslCredentials(opts)));
+
+  std::string command;
   std::string reply;
   std::string abort = "quit";
   // prepare for getting a command while command is not quit
   while(abort.compare(reply) != 0){
     std::cout << "Test-Client>";
-    reply = connGrpcSes.HandleRequest();
-    std::cout << reply << std::endl;
+    // Get command input from inputfield names
+    std::getline(std::cin,command);
+    vector<string> temp = split(command);
+    // handles which rpc call is made
+    if(temp[0] == "getMetaData"){
+      reply = connGrpcSes.GetMetaData(temp[1]);
+      std::cout << reply << std::endl;
+    }
+    else if(temp[0] == "authorize"){
+      reply = connGrpcSes.AuthorizeChannel(temp[1]);
+      std::cout << reply << std::endl;
+    }
+    else if(temp[0] == "getValue"){
+      reply = connGrpcSes.getValue(temp[1]);
+      std::cout << reply << std::endl;
+    }
+    else if(temp[0] == "setValue"){
+      reply = connGrpcSes.setValue(temp[1],static_cast<int32_t>(stoi(temp[2])));
+      std::cout << reply << std::endl;
+    }
+    else if(temp[0] == "quit"){
+      reply = temp[0];
+    }
+    else{
+      std::cout << "Invalid command!" << std::endl;
+    }
   }
 }
 

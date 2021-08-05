@@ -21,7 +21,6 @@
 
 using namespace std;
 
-class WsChannel;
 class ILogger;
 
 class Authenticator : public IAuthenticator {
@@ -30,17 +29,17 @@ class Authenticator : public IAuthenticator {
   string algorithm = "RS256";
   std::shared_ptr<ILogger> logger;
 
-  int validateToken(WsChannel& channel, string authToken);
+  int validateToken(kuksa::kuksaChannel& channel, string authToken);
 
  public:
   Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algorithm);
 
-  int validate(WsChannel &channel,
+  int validate(kuksa::kuksaChannel &channel,
                string authToken);
 
   void updatePubKey(string key);
-  bool isStillValid(WsChannel &channel);
-  void resolvePermissions(WsChannel &channel);
+  bool isStillValid(kuksa::kuksaChannel &channel);
+  void resolvePermissions(kuksa::kuksaChannel &channel);
 
   static string getPublicKeyFromFile(string fileName, std::shared_ptr<ILogger> logger);
 };

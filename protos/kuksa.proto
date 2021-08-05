@@ -12,13 +12,38 @@ package kuksa;
 
 // The connecting service definition.
 service viss_client {
-  rpc HandleRequest (CommandRequest) returns (CommandReply) {}
+  rpc GetMetaData (commandRequest) returns (data) {}
+  rpc AuthorizeChannel (commandRequest) returns (data) {}
+  rpc GetValue (commandRequest) returns (data) {}
+  rpc SetValue (commandRequest) returns (data) {}
 }
 
-message CommandRequest {
-  string command = 1;
+message data {
+  string value_ = 1;
+  kuksaChannel channel_ = 2;
 }
 
-message CommandReply {
-  string message = 1;
+message commandRequest {
+  string path_ = 1;
+  string reqID_ = 2;
+  optional int32 value_ = 3;
+  kuksaChannel channel_ = 4;
 }
+
+message kuksaChannel{
+  enum Type {
+    UNKNOWN_TYPE = 0;
+    WEBSOCKET_PLAIN = 1;
+    WEBSOCKET_SSL = 2;
+    HTTP_PLAIN = 3;
+    HTTP_SSL = 4;
+    GRPC = 5;
+  };
+  uint64 connectionID = 1;
+  bool authorized = 2;
+  bool modifyTree = 3;
+  bytes authToken = 4;
+  string permissions = 5;
+  Type typeOfConnection = 6;
+}
+

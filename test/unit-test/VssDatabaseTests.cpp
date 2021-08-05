@@ -26,6 +26,7 @@
 #include "IAccessCheckerMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
 #include "exception.hpp"
+#include "kuksa.pb.h"
 
 #include "VssDatabase.hpp"
 
@@ -119,10 +120,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForInvalidPath_Shall
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_updateMetadata) {
   jsoncons::json newMetaData, returnJson;
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
 
   // setup
   db->initJsonTree(validFilename);
@@ -136,10 +137,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_updateMetad
 }
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataForInvalidPath_Shall_throwException) {
   jsoncons::json newMetaData, returnJson;
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
-  channel.setConnID(11);
-  channel.enableModifyTree();
+  channel.set_connectionid(11);
+  channel.set_modifytree(true);
 
   // setup
   db->initJsonTree(validFilename);
@@ -153,10 +154,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataForInvalidPath_Sh
 }
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataValidPath) {
   jsoncons::json newMetaData, returnJson;
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
-  channel.setConnID(11);
-  channel.enableModifyTree();
+  channel.set_connectionid(11);
+  channel.set_modifytree(true);
 
   // setup
   db->initJsonTree(validFilename);

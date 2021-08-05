@@ -25,6 +25,7 @@
 #include "IVssDatabaseMock.hpp"
 #include "IAuthenticatorMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
+#include "kuksa.pb.h"
 
 #include "IAccessCheckerMock.hpp"
 
@@ -75,7 +76,7 @@ BOOST_FIXTURE_TEST_SUITE(VssCommandProcessorTests, TestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonPathNotFound;
@@ -86,8 +87,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   
   // setup
 
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -119,7 +120,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonMalformedReq;
@@ -131,8 +132,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
   // setup
 
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -173,7 +174,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonNoAccess;
@@ -184,8 +185,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
   // setup
 
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -225,7 +226,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -237,8 +238,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -281,7 +282,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -294,8 +295,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -335,7 +336,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonPathNotFound;
@@ -347,11 +348,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
   
   // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
-  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
-  channel.setPermissions(perm);
+  std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_permissions(perm);
+
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -384,7 +386,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -392,8 +394,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
    // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
-  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
-  channel.setPermissions(perm);
+  std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
+  channel.set_permissions(perm);
 
   string requestId = "1";
   int requestValue = 300; //OoB for uint8
@@ -402,8 +404,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -447,7 +449,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -460,8 +462,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -504,7 +506,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -517,10 +519,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
   // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
-  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
-  channel.setPermissions(perm);
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
+  channel.set_permissions(perm);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -564,7 +566,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -577,10 +579,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 
   // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
-  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
-  channel.setPermissions(perm);
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
+  channel.set_permissions(perm);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -625,7 +627,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnSubscrId)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -636,8 +638,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -672,7 +674,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -683,8 +685,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -722,7 +724,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonNoAccess;
@@ -732,8 +734,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -765,7 +767,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonPathNotFound;
@@ -775,8 +777,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -809,7 +811,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonOutOfBound;
@@ -819,8 +821,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -852,7 +854,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedException_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonMalformedReq;
@@ -862,8 +864,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -898,7 +900,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
 
 BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsubscribe)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonUnsubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -908,8 +910,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
   jsonUnsubscribeRequestForSignal["subscriptionId"] = subscriptionId;
@@ -943,7 +945,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
 
 BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonUnsubscribeRequestForSignal;
   jsoncons::json jsonSignalValue, jsonSignalValueErr;
@@ -953,8 +955,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
   jsonUnsubscribeRequestForSignal["subscriptionId"] = subscriptionId;
@@ -994,7 +996,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMetadata)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetMetaRequest;
   jsoncons::json jsonValue, jsonMetadata;
@@ -1005,8 +1007,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonGetMetaRequest["action"] = "getMetaData";
   jsonGetMetaRequest["requestId"] = requestId;
@@ -1045,7 +1047,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
 
 BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonAuthRequest;
   jsoncons::json jsonValue, jsonMetadata;
@@ -1056,8 +1058,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
 
   // setup
 
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsonAuthRequest["action"] = "authorize";
   jsonAuthRequest["requestId"] = requestId;
@@ -1093,7 +1095,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
 
 BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonAuthRequest;
   jsoncons::json jsonValue, jsonValueErr;
@@ -1104,8 +1106,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonAuthRequest["action"] = "authorize";
   jsonAuthRequest["requestId"] = requestId;
@@ -1147,7 +1149,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyErrors)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonRequest;
   jsoncons::json jsonExpected, jsonValueErr;

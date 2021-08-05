@@ -90,10 +90,10 @@ BOOST_FIXTURE_TEST_SUITE(UpdateVSSTreeTests, TestSuiteFixture);
 
 /* Adding to VSS tree */
 BOOST_AUTO_TEST_CASE(update_vss_tree_add) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.enableModifyTree();
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_modifytree(true);
+  channel.set_connectionid(1);
 
   json metatdata = json::parse(R"(
     {
@@ -195,10 +195,10 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_add) {
 
 /* Check whether a default is applied */
 BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.enableModifyTree();
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_modifytree(true);
+  channel.set_connectionid(1);
 
   json metatdata = json::parse(R"(
     {
@@ -288,10 +288,10 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
 
 /* Override existing metadata in tree */
 BOOST_AUTO_TEST_CASE(update_vss_tree_override) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.enableModifyTree();
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_modifytree(true);
+  channel.set_connectionid(1);
 
   json metatdata = json::parse(R"(
     {
@@ -382,10 +382,10 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_override) {
 
 /* Broken Request */
 BOOST_AUTO_TEST_CASE(update_vss_tree_brokenrequest) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.enableModifyTree();
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_modifytree(true);
+  channel.set_connectionid(1);
 
   std::string brokenUpdateVSSTreeRequest{R"(
     {
