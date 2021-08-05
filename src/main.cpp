@@ -72,7 +72,6 @@ static void print_usage(const char *prog_name,
 }
 
 int main(int argc, const char *argv[]) {
-  RecordDef_t RecordOption;
   vector<string> logLevels{"NONE"};
   uint8_t logLevelsActive = static_cast<uint8_t>(LogLevel::NONE);
 
