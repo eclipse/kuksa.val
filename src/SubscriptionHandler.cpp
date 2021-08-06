@@ -137,7 +137,7 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID, const json &data
   std::stringstream ss;
   ss << "SubscriptionHandler::update: set value "
      << data["dp"]["value"]
-     << " for path " << data["path"].to_string()
+     << " for path " << data["path"].as<string>()
      << " for UUID " << signalUUID;
   logger->Log(LogLevel::VERBOSE, ss.str());
 

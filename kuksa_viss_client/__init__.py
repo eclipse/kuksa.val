@@ -10,7 +10,7 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 
-import os, sys, threading, queue, ssl, json
+import os, sys, threading, queue, ssl, json, time, datetime
 import uuid
 import asyncio, websockets, pathlib
 scriptDir= os.path.dirname(os.path.realpath(__file__))
@@ -22,8 +22,7 @@ class KuksaClientThread(threading.Thread):
     # Constructor
     def __init__(self, config):
         super(KuksaClientThread, self).__init__()
-        self.sendMsgQueue = queue.Queue()
-        self.recvMsgQueue = queue.Queue()
+
         self.subscriptionCallbacks = {}
         self.handlerTasks = []
         scriptDir= os.path.dirname(os.path.realpath(__file__))
@@ -47,16 +46,24 @@ class KuksaClientThread(threading.Thread):
     def _sendReceiveMsg(self, req, timeout): 
         req["requestId"] = str(uuid.uuid4())
         jsonDump = json.dumps(req)
-        self.sendMsgQueue.put(jsonDump)
+        while not hasattr(self, 'sendMsgQueue'):
+            time.sleep(1)
+        asyncio.run_coroutine_threadsafe(self.sendMsgQueue.put(jsonDump), self.loop).result()
+        wait = 0
         while True:
             try:
-                res = self.recvMsgQueue.get(timeout = timeout)
+                res =self.recvMsgQueue.get_nowait()
                 resJson =  json.loads(res) 
                 if "requestId" in res and str(req["requestId"]) == str(resJson["requestId"]):
+                    print(str(datetime.datetime.now()) + str(req))
                     return res
-            except queue.Empty:
-                req["error"] =  "timeout"
-                return json.dumps(req, indent=2) 
+            except asyncio.queues.QueueEmpty:
+                time.sleep(0.01)
+                wait+=0.01
+                print("sleep " + str(wait))
+                if wait > timeout:
+                    req["error"] =  "timeout"
+                    return json.dumps(req, indent=2) 
             
 
     # Do authorization by passing a jwt token or a token file
@@ -139,7 +146,7 @@ class KuksaClientThread(threading.Thread):
             message = await webSocket.recv()
             resJson = json.loads(message) 
             if "requestId" in resJson:
-                self.recvMsgQueue.put(message)
+                await self.recvMsgQueue.put(message)
             else:
                 if "subscriptionId" in resJson and resJson["subscriptionId"] in self.subscriptionCallbacks:
                     self.subscriptionCallbacks[resJson["subscriptionId"]](message)
@@ -147,11 +154,10 @@ class KuksaClientThread(threading.Thread):
     async def _sender_handler(self, webSocket):
         while self.run:
             try:
-                req = self.sendMsgQueue.get(timeout=0.1)
+                req = await self.sendMsgQueue.get()
                 await webSocket.send(req)
-            except queue.Empty:
-                await asyncio.sleep(0.1)
-                pass
+            except Exception as e:
+                print(e)
     
     async def _msgHandler(self, webSocket):
         self.wsConnected = True
@@ -160,12 +166,16 @@ class KuksaClientThread(threading.Thread):
         send = asyncio.Task(self._sender_handler(webSocket))
 
         await asyncio.wait([recv, send], return_when=asyncio.FIRST_COMPLETED)
+        print("cancle")
         recv.cancel()
         send.cancel()
         
         await webSocket.close()
 
+
     async def mainLoop(self):
+        self.sendMsgQueue = asyncio.Queue(1000)
+        self.recvMsgQueue = asyncio.Queue(1000)
         if not self.insecure:
             context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
             context.load_cert_chain(certfile=self.certificate, keyfile=self.keyfile)
@@ -189,5 +199,6 @@ class KuksaClientThread(threading.Thread):
     # Thread function: Start the asyncio loop
     def run(self):
         self.loop = asyncio.new_event_loop()
+        self.loop.set_debug(True)
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.mainLoop())
