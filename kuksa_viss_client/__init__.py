@@ -23,8 +23,6 @@ class KuksaClientThread(threading.Thread):
     def __init__(self, config):
         super(KuksaClientThread, self).__init__()
 
-        self.subscriptionCallbacks = {}
-        self.handlerTasks = []
         scriptDir= os.path.dirname(os.path.realpath(__file__))
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
@@ -38,6 +36,10 @@ class KuksaClientThread(threading.Thread):
         self.tokenfile = config.get('token', os.path.join(scriptDir, "../kuksa_certificates/jwt/all-read-write.json.token"))
         self.wsConnected = False
 
+        self.subscriptionCallbacks = {}
+        self.sendMsgQueue = queue.Queue()
+        self.recvMsgQueue = queue.Queue()
+
     def stop(self):
         self.wsConnected = False
         self.run = False
@@ -48,7 +50,10 @@ class KuksaClientThread(threading.Thread):
         jsonDump = json.dumps(req)
         while not hasattr(self, 'sendMsgQueue'):
             time.sleep(1)
-        asyncio.run_coroutine_threadsafe(self.sendMsgQueue.put(jsonDump), self.loop).result()
+        try:
+            self.sendMsgQueue.put_nowait(jsonDump)
+        except queue.Full:
+            time.sleep(0.01)
         wait = 0
         while True:
             try:
@@ -57,10 +62,9 @@ class KuksaClientThread(threading.Thread):
                 if "requestId" in res and str(req["requestId"]) == str(resJson["requestId"]):
                     print(str(datetime.datetime.now()) + str(req))
                     return res
-            except asyncio.queues.QueueEmpty:
+            except queue.Empty:
                 time.sleep(0.01)
                 wait+=0.01
-                print("sleep " + str(wait))
                 if wait > timeout:
                     req["error"] =  "timeout"
                     return json.dumps(req, indent=2) 
@@ -146,7 +150,10 @@ class KuksaClientThread(threading.Thread):
             message = await webSocket.recv()
             resJson = json.loads(message) 
             if "requestId" in resJson:
-                await self.recvMsgQueue.put(message)
+                try:
+                    self.recvMsgQueue.put_nowait(message)
+                except queue.Full:
+                    await asyncio.sleep(0.01)
             else:
                 if "subscriptionId" in resJson and resJson["subscriptionId"] in self.subscriptionCallbacks:
                     self.subscriptionCallbacks[resJson["subscriptionId"]](message)
@@ -154,10 +161,13 @@ class KuksaClientThread(threading.Thread):
     async def _sender_handler(self, webSocket):
         while self.run:
             try:
-                req = await self.sendMsgQueue.get()
+                req = self.sendMsgQueue.get_nowait()
                 await webSocket.send(req)
+            except queue.Empty:
+                await asyncio.sleep(0.01)
             except Exception as e:
                 print(e)
+                return
     
     async def _msgHandler(self, webSocket):
         self.wsConnected = True
@@ -166,7 +176,6 @@ class KuksaClientThread(threading.Thread):
         send = asyncio.Task(self._sender_handler(webSocket))
 
         await asyncio.wait([recv, send], return_when=asyncio.FIRST_COMPLETED)
-        print("cancle")
         recv.cancel()
         send.cancel()
         
@@ -174,8 +183,6 @@ class KuksaClientThread(threading.Thread):
 
 
     async def mainLoop(self):
-        self.sendMsgQueue = asyncio.Queue(1000)
-        self.recvMsgQueue = asyncio.Queue(1000)
         if not self.insecure:
             context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
             context.load_cert_chain(certfile=self.certificate, keyfile=self.keyfile)
