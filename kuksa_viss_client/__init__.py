@@ -48,13 +48,15 @@ class KuksaClientThread(threading.Thread):
     def _sendReceiveMsg(self, req, timeout): 
         req["requestId"] = str(uuid.uuid4())
         jsonDump = json.dumps(req)
-        while not hasattr(self, 'sendMsgQueue'):
-            time.sleep(1)
-        try:
-            self.sendMsgQueue.put_nowait(jsonDump)
-        except queue.Full:
-            time.sleep(0.01)
-        wait = 0
+        sent = False
+        while not sent:
+            try:
+                self.sendMsgQueue.put_nowait(jsonDump)
+                sent = True
+            except queue.Full:
+                time.sleep(0.01)
+
+        timeToWait = 0
         while True:
             try:
                 res =self.recvMsgQueue.get_nowait()
@@ -64,8 +66,8 @@ class KuksaClientThread(threading.Thread):
                     return res
             except queue.Empty:
                 time.sleep(0.01)
-                wait+=0.01
-                if wait > timeout:
+                timeToWait+=0.01
+                if timeToWait > timeout:
                     req["error"] =  "timeout"
                     return json.dumps(req, indent=2) 
             
@@ -150,10 +152,13 @@ class KuksaClientThread(threading.Thread):
             message = await webSocket.recv()
             resJson = json.loads(message) 
             if "requestId" in resJson:
-                try:
-                    self.recvMsgQueue.put_nowait(message)
-                except queue.Full:
-                    await asyncio.sleep(0.01)
+                sent = False
+                while not sent:
+                    try:
+                        self.recvMsgQueue.put_nowait(message)
+                        sent = True
+                    except queue.Full:
+                        await asyncio.sleep(0.01)
             else:
                 if "subscriptionId" in resJson and resJson["subscriptionId"] in self.subscriptionCallbacks:
                     self.subscriptionCallbacks[resJson["subscriptionId"]](message)
