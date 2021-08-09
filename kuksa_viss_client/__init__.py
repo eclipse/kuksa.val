@@ -10,7 +10,7 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 
-import os, sys, threading, queue, ssl, json, time, datetime
+import os, sys, threading, queue, ssl, json, time 
 import uuid
 import asyncio, websockets, pathlib
 scriptDir= os.path.dirname(os.path.realpath(__file__))
@@ -62,7 +62,6 @@ class KuksaClientThread(threading.Thread):
                 res =self.recvMsgQueue.get_nowait()
                 resJson =  json.loads(res) 
                 if "requestId" in res and str(req["requestId"]) == str(resJson["requestId"]):
-                    print(str(datetime.datetime.now()) + str(req))
                     return res
             except queue.Empty:
                 time.sleep(0.01)
