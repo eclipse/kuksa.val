@@ -51,9 +51,9 @@ OPTIONS:
                                         stored to the specified path with timestamp.
                                         File format is *.csv
                                         possible values:
-                                          - 0: no Record
-                                          - 1: Record Set Value
-                                          - 2: Record Set Value and Get Value
+                                          - noRecord: no Recording will be applied
+                                          - recordSet: Record Set Value (inputs of the server)
+                                          - recordSetandGet: Record Set Value and Get Value (in- and outputs of the server)
                       
   --record-path (='.')                  Specify path where the record file should 
                                         be stored to. 

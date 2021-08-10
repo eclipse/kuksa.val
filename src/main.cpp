@@ -102,8 +102,8 @@ int main(int argc, const char *argv[]) {
       "If provided, `kuksa-val-server` shall use different server address than default _'localhost'_")
     ("port", program_options::value<int>()->default_value(8090),
         "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
-    ("record", program_options::value<string>() -> default_value("0"), 
-        "Enables recording into log file, for later being replayed into the server \n1: record set Value only\n2: record get Value and set Value")
+    ("record", program_options::value<string>() -> default_value("noRecord"), 
+        "Enables recording into log file, for later being replayed into the server \nnoRecord: no data will be recorded\nrecordSet: record setting values only\nrecordSetandGet: record getting value and setting value")
     ("record-path",program_options::value<string>() -> default_value("."),
         "Specifies record file path.")
     ("log-level",
@@ -218,17 +218,17 @@ int main(int argc, const char *argv[]) {
 
     std::shared_ptr<VssDatabase> database = std::make_shared<VssDatabase>(logger,subHandler);
 
-    if(variables["record"].as<string>() == "1" || variables["record"].as<string>()=="2")
+    if(variables["record"].as<string>() == "recordSet" || variables["record"].as<string>()=="recordSetandGet")
     {
-        if(stoi(variables["record"].as<string>()) == noGet)
+        if(variables["record"].as<string>() == "recordSet")
           std::cout << "Recording inputs\n";
-        else if(stoi(variables["record"].as<string>()) == withGet)
+        else if(variables["record"].as<string>() == "recordSetandGet")
           std::cout << "Recording in- and outputs\n";
     
-        database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),stoi(variables["record"].as<string>())));
+        database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),variables["record"].as<string>()));
     }
-    else if(variables["record"].as<string>() !="0")
-      throw std::runtime_error("record option \"" + variables["record"].as<string>() + "\" is invalid\n");
+    else if(variables["record"].as<string>() !="noRecord")
+      throw std::runtime_error("record option \"" + variables["record"].as<string>() + "\" is invalid");
 
     gDatabase = database.get();
 

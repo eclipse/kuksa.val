@@ -11,7 +11,7 @@ namespace sinks = boost::log::sinks;
 namespace expr = boost::log::expressions;
 namespace keywords = boost::log::keywords;
 
-VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, const std::string recordPath, int logMode)
+VssDatabase_Record::VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, const std::string recordPath, std::string logMode)
 :VssDatabase(loggerUtil,subHandle), logMode_(logMode)
 {
     
@@ -70,7 +70,7 @@ jsoncons::json VssDatabase_Record::setSignal(const VSSPath &path, jsoncons::json
 
 jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path)
 {
-    if(logMode_ == withGet)
+    if(logMode_ == "recordGetandSet")
         BOOST_LOG(lg) << "get;" << path.to_string();
 
     return VssDatabase::getSignal(path);

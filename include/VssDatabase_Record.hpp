@@ -15,13 +15,6 @@
 #include <boost/log/sinks.hpp>
 #include <boost/log/sources/logger.hpp>
 
-enum RecordDef_t
-{
-  noRecord=0,
-  noGet = 1,
-  withGet = 2
-};
-
 typedef boost::log::sinks::synchronous_sink< boost::log::sinks::text_file_backend > file_sink;
 
 class VssDatabase_Record : public VssDatabase
@@ -31,7 +24,7 @@ class VssDatabase_Record : public VssDatabase
 #endif
 
 public:
-    VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, const std::string recordPath, int logMode);
+    VssDatabase_Record(std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<ISubscriptionHandler> subHandle, const std::string recordPath, std::string logMode);
     ~VssDatabase_Record();
 
     boost::log::sources::logger_mt lg;
@@ -46,7 +39,7 @@ private:
 
     std::string dir_;
     std::string logfile_name_;
-    int logMode_;
+    std::string logMode_;
 
 };
 
