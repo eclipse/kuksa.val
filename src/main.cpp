@@ -218,15 +218,17 @@ int main(int argc, const char *argv[]) {
 
     std::shared_ptr<VssDatabase> database = std::make_shared<VssDatabase>(logger,subHandler);
 
-    if(stoi(variables["record"].as<string>()))
+    if(variables["record"].as<string>() == "1" || variables["record"].as<string>()=="2")
     {
-      if(stoi(variables["record"].as<string>()) == noGet)
-        std::cout << "Recording inputs\n";
-      else if(stoi(variables["record"].as<string>()) == withGet)
-        std::cout << "Recording in- and outputs\n";
-  
-      database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),stoi(variables["record"].as<string>())));
+        if(stoi(variables["record"].as<string>()) == noGet)
+          std::cout << "Recording inputs\n";
+        else if(stoi(variables["record"].as<string>()) == withGet)
+          std::cout << "Recording in- and outputs\n";
+    
+        database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),stoi(variables["record"].as<string>())));
     }
+    else if(variables["record"].as<string>() !="0")
+      throw std::runtime_error("record option \"" + variables["record"].as<string>() + "\" is invalid\n");
 
     gDatabase = database.get();
 

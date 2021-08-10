@@ -46,6 +46,18 @@ OPTIONS:
   --port arg (=8090)                    If provided, `kuksa-val-server` shall 
                                         use different server port than default 
                                         '8090' value
+  --record (=0)                         Enable record feature for replaying into
+                                        the server later on. Record file will be 
+                                        stored to the specified path with timestamp.
+                                        File format is *.csv
+                                        possible values:
+                                          - 0: no Record
+                                          - 1: Record Set Value
+                                          - 2: Record Set Value and Get Value
+                      
+  --record-path (='.')                  Specify path where the record file should 
+                                        be stored to. 
+
   --log-level arg                       Enable selected log level value. To 
                                         allow for different log level 
                                         combinations, parameter can be provided
