@@ -102,7 +102,7 @@ int main(int argc, const char *argv[]) {
       "If provided, `kuksa-val-server` shall use different server address than default _'localhost'_")
     ("port", program_options::value<int>()->default_value(8090),
         "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
-    ("record", program_options::value<int>() -> default_value(noRecord), 
+    ("record", program_options::value<string>() -> default_value("0"), 
         "Enables recording into log file, for later being replayed into the server \n1: record set Value only\n2: record get Value and set Value")
     ("record-path",program_options::value<string>() -> default_value("."),
         "Specifies record file path.")
@@ -218,14 +218,14 @@ int main(int argc, const char *argv[]) {
 
     std::shared_ptr<VssDatabase> database = std::make_shared<VssDatabase>(logger,subHandler);
 
-    if(variables["record"].as<int>())
+    if(stoi(variables["record"].as<string>()))
     {
-      if(variables["record"].as<int>() == noGet)
+      if(stoi(variables["record"].as<string>()) == noGet)
         std::cout << "Recording inputs\n";
-      else if(variables["record"].as<int>() == withGet)
+      else if(stoi(variables["record"].as<string>()) == withGet)
         std::cout << "Recording in- and outputs\n";
-      
-      database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),variables["record"].as<int>()));
+  
+      database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),stoi(variables["record"].as<string>())));
     }
 
     gDatabase = database.get();
