@@ -77,7 +77,6 @@ class SubscriptionHandler : public ISubscriptionHandler {
   int unsubscribe(SubscriptionId subscribeID);
   int unsubscribeAll(ConnectionId connectionID);
   int updateByUUID(const std::string &signalUUID, const jsoncons::json &value);
-  int updateByPath(const std::string &path, const jsoncons::json &value);
   std::shared_ptr<IServer> getServer();
   int startThread();
   int stopThread();
