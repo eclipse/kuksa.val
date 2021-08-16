@@ -38,7 +38,8 @@ FetchContent_Declare(
 ## END GRPC ##
 
 set(FETCHCONTENT_QUIET OFF)
-
+## Disable tests in GRPC                                                        
+set(BUILD_TESTING OFF) 
 FetchContent_MakeAvailable(gRPC)
 
 # gRPC and Protobuf variables
