@@ -12,22 +12,52 @@ package kuksa;
 
 // The connecting service definition.
 service viss_client {
-  rpc GetMetaData (commandRequest) returns (data) {}
-  rpc AuthorizeChannel (commandRequest) returns (data) {}
-  rpc GetValue (commandRequest) returns (data) {}
-  rpc SetValue (commandRequest) returns (data) {}
+  rpc GetMetaData (getMetaDataRequest) returns (metaData) {}
+  rpc AuthorizeChannel (authorizeRequest) returns (authStatus) {}
+  rpc GetValue (getRequest) returns (value) {}
+  rpc SetValue (setRequest) returns (setStatus) {}
 }
 
-message data {
+message metaData {
   string value_ = 1;
+}
+
+message authStatus {
+  string status_ = 1;
   kuksaChannel channel_ = 2;
 }
 
-message commandRequest {
+message value {
+  string value_ = 1;
+}
+
+message setStatus {
+  string status_ = 1;
+}
+
+
+message getMetaDataRequest {
   string path_ = 1;
   string reqID_ = 2;
-  optional int32 value_ = 3;
-  kuksaChannel channel_ = 4;
+}
+
+message authorizeRequest {
+  string token_ = 1;
+  string reqID_ = 2;
+  kuksaChannel channel_=3;
+}
+
+message getRequest {
+  string path_ = 1;
+  string reqID_ = 2;
+  kuksaChannel channel_=3;
+}
+
+message setRequest {
+  string path_ = 1;
+  string reqID_ = 2;
+  kuksaChannel channel_=3;
+  string value_ = 4;
 }
 
 message kuksaChannel{

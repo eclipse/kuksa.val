@@ -120,4 +120,20 @@ You can also use the provided python sdk to develop your own `kuksa.val` clients
 
 Additionally, you can use the [example apps](./kuksa_apps) and [feeders](./kuksa_feeders) to handle vehicle data, interacting with the `kuksa.val` server.
 
+## Using kuksa.val with a gRPC Client
+Aditionally it exists a gRPC server. The easist way to test the server is the kuksa_viss_grpc_client.
+To run the client follow these steps:
+
+```
+cd build/src
+./kuksa_viss_grpc_client
+```
+
+If you do not know how to use the client:
+
+```
+./kuksa_viss_grpc_client --help
+```
+
+
 

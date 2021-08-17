@@ -29,14 +29,19 @@ class grpcHandler{
     private:
         std::shared_ptr<grpc::Server> grpcServer;
         std::shared_ptr<VssCommandProcessor> grpcProcessor;
-
-    public:
+        std::shared_ptr<ILogger> logger_;
+       public:
         grpcHandler();
         virtual ~grpcHandler();
-        static void RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::string certPath);   
+        static void RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::shared_ptr<ILogger> logger_, std::string certPath, bool allowInsecureConn);   
         static void read (const std::string& filename, std::string& data); 
-        static void startClient(std::string port, std::string certPath);
+        std::shared_ptr<ILogger> getLogger() {
+          return this->logger_;
+        }
         std::shared_ptr<VssCommandProcessor> getGrpcProcessor() {
           return this->grpcProcessor;
+        }
+        std::shared_ptr<grpc::Server> getGrpcServer() {
+          return this->grpcServer;
         }
 };

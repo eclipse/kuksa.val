@@ -42,8 +42,6 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::shared_ptr<SigningHandler> signer;
 #endif
 
-  std::string processSubscribe(kuksa::kuksaChannel& channel, const std::string& request_id, const std::string& path);
-  std::string processUnsubscribe(const std::string & request_id, uint32_t subscribeID);
   std::string processUpdateMetaData(kuksa::kuksaChannel& channel, jsoncons::json& request);
   std::string processAuthorizeWithPermManager(kuksa::kuksaChannel &channel, const std::string & request_id,
                                  const std::string & client, const std::string& clientSecret);
@@ -52,6 +50,8 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::string processUpdateVSSTree(kuksa::kuksaChannel& channel, jsoncons::json &request);
 
  public:
+  std::string processSubscribe(kuksa::kuksaChannel& channel, const std::string& request_id, const std::string& path);
+  std::string processUnsubscribe(const std::string & request_id, uint32_t subscribeID);
   std::string processGetMetaData(jsoncons::json &request);
   std::string processAuthorize(kuksa::kuksaChannel& channel, const std::string & request_id,
                           const std::string & token);

@@ -227,8 +227,12 @@ int main(int argc, const char *argv[]) {
           }
         }
       }
+      bool insecureConn = false;
+      if(variables.count("insecure")){
+        insecureConn=true;
+      }
       thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
-      thread grpc(grpcHandler::RunServer, cmdProcessor, variables["cert-path"].as<boost::filesystem::path>().string());
+      thread grpc(grpcHandler::RunServer, cmdProcessor, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
       http.join();
       grpc.join();
     }
