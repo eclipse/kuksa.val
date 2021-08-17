@@ -14,6 +14,7 @@
 import os, sys, signal
 import configparser
 import queue
+import json
 
 import dbc2vssmapper
 import dbcreader
@@ -42,6 +43,7 @@ if "kuksa_val" in config:
 kuksa = KuksaClientThread(kuksaconfig)
 kuksa.start()
 kuksa.authorize()
+
 
 mapping = dbc2vssmapper.mapper(kuksaconfig.get('mapping', "mapping.yml"))
 canQueue = queue.Queue()
@@ -85,9 +87,17 @@ signal.signal(signal.SIGTERM, terminationSignalreceived)
 while running:
     try:
         signal, value=canQueue.get(timeout=1)
-        print("Update signal {} to {}".format(signal, value))
         for target in mapping[signal]['targets']:
-            kuksa.setValue(target, value)
+            tv=mapping.transform(signal,target,value)
+            if tv is not None: #none indicates the transform decided to not set the value
+                print("Update VSS path {} to {} based on signal {}".format(target, tv, signal))
+                resp=json.loads(kuksa.setValue(target, tv))
+                if "error" in resp:
+                    if "message" in resp["error"]: 
+                        print("Error setting {}: {}".format(target, resp["error"]["message"]))
+                    else:
+                        print("Unknown error setting {}: {}".format(target, resp))
+            pass
     except queue.Empty:
         pass
 

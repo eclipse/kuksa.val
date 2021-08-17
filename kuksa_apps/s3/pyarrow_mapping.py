@@ -10,7 +10,7 @@ KUKSA_TO_PYARROW_MAPPING = {
         "uint32": pa.uint32,
         "uint64": pa.uint64,
         "boolean": pa.bool_,
-        "Double": pa.float64,
+        "double": pa.float64,
         "float": pa.float32,
         "string": pa.string
 }

@@ -34,9 +34,9 @@
 #include "IAuthenticatorMock.hpp"
 #include "IAccessCheckerMock.hpp"
 #include "JsonResponses.hpp"
-#include "kuksa.pb.h"
-
 #include "SubscriptionHandler.hpp"
+#include "UnitTestHelpers.hpp"
+#include "kuksa.pb.h"
 
 
 namespace {
@@ -425,12 +425,13 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
   }
 
   answer["action"] = "subscribe";
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   // verify that each updated signal for which single client is subscribed to is called
   for (unsigned index = 0; index < paths; index++) {
     answer["subscriptionId"] = resMap[index];
-    answer["value"] = index;
+    jsoncons::json data = packDataInJson(vsspath[index], std::to_string(index));
+    answer["data"] = data;
 
     // custom verifier for returned JSON message
     auto jsonVerify = [&answer]( const std::string &actual ) {
@@ -439,7 +440,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
 
       ret = (response["subscriptionId"] == answer["subscriptionId"]);
       if (ret) {
-        ret = (response["value"]  == answer["value"]);
+        ret = (response["data"]  == answer["data"]);
       }
       return ret;
     };
@@ -448,7 +449,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
       .once()
       .with(channel.connectionid(), jsonVerify);
 
-    BOOST_TEST(subHandler->updateByUUID(uuids[index], index) == 0);
+    BOOST_TEST(subHandler->updateByUUID(uuids[index], data) == 0);
     usleep(10000); // allow for subthread handler to run
   }
 }
@@ -511,8 +512,8 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     }
   }
 
-  answer["action"] = "subscribe";
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["action"] = "subscription";
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   // custom verifier for returned JSON message
   auto jsonVerify = [&resMap, &answer]( const std::string &actual ) -> bool {
@@ -521,12 +522,12 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
     ret = (answer["action"] == response["action"]);
     if (ret) {
-      ret = (response["timestamp"] >= answer["timestamp"] );
+      ret = (response["data"]["dp"]["ts"] >= answer["ts"] );
     }
 
     if (ret) {
       auto subId = response["subscriptionId"].as<uint64_t>();
-      auto value = response["value"].as<uint64_t>();
+      auto value = response["data"]["dp"]["value"].as<uint64_t>();
       // check if value match for given subscription id
       ret = (resMap[subId] == value);
     }
@@ -542,7 +543,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->updateByUUID(uuids[index], index) == 0);
+    BOOST_TEST(subHandler->updateByUUID(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -597,12 +598,12 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
     BOOST_TEST(ret = (answer["action"] == response["action"]));
     if (ret) {
-      BOOST_TEST(ret = (response["timestamp"] != 0));
+      BOOST_TEST(ret = (response["data"]["dp"]["ts"] != 0));
     }
 
     if (ret) {
       auto subId = response["subscriptionId"].as<uint64_t>();
-      auto value = response["value"].as<uint64_t>();
+      auto value = response["data"]["dp"]["value"].as<uint64_t>();
 
       // check if value match for given subscription id
       BOOST_TEST(ret = (resMap[subId] == value));
@@ -644,12 +645,12 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     ++channelIndex;
   }
 
-  answer["action"] = "subscribe";
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["action"] = "subscription";
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->updateByUUID(uuids[index], index) == 0);
+    BOOST_TEST(subHandler->updateByUUID(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -672,7 +673,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT to verify if removed channel is not called anymore
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->updateByUUID(uuids[index], index) == 0);
+    BOOST_TEST(subHandler->updateByUUID(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -683,7 +684,8 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
                                  "c83f0c12653b5e7baf000799052f5533",
                                  "5c28427f79ca5fe394b47fe057a2af9b"};
   unsigned index = 0;
-BOOST_TEST(subHandler->updateByUUID(uuids[index], index) == 0);
+  VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
+  BOOST_TEST(subHandler->updateByUUID(uuids[index], packDataInJson(vsspath, std::to_string(index))) == 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -156,9 +156,9 @@ BOOST_AUTO_TEST_CASE(update_metadata_change) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
   // Assign timestamp for comparision purposes
-  expectedupdateMetadataResponse.insert_or_assign("timestamp", res["timestamp"]);
+  expectedupdateMetadataResponse.insert_or_assign("ts", res["ts"]);
 
   BOOST_TEST(res == expectedupdateMetadataResponse);
 
@@ -168,9 +168,9 @@ BOOST_AUTO_TEST_CASE(update_metadata_change) {
   res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
   // Assign timestamp for comparision purposes
-  getMetadataResponse.insert_or_assign("timestamp", res["timestamp"]);
+  getMetadataResponse.insert_or_assign("ts", res["ts"]);
 
   BOOST_TEST(res == getMetadataResponse);
   
@@ -210,9 +210,9 @@ BOOST_AUTO_TEST_CASE(update_metadata_brokenrequest) {
   auto res = json::parse(resStr);
 
   // Does result have a timestamp?
-  BOOST_TEST(res.contains("timestamp"));
+  BOOST_TEST(res.contains("ts"));
   // Assign timestamp for comparision purposes
-  expectedupdateMetadataResponse.insert_or_assign("timestamp", res["timestamp"]);
+  expectedupdateMetadataResponse.insert_or_assign("ts", res["ts"]);
 
   BOOST_TEST(res == expectedupdateMetadataResponse);  
 }

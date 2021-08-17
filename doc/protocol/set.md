@@ -49,7 +49,7 @@ KUKSA.val supports VISS1 (dot-seperated) and VISS2 (slash-seperated) paths. VISS
 {
     "action": "set", 
     "requestId": "4204a97e-d25e-4ba9-891b-1703145865bd", 
-    "timestamp": 1615832573528
+    "ts": 1615832573528
 }
 ```
 
@@ -70,7 +70,7 @@ KUKSA.val supports VISS1 (dot-seperated) and VISS2 (slash-seperated) paths. VISS
 {
     "action": "set", 
     "requestId": "8cedc7c8-089d-48d6-b913-9f1504c14342", 
-    "timestamp": 1615832646622
+    "ts": 1615832646622
 }
 ```
 
@@ -100,7 +100,7 @@ Setting wildcards/multiple values or branches is currently not supported
         "reason": "Forbidden"
     }, 
     "requestId": "3ef9e4c1-ff99-4b2c-be13-ce69bfb170b0", 
-    "timestamp": 1615832783387
+    "ts": 1615832783387
 }
 ```
 
@@ -127,7 +127,7 @@ Attributes are considered a deployment attribute that does not change during the
         "reason": "Forbidden"
     }, 
     "requestId": "4544fd5f-249e-4da6-8576-248b42504394", 
-    "timestamp": 1615833005144
+    "ts": 1615833005144
 }
 
 ```
@@ -155,7 +155,7 @@ As expected, trying to set a non-existent path returns a 404
         "reason": "Path not found"
     }, 
     "requestId": "882a6bdd-ff74-433a-a7c4-c2ce2c7f5c07", 
-    "timestamp": 1615833326191
+    "ts": 1615833326191
 }
 ```
 
@@ -182,7 +182,7 @@ Please note, that authorization is checked *first*, i.e. in the previous example
         "reason": "Forbidden"
     }, 
     "requestId": "458a269f-ca42-4175-b88c-5ff8bea7855e", 
-    "timestamp": 1615833458803
+    "ts": 1615833458803
 }
 ```
 

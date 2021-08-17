@@ -95,7 +95,7 @@ string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
     answer["action"] = "subscribe";
     answer["requestId"] = request_id;
     answer["subscriptionId"] = subId;
-    answer["timestamp"] = JsonResponses::getTimeStamp();
+    answer["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(answer);
@@ -112,7 +112,7 @@ string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
     error["message"] = "Unknown";
 
     root["error"] = error;
-    root["timestamp"] = JsonResponses::getTimeStamp();
+    root["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
 
@@ -129,7 +129,7 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
     answer["action"] = "unsubscribe";
     answer["requestId"] = request_id;
     answer["subscriptionId"] = subscribeID;
-    answer["timestamp"] = JsonResponses::getTimeStamp();
+    answer["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(answer);
@@ -146,7 +146,7 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
     error["message"] = "Error while unsubscribing";
 
     root["error"] = error;
-    root["timestamp"] = JsonResponses::getTimeStamp();
+    root["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(root);
@@ -173,7 +173,7 @@ string VssCommandProcessor::processUpdateVSSTree(kuksa::kuksaChannel& channel, j
   jsoncons::json answer;
   answer["action"] = "updateVSSTree";
   answer.insert_or_assign("requestId", request["requestId"]);
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   try {
@@ -224,7 +224,7 @@ string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
   result["action"] = "getMetaData";
   result.insert_or_assign("requestId", request["requestId"]);
   jsoncons::json st = database->getMetaData(path);
-  result["timestamp"] = JsonResponses::getTimeStamp();
+  result["ts"] = JsonResponses::getTimeStamp();
   if (0 == st.size()){
     jsoncons::json error;
     error["number"] = 404;
@@ -264,7 +264,7 @@ string VssCommandProcessor::processUpdateMetaData(kuksa::kuksaChannel& channel, 
   jsoncons::json answer;
   answer["action"] = "updateMetaData";
   answer.insert_or_assign("requestId", request["requestId"]);
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   try {
@@ -282,7 +282,7 @@ string VssCommandProcessor::processUpdateMetaData(kuksa::kuksaChannel& channel, 
     ss << pretty_print(answer);
     return ss.str();
   } catch (noPermissionException &nopermission) {
-    logger->Log(LogLevel::ERROR, string(nopermission.what()));
+    logger->Log(LogLevel::WARNING, string(nopermission.what()));
     return JsonResponses::noAccess(request["requestId"].as<string>(), "updateMetaData", nopermission.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
@@ -309,7 +309,7 @@ string VssCommandProcessor::processAuthorize(kuksa::kuksaChannel &channel,
     error["message"] = "Check the JWT token passed";
 
     result["error"] = error;
-    result["timestamp"] = JsonResponses::getTimeStamp();
+    result["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
@@ -320,7 +320,7 @@ string VssCommandProcessor::processAuthorize(kuksa::kuksaChannel &channel,
     result["action"] = "authorize";
     result["requestId"] = request_id;
     result["TTL"] = ttl;
-    result["timestamp"] = JsonResponses::getTimeStamp();
+    result["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
@@ -388,18 +388,18 @@ string VssCommandProcessor::processQuery(const string &req_json,
         response =
             processSubscribe(channel, request_id, path);
       } else {
-        logger->Log(LogLevel::INFO, "VssCommandProcessor::processQuery: Unknown action " + action);
+        logger->Log(LogLevel::WARNING, "VssCommandProcessor::processQuery: Unknown action " + action);
         return JsonResponses::malFormedRequest("Unknown action requested");
       }
     }
   } catch (jsoncons::ser_error &e) {
-    logger->Log(LogLevel::ERROR, "JSON parse error");
+    logger->Log(LogLevel::WARNING, "JSON parse error");
     return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::key_not_found &e) {
-    logger->Log(LogLevel::ERROR, "JSON key not found error");
+    logger->Log(LogLevel::WARNING, "JSON key not found error");
     return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::not_an_object &e) {
-    logger->Log(LogLevel::ERROR, "JSON not an object error");
+    logger->Log(LogLevel::WARNING, "JSON not an object error");
     return JsonResponses::malFormedRequest(e.what());
   }
 

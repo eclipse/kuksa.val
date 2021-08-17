@@ -62,17 +62,21 @@ std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
   //(set all or none)
   for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
     if (! database->pathExists(std::get<0>(setTuple) )) {
+      stringstream msg;
+      msg << "Path " << std::get<0>(setTuple).to_string() << " does not exist";
+      logger->Log(LogLevel::WARNING,msg.str());
       return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", std::get<0>(setTuple).to_string());
     }
     if (! accessValidator_->checkWriteAccess(channel, std::get<0>(setTuple) )) {
       stringstream msg;
       msg << "No write access to " << std::get<0>(setTuple).to_string();
+      logger->Log(LogLevel::WARNING,msg.str());
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
     if (! database->pathIsWritable(std::get<0>(setTuple))) {
       stringstream msg;
       msg << "Can not set " << std::get<0>(setTuple).to_string() << ". Only sensor or actor leaves can be set.";
-      logger->Log(LogLevel::VERBOSE,msg.str());
+      logger->Log(LogLevel::WARNING,msg.str());
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
   }
@@ -95,7 +99,7 @@ std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
     error["message"] = e.what();
 
     root["error"] = error;
-    root["timestamp"] = JsonResponses::getTimeStamp();
+    root["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(root);
@@ -122,7 +126,7 @@ std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
   jsoncons::json answer;
   answer["action"] = "set";
   answer.insert_or_assign("requestId", request["requestId"]);
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   ss << pretty_print(answer);
