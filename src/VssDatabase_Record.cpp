@@ -70,7 +70,7 @@ jsoncons::json VssDatabase_Record::setSignal(const VSSPath &path, jsoncons::json
 
 jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path)
 {
-    if(logMode_ == "recordGetandSet")
+    if(logMode_ == "recordSetAndGet")
         BOOST_LOG(lg) << "get;" << path.to_string();
 
     return VssDatabase::getSignal(path);

@@ -103,7 +103,7 @@ int main(int argc, const char *argv[]) {
     ("port", program_options::value<int>()->default_value(8090),
         "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
     ("record", program_options::value<string>() -> default_value("noRecord"), 
-        "Enables recording into log file, for later being replayed into the server \nnoRecord: no data will be recorded\nrecordSet: record setting values only\nrecordSetandGet: record getting value and setting value")
+        "Enables recording into log file, for later being replayed into the server \nnoRecord: no data will be recorded\nrecordSet: record setting values only\nrecordSetAndGet: record getting value and setting value")
     ("record-path",program_options::value<string>() -> default_value("."),
         "Specifies record file path.")
     ("log-level",
@@ -218,11 +218,11 @@ int main(int argc, const char *argv[]) {
 
     std::shared_ptr<VssDatabase> database = std::make_shared<VssDatabase>(logger,subHandler);
 
-    if(variables["record"].as<string>() == "recordSet" || variables["record"].as<string>()=="recordSetandGet")
+    if(variables["record"].as<string>() == "recordSet" || variables["record"].as<string>()=="recordSetAndGet")
     {
         if(variables["record"].as<string>() == "recordSet")
           std::cout << "Recording inputs\n";
-        else if(variables["record"].as<string>() == "recordSetandGet")
+        else if(variables["record"].as<string>() == "recordSetAndGet")
           std::cout << "Recording in- and outputs\n";
     
         database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),variables["record"].as<string>()));
