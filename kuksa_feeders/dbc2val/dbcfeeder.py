@@ -44,6 +44,7 @@ kuksa = KuksaClientThread(kuksaconfig)
 kuksa.start()
 kuksa.authorize()
 
+
 mapping = dbc2vssmapper.mapper(kuksaconfig.get('mapping', "mapping.yml"))
 canQueue = queue.Queue()
 

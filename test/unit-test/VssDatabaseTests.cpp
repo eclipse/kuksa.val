@@ -186,14 +186,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // expectations
 
-  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","value":"---","timestamp":"0"})"};
+  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","dp":{"value":"---"}})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
 
-  verify_timestamp(expectedJson, returnJson);
+  verify_and_erase_timestampZero(returnJson["dp"]);
 
   BOOST_TEST(returnJson == expectedJson);
 }
@@ -207,14 +207,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   // expectations
 
-  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration","value":"---","timestamp":"0"})"};
+  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration","dp":{"value":"---"}})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
 
-  verify_timestamp(expectedJson, returnJson);
+  verify_and_erase_timestampZero(returnJson["dp"]);
 
   BOOST_TEST(returnJson == expectedJson);
 }
@@ -230,10 +230,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   jsoncons::json setValue, returnJson;
   setValue = 10;
 
-  MOCK_EXPECT(subHandlerMock->updateByPath).with(signalPath.getVSSPath(),mock::any).returns(0);
   MOCK_EXPECT(subHandlerMock->updateByUUID)
     .at_least(1)
-    .with(mock::any, 10)
+    .with(mock::any, mock::any)
     .returns(0);
 
   // verify
@@ -241,7 +240,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
-  BOOST_TEST(returnJson["value"].as<int>() == 10);
+  BOOST_TEST(returnJson["dp"]["value"].as<int>() == 10);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSignalNoChannel_Shall_SetValue) {
@@ -254,16 +253,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   jsoncons::json setValue, returnJson;
   setValue = 10;
 
-  MOCK_EXPECT(subHandlerMock->updateByPath).with(signalPath.getVSSPath(),mock::any).returns(0);
-
-
   // verify
-  MOCK_EXPECT(subHandlerMock->updateByUUID).with(mock::any,setValue).returns(0);
+  MOCK_EXPECT(subHandlerMock->updateByUUID).with(mock::any, mock::any).returns(0);
 
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
-  BOOST_TEST(returnJson["value"].as<int>() == 10);
+  BOOST_TEST(returnJson["dp"]["value"].as<int>() == 10);
 }
 
 

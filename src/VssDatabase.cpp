@@ -390,9 +390,10 @@ jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
 
 // Set signal value of given path
 jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &value) {
-  jsoncons::json answer;
+  jsoncons::json data;
+  jsoncons::json datapoint;
   
-  answer["path"] = path.to_string();
+  data["path"] = path.to_string();
 
   jsoncons::json res; 
   {
@@ -403,12 +404,14 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
       if (resJson.contains("datatype")) {
         checkAndSanitizeType(resJson, value);
         resJson.insert_or_assign("value", value);
-        resJson.insert_or_assign("timestamp", JsonResponses::getTimeStamp());
+        resJson.insert_or_assign("ts", JsonResponses::getTimeStamp());
+        datapoint.insert_or_assign("value", value);
+        datapoint.insert_or_assign("ts", JsonResponses::getTimeStamp());
+        data.insert_or_assign("dp", datapoint);
 
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
-          subHandler_->updateByPath(path.getVSSPath(), value);
-          subHandler_->updateByUUID(resJson["uuid"].as<string>(),value);
+          subHandler_->updateByUUID(resJson["uuid"].as<string>(), data);
         }
       }
       else {
@@ -416,7 +419,7 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
       }
     }
   }
-  return answer;
+  return data;
 }
 
 
@@ -428,18 +431,20 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
       resArray = jsonpath::json_query(data_tree__, path.getJSONPath());
     }
     jsoncons::json answer;
+    jsoncons::json datapoint;
     answer.insert_or_assign("path", path.to_string());
     jsoncons::json result = resArray[0];
     if (result.contains("value")) {
-      answer.insert_or_assign("value", result["value"]);
+      datapoint.insert_or_assign("value", result["value"]);
     } else {
-      answer["value"] = "---";
+      datapoint["value"] = "---";
     }
-    if (result.contains("timestamp")) {
-      answer["timestamp"] = result["timestamp"].as<string>();
+    if (result.contains("ts")) {
+      datapoint["ts"] = result["ts"].as<string>();
     } else {
-      answer["timestamp"] = JsonResponses::getTimeStampZero();
+      datapoint["ts"] = JsonResponses::getTimeStampZero();
     }
+    answer.insert_or_assign("dp", datapoint);
     return answer;
 
 }
