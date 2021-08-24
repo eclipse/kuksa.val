@@ -52,10 +52,25 @@ More information on using the docker images can be found [here](doc/run-docker.m
 
 To learn, how to build your own docker image see [doc/build-docker.md](doc/build-docker.md).
 
-If this is succesful you can skip to [using kuksa.val](#Using-kuksaval).
+If this is succesful you can skip to [using kuksa.val](#using-kuksaval).
 
 ## Building kuksa.val
-KUKSA.val uses the cmake build system. First install the required packages. On Ubuntu 20.04 this can be achieved by
+
+First you need to fetch the source. ;ake sure you also get the needed submodules, e.g. by using the `--recursive` flag
+
+```
+git clone --recursive https://github.com/eclipse/kuksa.val.git
+```
+
+### Using devcontainer
+If you are using [Visual Studio Code](https://code.visualstudio.com), and have a running version of   [Docker](https://docs.docker.com/) on your computer, KUKSA.val provides a [devcontainer](https://code.visualstudio.com/docs/remote/containers) configuration. Simply go to the VSCode command palette and use `Remote-Containers: Open Folder in Container...` to open the cloned KUKSA.val folder, or, if you already opened the folder in your local VSCode instance, choose `Remote-Containers: Reopen in Container...`
+
+**Note**: If you are using Docker on a Mac OS, by default the VM used to run Dockers does not contain enough RAM to build KUKSA.val. Increase the RAM allocation for Docker to at least 4 GB in the [Docker Desktop Preferences](https://docs.docker.com/desktop/mac/#preferences)
+
+Once the devcontainer is running you can continue with [compiling](#compiling).
+
+### Manually install dependencies
+First install the required packages. On Ubuntu 20.04 this can be achieved by
 
 ```
 sudo apt install cmake build-essential libssl-dev libmosquitto-dev 
@@ -63,13 +78,10 @@ sudo apt install cmake build-essential libssl-dev libmosquitto-dev
 
 **Note**: If you use `cmake >= 3.14`, you do not need to install boost on your system. `cmake` will download the required boost for building. Otherwise you need install the [`boost==1.75`](https://www.boost.org/users/history/version_1_75_0.html) on the system.
 
-When fetching the source, make sure you also get the needed submodules, e.g. by using the `--recursive` flag
 
-```
-git clone --recursive https://github.com/eclipse/kuksa.val.git
-```
 
-Then create a build folder inside the kuksa.val folder and execute cmake
+### Compiling
+Create a build folder inside the kuksa.val folder and execute cmake
 
 ```
 mkdir build
