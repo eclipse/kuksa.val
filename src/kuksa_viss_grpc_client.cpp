@@ -36,14 +36,34 @@ using grpc::ServerContext;
 using grpc::Status;
 using kuksa::viss_client;
 
-// adds a new channel for gRPC
-kuksa::kuksaChannel& addClient(boost::uuids::uuid &uuid){
-  auto newChannel = std::make_shared<kuksa::kuksaChannel>();
-  uint64_t value = reinterpret_cast<uint64_t>(uuid.data);
-  newChannel->set_connectionid(value);
-  newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_GRPC);
-  return *newChannel;
-}
+class GrpcConnection;
+
+class grpcConnectionHandler {
+    private:
+        std::mutex mconnGrpc;
+        std::unordered_map<uint64_t, std::shared_ptr<kuksa::kuksaChannel>> connGrpc;
+    public:
+        kuksa::kuksaChannel& addClient(boost::uuids::uuid uuid){
+          auto newChannel = std::make_shared<kuksa::kuksaChannel>();
+          std::lock_guard<std::mutex> lock(mconnGrpc);
+          uint64_t value = reinterpret_cast<uint64_t>(uuid.data);
+          newChannel->set_connectionid(value);
+          newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_GRPC);
+          connGrpc[reinterpret_cast<uint64_t>(uuid.data)] = newChannel;
+          return *newChannel;
+        }
+        void RemoveClient(const boost::uuids::uuid uuid){
+          std::lock_guard<std::mutex> lock(mconnGrpc);
+          connGrpc.erase(reinterpret_cast<uint64_t>(uuid.data));
+        }
+        std::unordered_map<uint64_t, std::shared_ptr<kuksa::kuksaChannel>> getConnGrpc() {
+            return this->connGrpc;
+        }
+        grpcConnectionHandler() = default;
+        ~grpcConnectionHandler() = default;
+};
+
+grpcConnectionHandler connGrpcHandler;
 
 // handles gRPC Connections
 // provides setValue, getValue, getMetaData, authorizeChannel as services
@@ -52,15 +72,16 @@ class GrpcConnection {
  public:
   GrpcConnection(std::shared_ptr<Channel> channel)
       : stub_(viss_client::NewStub(channel)) {
-        boost::uuids::uuid uuid = boost::uuids::random_generator()();
+        uuid = boost::uuids::random_generator()();
         std::stringstream ss;
         ss << uuid;
         reqID = ss.str();
-        kuksa_channel = addClient(uuid);
+        kuksa_channel = connGrpcHandler.addClient(uuid);
   }
 
   ~GrpcConnection(){
     kuksa_channel.~kuksaChannel();
+    connGrpcHandler.RemoveClient(uuid);
   }
 
 
@@ -106,7 +127,7 @@ class GrpcConnection {
     ClientContext context;
     request.set_path_(vssPath);
     request.set_reqid_(reqID);
-    request.mutable_channel_()->MergeFrom(kuksa_channel);
+     request.mutable_channel_()->MergeFrom(kuksa_channel);
     Status status = stub_->GetValue(&context, request, &reply);
     if (status.ok()) {
       return reply.value_();
@@ -124,7 +145,7 @@ class GrpcConnection {
     request.set_path_(vssPath);
     request.set_value_(value);
     request.set_reqid_(reqID);
-    request.mutable_channel_()->MergeFrom(kuksa_channel);
+     request.mutable_channel_()->MergeFrom(kuksa_channel);
     Status status = stub_->SetValue(&context, request, &reply);
     if (status.ok()) {
       return reply.status_();
@@ -135,6 +156,7 @@ class GrpcConnection {
     }
   }
  private:
+  boost::uuids::uuid uuid;
   std::unique_ptr<viss_client::Stub> stub_;
   kuksa::kuksaChannel kuksa_channel;
   std::string reqID;
@@ -203,11 +225,18 @@ void startClient(std::string port, std::string certPath, bool allowInsecureConn 
           if(msg.size() < 2){
             std::cout << "You have to specify a path" << std::endl;
           }
-          if(temp.size() < 2){
+          if(temp.size() < 2 && msg.size() < 3){
             std::cout << "You have to specify a value" << std::endl;
           }
           else{
-            reply = connGrpcSes.setValue(msg[1],temp[1]);
+            std::string value;
+            if(temp.size() < 2){
+              value = msg[2];
+            }
+            else{
+              value = temp[1];
+            }
+            reply = connGrpcSes.setValue(msg[1],value);
             std::cout << reply << std::endl;
           }
       }
