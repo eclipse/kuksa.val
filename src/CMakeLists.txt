@@ -117,7 +117,7 @@ target_link_libraries(${SERVER_OBJ_LIB_NAME}
     ${_PROTOBUF_LIBPROTOBUF})
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=unused-parameter -Wno-error=deprecated-declarations -Wno-error=nonnull)
+  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=unused-result -Wno-error=unused-parameter -Wno-error=deprecated-declarations -Wno-error=deprecated-copy -Wno-error=nonnull)
 else(CMAKE_COMPILER_IS_GNUCXX)
   target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=parentheses)
 endif(CMAKE_COMPILER_IS_GNUCXX)

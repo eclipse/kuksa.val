@@ -25,5 +25,6 @@ while True:
     vissClient.commThread.setValue("Vehicle.OBD.EngineLoad", (count%110)+1,timeout=vissClient.commThread.timeout)
     vissClient.commThread.setValue("Vehicle.Speed", count,timeout=vissClient.commThread.timeout)
     vissClient.commThread.setValue("Vehicle.Cabin.Door.Row1.Right.Shade.Switch", "Open",timeout=vissClient.commThread.timeout)
+    vissClient.commThread.getValue("Vehicle.Speed",vissClient.commThread.timeout)
     
     time.sleep(vissClient.commThread.timeout)
