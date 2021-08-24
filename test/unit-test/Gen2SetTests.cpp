@@ -88,9 +88,9 @@ BOOST_FIXTURE_TEST_SUITE(Gen2SetTests, TestSuiteFixture);
 
 /** Set an existing sensor */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -134,9 +134,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
 
 /** Send an invalid JSON */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -173,9 +173,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
 
 /** Send an invalid JSON, without any determinable Request Id */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -208,9 +208,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
 
 /** Set an non-existing path */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -257,9 +257,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
 
 /** Set branch */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -306,9 +306,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
 
 /** Set attribute */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -353,7 +353,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
 }
 
 BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonNoAccess;
@@ -362,8 +362,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
   const VSSPath vss_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
 
   // setup
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = vss_path.to_string();

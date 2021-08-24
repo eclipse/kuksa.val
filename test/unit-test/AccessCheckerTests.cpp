@@ -23,6 +23,7 @@
 #include "WsChannel.hpp"
 #include "IAuthenticatorMock.hpp"
 #include "exception.hpp"
+#include "kuksa.pb.h"
 
 #include "AccessChecker.hpp"
 
@@ -49,7 +50,7 @@ namespace {
 BOOST_FIXTURE_TEST_SUITE(AccessCheckerTests, TestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathAuthorized_Shall_ReturnTrue) {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
   jsoncons::json permissions;
   
   // setup
@@ -58,17 +59,20 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathAuthorized_Shall_Retur
   permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
   VSSPath path  = VSSPath::fromJSON("$['Vehicle']['children']['Acceleration']['children']['Vertical']", false);
+
+  std::string channelPermissions;
+  permissions.dump_pretty(channelPermissions);
  
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-  channel.setPermissions(permissions);
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
+  channel.set_permissions(channelPermissions);
 
   // verify
   BOOST_TEST(accChecker->checkReadAccess(channel, path) == true);
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotAuthorized_Shall_ReturnFalse) {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
   jsoncons::json permissions;
   
   // setup
@@ -78,16 +82,19 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotAuthorized_Shall_Re
 
   VSSPath path = VSSPath::fromJSON("$['Vehicle']['children']['Acceleration']['children']['Vertical']", false);
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-  channel.setPermissions(permissions);
+  std::string channelPermissions;
+  permissions.dump_pretty(channelPermissions);
+ 
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
+  channel.set_permissions(channelPermissions);
 
   // verify
   BOOST_TEST(accChecker->checkReadAccess(channel, path) == false);
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotExistent_Shall_ReturnFalse) {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
   jsoncons::json permissions;
   
   // setup
@@ -97,16 +104,19 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotExistent_Shall_Retu
 
   VSSPath path = VSSPath::fromJSON("$['Vehicle']['children']['Dummy']['children']['Leaf']", false);
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-  channel.setPermissions(permissions);
+  std::string channelPermissions;
+  permissions.dump_pretty(channelPermissions);
+ 
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
+  channel.set_permissions(channelPermissions);
 
   // verify
   BOOST_TEST(accChecker->checkReadAccess(channel, path) == false);
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathAuthorized_Shall_ReturnTrue) {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
   jsoncons::json permissions;
   
   // setup
@@ -116,16 +126,19 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathAuthorized_Shall_Retu
 
   VSSPath path=VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-  channel.setPermissions(permissions);
+  std::string channelPermissions;
+  permissions.dump_pretty(channelPermissions);
+ 
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
+  channel.set_permissions(channelPermissions);
 
   // verify
   BOOST_TEST(accChecker->checkWriteAccess(channel, path) == true);
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotAuthorized_Shall_ReturnFalse) {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
   jsoncons::json permissions;
 
   // setup
@@ -135,16 +148,19 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotAuthorized_Shall_R
 
   VSSPath path = VSSPath::fromVSSGen2("Vehicle.Acceleration.Vertical");
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-  channel.setPermissions(permissions);
+  std::string channelPermissions;
+  permissions.dump_pretty(channelPermissions);
+ 
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
+  channel.set_permissions(channelPermissions);
 
   // verify
   BOOST_TEST(accChecker->checkWriteAccess(channel, path) == false);
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotExistent_Shall_ReturnFalse) {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
   jsoncons::json permissions;
 
   // setup
@@ -154,9 +170,12 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotExistent_Shall_Ret
 
   VSSPath path = VSSPath::fromVSSGen2("Vehicle.Dummy.Leaf");
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-  channel.setPermissions(permissions);
+  std::string channelPermissions;
+  permissions.dump_pretty(channelPermissions);
+ 
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
+  channel.set_permissions(channelPermissions);
 
   // verify
 
@@ -164,7 +183,7 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotExistent_Shall_Ret
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsValid_Shall_ReturnTrue) {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
   jsoncons::json jsonPaths, permissions;
   std::string paths;
 
@@ -175,9 +194,12 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsValid_Shal
   permissions.insert_or_assign("Vehicle.Acceleration.Longitudinal", "rw");
   permissions.insert_or_assign("Vehicle.Acceleration.Lateral", "r");
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-  channel.setPermissions(permissions);
+  std::string channelPermissions;
+  permissions.dump_pretty(channelPermissions);
+ 
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
+  channel.set_permissions(channelPermissions);
 
   paths = "[{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Vertical']\",\"value\":1},"
            "{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Longitudinal']\",\"value\":2}"
@@ -191,7 +213,7 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsValid_Shal
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsNotValid_Shall_ReturnFalse) {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
   jsoncons::json jsonPaths, permissions;
   std::string paths;
 
@@ -200,9 +222,12 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsNotValid_S
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "w");
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Lateral']", "r");
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-  channel.setPermissions(permissions);
+  std::string channelPermissions;
+  permissions.dump_pretty(channelPermissions);
+ 
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
+  channel.set_permissions(channelPermissions);
 
   paths = "[{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Vertical']\",\"value\":1},"
            "{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Longitudinal']\",\"value\":2}"
@@ -217,7 +242,7 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsNotValid_S
 
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsNotHaveWritePerm_Shall_ReturnFalse) {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
   jsoncons::json jsonPaths, permissions;
   std::string paths;
 
@@ -226,9 +251,12 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsNotHaveWri
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Vertical']", "wr");
   permissions.insert_or_assign("$['Vehicle']['children']['Acceleration']['children']['Longitudinal']", "r");
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-  channel.setPermissions(permissions);
+  std::string channelPermissions;
+  permissions.dump_pretty(channelPermissions);
+ 
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
+  channel.set_permissions(channelPermissions);
 
   paths = "[{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Vertical']\",\"value\":1},"
            "{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Longitudinal']\",\"value\":2}"

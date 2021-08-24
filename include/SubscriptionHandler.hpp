@@ -34,7 +34,6 @@
 class AccessChecker;
 class Authenticator;
 class VssDatabase;
-class WsChannel;
 class WsServer;
 class ILogger;
 
@@ -72,7 +71,7 @@ class SubscriptionHandler : public ISubscriptionHandler {
   void addPublisher(std::shared_ptr<IPublisher> publisher){
     publishers_.push_back(publisher);
   }
-  SubscriptionId subscribe(WsChannel& channel,
+  SubscriptionId subscribe(kuksa::kuksaChannel& channel,
                            std::shared_ptr<IVssDatabase> db,
                            const std::string &path);
   int unsubscribe(SubscriptionId subscribeID);

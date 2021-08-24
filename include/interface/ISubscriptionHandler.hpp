@@ -20,9 +20,9 @@
 
 #include "IPublisher.hpp"
 #include "IServer.hpp"
+#include "kuksa.pb.h"
 
 class VssDatabase;
-class WsChannel;
 class WsServer;
 class IVssDatabase;
 class IPublisher;
@@ -33,7 +33,7 @@ class ISubscriptionHandler {
   public:
     virtual ~ISubscriptionHandler() {}
 
-    virtual SubscriptionId subscribe(WsChannel& channel,
+    virtual SubscriptionId subscribe(kuksa::kuksaChannel& channel,
                                      std::shared_ptr<IVssDatabase> db,
                                      const std::string &path) = 0;
     virtual int unsubscribe(SubscriptionId subscribeID) = 0;

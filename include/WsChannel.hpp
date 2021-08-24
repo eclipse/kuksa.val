@@ -28,7 +28,8 @@ class WsChannel {
     WEBSOCKET_PLAIN,
     WEBSOCKET_SSL,
     HTTP_PLAIN,
-    HTTP_SSL
+    HTTP_SSL,
+    GRPC
   };
  private:
   uint64_t connectionID;

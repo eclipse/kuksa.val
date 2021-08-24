@@ -27,6 +27,10 @@ set(BUILD_UNIT_TEST OFF CACHE BOOL "Build unit tests")
 ###
 # Setup targets
 
+set(proto_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/../../src/proto")
+include_directories(${proto_gen_dir})
+message(STATUS "${proto_gen_dir}")
+
 if(BUILD_UNIT_TEST)
   add_executable(${UNITTEST_EXE_NAME}
     AccessCheckerTests.cpp

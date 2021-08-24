@@ -17,8 +17,7 @@
 #include <string>
 
 #include <jsoncons/json.hpp>
-
-class WsChannel;
+#include "kuksa.pb.h"
 
 /**
  * @class IVssCommandProcessor
@@ -38,7 +37,7 @@ class IVssCommandProcessor {
      * @return JSON formated response string
      */
     virtual std::string processQuery(const std::string &req_json,
-                                     WsChannel& channel) = 0;
+                                     kuksa::kuksaChannel& channel) = 0;
 };
 
 #endif

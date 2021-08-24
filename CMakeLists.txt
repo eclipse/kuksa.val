@@ -61,7 +61,7 @@ include(boost.cmake)
 
 # OpenSSL
 find_package(OpenSSL REQUIRED)
-message(STATUS " openssl libraries ${OPENSSL_LIBRARIES}")
+message(STATUS "openssl libraries ${OPENSSL_LIBRARIES}")
 
 FIND_PACKAGE(PkgConfig)
 
@@ -96,3 +96,5 @@ enable_testing()
 include(CTest)
 add_subdirectory(test)
 add_subdirectory(test/unit-test)
+
+

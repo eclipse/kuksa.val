@@ -29,8 +29,14 @@ AccessChecker::AccessChecker(std::shared_ptr<IAuthenticator> vdator) {
   tokenValidator = vdator;
 }
 
-bool AccessChecker::checkSignalAccess(const WsChannel& channel, const string& path, const string& requiredPermission){
-  json permissions = channel.getPermissions();
+bool AccessChecker::checkSignalAccess(const kuksa::kuksaChannel& channel, const string& path, const string& requiredPermission){
+  json permissions;
+  if(!channel.permissions().empty()){
+    permissions = json::parse(channel.permissions());
+  }
+  else{
+    permissions = json::parse("{}");
+  }
   string permissionValue = permissions.get_with_default(path, "");
   if (permissionValue.empty()){
     for (auto permission : permissions.object_range()) {
@@ -49,19 +55,19 @@ bool AccessChecker::checkSignalAccess(const WsChannel& channel, const string& pa
 
 
 // check the permissions json in WsChannel if path has read access
-bool AccessChecker::checkReadAccess(WsChannel &channel, const VSSPath &path) {
+bool AccessChecker::checkReadAccess(kuksa::kuksaChannel &channel, const VSSPath &path) {
   return checkSignalAccess(channel, path.getVSSGen1Path(), "r");
 }
 
 // check the permissions json in WsChannel if path has read access
-bool AccessChecker::checkWriteAccess(WsChannel &channel, const VSSPath &path) {
+bool AccessChecker::checkWriteAccess(kuksa::kuksaChannel &channel, const VSSPath &path) {
   return checkSignalAccess(channel, path.getVSSGen1Path(), "w");
 }
 
 
 // Checks if all the paths have write access.If even 1 path in the list does not
 // have write access, this method returns false.
-bool AccessChecker::checkPathWriteAccess(WsChannel &channel, const json &paths) {
+bool AccessChecker::checkPathWriteAccess(kuksa::kuksaChannel &channel, const json &paths) {
   for (size_t i = 0; i < paths.size(); i++) {
     json item = paths[i];
     string jPath = item["path"].as<string>();

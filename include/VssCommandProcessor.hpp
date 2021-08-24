@@ -28,7 +28,6 @@ class IVssDatabase;
 class ISubscriptionHandler;
 class IAuthenticator;
 class ILogger;
-class WsChannel;
 
 
 class VssCommandProcessor : public IVssCommandProcessor {
@@ -43,22 +42,21 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::shared_ptr<SigningHandler> signer;
 #endif
 
-  std::string processSubscribe(WsChannel& channel, const std::string& request_id, const std::string& path);
-  std::string processUnsubscribe(const std::string & request_id, uint32_t subscribeID);
-  std::string processUpdateMetaData(WsChannel& channel, jsoncons::json& request);
-  std::string processGetMetaData(jsoncons::json &request);
-  std::string processAuthorize(WsChannel& channel, const std::string & request_id,
-                          const std::string & token);
-  std::string processAuthorizeWithPermManager(WsChannel &channel, const std::string & request_id,
+  std::string processUpdateMetaData(kuksa::kuksaChannel& channel, jsoncons::json& request);
+  std::string processAuthorizeWithPermManager(kuksa::kuksaChannel &channel, const std::string & request_id,
                                  const std::string & client, const std::string& clientSecret);
 
   std::string getPathFromRequest(const jsoncons::json &req, bool *gen1_compat);
-  std::string processGet2(WsChannel &channel, jsoncons::json &request);
-  std::string processSet2(WsChannel &channel, jsoncons::json &request);
-  std::string processUpdateVSSTree(WsChannel& channel, jsoncons::json &request);
-
+  std::string processUpdateVSSTree(kuksa::kuksaChannel& channel, jsoncons::json &request);
 
  public:
+  std::string processSubscribe(kuksa::kuksaChannel& channel, const std::string& request_id, const std::string& path);
+  std::string processUnsubscribe(const std::string & request_id, uint32_t subscribeID);
+  std::string processGetMetaData(jsoncons::json &request);
+  std::string processAuthorize(kuksa::kuksaChannel& channel, const std::string & request_id,
+                          const std::string & token);
+  std::string processGet2(kuksa::kuksaChannel &channel, jsoncons::json &request);
+  std::string processSet2(kuksa::kuksaChannel &channel, jsoncons::json &request);
   VssCommandProcessor(std::shared_ptr<ILogger> loggerUtil,
                       std::shared_ptr<IVssDatabase> database,
                       std::shared_ptr<IAuthenticator> vdator,
@@ -66,7 +64,7 @@ class VssCommandProcessor : public IVssCommandProcessor {
                       std::shared_ptr<ISubscriptionHandler> subhandler);
   ~VssCommandProcessor();
 
-  std::string processQuery(const std::string &req_json, WsChannel& channel);
+  std::string processQuery(const std::string &req_json, kuksa::kuksaChannel& channel);
 };
 
 #endif

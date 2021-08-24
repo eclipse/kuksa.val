@@ -24,7 +24,6 @@
 #include "IVssDatabase.hpp"
 #include "VSSPath.hpp"
 
-class WsChannel;
 class IAccessChecker;
 class ISubscriptionHandler;
 class ILogger;
@@ -61,8 +60,8 @@ class VssDatabase : public IVssDatabase {
 
 
   void updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree);
-  void updateJsonTree(WsChannel& channel, jsoncons::json& value) override;
-  void updateMetaData(WsChannel& channel, const VSSPath& path, const jsoncons::json& newTree) override;
+  void updateJsonTree(kuksa::kuksaChannel& channel, jsoncons::json& value) override;
+  void updateMetaData(kuksa::kuksaChannel& channel, const VSSPath& path, const jsoncons::json& newTree) override;
   jsoncons::json getMetaData(const VSSPath& path) override;
   
   jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) override; //gen2 version

@@ -67,7 +67,7 @@ VssCommandProcessor::~VssCommandProcessor() {
 
 
 
-string VssCommandProcessor::processSubscribe(WsChannel &channel,
+string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
                                              const string & request_id, 
                                              const string & path) {
   logger->Log(LogLevel::VERBOSE, string("VssCommandProcessor::processSubscribe: Client wants to subscribe ")+path);
@@ -154,7 +154,7 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
   }
 }
 
-string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, jsoncons::json &request){
+string VssCommandProcessor::processUpdateVSSTree(kuksa::kuksaChannel& channel, jsoncons::json &request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateVSSTree");
   
   try {
@@ -242,7 +242,7 @@ string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
   return ss.str();
 }
 
-string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::json& request){
+string VssCommandProcessor::processUpdateMetaData(kuksa::kuksaChannel& channel, jsoncons::json& request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateMetaData");
   VSSPath path=VSSPath::fromVSS(request["path"].as_string());
 
@@ -294,7 +294,7 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, jsoncons::
   
 }
 
-string VssCommandProcessor::processAuthorize(WsChannel &channel,
+string VssCommandProcessor::processAuthorize(kuksa::kuksaChannel &channel,
                                              const string & request_id,
                                              const string & token) {
   int ttl = tokenValidator->validate(channel, token);
@@ -329,7 +329,7 @@ string VssCommandProcessor::processAuthorize(WsChannel &channel,
 }
 
 string VssCommandProcessor::processQuery(const string &req_json,
-                                         WsChannel &channel) {
+                                         kuksa::kuksaChannel &channel) {
   jsoncons::json root;
   string response;
   try {

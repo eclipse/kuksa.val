@@ -23,6 +23,61 @@ set(SERVER_EXE_NAME "${PROJECT_NAME}" )
 set(SERVER_OBJ_LIB_NAME ${SERVER_EXE_NAME}-object )
 set(SERVER_LIB_NAME ${SERVER_EXE_NAME}-core )
 set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
+set(GRPC_CLIENT_EXE_NAME kuksa_viss_grpc_client) 
+set(gRPC_SSL_PROVIDER "package" CACHE STRING "Provider of ssl library")
+
+### grpc repository and submodule fetch
+include(FetchContent)
+
+## GRPC ##
+FetchContent_Declare(
+  gRPC
+  GIT_REPOSITORY https://github.com/grpc/grpc
+  GIT_TAG        v1.38.0
+)
+## END GRPC ##
+
+set(FETCHCONTENT_QUIET OFF)
+## Disable tests in GRPC                                                        
+set(BUILD_TESTING OFF) 
+FetchContent_MakeAvailable(gRPC)
+
+# gRPC and Protobuf variables
+set(_GRPC_GRPCPP grpc++)
+set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
+set(_REFLECTION grpc++_reflection)
+set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+
+#
+# Generate Protobuf/Grpc source files
+#
+get_filename_component(k_proto "../protos/kuksa.proto" ABSOLUTE)
+get_filename_component(k_proto_path "${k_proto}" PATH)
+
+set(k_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.pb.cc")
+set(k_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.pb.h")
+set(k_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.grpc.pb.cc")
+set(k_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.grpc.pb.h")
+set(proto_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/proto")
+
+file(MAKE_DIRECTORY ${proto_gen_dir})
+
+
+add_custom_command(
+      OUTPUT "${k_proto_srcs}" "${k_proto_hdrs}" "${k_grpc_srcs}" "${k_grpc_hdrs}"
+      COMMAND ${_PROTOBUF_PROTOC}
+      ARGS
+        --grpc_out "${proto_gen_dir}"
+        --cpp_out "${proto_gen_dir}"
+        -I "${k_proto_path}"
+        --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
+        "${k_proto}"
+      DEPENDS "${k_proto}"
+)
+
+message(STATUS "generated *.pb.cc and *.pb.h files for ${k_proto}")
+
+include_directories("${proto_gen_dir}")
 
 
 ###
@@ -40,7 +95,8 @@ list(REMOVE_ITEM LIB_SOURCES "${PROJECT_SOURCE_DIR}/main.cpp")
 
 ###
 # set main 'object library' as target to prevent multiple compilations of same sources
-add_library(${SERVER_OBJ_LIB_NAME} OBJECT ${LIB_SOURCES})
+add_library(${SERVER_OBJ_LIB_NAME} OBJECT ${LIB_SOURCES} ${k_proto_srcs}
+${k_grpc_srcs})
 
 target_compile_features(${SERVER_OBJ_LIB_NAME} PUBLIC cxx_std_14)
 
@@ -53,6 +109,12 @@ target_include_directories(${SERVER_OBJ_LIB_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/interface>
 )
+
+target_link_libraries(${SERVER_OBJ_LIB_NAME}
+  PUBLIC
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=unused-result -Wno-error=unused-parameter -Wno-error=deprecated-declarations -Wno-error=deprecated-copy -Wno-error=nonnull)
@@ -87,7 +149,7 @@ endif(BUILD_UNIT_TEST)
 target_link_libraries(${SERVER_OBJ_LIB_NAME}  PUBLIC jwt-cpp jsonpath jsoncons ${CMAKE_THREAD_LIBS_INIT} -Wl,-z,stack-size=8388608)
 
 if ("${ADDRESS_SAN}" STREQUAL "ON" AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -fsanitize=address -fno-omit-frame-pointer)
+  target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -g -fsanitize=address -fno-omit-frame-pointer -DGRPC_BUILD_WITH_BORING_SSL_ASM=0)
   target_link_libraries(${SERVER_OBJ_LIB_NAME} PUBLIC "-g -fsanitize=address ")
 endif()
 
@@ -104,9 +166,13 @@ target_include_directories(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${
 target_link_libraries(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
 target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
 
-
 if(BUILD_EXE)
-  add_executable(${SERVER_EXE_NAME} main.cpp)
+  add_executable(${SERVER_EXE_NAME} main.cpp
+  ${k_proto_srcs}
+  ${k_grpc_srcs})
+  ## GRPC targets
+  add_executable(${GRPC_CLIENT_EXE_NAME} "${GRPC_CLIENT_EXE_NAME}.cpp")
+
   # using static library to simplify existing packaging and maintainance
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${SERVER_LIB_STATIC_NAME})
 
@@ -124,14 +190,34 @@ if(BUILD_EXE)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/jwt/jwt.key.pub  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Client.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Client.key  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/CA.pem  ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../data/vss-core/vss_release_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../config.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../config_grpc_client.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
   install( TARGETS ${SERVER_EXE_NAME} DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/jwt/jwt.key.pub DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.pem DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.key DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Client.pem DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Client.key DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/CA.pem DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../data/vss-core/vss_release_2.0.json DESTINATION bin/${SERVER_EXE_NAME})
+
+  #GRPC
+  # using static library to simplify existing packaging and maintainance
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${SERVER_LIB_STATIC_NAME})
+
+  # link executable dependencies
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE Threads::Threads)
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE "-ldl")
+  target_include_directories(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIR})
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_LIBRARY})
+  message(STATUS "Build target files for grpc client")
 
   # CPack
   INCLUDE(InstallRequiredSystemLibraries)

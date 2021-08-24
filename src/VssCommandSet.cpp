@@ -29,7 +29,7 @@
 
 /** Implements the Websocket get request according to GEN2, with GEN1 backwards
  * compatibility **/
-std::string VssCommandProcessor::processSet2(WsChannel &channel,
+std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
                                              jsoncons::json &request) {
   try {
     requestValidator->validateSet(request);

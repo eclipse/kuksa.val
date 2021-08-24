@@ -1,0 +1,79 @@
+// Copyright Robert Bosch GmbH, 2021. Part of the Eclipse Kuksa Project.
+//
+// All rights reserved. This configuration file is provided to you under the
+// terms and conditions of the Eclipse Distribution License v1.0 which
+// accompanies this distribution, and is available at
+// http://www.eclipse.org/org/documents/edl-v10.php
+
+
+syntax = "proto3";
+
+package kuksa;
+
+// The connecting service definition.
+service viss_client {
+  rpc GetMetaData (getMetaDataRequest) returns (metaData) {}
+  rpc AuthorizeChannel (authorizeRequest) returns (authStatus) {}
+  rpc GetValue (getRequest) returns (value) {}
+  rpc SetValue (setRequest) returns (setStatus) {}
+}
+
+message metaData {
+  string value_ = 1;
+}
+
+message authStatus {
+  string status_ = 1;
+  kuksaChannel channel_ = 2;
+}
+
+message value {
+  string value_ = 1;
+}
+
+message setStatus {
+  string status_ = 1;
+}
+
+
+message getMetaDataRequest {
+  string path_ = 1;
+  string reqID_ = 2;
+}
+
+message authorizeRequest {
+  string token_ = 1;
+  string reqID_ = 2;
+  kuksaChannel channel_=3;
+}
+
+message getRequest {
+  string path_ = 1;
+  string reqID_ = 2;
+  kuksaChannel channel_=3;
+}
+
+message setRequest {
+  string path_ = 1;
+  string reqID_ = 2;
+  kuksaChannel channel_=3;
+  string value_ = 4;
+}
+
+message kuksaChannel{
+  enum Type {
+    UNKNOWN_TYPE = 0;
+    WEBSOCKET_PLAIN = 1;
+    WEBSOCKET_SSL = 2;
+    HTTP_PLAIN = 3;
+    HTTP_SSL = 4;
+    GRPC = 5;
+  };
+  uint64 connectionID = 1;
+  bool authorized = 2;
+  bool modifyTree = 3;
+  bytes authToken = 4;
+  string permissions = 5;
+  Type typeOfConnection = 6;
+}
+
