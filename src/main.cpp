@@ -41,7 +41,6 @@
 
 #include "../buildinfo.h"
 
-using namespace std;
 using namespace boost;
 using namespace jsoncons;
 using namespace jsoncons::jsonpath;
@@ -73,7 +72,7 @@ static void print_usage(const char *prog_name,
   cerr << desc << std::endl;
 }
 
-int httpRunServer(boost::program_options::variables_map variables, std::shared_ptr<WebSockHttpFlexServer> httpServer, std::string docRoot, std::shared_ptr<VssCommandProcessor> cmdProcessor){
+void httpRunServer(boost::program_options::variables_map variables, std::shared_ptr<WebSockHttpFlexServer> httpServer, std::string docRoot, std::shared_ptr<VssCommandProcessor> cmdProcessor){
 
     auto port = variables["port"].as<int>();
     auto insecure = variables[("insecure")].as<bool>();
@@ -266,8 +265,8 @@ int main(int argc, const char *argv[]) {
       if(variables.count("insecure")){
         insecureConn=true;
       }
-      thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
-      thread grpc(grpcHandler::RunServer, cmdProcessor, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
+      std::thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
+      std::thread grpc(grpcHandler::RunServer, cmdProcessor, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
       http.join();
       grpc.join();
     }
