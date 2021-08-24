@@ -1,9 +1,12 @@
 import sys, os
-import time, datetime
+import time
+
 scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, ".."))
+
+from replay import stressClient
+
 import argparse
-from stresstest import stressClient
 import csv
 from pickle import FALSE,TRUE
 import string
@@ -85,7 +88,7 @@ try:
         for i,row in enumerate(fileData):
             time.sleep(timeDiff[i])
             actionFunctions.get(row['action'])(row['path'],row['value'],timeout=0)
-            
+
     print("Replay successful")
 
 except:
