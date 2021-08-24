@@ -18,6 +18,7 @@
 #include <exception>
 #include <iostream>
 #include <string>
+#include <csignal>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
@@ -31,6 +32,7 @@
 #include "SubscriptionHandler.hpp"
 #include "VssCommandProcessor.hpp"
 #include "VssDatabase.hpp"
+#include "VssDatabase_Record.hpp"
 #include "WebSockHttpFlexServer.hpp"
 #include "MQTTPublisher.hpp"
 #include "exception.hpp"
@@ -46,8 +48,22 @@ using jsoncons::json;
 // Websocket port
 #define PORT 8090
 
-static VssDatabase *gDatabase = NULL;
+static VssDatabase* gDatabase = NULL;
+bool ctrlC_flag = false;
 
+void ctrlC_Handler(sig_atomic_t signal)
+{
+  try
+  {
+    delete gDatabase;             //explicit delete for boost::log to save log files to the correct location
+    ctrlC_flag = true;
+  }
+  catch(const std::exception& e)
+  {
+    std::cerr << e.what() << '\n';
+    std::cerr << "Try searching for log file in src folder \n";
+  }
+}
 
 static void print_usage(const char *prog_name,
                         program_options::options_description &desc) {
@@ -64,6 +80,8 @@ int main(int argc, const char *argv[]) {
   if (GIT_IS_DIRTY)
     std::cout << "-dirty";
   std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
+
+  signal(SIGINT,ctrlC_Handler);
 
   program_options::options_description desc{"OPTIONS"};
   desc.add_options()
@@ -84,6 +102,10 @@ int main(int argc, const char *argv[]) {
       "If provided, `kuksa-val-server` shall use different server address than default _'localhost'_")
     ("port", program_options::value<int>()->default_value(8090),
         "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
+    ("record", program_options::value<string>() -> default_value("noRecord"), 
+        "Enables recording into log file, for later being replayed into the server \nnoRecord: no data will be recorded\nrecordSet: record setting values only\nrecordSetAndGet: record getting value and setting value")
+    ("record-path",program_options::value<string>() -> default_value("."),
+        "Specifies record file path.")
     ("log-level",
       program_options::value<vector<string>>(&logLevels)->composing(),
       "Enable selected log level value. To allow for different log level "
@@ -194,12 +216,24 @@ int main(int argc, const char *argv[]) {
         logger, httpServer, tokenValidator, accessCheck);
     subHandler->addPublisher(mqttPublisher);
 
-    auto database =
-        std::make_shared<VssDatabase>(logger, subHandler);
-    auto cmdProcessor = std::make_shared<VssCommandProcessor>(
-        logger, database, tokenValidator, accessCheck, subHandler);
+    std::shared_ptr<VssDatabase> database = std::make_shared<VssDatabase>(logger,subHandler);
+
+    if(variables["record"].as<string>() == "recordSet" || variables["record"].as<string>()=="recordSetAndGet")
+    {
+        if(variables["record"].as<string>() == "recordSet")
+          std::cout << "Recording inputs\n";
+        else if(variables["record"].as<string>() == "recordSetAndGet")
+          std::cout << "Recording in- and outputs\n";
+    
+        database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),variables["record"].as<string>()));
+    }
+    else if(variables["record"].as<string>() !="noRecord")
+      throw std::runtime_error("record option \"" + variables["record"].as<string>() + "\" is invalid");
 
     gDatabase = database.get();
+
+    auto cmdProcessor = std::make_shared<VssCommandProcessor>(
+        logger, database, tokenValidator, accessCheck, subHandler);
 
     database->initJsonTree(vss_path);
 
@@ -231,7 +265,7 @@ int main(int argc, const char *argv[]) {
                            variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
     httpServer->Start();
 
-    while (1) {
+    while (!ctrlC_flag) {
       usleep(1000000);
     }
 
