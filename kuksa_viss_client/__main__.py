@@ -28,14 +28,20 @@ import kuksa_certificates
 class TestClient(Cmd):
     def get_childtree(self, pathText):
         childVssTree = self.vssTree
-        if "." in pathText:
+
+        paths = [pathText]
+        if "/" in pathText:
+            paths = pathText.split("/")
+        elif "." in pathText:
             paths = pathText.split(".")
-            for path in paths[:-1]:
-                if path in childVssTree:
-                    childVssTree = childVssTree[path]
-                elif 'children' in childVssTree and path in childVssTree['children']:
-                    childVssTree = childVssTree['children'][path]
-            if 'children' in childVssTree:
+
+        for path in paths[:-1]:
+            if path in childVssTree:
+                childVssTree = childVssTree[path]
+            elif 'children' in childVssTree and path in childVssTree['children']:
+                childVssTree = childVssTree['children'][path]
+
+        if 'children' in childVssTree:
                 childVssTree = childVssTree['children']
         return childVssTree
 
@@ -49,17 +55,31 @@ class TestClient(Cmd):
         self.pathCompletionItems = []
         childTree = self.get_childtree(text)
         prefix = ""
-        if "." in text:
+        seperator="/"
+
+        if "/" in text:
+            prefix = text[:text.rfind("/")]+"/"
+        elif  "." in text:
             prefix = text[:text.rfind(".")]+"."
+            seperator="."
+
         for key in childTree:
             child = childTree[key]
             if isinstance(child, dict):
                 description = ""
+                nodetype = "unknown"
+
                 if 'description' in child:
-                    description = "("+child['description']+")"
-                self.pathCompletionItems.append(CompletionItem(prefix + key, description))
+                    description = child['description']
+
+                if 'type' in child:
+                    nodetype=child['type'].capitalize()
+
+                self.pathCompletionItems.append(CompletionItem(prefix + key, nodetype+": "+ description))
+
                 if 'children' in child:
-                    self.pathCompletionItems.append(CompletionItem(prefix + key + ".", "(children...)"))
+                    self.pathCompletionItems.append(CompletionItem(prefix + key+seperator, "Children of branch "+prefix+key))
+
 
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
