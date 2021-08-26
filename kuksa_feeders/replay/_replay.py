@@ -1,45 +1,17 @@
 import sys, os
-import time
+import time, datetime
+import traceback
+import configparser
+import csv
+import string
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, ".."))
 
-from replay import stressClient
+from kuksa_viss_client import *
 
-import argparse
-import csv
-from pickle import FALSE,TRUE
-import string
-
-def workaround_dict(a,b,timeout=0):
+def workaround_dict(a,b):
     pass
-
-def getTimeDiff(timestamps):
-    times = []
-    time = []
-    hours = []
-    minutes = []
-    seconds = []
-    microseconds = []
-    timeDiff = [0]
-
-    for i in range(0,len(timestamps)):
-        times.append(timestamps[i][timestamps[i].find(" ")+1:])     #take only the information about time from the timestamp
-        
-        #cut out corresponding information from the time string
-        hours.append(int(times[i][0:2]))
-        minutes.append(int(times[i][3:5]))
-        seconds.append(int(times[i][6:8]))
-        microseconds.append(int(times[i][9:]))
-
-        #calculate time delta in seconds by adding up all the values with their correlating factor (i.e. 1h = 3600s)
-        time.append((float(microseconds[i]*10**-6)+float(seconds[i])+float(minutes[i]*60)+float(hours[i]*3600)))
-
-    for i in range(1,len(time)):
-        timeDiff.append(time[i]-time[i-1])
-
-    return timeDiff        #return all time differences in one list
-
 
 rowIDs = [
     "timestamp",
@@ -48,50 +20,79 @@ rowIDs = [
     "path",
     "value"
 ]
-timestapIDs =  []
-
-cmdParser = argparse.ArgumentParser(description="Initialise replay function")
-
-cmdParser.add_argument('path', type=str, help="Specify path for replay file")
-cmdParser.add_argument('-g', '--getValue', action='store_true', help="Enable replay of getValue function for debugging purposes (might overstress the server)")
-args=cmdParser.parse_args()
 
 try:
-    VissClient = stressClient.StressClient()
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+except:
+    print("Unable to read config file")
+    os._exit(0)
+
+args=config['replay']               #get replay data
+vsscfg = config['vss']              #get Client data from config file
+csv_path = args.get('path')
+
+try:
+    commThread = KuksaClientThread(vsscfg)       #make new thread
+    commThread.start()
+    commThread.authorize(token=commThread.tokenfile)
+    print("Connected successfully")
+except:
+    print("Could not connect successfully")
+    sys.exit(-1)
+
+try:
 
     actionFunctions = {
-        "get": VissClient.commThread.getValue,
-        "set": VissClient.commThread.setValue
+        "get": commThread.getValue,
+        "set": commThread.setValue
         }
 
-    if not args.getValue:
+    if args.get('mode') == 'Set':
         actionFunctions["get"] = workaround_dict   #don't call get functions when getValue is not specified
+    elif args.get('mode') == 'SetGet':
+            pass
+    else:
+        raise AttributeError
 
-        try:
-            open(args.path,"r")
-        except:
-            print("Could not open log file at " + args.path)
-
-        with open(args.path,"r") as recordFile:
-            fileData = csv.DictReader(recordFile,rowIDs,delimiter=';')
-
-            timestamps = []
-
-            for row in fileData:
-                timestamps.append(row["timestamp"])
-
-        timeDiff = getTimeDiff(timestamps)              #Array with all time deltas in seconds
-
-    with open(args.path,"r") as recordFile:             #fileData gets reset to empty list, reopen for further action
+    with open(csv_path,"r") as recordFile:
         fileData = csv.DictReader(recordFile,rowIDs,delimiter=';')
 
-        for i,row in enumerate(fileData):
-            time.sleep(timeDiff[i])
-            actionFunctions.get(row['action'])(row['path'],row['value'],timeout=0)
+        timestamp_pre = 0
+        for row in fileData:
+            debug_delta1 = time.perf_counter()      #perf_counter for time delta calculation
+            timestamp_curr = row["timestamp"]
 
-    print("Replay successful")
+            if timestamp_pre != 0:
+                curr = datetime.datetime.strptime(timestamp_curr, '%Y-%b-%d %H:%M:%S.%f')
+                pre = datetime.datetime.strptime(timestamp_pre, '%Y-%b-%d %H:%M:%S.%f')
+                delta = (curr-pre).total_seconds()          #get time delta between the timestamps
+            else:
+                delta=0
+            
+            timestamp_pre = timestamp_curr
+
+            debug_delta3 = time.perf_counter()
+
+            time.sleep(delta)
+            debug_delta4 = time.perf_counter()
+            actionFunctions.get(row['action'])(row['path'],row['value'])
+
+            debug_delta2 = time.perf_counter()
+            
+            #time debugging
+            print("delta (code): "+ str(delta))
+            print("debug delta total: " + str(debug_delta2 - debug_delta1))
+            print("delta without sleep: " + str(debug_delta3 - debug_delta1))
+            print("sleep: " + str(debug_delta4 - debug_delta3))
+            print("get/set: " + str(debug_delta2 - debug_delta4))
+
+        print("Replay successful")
+
+except AttributeError:
+    print("Wrong attributes used. Please check config.ini")
 
 except:
-    print("Aborted replay script")
+    traceback.print_exc()
 
 os._exit(1)

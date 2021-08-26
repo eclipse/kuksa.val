@@ -21,16 +21,13 @@ $ ./kuksa-val-server --record=recordGetAndSet --record-path=/path/to/logs
 
 ### Replay a file to the server
 
-Start the replay script, you must always provide a path to a valid log file 
+Please configure [config.ini](config.ini) to set log file path and select your Replay mode.
 
-```
-$ python3 _replay.py /path/to/logfile.log.csv
-```
+#### Avaliable replay modes are:
 
-Use option -g
+|mode|action|
+|-|-|
+| Set | Replay Set Value only|
+| SetGet | Replay Get Value and Set Value to the server |
 
-```
-$ python3 _replay.py /path/to/logfile.log.csv -g
-```
 
- to also replay the get Value accesses to the server (might overstress the server)
