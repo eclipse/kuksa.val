@@ -6,7 +6,7 @@ import csv
 import string
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, ".."))
+sys.path.append(os.path.join(scriptDir, "..", ".."))
 
 from kuksa_viss_client import *
 
@@ -60,7 +60,6 @@ try:
 
         timestamp_pre = 0
         for row in fileData:
-            debug_delta1 = time.perf_counter()      #perf_counter for time delta calculation
             timestamp_curr = row["timestamp"]
 
             if timestamp_pre != 0:
@@ -72,20 +71,8 @@ try:
             
             timestamp_pre = timestamp_curr
 
-            debug_delta3 = time.perf_counter()
-
             time.sleep(delta)
-            debug_delta4 = time.perf_counter()
             actionFunctions.get(row['action'])(row['path'],row['value'])
-
-            debug_delta2 = time.perf_counter()
-            
-            #time debugging
-            print("delta (code): "+ str(delta))
-            print("debug delta total: " + str(debug_delta2 - debug_delta1))
-            print("delta without sleep: " + str(debug_delta3 - debug_delta1))
-            print("sleep: " + str(debug_delta4 - debug_delta3))
-            print("get/set: " + str(debug_delta2 - debug_delta4))
 
         print("Replay successful")
 
