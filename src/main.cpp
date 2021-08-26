@@ -54,7 +54,7 @@ void ctrlC_Handler(sig_atomic_t signal)
 {
   try
   {
-    std::cout << "Stop ..." << std::endl;
+    std::cout << "STOP ..." << std::endl;
     boost::log::core::get()->remove_all_sinks();                                                 
     exit(signal);
   }
