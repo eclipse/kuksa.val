@@ -49,14 +49,15 @@ using jsoncons::json;
 
 // Websocket port
 #define PORT 8090
-
+__sighandler_t former_handler;
 void ctrlC_Handler(sig_atomic_t signal)
 {
   try
   {
     std::cout << "STOP ..." << std::endl;
     boost::log::core::get()->remove_all_sinks();                                                 
-    exit(signal);
+    std::signal(signal, former_handler);
+    std::raise(signal);
   }
   catch(const std::exception& e)
   {
@@ -93,7 +94,7 @@ int main(int argc, const char *argv[]) {
     std::cout << "-dirty";
   std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
 
-  signal(SIGINT,ctrlC_Handler);
+  former_handler = signal(SIGINT,ctrlC_Handler);
 
   program_options::options_description desc{"OPTIONS"};
   desc.add_options()
