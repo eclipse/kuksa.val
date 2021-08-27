@@ -49,7 +49,7 @@ using jsoncons::json;
 
 // Websocket port
 #define PORT 8090
-__sighandler_t former_handler;
+sighandler_t former_handler;
 void ctrlC_Handler(sig_atomic_t signal)
 {
   try
