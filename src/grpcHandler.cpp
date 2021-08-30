@@ -106,7 +106,7 @@ void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std:
 
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
-  ServerBuilder builder;
+  grpc::ServerBuilder builder;
 
   if(allowInsecureConn){
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());

@@ -145,7 +145,7 @@ class GrpcConnection {
     request.set_path_(vssPath);
     request.set_value_(value);
     request.set_reqid_(reqID);
-     request.mutable_channel_()->MergeFrom(kuksa_channel);
+    request.mutable_channel_()->MergeFrom(kuksa_channel);
     Status status = stub_->SetValue(&context, request, &reply);
     if (status.ok()) {
       return reply.status_();

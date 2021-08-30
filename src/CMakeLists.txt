@@ -48,6 +48,8 @@ set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
 set(_REFLECTION grpc++_reflection)
 set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
 
+include(GoogleTest)
+
 #
 # Generate Protobuf/Grpc source files
 #
@@ -58,16 +60,16 @@ set(k_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.pb.cc")
 set(k_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.pb.h")
 set(k_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.grpc.pb.cc")
 set(k_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.grpc.pb.h")
+set(k_grpc_mock_hdrs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa_mock.grpc.pb.h")
 set(proto_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/proto")
 
 file(MAKE_DIRECTORY ${proto_gen_dir})
 
-
 add_custom_command(
-      OUTPUT "${k_proto_srcs}" "${k_proto_hdrs}" "${k_grpc_srcs}" "${k_grpc_hdrs}"
+      OUTPUT "${k_proto_srcs}" "${k_proto_hdrs}" "${k_grpc_srcs}" "${k_grpc_hdrs}" "${k_grpc_mock_hdrs}"
       COMMAND ${_PROTOBUF_PROTOC}
       ARGS
-        --grpc_out "${proto_gen_dir}"
+        --grpc_out "generate_mock_code=true:${proto_gen_dir}"
         --cpp_out "${proto_gen_dir}"
         -I "${k_proto_path}"
         --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
