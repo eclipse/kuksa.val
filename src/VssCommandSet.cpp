@@ -29,7 +29,7 @@
 
 /** Implements the Websocket get request according to GEN2, with GEN1 backwards
  * compatibility **/
-std::string VssCommandProcessor::processSet2(WsChannel &channel,
+std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
                                              jsoncons::json &request) {
   try {
     requestValidator->validateSet(request);
@@ -50,7 +50,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   string requestId = request["requestId"].as_string();
 
   logger->Log(LogLevel::VERBOSE, "Set request with id " + requestId +
-                                     " for path: " + path.getVSSPath());
+                                     " for path: " + path.to_string());
 
   //unpack any multiset or filters here later as in
   //list of setPairs=expand(VSSPath, filters)
@@ -61,18 +61,22 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   //Check Access rights  & types first. Will only proceed to set, if all paths in set are valid
   //(set all or none)
   for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
-    if (! accessValidator->checkWriteAccess(channel, std::get<0>(setTuple) )) {
-      stringstream msg;
-      msg << "No write  access to " << std::get<0>(setTuple).getVSSPath();
-      return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
-    }
     if (! database->pathExists(std::get<0>(setTuple) )) {
-      return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", std::get<0>(setTuple).getVSSPath());
+      stringstream msg;
+      msg << "Path " << std::get<0>(setTuple).to_string() << " does not exist";
+      logger->Log(LogLevel::WARNING,msg.str());
+      return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", std::get<0>(setTuple).to_string());
+    }
+    if (! accessValidator_->checkWriteAccess(channel, std::get<0>(setTuple) )) {
+      stringstream msg;
+      msg << "No write access to " << std::get<0>(setTuple).to_string();
+      logger->Log(LogLevel::WARNING,msg.str());
+      return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
     if (! database->pathIsWritable(std::get<0>(setTuple))) {
       stringstream msg;
-      msg << "Can not set " << std::get<0>(setTuple).getVSSPath() << ". Only sensor or actor leaves can be set.";
-      logger->Log(LogLevel::VERBOSE,msg.str());
+      msg << "Can not set " << std::get<0>(setTuple).to_string() << ". Only sensor or actor leaves can be set.";
+      logger->Log(LogLevel::WARNING,msg.str());
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
   }
@@ -80,7 +84,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   //If all preliminary checks successful, we are setting everything
   try {
     for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
-      database->setSignal(channel, std::get<0>(setTuple), std::get<1>(setTuple), std::get<0>(setTuple).isGen1Origin());
+      database->setSignal(std::get<0>(setTuple), std::get<1>(setTuple));
     }
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
@@ -95,7 +99,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
     error["message"] = e.what();
 
     root["error"] = error;
-    root["timestamp"] = JsonResponses::getTimeStamp();
+    root["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(root);
@@ -103,7 +107,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   } catch (noPathFoundonTree &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
     return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set",
-                                       path.getVSSPath());
+                                       path.to_string());
   } catch (outOfBoundException &outofboundExp) {
     logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
     return JsonResponses::valueOutOfBounds(request["requestId"].as<string>(),
@@ -122,7 +126,7 @@ std::string VssCommandProcessor::processSet2(WsChannel &channel,
   jsoncons::json answer;
   answer["action"] = "set";
   answer.insert_or_assign("requestId", request["requestId"]);
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   ss << pretty_print(answer);

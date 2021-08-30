@@ -38,7 +38,7 @@ class Kuksa_Client():
         self.client.authorize()
         
     def shutdown(self):
-        self.client.stopComm()
+        self.client.stop()
 
     def subscribe(self, path, callback):
         print("subscribe " + path)
@@ -71,7 +71,7 @@ class Dapr_Storage():
         storeName = 'statestore'
         jsonMsg = json.loads(message) 
         key = path
-        value = str(jsonMsg["value"])
+        value = str(jsonMsg["data"]["dp"]["value"])
         self.daprClient.save_state(store_name=storeName, key=key, value=value)
         print(f"State store has successfully saved {key}: {value}")
         

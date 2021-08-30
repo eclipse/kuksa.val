@@ -27,6 +27,10 @@ set(BUILD_UNIT_TEST OFF CACHE BOOL "Build unit tests")
 ###
 # Setup targets
 
+set(proto_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/../../src/proto")
+include_directories(${proto_gen_dir})
+message(STATUS "${proto_gen_dir}")
+
 if(BUILD_UNIT_TEST)
   add_executable(${UNITTEST_EXE_NAME}
     AccessCheckerTests.cpp
@@ -36,9 +40,12 @@ if(BUILD_UNIT_TEST)
     VssCommandProcessorTests.cpp
     Gen2GetTests.cpp
     Gen2SetTests.cpp
+    VSSTypeSanitizerTests.cpp
     VssDatabaseTests.cpp
     VSSPathTests.cpp
     KuksavalUnitTest.cpp
+    UpdateVSSTreeTest.cpp
+    UpdateMetadataTest.cpp
   )
 
   # declares a test with our executable

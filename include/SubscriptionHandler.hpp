@@ -34,7 +34,6 @@
 class AccessChecker;
 class Authenticator;
 class VssDatabase;
-class WsChannel;
 class WsServer;
 class ILogger;
 
@@ -72,13 +71,12 @@ class SubscriptionHandler : public ISubscriptionHandler {
   void addPublisher(std::shared_ptr<IPublisher> publisher){
     publishers_.push_back(publisher);
   }
-  SubscriptionId subscribe(WsChannel& channel,
+  SubscriptionId subscribe(kuksa::kuksaChannel& channel,
                            std::shared_ptr<IVssDatabase> db,
                            const std::string &path);
   int unsubscribe(SubscriptionId subscribeID);
   int unsubscribeAll(ConnectionId connectionID);
   int updateByUUID(const std::string &signalUUID, const jsoncons::json &value);
-  int updateByPath(const std::string &path, const jsoncons::json &value);
   std::shared_ptr<IServer> getServer();
   int startThread();
   int stopThread();

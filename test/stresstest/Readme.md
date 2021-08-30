@@ -1,3 +1,6 @@
 # Stresstest
 
-A simple test program to generate load on kuksa.val server. See `--help` for command line parameters, check code to modify the sent data
+
+A simple test program to generate load on kuksa.val server. Check code to modify the sent data, configure your server via config.ini file.
+
+To run stresstest, you need to have [kuksa-viss-client](https://github.com/eclipse/kuksa.val/tree/master/kuksa_viss_client) installed.

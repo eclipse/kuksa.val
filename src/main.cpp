@@ -12,18 +12,20 @@
  * *****************************************************************************
  */
 
-#include <gio/gio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctime>
 #include <exception>
 #include <iostream>
 #include <string>
+#include <csignal>
 
 #include <boost/program_options.hpp>
+#include <boost/log/sources/logger.hpp>
 #include <boost/filesystem.hpp>
 #include <jsoncons/json.hpp>
 #include <jsonpath/json_query.hpp>
+#include <thread>                                                               
 
 #include "AccessChecker.hpp"
 #include "Authenticator.hpp"
@@ -32,13 +34,14 @@
 #include "SubscriptionHandler.hpp"
 #include "VssCommandProcessor.hpp"
 #include "VssDatabase.hpp"
+#include "VssDatabase_Record.hpp"
 #include "WebSockHttpFlexServer.hpp"
 #include "MQTTPublisher.hpp"
 #include "exception.hpp"
+#include "grpcHandler.hpp"
 
 #include "../buildinfo.h"
 
-using namespace std;
 using namespace boost;
 using namespace jsoncons;
 using namespace jsoncons::jsonpath;
@@ -46,152 +49,39 @@ using jsoncons::json;
 
 // Websocket port
 #define PORT 8090
-
-static VssDatabase *gDatabase = NULL;
-
-static GDBusNodeInfo *introspection_data = NULL;
-
-/* Introspection data for the service we are exporting */
-static const gchar introspection_xml[] =
-    "<node>"
-    "  <interface name='org.eclipse.kuksa.w3cbackend'>"
-    "    <method name='pushUnsignedInt'>"
-    "      <arg type='s' name='path' direction='in'/>"
-    "      <arg type='t' name='value' direction='in'/>"
-    "    </method>"
-    "    <method name='pushInt'>"
-    "      <arg type='s' name='path' direction='in'/>"
-    "      <arg type='x' name='value' direction='in'/>"
-    "    </method>"
-    "    <method name='pushDouble'>"
-    "      <arg type='s' name='path' direction='in'/>"
-    "      <arg type='d' name='value' direction='in'/>"
-    "    </method>"
-    "    <method name='pushBool'>"
-    "      <arg type='s' name='path' direction='in'/>"
-    "      <arg type='b' name='value' direction='in'/>"
-    "    </method>"
-    "    <method name='pushString'>"
-    "      <arg type='s' name='path' direction='in'/>"
-    "      <arg type='s' name='value' direction='in'/>"
-    "    </method>"
-    "  </interface>"
-    "</node>";
-
-static void handle_method_call(GDBusConnection *connection, const gchar *sender,
-                               const gchar *object_path,
-                               const gchar *interface_name,
-                               const gchar *method_name, GVariant *parameters,
-                               GDBusMethodInvocation *invocation,
-                               gpointer user_data) {
-  (void)connection;
-  (void)object_path;
-  (void)interface_name;
-  (void)parameters;
-  (void)user_data;
-  (void)sender;
-
-  json jsonVal;
-  const gchar *vss_path = NULL;
-
-  if (gDatabase == NULL) {
-    g_dbus_method_invocation_return_error(invocation, G_IO_ERROR,
-                                          G_IO_ERROR_FAILED_HANDLED,
-                                          "No database instance yet.");
-    return;
+sighandler_t former_handler;
+void ctrlC_Handler(sig_atomic_t signal)
+{
+  try
+  {
+    std::cout << "STOP ..." << std::endl;
+    boost::log::core::get()->remove_all_sinks();                                                 
+    std::signal(signal, former_handler);
+    std::raise(signal);
   }
-
-  if (g_strcmp0(method_name, "pushUnsignedInt") == 0) {
-    guint64 value;
-    g_variant_get(parameters, "(&st)", &vss_path, &value);
-    jsonVal = value;
-    g_message("pushUnsignedInt called with param ( %s , %ld )", vss_path,
-              value);
-  } else if (g_strcmp0(method_name, "pushInt") == 0) {
-    gint64 value;
-    g_variant_get(parameters, "(&sx)", &vss_path, &value);
-    jsonVal = value;
-    g_message("PushInt called with param ( %s , %ld )", vss_path, value);
-  } else if (g_strcmp0(method_name, "pushDouble") == 0) {
-    gdouble value;
-    g_variant_get(parameters, "(&sd)", &vss_path, &value);
-    jsonVal = value;
-    g_message("PushDouble called with param ( %s , %f )", vss_path, value);
+  catch(const std::exception& e)
+  {
+    std::cerr << e.what() << '\n';
+    std::cerr << "Try searching for log file in src folder \n";
   }
-
-  else if (g_strcmp0(method_name, "pushBool") == 0) {
-    gboolean value;
-    g_variant_get(parameters, "(&sb)", &vss_path, &value);
-    jsonVal = value;
-    g_message("pushBool called with param ( %s , %d )", vss_path, value);
-
-  }
-
-  else if (g_strcmp0(method_name, "pushString") == 0) {
-    const gchar *value;
-    g_variant_get(parameters, "(&ss)", &vss_path, &value);
-    jsonVal = std::string(value);
-    g_message("pushString called with param ( %s , %s )", vss_path, value);
-
-  } else {
-    g_dbus_method_invocation_return_error(
-        invocation, G_IO_ERROR, G_IO_ERROR_FAILED_HANDLED,
-        "Handling needs to be implemented here.");
-  }
-
-  // set the data in the db.
-  try {
-    string pathStr(vss_path);
-    gDatabase->setSignalDBUS(pathStr, jsonVal);
-  } catch (genException &e) {
-    g_dbus_method_invocation_return_error(
-        invocation, G_IO_ERROR, G_IO_ERROR_FAILED_HANDLED,
-        "Exception occured while setting data to the server.");
-  }
-
-  g_dbus_method_invocation_return_value(invocation, NULL);
-}
-
-/* for now */
-static const GDBusInterfaceVTable interface_vtable = {
-    handle_method_call,
-    NULL,
-    NULL,
-    /* Padding for future expansion */
-    {NULL}};
-
-static void on_bus_acquired(GDBusConnection *connection, const gchar *name,
-                            gpointer user_data) {
-  (void)name;
-  (void)user_data;
-  guint registration_id;
-  registration_id = g_dbus_connection_register_object(
-      connection, "/org/eclipse/kuksaW3Cbackend",
-      introspection_data->interfaces[0], &interface_vtable, NULL,
-      NULL,  /* user_data_free_func */
-      NULL); /* GError** */
-  g_assert(registration_id > 0);
-}
-
-static void on_name_acquired(GDBusConnection *connection, const gchar *name,
-                             gpointer user_data) {
-  (void)user_data;
-  (void)connection;
-  printf("Bus Name acquired %s", name);
-}
-
-static void on_name_lost(GDBusConnection *connection, const gchar *name,
-                         gpointer user_data) {
-  (void)user_data;
-  (void)connection;
-  (void)name;
-  exit(1);
 }
 
 static void print_usage(const char *prog_name,
                         program_options::options_description &desc) {
   cerr << "Usage: " << prog_name << " OPTIONS" << endl;
   cerr << desc << std::endl;
+}
+
+void httpRunServer(boost::program_options::variables_map variables, std::shared_ptr<WebSockHttpFlexServer> httpServer, std::string docRoot, std::shared_ptr<VssCommandProcessor> cmdProcessor){
+
+    auto port = variables["port"].as<int>();
+    auto insecure = variables[("insecure")].as<bool>();
+    httpServer->AddListener(ObserverType::ALL, cmdProcessor);
+    httpServer->Initialize(variables["address"].as<string>(), port,
+                           std::move(docRoot),
+                           variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
+    httpServer->Start();
+
 }
 
 int main(int argc, const char *argv[]) {
@@ -204,6 +94,8 @@ int main(int argc, const char *argv[]) {
     std::cout << "-dirty";
   std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
 
+  former_handler = signal(SIGINT,ctrlC_Handler);
+
   program_options::options_description desc{"OPTIONS"};
   desc.add_options()
     ("help,h", "Help screen")
@@ -211,10 +103,10 @@ int main(int argc, const char *argv[]) {
       "Configuration file with `kuksa-val-server` input parameters."
       "Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup)."
       "Sample of configuration file parameters looks like:\n"
-      "vss = vss_rel_2.0.json\n"
+      "vss = vss_release_2.0.json\n"
       "cert-path = . \n"
       "log-level = ALL\n")
-    ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which `kuksa-val-server` shall handle. Sample 'vss_rel_2.0.json' file can be found under [unit-test](./unit-test/vss_rel_2.0.json)")
+    ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which `kuksa-val-server` shall handle. Sample 'vss_release_2.0.json' file can be found under [data](./data/vss-core/vss_release_2.0.json)")
     ("cert-path", program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
       "[mandatory] Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. ")
     ("insecure", program_options::bool_switch()->default_value(false), "By default, `kuksa-val-server` shall accept only SSL (TLS) secured connections. If provided, `kuksa-val-server` shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.")
@@ -223,6 +115,10 @@ int main(int argc, const char *argv[]) {
       "If provided, `kuksa-val-server` shall use different server address than default _'localhost'_")
     ("port", program_options::value<int>()->default_value(8090),
         "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
+    ("record", program_options::value<string>() -> default_value("noRecord"), 
+        "Enables recording into log file, for later being replayed into the server \nnoRecord: no data will be recorded\nrecordSet: record setting values only\nrecordSetAndGet: record getting value and setting value")
+    ("record-path",program_options::value<string>() -> default_value("."),
+        "Specifies record file path.")
     ("log-level",
       program_options::value<vector<string>>(&logLevels)->composing(),
       "Enable selected log level value. To allow for different log level "
@@ -256,12 +152,10 @@ int main(int argc, const char *argv[]) {
                 << std::endl;
     } else if (!variables["config-file"].defaulted()) {
       std::cerr << "Could not open config file: " << configFile << std::endl;
-      return -1;
     }
     // store again, because command line argument prefered
     program_options::store(parse_command_line(argc, argv, desc), variables);
   }
-
   // print usage
   if (variables.count("help")) {
     print_usage(argv[0], desc);
@@ -293,31 +187,7 @@ int main(int argc, const char *argv[]) {
 
   try {
     // initialize server
-
-    auto port = variables["port"].as<int>();
-    auto insecure = variables[("insecure")].as<bool>();
     auto vss_path = variables["vss"].as<boost::filesystem::path>();
-
-    if (variables.count("use-keycloak")) {
-      // Start D-Bus backend connection.
-      guint owner_id;
-      GMainLoop *loop;
-
-      introspection_data =
-          g_dbus_node_info_new_for_xml(introspection_xml, NULL);
-      g_assert(introspection_data != NULL);
-
-      owner_id =
-          g_bus_own_name(G_BUS_TYPE_SYSTEM, "org.eclipse.kuksa.w3cbackend",
-                         G_BUS_NAME_OWNER_FLAGS_NONE, on_bus_acquired,
-                         on_name_acquired, on_name_lost, NULL, NULL);
-
-      loop = g_main_loop_new(NULL, FALSE);
-      g_main_loop_run(loop);
-      g_bus_unown_name(owner_id);
-      g_dbus_node_info_unref(introspection_data);
-    }
-
     // initialize pseudo random number generator
     std::srand(std::time(nullptr));
 
@@ -331,12 +201,6 @@ int main(int argc, const char *argv[]) {
         variables["cert-path"].as<boost::filesystem::path>() / "jwt.key.pub";
     string jwtPubkey =
         Authenticator::getPublicKeyFromFile(pubKeyFile.string(), logger);
-    if (jwtPubkey == "") {
-      logger->Log(LogLevel::ERROR,
-                  "Could not read valid JWT pub key. Terminating.");
-      return -1;
-    }
-
     auto rest2JsonConverter =
         std::make_shared<RestV1ApiHandler>(logger, docRoot);
     auto httpServer = std::make_shared<WebSockHttpFlexServer>(
@@ -353,12 +217,23 @@ int main(int argc, const char *argv[]) {
         logger, httpServer, tokenValidator, accessCheck);
     subHandler->addPublisher(mqttPublisher);
 
-    auto database =
-        std::make_shared<VssDatabase>(logger, subHandler, accessCheck);
+    std::shared_ptr<VssDatabase> database = std::make_shared<VssDatabase>(logger,subHandler);
+
+    if(variables["record"].as<string>() == "recordSet" || variables["record"].as<string>()=="recordSetAndGet")
+    {
+        if(variables["record"].as<string>() == "recordSet")
+          std::cout << "Recording inputs\n";
+        else if(variables["record"].as<string>() == "recordSetAndGet")
+          std::cout << "Recording in- and outputs\n";
+    
+        database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),variables["record"].as<string>()));
+    }
+    else if(variables["record"].as<string>() !="noRecord")
+      throw std::runtime_error("record option \"" + variables["record"].as<string>() + "\" is invalid");
+
+
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(
         logger, database, tokenValidator, accessCheck, subHandler);
-
-    gDatabase = database.get();
 
     database->initJsonTree(vss_path);
 
@@ -382,18 +257,17 @@ int main(int argc, const char *argv[]) {
           }
         }
       }
+      bool insecureConn = false;
+      if(variables.count("insecure")){
+        insecureConn=true;
+      }
+      std::thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
+      std::thread grpc(grpcHandler::RunServer, cmdProcessor, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
+      http.join();
+      grpc.join();
+      
+
     }
-
-    httpServer->AddListener(ObserverType::ALL, cmdProcessor);
-    httpServer->Initialize(variables["address"].as<string>(), port,
-                           std::move(docRoot),
-                           variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
-    httpServer->Start();
-
-    while (1) {
-      usleep(1000000);
-    }
-
   } catch (const program_options::error &ex) {
     print_usage(argv[0], desc);
     cerr << ex.what() << std::endl;

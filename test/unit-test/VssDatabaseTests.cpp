@@ -16,6 +16,8 @@
 #include <turtle/mock.hpp>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
+#include "UnitTestHelpers.hpp"
+
 #include <memory>
 #include <string>
 
@@ -24,6 +26,7 @@
 #include "IAccessCheckerMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
 #include "exception.hpp"
+#include "kuksa.pb.h"
 
 #include "VssDatabase.hpp"
 
@@ -32,7 +35,6 @@ namespace {
   std::string validFilename{"test_vss_rel_2.0.json"};
 
   std::shared_ptr<ILoggerMock> logMock;
-  std::shared_ptr<IAccessCheckerMock> accCheckMock;
   std::shared_ptr<ISubscriptionHandlerMock> subHandlerMock;
 
   std::unique_ptr<VssDatabase> db;
@@ -41,11 +43,10 @@ namespace {
   struct TestSuiteFixture {
     TestSuiteFixture() {
       logMock = std::make_shared<ILoggerMock>();
-      accCheckMock = std::make_shared<IAccessCheckerMock>();
       subHandlerMock = std::make_shared<ISubscriptionHandlerMock>();
 
       MOCK_EXPECT(logMock->Log).at_least(0); // ignore log events
-      db = std::make_unique<VssDatabase>(logMock, subHandlerMock, accCheckMock);
+      db = std::make_unique<VssDatabase>(logMock, subHandlerMock);
     }
     ~TestSuiteFixture() {
       db.reset();
@@ -80,7 +81,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForSingleSignal_Shal
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getMetaData(signalPath.getVSSGen1Path()));
+  BOOST_CHECK_NO_THROW(returnJson = db->getMetaData(signalPath));
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -89,7 +90,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForBranch_Shall_Retu
 
   // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration"};
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration");
 
   // expectations
 
@@ -107,7 +108,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForInvalidPath_Shall
 
   // setup
   db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Invalid.Path"};
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Invalid.Path");
 
   // expectations
 
@@ -117,183 +118,133 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForInvalidPath_Shall
   BOOST_TEST(returnJson == NULL);
 }
 
-BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSignal_Shall_ReturnSignal) {
-  jsoncons::json returnJson;
-  WsChannel channel;
+BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_updateMetadata) {
+  jsoncons::json newMetaData, returnJson;
+  kuksa::kuksaChannel channel;
+
+  channel.set_connectionid(11);
+  channel.set_authorized(true);
+
+  // setup
+  db->initJsonTree(validFilename);
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Invalid.Path");
+
+  // expectations
+
+  // verify
+
+  BOOST_CHECK_THROW(db->updateMetaData(channel, signalPath, newMetaData), noPermissionException);
+}
+BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataForInvalidPath_Shall_throwException) {
+  jsoncons::json newMetaData, returnJson;
+  kuksa::kuksaChannel channel;
+
+  channel.set_connectionid(11);
+  channel.set_modifytree(true);
+
+  // setup
+  db->initJsonTree(validFilename);
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Invalid.Path");
+
+  // expectations
+
+  // verify
+
+  BOOST_CHECK_THROW(db->updateMetaData(channel, signalPath, newMetaData), notValidException);
+}
+BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataValidPath) {
+  jsoncons::json newMetaData, returnJson;
+  kuksa::kuksaChannel channel;
+
+  channel.set_connectionid(11);
+  channel.set_modifytree(true);
 
   // setup
   db->initJsonTree(validFilename);
   VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
+  // expectations
+
+  std::string expectedJsonString{R"({"Vehicle":{"children":{"Acceleration":{"children":{"Vertical":{"bla":"blu","datatype":"int64","description":"Vehicle acceleration in Z (vertical acceleration).","type":"sensor","unit":"m/s2","uuid":"9521e8d36a9b546d9414a779f5dd9bef"}},"description":"Spatial acceleration","type":"branch","uuid":"ce0fb48b566354c7841e279125f6f66d"}},"description":"High-level vehicle data.","type":"branch","uuid":"1c72453e738511e9b29ad46a6a4b77e9"}})"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  std::string metaDataString{R"({"bla":"blu","datatype":"int64"})"};
+  newMetaData = jsoncons::json::parse(metaDataString);
+  BOOST_CHECK_NO_THROW(db->updateMetaData(channel, signalPath, newMetaData));
+
+  // verify
+
+  BOOST_CHECK_NO_THROW(returnJson = db->getMetaData(signalPath));
+  BOOST_TEST(returnJson == expectedJson);
+
+}
+BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSignal_Shall_ReturnSignal) {
+  jsoncons::json returnJson;
+
+  // setup
+  db->initJsonTree(validFilename);
+  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
 
   // expectations
 
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
-    .returns(true);
-
-  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","value":"---"})"};
+  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","dp":{"value":"---"}})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
+
+  verify_and_erase_timestampZero(returnJson["dp"]);
+
   BOOST_TEST(returnJson == expectedJson);
 }
 
-BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_Shall_ReturnAllValues) {
+BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_Shall_ReturnNoValues) {
   jsoncons::json returnJson;
-  WsChannel channel;
 
   // setup
   db->initJsonTree(validFilename);
   VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration");
 
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-
   // expectations
 
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
-    .returns(true);
-
-  std::string expectedJsonString{R"({"value":[{"Vehicle.Acceleration.Vertical":"---"},{"Vehicle.Acceleration.Longitudinal":"---"},{"Vehicle.Acceleration.Lateral":"---"}]})"};
+  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration","dp":{"value":"---"}})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
+
+  verify_and_erase_timestampZero(returnJson["dp"]);
+
   BOOST_TEST(returnJson == expectedJson);
 }
 
-BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_GetSingleSignal_Shall_Throw) {
-  WsChannel channel;
-
-  // setup
-  db->initJsonTree(validFilename);
-  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
-
-  channel.setConnID(11);
-  channel.setAuthorized(false);
-
-  // expectations
-
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
-    .returns(false);
-
-  // verify
-
-  BOOST_CHECK_THROW(db->getSignal(channel, signalPath, true), noPermissionException);
-}
-
-BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_GetBranch_Shall_Throw) {
-  WsChannel channel;
-
-  // setup
-  db->initJsonTree(validFilename);
-  VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
-
-  channel.setConnID(11);
-  channel.setAuthorized(false);
-
-  // expectations
-
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
-    .returns(false);
-
-  // verify
-
-  BOOST_CHECK_THROW(db->getSignal(channel, signalPath, true), noPermissionException);
-}
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSignal_Shall_SetValue) {
-  WsChannel channel;
-
   // setup
   db->initJsonTree(validFilename);
   VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
   
-  channel.setConnID(11);
-  channel.setAuthorized(false);
-
   // expectations
 
   jsoncons::json setValue, returnJson;
   setValue = 10;
 
-  MOCK_EXPECT(accCheckMock->checkWriteAccess)
-    .returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
-    .returns(true);
-  MOCK_EXPECT(subHandlerMock->updateByPath).with(signalPath.getVSSPath(),mock::any).returns(0);
   MOCK_EXPECT(subHandlerMock->updateByUUID)
     .at_least(1)
-    .with(mock::any, 10)
+    .with(mock::any, mock::any)
     .returns(0);
 
   // verify
 
-  BOOST_CHECK_NO_THROW(db->setSignal(channel, signalPath, setValue, true));
+  BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
-  BOOST_TEST(returnJson["value"].as<int>() == 10);
-}
-
-BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPath_Shall_ThrowError) {
-  WsChannel channel;
-
-  // setup
-  db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration"};
-  VSSPath vsspath = VSSPath::fromVSSGen1(signalPath);
-
-
-  channel.setConnID(11);
-  channel.setAuthorized(true);
-
-  // expectations
-
-  jsoncons::json setValue, returnJson;
-  setValue = 10;
-
-  MOCK_EXPECT(accCheckMock->checkWriteAccess)
-    .returns(true);
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
-    .returns(true);
-
-  // verify
-  //Acceleration is a branch, so can not be set
-  BOOST_CHECK_THROW(db->setSignal(channel, vsspath, setValue, true), genException);
-}
-
-BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelNotAuthorized_When_SetPath_Shall_ThrowError) {
-  WsChannel channel;
-
-  // setup
-  db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration.Vectical"};
-  VSSPath vsspath = VSSPath::fromVSSGen1(signalPath);
-
-  channel.setConnID(11);
-  channel.setAuthorized(false);
-
-  // expectations
-
-  jsoncons::json setValue, returnJson;
-  setValue = 10;
-
-  MOCK_EXPECT(accCheckMock->checkWriteAccess)
-    .returns(false);
-
-  // verify
-
-  BOOST_CHECK_THROW(db->setSignal(channel, vsspath, setValue, true), noPermissionException);
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
+  BOOST_TEST(returnJson["dp"]["value"].as<int>() == 10);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSignalNoChannel_Shall_SetValue) {
-  WsChannel channel;
-
     // setup
   db->initJsonTree(validFilename);
   VSSPath signalPath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
@@ -303,32 +254,258 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   jsoncons::json setValue, returnJson;
   setValue = 10;
 
-  MOCK_EXPECT(accCheckMock->checkReadAccess)
-    .returns(true);
-  MOCK_EXPECT(subHandlerMock->updateByPath).with(signalPath.getVSSPath(),mock::any).returns(0);
-
-
   // verify
+  MOCK_EXPECT(subHandlerMock->updateByUUID).with(mock::any, mock::any).returns(0);
 
-  BOOST_CHECK_NO_THROW(db->setSignalDBUS(signalPath.getVSSGen1Path(), setValue));
+  BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(channel, signalPath, true));
-  BOOST_TEST(returnJson["value"].as<int>() == 10);
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
+  BOOST_TEST(returnJson["dp"]["value"].as<int>() == 10);
 }
 
-BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetPathNoChannel_Shall_ThrowError) {
-  // setup
-  db->initJsonTree(validFilename);
-  std::string signalPath{"Vehicle.Acceleration"};
 
-  // expectations
-
-  jsoncons::json setValue, returnJson;
-  setValue = 10;
-
-  // verify
-
-  BOOST_CHECK_THROW(db->setSignalDBUS(signalPath, setValue), noPathFoundonTree);
+/*********************** isActor() tests ************************/
+BOOST_AUTO_TEST_CASE(Check_IsActor_ForActor) {
+    std::string inputJsonString{R"({
+  "datatype": "boolean",
+  "description": "Is brake light on",
+  "type": "actuator",
+  "uuid": "7b8b136ec8aa59cb8773aa3c455611a4"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isActor(inputJson) == true);
 }
+
+BOOST_AUTO_TEST_CASE(Check_IsActor_ForSensor) {
+    std::string inputJsonString{R"({
+  "datatype": "uint8",
+  "description": "Rain intensity. 0 = Dry, No Rain. 100 = Covered.",
+  "type": "sensor",
+  "unit": "percent",
+  "uuid": "02828e9e5f7b593fa2160e7b6dbad157"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isActor(inputJson) == false);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsActor_ForAttribute) {
+    std::string inputJsonString{R"(
+    {
+      "datatype": "uint16",
+      "description": "Gross capacity of the battery",
+      "type": "attribute",
+      "unit": "kWh",
+      "uuid": "7b5402cc647454b49ee019e8689d3737"
+    }
+    )"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isActor(inputJson) == false);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsActor_ForInvalid) {
+    std::string inputJsonString{R"({
+  "element": "invalidVSSJSon"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isActor(inputJson) == false);
+}
+
+/*********************** isSensor() tests ************************/
+BOOST_AUTO_TEST_CASE(Check_IsSensor_ForSensor) {
+    std::string inputJsonString{R"({
+  "datatype": "uint8",
+  "description": "Rain intensity. 0 = Dry, No Rain. 100 = Covered.",
+  "type": "sensor",
+  "unit": "percent",
+  "uuid": "02828e9e5f7b593fa2160e7b6dbad157"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isSensor(inputJson) == true);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsSensor_ForActor) {
+    std::string inputJsonString{R"({
+  "datatype": "boolean",
+  "description": "Is brake light on",
+  "type": "actuator",
+  "uuid": "7b8b136ec8aa59cb8773aa3c455611a4"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isSensor(inputJson) == false);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsSensor_ForAttribute) {
+  std::string inputJsonString{R"(
+  {
+    "datatype": "uint16",
+    "description": "Gross capacity of the battery",
+    "type": "attribute",
+    "unit": "kWh",
+    "uuid": "7b5402cc647454b49ee019e8689d3737"
+  }    
+  )"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isSensor(inputJson) == false);
+}
+
+
+BOOST_AUTO_TEST_CASE(Check_IsSensor_ForInvalid) {
+    std::string inputJsonString{R"({
+  "element": "invalidVSSJSon"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isSensor(inputJson) == false);
+}
+
+/*********************** isAttribute() tests ************************/
+BOOST_AUTO_TEST_CASE(Check_IsAttribute_ForSensor) {
+    std::string inputJsonString{R"({
+  "datatype": "uint8",
+  "description": "Rain intensity. 0 = Dry, No Rain. 100 = Covered.",
+  "type": "sensor",
+  "unit": "percent",
+  "uuid": "02828e9e5f7b593fa2160e7b6dbad157"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isAttribute(inputJson) == false);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsAttribute_ForActor) {
+    std::string inputJsonString{R"({
+  "datatype": "boolean",
+  "description": "Is brake light on",
+  "type": "actuator",
+  "uuid": "7b8b136ec8aa59cb8773aa3c455611a4"
+})"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isAttribute(inputJson) == false);
+}
+
+BOOST_AUTO_TEST_CASE(Check_IsAttribute_ForAttribute) {
+  std::string inputJsonString{R"(
+  {
+    "datatype": "uint16",
+    "description": "Gross capacity of the battery",
+    "type": "attribute",
+    "unit": "kWh",
+    "uuid": "7b5402cc647454b49ee019e8689d3737"
+  }    
+  )"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isAttribute(inputJson) == true);
+}
+
+
+BOOST_AUTO_TEST_CASE(Check_IsAttribute_ForInvalid) {
+  std::string inputJsonString{R"({
+  "element": "invalidVSSJSon"
+  })"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+  BOOST_TEST(VssDatabase::isAttribute(inputJson) == false);
+}
+
+
+/*** applyDefaultValue Checks **/
+BOOST_AUTO_TEST_CASE(applyDefaultValues_withDefault) {
+  std::string inputJsonString{R"(
+    {
+      "datatype": "uint8",
+      "default": 0,
+      "description": "Number of doors in vehicle",
+      "type": "attribute",
+      "uuid": "49a445e112f35283b4be6ec82812b29b"
+    }
+  )"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+
+  std::string expectedJsonString{R"(
+  {
+    "datatype": "uint8",
+    "default": 0,
+    "value": "0",
+    "description": "Number of doors in vehicle",
+    "type": "attribute",
+    "uuid": "49a445e112f35283b4be6ec82812b29b"
+  }
+  )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  db->applyDefaultValues(inputJson,VSSPath::fromVSS(""));
+  BOOST_TEST(inputJson == expectedJson);
+}
+
+
+BOOST_AUTO_TEST_CASE(applyDefaultValues_Recurse) {
+  std::string inputJsonString{R"(
+  {
+    "children": {
+      "ChargePlugType": {
+        "datatype": "string",
+        "default": "ccs",
+        "description": "Type of charge plug available on the vehicle (CSS includes Type2).",
+        "enum": [
+          "type 1",
+          "type 2",
+          "ccs",
+          "chademo"
+        ],
+        "type": "attribute",
+        "uuid": "0c4cf2b3979456928967e73b646bda05"
+      },
+      "ChargePortFlap": {
+        "datatype": "string",
+        "default": "closed",
+        "description": "Signal indicating if charge port cover is open or closed, can potentially be controlled manually.",
+        "enum": [
+          "open",
+          "closed"
+        ],
+        "type": "actuator",
+        "uuid": "528e53ad98c1546b90bb48f24f04815a"
+      }
+    }
+  }
+  )"};
+  jsoncons::json inputJson = jsoncons::json::parse(inputJsonString);
+
+  std::string expectedJsonString{R"(
+   {
+    "children": {
+      "ChargePlugType": {
+        "datatype": "string",
+        "default": "ccs",
+        "value": "ccs",
+        "description": "Type of charge plug available on the vehicle (CSS includes Type2).",
+        "enum": [
+          "type 1",
+          "type 2",
+          "ccs",
+          "chademo"
+        ],
+        "type": "attribute",
+        "uuid": "0c4cf2b3979456928967e73b646bda05"
+      },
+      "ChargePortFlap": {
+        "datatype": "string",
+        "default": "closed",
+        "value": "closed",
+        "description": "Signal indicating if charge port cover is open or closed, can potentially be controlled manually.",
+        "enum": [
+          "open",
+          "closed"
+        ],
+        "type": "actuator",
+        "uuid": "528e53ad98c1546b90bb48f24f04815a"
+      }
+    }
+  }
+  )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  db->applyDefaultValues(inputJson,VSSPath::fromVSS(""));
+  BOOST_TEST(inputJson == expectedJson);
+}
+
+
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2020 Robert Bosch GmbH.
+ * Copyright (c) 2020-2021 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -29,10 +29,6 @@
 #include "ILogger.hpp"
 
 
-
-using jsoncons::json;
-namespace jsonschema = jsoncons::jsonschema; 
-
 class VSSRequestValidator {
     public:
         VSSRequestValidator(std::shared_ptr<ILogger> loggerUtil);        
@@ -40,13 +36,18 @@ class VSSRequestValidator {
 
         void validateGet(jsoncons::json &request);
         void validateSet(jsoncons::json &request);
+        void validateUpdateMetadata(jsoncons::json &request);
+        void validateUpdateVSSTree(jsoncons::json &request);
+
         std::string tryExtractRequestId(jsoncons::json &request);
 
     private:
-        std::shared_ptr<jsonschema::json_schema<json>> getSchema;
-        std::shared_ptr<jsonschema::json_schema<json>> setSchema;
-        jsonschema::json_validator<json> *getValidator;
-        jsonschema::json_validator<json> *setValidator;
+        class MessageValidator;
+        std::unique_ptr<VSSRequestValidator::MessageValidator> getValidator;
+        std::unique_ptr<VSSRequestValidator::MessageValidator> setValidator;
+        std::unique_ptr<VSSRequestValidator::MessageValidator> updateMetadataValidator;
+        std::unique_ptr<VSSRequestValidator::MessageValidator> updateVSSTreeValidator;
+
         std::shared_ptr<ILogger> logger;
 };
 

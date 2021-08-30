@@ -25,21 +25,23 @@
 #include "IVssDatabaseMock.hpp"
 #include "IAuthenticatorMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
+#include "kuksa.pb.h"
 
-#include "AccessChecker.hpp"
+#include "IAccessCheckerMock.hpp"
 
 #include "VSSPath.hpp"
 
 #include "exception.hpp"
 #include "JsonResponses.hpp"
 #include "VssCommandProcessor.hpp"
+#include "UnitTestHelpers.hpp" 
 
 namespace {
   // common resources for tests
   std::shared_ptr<ILoggerMock> logMock;
   std::shared_ptr<IVssDatabaseMock> dbMock;
   std::shared_ptr<IAuthenticatorMock> authMock;
-  std::shared_ptr<IAccessChecker> accCheck;
+  std::shared_ptr<IAccessCheckerMock> accCheckMock;
 
   std::shared_ptr<ISubscriptionHandlerMock> subsHndlMock;
 
@@ -53,9 +55,9 @@ namespace {
       authMock = std::make_shared<IAuthenticatorMock>();
       subsHndlMock = std::make_shared<ISubscriptionHandlerMock>();
       //real auth checker, becasue this test module has been written before this could be mocked
-      accCheck = std::make_shared<AccessChecker>(authMock);
+      accCheckMock = std::make_shared<IAccessCheckerMock>();
 
-      processor = std::make_unique<VssCommandProcessor>(logMock, dbMock, authMock, accCheck, subsHndlMock);
+      processor = std::make_unique<VssCommandProcessor>(logMock, dbMock, authMock, accCheckMock, subsHndlMock);
     }
     ~TestSuiteFixture() {
       logMock.reset();
@@ -75,7 +77,7 @@ BOOST_FIXTURE_TEST_SUITE(VssCommandProcessorTests, TestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonPathNotFound;
@@ -86,40 +88,40 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   
   // setup
 
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::pathNotFound(requestId, "get", path2.getVSSPath(), jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "get", path2.getVSSGen1Path(), jsonPathNotFound);
 
   // expectations
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignalNew)
+  MOCK_EXPECT(dbMock->getLeafPaths)
     .once()
-    .with(mock::any, mock::equal(path2) ,true)
-    .returns(jsonPathNotFound);
+    .with(mock::equal(path2))
+    .returns(std::list<VSSPath>());
 
   // run UUT
   auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
   // verify
-
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonPathNotFound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  res["ts"]=jsonPathNotFound["ts"].as_string(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonPathNotFound);
 }
 
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonMalformedReq;
@@ -131,8 +133,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
   // setup
 
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -145,9 +147,17 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignalNew)
+  MOCK_EXPECT(dbMock->getLeafPaths)
     .once()
-    .with(mock::any, path2, true)
+    .with(mock::equal(path2))
+    .returns(std::list<VSSPath>{path2});
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+    .once()
+    .with(mock::any, mock::equal(path2))
+    .returns(true);
+  MOCK_EXPECT(dbMock->getSignal)
+    .once()
+    .with(path2)
     .throws(std::exception());
 
   // run UUT
@@ -155,16 +165,17 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
   auto res = json::parse(resStr);
 
   // verify
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonMalformedReq["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonMalformedReq["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
 
   BOOST_TEST(res == jsonMalformedReq);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonNoAccess;
@@ -175,32 +186,40 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
   // setup
 
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::noAccess(requestId, "get", "No read access to " + path, jsonNoAccess);
+  JsonResponses::noAccess(requestId, "get", "Insufficient read access to " + path, jsonNoAccess);
 
   // expectations
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
+  MOCK_EXPECT(dbMock->getLeafPaths)
+    .once()
+    .with(mock::equal(path2))
+    .returns(std::list<VSSPath>{path2});
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+    .once()
+    .with(mock::any, mock::equal(path2))
+    .returns(false);
 
-  MOCK_EXPECT(dbMock->getSignalNew)
-    .with(mock::any, path2, true)
-    .throws(noPermissionException("No read access to " + path));
+  MOCK_EXPECT(dbMock->getSignal)
+    .with(path2)
+    .throws(noPermissionException("Insufficient read access to " + path));
 
   // run UUT
   auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
   // verify
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonNoAccess["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonNoAccess["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
 
 
   BOOST_TEST(res == jsonNoAccess);
@@ -208,10 +227,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
-  jsoncons::json jsonSignalValue;
+  jsoncons::json jsonSignalData;
+  jsoncons::json jsonSignalDataPoint;
+  jsoncons::json jsonGetResponseForSignal;
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
@@ -219,42 +240,53 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
-  jsonSignalValue["action"] = "get";
-  jsonSignalValue["requestId"] = requestId;
-  jsonSignalValue["value"] = 123;
-  jsonSignalValue["timestamp"] = 11111111;
+  jsonSignalData["path"] = path;
+  jsonSignalDataPoint["value"] = 123;
+  jsonSignalDataPoint["ts"] = 11111111;
+  jsonSignalData["dp"] = jsonSignalDataPoint;
+
+  jsonGetResponseForSignal["action"] = "get";
+  jsonGetResponseForSignal["requestId"] = requestId;
+  jsonGetResponseForSignal["data"] = jsonSignalData;
+
 
   // expectations
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
+  MOCK_EXPECT(dbMock->getLeafPaths)
+    .once()
+    .with(mock::equal(path2))
+    .returns(std::list<VSSPath>{path2});
+  MOCK_EXPECT(accCheckMock->checkReadAccess)
+    .once()
+    .with(mock::any, mock::equal(path2))
+    .returns(true);
 
-  MOCK_EXPECT(dbMock->getSignalNew)
-    .with(mock::any, path2, true)
-    .returns(jsonSignalValue);
+  MOCK_EXPECT(dbMock->getSignal)
+    .with(path2)
+    .returns(jsonSignalData);
 
   // run UUT
   auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
   // verify
+  verify_and_erase_timestamp(res);
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
-  BOOST_TEST(res == jsonSignalValue);
+  BOOST_TEST(res == jsonGetResponseForSignal);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -262,13 +294,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
-  VSSPath path2 = VSSPath::fromVSSGen1(path);
+  VSSPath path2 = VSSPath::fromVSS(path);
 
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -276,18 +308,19 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
   jsonSignalValue["action"] = "get";
   jsonSignalValue["requestId"] = requestId;
-  jsonSignalValue["timestamp"] = 11111111;
+  jsonSignalValue["ts"] = 11111111;
 
-  JsonResponses::pathNotFound(requestId, "get", path2.getVSSPath(), jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "get", path2.getVSSGen1Path(), jsonPathNotFound);
 
   // expectations
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  MOCK_EXPECT(dbMock->getSignalNew)
-    .with(mock::any, path2, true)
-    .returns(jsonSignalValue);
+  MOCK_EXPECT(dbMock->getLeafPaths)
+    .once()
+    .with(mock::equal(path2))
+    .returns(std::list<VSSPath>{});
 
   // run UUT
   auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
@@ -295,9 +328,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonPathNotFound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonPathNotFound["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
   BOOST_TEST(res == jsonPathNotFound);
 }
 
@@ -306,7 +340,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonPathNotFound;
@@ -318,30 +352,28 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
   
   // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
-  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
-  channel.setPermissions(perm);
+  std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_permissions(perm);
+
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
   jsonSetRequestForSignal["value"] = requestValue;
   jsonSetRequestForSignal["requestId"] = requestId;
 
-  JsonResponses::pathNotFound(requestId, "set", vsspath.getVSSPath(), jsonPathNotFound);
+  JsonResponses::pathNotFound(requestId, "set", vsspath.getVSSGen1Path(), jsonPathNotFound);
 
   // expectations
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
-
+  
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->pathExists)
     .with(vsspath).returns(false);
-  MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, jsonValue, true)
-    .throws(noPathFoundonTree(""));
 
   // run UUT
   auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
@@ -349,15 +381,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonPathNotFound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonPathNotFound["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
   BOOST_TEST(res == jsonPathNotFound);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -365,8 +398,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
    // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
-  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
-  channel.setPermissions(perm);
+  std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
+  channel.set_permissions(perm);
 
   string requestId = "1";
   int requestValue = 300; //OoB for uint8
@@ -375,8 +408,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -385,7 +418,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
   jsonSignalValue["action"] = "set";
   jsonSignalValue["requestId"] = requestId;
-  jsonSignalValue["timestamp"] = 11111111;
+  jsonSignalValue["ts"] = 11111111;
 
   JsonResponses::valueOutOfBounds(requestId, "set", "", jsonValueOutOfBound);
 
@@ -396,9 +429,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(true);
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, jsonValue, true)
+    .with(vsspath, jsonValue)
     .throws(outOfBoundException(""));
 
   // run UUT
@@ -407,16 +444,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  jsonValueOutOfBound["timestamp"] = res["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonValueOutOfBound["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
 
   BOOST_TEST(res == jsonValueOutOfBound);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -429,8 +466,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -439,18 +476,23 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   jsonSignalValue["action"] = "set";
   jsonSignalValue["requestId"] = requestId;
-  jsonSignalValue["timestamp"] = 11111111;
+  jsonSignalValue["ts"] = 11111111;
 
-  JsonResponses::noAccess(requestId, "set", "No write  access to Signal/OBD/DTC1", jsonNoAccess);
+  JsonResponses::noAccess(requestId, "set", "No write access to Signal.OBD.DTC1", jsonNoAccess);
 
   // expectations
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
+  MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(false);
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, jsonValue, true)
+    .with(vsspath, jsonValue)
     .throws(noPermissionException(""));
 
   // run UUT
@@ -459,15 +501,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  jsonNoAccess["timestamp"] = res["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonNoAccess["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
   BOOST_TEST(res == jsonNoAccess);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -480,10 +523,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
   // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
-  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
-  channel.setPermissions(perm);
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
+  channel.set_permissions(perm);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -492,7 +535,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
   jsonSignalValue["action"] = "set";
   jsonSignalValue["requestId"] = requestId;
-  jsonSignalValue["timestamp"] = 11111111;
+  jsonSignalValue["ts"] = 11111111;
 
   JsonResponses::malFormedRequest(requestId, "get", "Unhandled error: std::exception", jsonMalformedReq);
 
@@ -500,13 +543,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
-
-  jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(true);
+  jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, jsonValue, true)
+    .with(vsspath, jsonValue)
     .throws(std::exception());
 
   // run UUT
@@ -515,17 +561,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  // Set timestamp for comparision purposes
-  jsonMalformedReq["timestamp"] = res["timestamp"].as<int64_t>();
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonMalformedReq["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
 
   BOOST_TEST(res == jsonMalformedReq);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -538,10 +583,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 
   // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
-  json perm = json::parse(R"({"Vehicle.OBD.*" : "wr"})");
-  channel.setPermissions(perm);
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
+  channel.set_permissions(perm);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -550,7 +595,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 
   jsonSignalValue["action"] = "set";
   jsonSignalValue["requestId"] = requestId;
-  jsonSignalValue["timestamp"] = 11111111;
+  jsonSignalValue["ts"] = 11111111;
 
   // expectations
 
@@ -560,9 +605,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   //as db is mocked, this test basically only checks if the command proccesor routes the query accordingly
   MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(true);
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
   MOCK_EXPECT(dbMock->setSignal)
-    .with(mock::any, vsspath, mock::any, true).returns(jsonSignalValue);
+    .with(vsspath, mock::any).returns(jsonSignalValue);
 
   // run UUT
   auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
@@ -570,9 +619,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonSignalValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
   BOOST_TEST(res == jsonSignalValue);
 }
 
@@ -581,7 +631,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnSubscrId)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -592,8 +642,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -601,7 +651,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
 
   jsonSignalValue["action"] = "subscribe";
   jsonSignalValue["requestId"] = requestId;
-  jsonSignalValue["timestamp"] = 11111111;
+  jsonSignalValue["ts"] = 11111111;
   jsonSignalValue["subscriptionId"] = subscriptionId;
 
   // expectations
@@ -619,15 +669,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonSignalValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
   BOOST_TEST(res == jsonSignalValue);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -638,8 +689,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -650,7 +701,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
   jsonSignalValueErr["message"] = "Unknown";
   jsonSignalValue["action"] = "subscribe";
   jsonSignalValue["requestId"] = requestId;
-  jsonSignalValue["timestamp"] = 11111111;
+  jsonSignalValue["ts"] = 11111111;
   jsonSignalValue["error"] = jsonSignalValueErr;
 
   // expectations
@@ -668,15 +719,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonSignalValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
   BOOST_TEST(res == jsonSignalValue);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonNoAccess;
@@ -686,8 +738,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -710,15 +762,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonNoAccess["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonNoAccess["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+
   BOOST_TEST(res == jsonNoAccess);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonPathNotFound;
@@ -728,8 +781,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -751,16 +804,18 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
   auto res = json::parse(resStr);
 
   // verify
-
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonPathNotFound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonPathNotFound["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+  
+  BOOST_TEST(res == jsonPathNotFound);
+  
   BOOST_TEST(res == jsonPathNotFound);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonOutOfBound;
@@ -770,8 +825,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -794,15 +849,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonOutOfBound["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonOutOfBound["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+  
   BOOST_TEST(res == jsonOutOfBound);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedException_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonMalformedReq;
@@ -812,8 +868,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -836,9 +892,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
 
   // verify
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonMalformedReq["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonMalformedReq["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+
   BOOST_TEST(res == jsonMalformedReq);
 }
 
@@ -847,7 +904,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
 
 BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsubscribe)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonUnsubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -857,8 +914,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
   jsonUnsubscribeRequestForSignal["subscriptionId"] = subscriptionId;
@@ -866,7 +923,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
 
   jsonSignalValue["action"] = "unsubscribe";
   jsonSignalValue["requestId"] = requestId;
-  jsonSignalValue["timestamp"] = 11111111;
+  jsonSignalValue["ts"] = 11111111;
   jsonSignalValue["subscriptionId"] = subscriptionId;
 
   // expectations
@@ -883,16 +940,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
   auto res = json::parse(resStr);
 
   // verify
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonSignalValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonSignalValue);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonUnsubscribeRequestForSignal;
   jsoncons::json jsonSignalValue, jsonSignalValueErr;
@@ -902,8 +959,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
   jsonUnsubscribeRequestForSignal["subscriptionId"] = subscriptionId;
@@ -914,7 +971,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
   jsonSignalValueErr["message"] = "Error while unsubscribing";
   jsonSignalValue["action"] = "unsubscribe";
   jsonSignalValue["requestId"] = requestId;
-  jsonSignalValue["timestamp"] = 11111111;
+  jsonSignalValue["ts"] = 11111111;
   jsonSignalValue["error"] = jsonSignalValueErr;
 
   // expectations
@@ -931,10 +988,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
   auto res = json::parse(resStr);
 
   // verify
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonSignalValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonSignalValue["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonSignalValue);
 }
 
@@ -943,18 +1000,19 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMetadata)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonGetMetaRequest;
   jsoncons::json jsonValue, jsonMetadata;
 
   string requestId = "1";
   std::string path{"Signal.OBD.DTC1"};
+  const VSSPath vssPath = VSSPath::fromVSSGen1(path);
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonGetMetaRequest["action"] = "getMetaData";
   jsonGetMetaRequest["requestId"] = requestId;
@@ -964,7 +1022,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
 
   jsonValue["action"] = "getMetaData";
   jsonValue["requestId"] = requestId;
-  jsonValue["timestamp"] = 11111111;
+  jsonValue["ts"] = 11111111;
   jsonValue["metadata"] = jsonMetadata;
 
   // expectations
@@ -973,7 +1031,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(dbMock->getMetaData)
-    .with(path)
+    .with(vssPath)
     .returns(jsonMetadata);
 
   // run UUT
@@ -981,10 +1039,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
   auto res = json::parse(resStr);
 
   // verify
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonValue["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonValue);
 }
 
@@ -993,7 +1051,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
 
 BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonAuthRequest;
   jsoncons::json jsonValue, jsonMetadata;
@@ -1004,8 +1062,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
 
   // setup
 
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsonAuthRequest["action"] = "authorize";
   jsonAuthRequest["requestId"] = requestId;
@@ -1013,7 +1071,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
 
   jsonValue["action"] = "authorize";
   jsonValue["requestId"] = requestId;
-  jsonValue["timestamp"] = 11111111;
+  jsonValue["ts"] = 11111111;
   jsonValue["TTL"] = ttl;
 
   // expectations
@@ -1032,16 +1090,16 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
   auto res = json::parse(resStr);
 
   // verify
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonValue["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonValue);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonAuthRequest;
   jsoncons::json jsonValue, jsonValueErr;
@@ -1052,8 +1110,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 
   // setup
 
-  channel.setAuthorized(true);
-  channel.setConnID(1);
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
 
   jsonAuthRequest["action"] = "authorize";
   jsonAuthRequest["requestId"] = requestId;
@@ -1064,7 +1122,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
   jsonValueErr["message"] = "Check the JWT token passed";
   jsonValue["action"] = "authorize";
   jsonValue["requestId"] = requestId;
-  jsonValue["timestamp"] = 11111111;
+  jsonValue["ts"] = 11111111;
   jsonValue["error"] = jsonValueErr;
 
   // expectations
@@ -1083,10 +1141,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
   auto res = json::parse(resStr);
 
   // verify
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
 
-  // // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonValue["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
   BOOST_TEST(res == jsonValue);
 }
 
@@ -1095,7 +1153,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyErrors)
 {
-  WsChannel channel;
+  kuksa::kuksaChannel channel;
 
   jsoncons::json jsonRequest;
   jsoncons::json jsonExpected, jsonValueErr;
@@ -1109,16 +1167,17 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonValueErr["reason"] = "Bad Request";
   jsonValueErr["message"] = "Key not found: 'action'";
   jsonExpected["error"] = jsonValueErr;
-  jsonExpected["timestamp"] = 123;
+  jsonExpected["ts"] = 123;
 
   //////////////////////
   // check empty request
   auto resStr = processor->processQuery(jsonRequest.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonExpected["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonExpected["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
@@ -1130,9 +1189,10 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonValueErr["message"] = "Key not found: 'path'";
   jsonExpected["error"] = jsonValueErr;
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonExpected["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonExpected["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
@@ -1144,9 +1204,9 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonValueErr["message"] = "Key not found: 'requestId'";
   jsonExpected["error"] = jsonValueErr;
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonExpected["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonExpected["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
@@ -1158,9 +1218,10 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonValueErr["message"] = "Unknown action requested";
   jsonExpected["error"] = jsonValueErr;
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonExpected["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonExpected["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
@@ -1171,9 +1232,10 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonValueErr["message"] = "";
   jsonExpected["error"] = jsonValueErr;
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonExpected["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonExpected["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+  
   res["error"] = jsonExpected["error"].as<json>();     // ignoring error content
   BOOST_TEST(res == jsonExpected);
 
@@ -1185,9 +1247,10 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonValueErr["message"] = "";
   jsonExpected["error"] = jsonValueErr;
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonExpected["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+    BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonExpected["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+  
   res["error"] = jsonExpected["error"].as<json>();     // ignoring error content
   BOOST_TEST(res == jsonExpected);
 
@@ -1199,9 +1262,10 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonValueErr["message"] = "";
   jsonExpected["error"] = jsonValueErr;
 
-  // timestamp must not be zero
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-  res["timestamp"] = jsonExpected["timestamp"].as<int64_t>(); // ignoring timestamp difference for response
+   BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonExpected["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+
   res["error"] = jsonExpected["error"].as<json>();     // ignoring error content
   BOOST_TEST(res == jsonExpected);
 }

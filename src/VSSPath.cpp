@@ -22,7 +22,7 @@
 #include <boost/algorithm/string.hpp>
 
 VSSPath::VSSPath(std::string vss, std::string vssgen1, std::string jsonpath, bool gen1origin)
-    : vsspath(vss), vssgen1path(vssgen1), jsonpath(jsonpath), gen1(gen1origin) {}
+    : vsspath(vss), vssgen1path(vssgen1), jsonpath(jsonpath), gen1_(gen1origin) {}
 
 std::string VSSPath::getVSSPath() const { return this->vsspath; }
 
@@ -30,7 +30,9 @@ std::string VSSPath::getVSSGen1Path() const  { return this->vssgen1path; }
 
 std::string VSSPath::getJSONPath() const { return this->jsonpath; }
 
-bool VSSPath::isGen1Origin() const { return this->gen1;}
+bool VSSPath::isGen1Origin() const { return this->gen1_;}
+
+std::string VSSPath::to_string() const {return isGen1Origin()? getVSSGen1Path() : getVSSPath();}
 
 VSSPath VSSPath::fromVSS(std::string input) {
   bool gen1=false;
@@ -101,7 +103,7 @@ VSSPath VSSPath::fromVSSGen1(std::string input) {
   return VSSPath(vss, input, gen2tojson(vss),true);
 }
 
-VSSPath VSSPath::fromJSON(std::string input) {
+VSSPath VSSPath::fromJSON(std::string input, bool gen1) {
   std::string vss = VSSPath::jsontogen2(input);
-  return VSSPath(vss, VSSPath::gen2togen1(vss), input,false);
+  return VSSPath(vss, VSSPath::gen2togen1(vss), input, gen1);
 }

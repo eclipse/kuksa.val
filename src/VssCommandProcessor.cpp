@@ -19,7 +19,6 @@
 #include <sstream>
 #include <string>
 
-#include "permmclient.hpp"
 #include "exception.hpp"
 #include "WsChannel.hpp"
 
@@ -32,6 +31,7 @@
 #include "IVssDatabase.hpp"
 #include "IAuthenticator.hpp"
 #include "ISubscriptionHandler.hpp"
+#include <boost/algorithm/string.hpp>
 
 #ifdef JSON_SIGNING_ON
 #include "SigningHandler.hpp"
@@ -49,7 +49,7 @@ VssCommandProcessor::VssCommandProcessor(
   database = dbase;
   tokenValidator = vdator;
   subHandler = subhandler;
-  accessValidator = accC;
+  accessValidator_ = accC;
   requestValidator = new VSSRequestValidator(logger);
 #ifdef JSON_SIGNING_ON
   // TODO: add signer as dependency
@@ -58,7 +58,7 @@ VssCommandProcessor::VssCommandProcessor(
 }
 
 VssCommandProcessor::~VssCommandProcessor() {
-  accessValidator.reset();
+  accessValidator_.reset();
   delete requestValidator;
 #ifdef JSON_SIGNING_ON
   signer.reset();
@@ -67,7 +67,7 @@ VssCommandProcessor::~VssCommandProcessor() {
 
 
 
-string VssCommandProcessor::processSubscribe(WsChannel &channel,
+string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
                                              const string & request_id, 
                                              const string & path) {
   logger->Log(LogLevel::VERBOSE, string("VssCommandProcessor::processSubscribe: Client wants to subscribe ")+path);
@@ -95,7 +95,7 @@ string VssCommandProcessor::processSubscribe(WsChannel &channel,
     answer["action"] = "subscribe";
     answer["requestId"] = request_id;
     answer["subscriptionId"] = subId;
-    answer["timestamp"] = JsonResponses::getTimeStamp();
+    answer["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(answer);
@@ -112,7 +112,7 @@ string VssCommandProcessor::processSubscribe(WsChannel &channel,
     error["message"] = "Unknown";
 
     root["error"] = error;
-    root["timestamp"] = JsonResponses::getTimeStamp();
+    root["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
 
@@ -129,7 +129,7 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
     answer["action"] = "unsubscribe";
     answer["requestId"] = request_id;
     answer["subscriptionId"] = subscribeID;
-    answer["timestamp"] = JsonResponses::getTimeStamp();
+    answer["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(answer);
@@ -146,7 +146,7 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
     error["message"] = "Error while unsubscribing";
 
     root["error"] = error;
-    root["timestamp"] = JsonResponses::getTimeStamp();
+    root["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(root);
@@ -154,17 +154,30 @@ string VssCommandProcessor::processUnsubscribe(const string & request_id,
   }
 }
 
-string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, const string& request_id, const jsoncons::json& metaData){
+string VssCommandProcessor::processUpdateVSSTree(kuksa::kuksaChannel& channel, jsoncons::json &request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateVSSTree");
   
+  try {
+    requestValidator->validateUpdateVSSTree(request);
+  } catch (jsoncons::jsonschema::schema_error &e) {
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, msg);
+    return JsonResponses::malFormedRequest( requestValidator->tryExtractRequestId(request), "updateVSSTree", string("Schema error: ") + msg);
+  } catch (std::exception &e) {
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
+    return JsonResponses::malFormedRequest(
+        requestValidator->tryExtractRequestId(request) , "updateVSSTree", string("Unhandled error: ") + e.what());
+  }
+
   jsoncons::json answer;
   answer["action"] = "updateVSSTree";
-  answer["requestId"] = request_id;
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer.insert_or_assign("requestId", request["requestId"]);
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   try {
-    database->updateJsonTree(channel, metaData);
+    database->updateJsonTree(channel, request["metadata"]);
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json error;
@@ -179,31 +192,44 @@ string VssCommandProcessor::processUpdateVSSTree(WsChannel& channel, const strin
     return ss.str();
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request_id, "updateVSSTree", nopermission.what());
+    return JsonResponses::noAccess(request["requestId"].as<std::string>(), "updateVSSTree", nopermission.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
-    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
+    return JsonResponses::malFormedRequest(request["requestId"].as<std::string>(), "get", string("Unhandled error: ") + e.what());
   }
-
 
   ss << pretty_print(answer);
   return ss.str();
-  
 }
 
-string VssCommandProcessor::processGetMetaData(const string & request_id,
-                                               const string & path) {
+string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
+  VSSPath path=VSSPath::fromVSS(request["path"].as_string());
+
+  try {
+    requestValidator->validateGet(request);
+  } catch (jsoncons::jsonschema::schema_error & e) {
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, msg);
+    return JsonResponses::malFormedRequest(requestValidator->tryExtractRequestId(request), "getMetaData", string("Schema error: ") + msg);
+  } catch (std::exception &e) {
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + msg );
+    return JsonResponses::malFormedRequest(
+        requestValidator->tryExtractRequestId(request), "getMetaData", string("Unhandled error: ") + e.what());
+  }
+
   jsoncons::json result;
   result["action"] = "getMetaData";
-  result["requestId"] = request_id;
-
+  result.insert_or_assign("requestId", request["requestId"]);
   jsoncons::json st = database->getMetaData(path);
-  result["timestamp"] = JsonResponses::getTimeStamp();
+  result["ts"] = JsonResponses::getTimeStamp();
   if (0 == st.size()){
     jsoncons::json error;
     error["number"] = 404;
     error["reason"] = "Path not found";
-    error["message"] = "In database no metadata found for path " + path;
+    error["message"] = "In database no metadata found for path " + path.getVSSPath();
     result["error"] = error;
   
   } else {
@@ -216,17 +242,33 @@ string VssCommandProcessor::processGetMetaData(const string & request_id,
   return ss.str();
 }
 
-string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, const std::string& request_id, const string& path, const jsoncons::json& metaData){
+string VssCommandProcessor::processUpdateMetaData(kuksa::kuksaChannel& channel, jsoncons::json& request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateMetaData");
+  VSSPath path=VSSPath::fromVSS(request["path"].as_string());
+
+  try {
+    requestValidator->validateUpdateMetadata(request);
+  } catch (jsoncons::jsonschema::schema_error & e) {
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, msg);
+    return JsonResponses::malFormedRequest(requestValidator->tryExtractRequestId(request), "updateMetaData", string("Schema error: ") + msg);
+  } catch (std::exception &e) {
+    std::string msg=std::string(e.what());
+    boost::algorithm::trim(msg);
+    logger->Log(LogLevel::ERROR, "Unhandled error: " + msg );
+    return JsonResponses::malFormedRequest(
+        requestValidator->tryExtractRequestId(request), "updateMetaData", string("Unhandled error: ") + e.what());
+  }
 
   jsoncons::json answer;
   answer["action"] = "updateMetaData";
-  answer["requestId"] = request_id;
-  answer["timestamp"] = JsonResponses::getTimeStamp();
+  answer.insert_or_assign("requestId", request["requestId"]);
+  answer["ts"] = JsonResponses::getTimeStamp();
 
   std::stringstream ss;
   try {
-    database->updateMetaData(channel, path, metaData);
+    database->updateMetaData(channel, path, request["metadata"]);
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json error;
@@ -240,11 +282,11 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, const std:
     ss << pretty_print(answer);
     return ss.str();
   } catch (noPermissionException &nopermission) {
-    logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request_id, "updateMetaData", nopermission.what());
+    logger->Log(LogLevel::WARNING, string(nopermission.what()));
+    return JsonResponses::noAccess(request["requestId"].as<string>(), "updateMetaData", nopermission.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
-    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
+    return JsonResponses::malFormedRequest(request["requestId"].as<string>(), "get", string("Unhandled error: ") + e.what());
   } 
 
   ss << pretty_print(answer);
@@ -252,74 +294,7 @@ string VssCommandProcessor::processUpdateMetaData(WsChannel& channel, const std:
   
 }
 
-// Talks to the permission management daemon and processes the token received.
-string VssCommandProcessor::processAuthorizeWithPermManager(WsChannel &channel,
-                                                            const string & request_id,
-                                                            const string & client, 
-                                                            const string & clientSecret) {
-
-  jsoncons::json response;
-  // Get Token from permission management daemon.
-  try {
-     response = getPermToken(logger, client, clientSecret);
-  } catch (genException &exp) {
-    logger->Log(LogLevel::ERROR, exp.what());
-    jsoncons::json result;
-    jsoncons::json error;
-    result["action"] = "kuksa-authorize";
-    result["requestId"] = request_id;
-    error["number"] = 501;
-    error["reason"] = "No token received from permission management daemon";
-    error["message"] = "Check if the permission managemnt daemon is running";
-
-    result["error"] = error;
-    result["timestamp"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(result);
-    return ss.str();
-  }
-  int ttl = -1;
-  if (response.contains("token") && response.contains("pubkey")) {
-     try {
-        tokenValidator->updatePubKey(response["pubkey"].as<string>());
-        ttl = tokenValidator->validate(channel, response["token"].as<string>());
-     } catch (exception &e) {
-        logger->Log(LogLevel::ERROR, e.what());
-        ttl = -1;
-     }
-  }
-
-  if (ttl == -1) {
-    jsoncons::json result;
-    jsoncons::json error;
-    result["action"] = "kuksa-authorize";
-    result["requestId"] = request_id;
-    error["number"] = 401;
-    error["reason"] = "Invalid Token";
-    error["message"] = "Check the JWT token passed";
-
-    result["error"] = error;
-    result["timestamp"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(result);
-    return ss.str();
-
-  } else {
-    jsoncons::json result;
-    result["action"] = "kuksa-authorize";
-    result["requestId"] = request_id;
-    result["TTL"] = ttl;
-    result["timestamp"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(result);
-    return ss.str();
-  }
-}
-
-string VssCommandProcessor::processAuthorize(WsChannel &channel,
+string VssCommandProcessor::processAuthorize(kuksa::kuksaChannel &channel,
                                              const string & request_id,
                                              const string & token) {
   int ttl = tokenValidator->validate(channel, token);
@@ -334,7 +309,7 @@ string VssCommandProcessor::processAuthorize(WsChannel &channel,
     error["message"] = "Check the JWT token passed";
 
     result["error"] = error;
-    result["timestamp"] = JsonResponses::getTimeStamp();
+    result["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
@@ -345,7 +320,7 @@ string VssCommandProcessor::processAuthorize(WsChannel &channel,
     result["action"] = "authorize";
     result["requestId"] = request_id;
     result["TTL"] = ttl;
-    result["timestamp"] = JsonResponses::getTimeStamp();
+    result["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;
     ss << pretty_print(result);
@@ -354,7 +329,7 @@ string VssCommandProcessor::processAuthorize(WsChannel &channel,
 }
 
 string VssCommandProcessor::processQuery(const string &req_json,
-                                         WsChannel &channel) {
+                                         kuksa::kuksaChannel &channel) {
   jsoncons::json root;
   string response;
   try {
@@ -364,16 +339,27 @@ string VssCommandProcessor::processQuery(const string &req_json,
 
     if (action == "get") {
         response = processGet2(channel, root);
-        //response = processGet(channel, request_id, path);
 #ifdef JSON_SIGNING_ON
         response = signer->sign(response);
 #endif  
     }
     else if (action == "set") {
         response = processSet2(channel, root);
-        #ifdef JSON_SIGNING_ON
+#ifdef JSON_SIGNING_ON
         response = signer->sign(response);
-        #endif
+#endif
+    }
+    else if (action == "getMetaData") {
+        response = processGetMetaData(root);
+#ifdef JSON_SIGNING_ON
+        response = signer->sign(response);
+#endif
+    }
+    else if (action == "updateMetaData") {
+        response = processUpdateMetaData(channel, root);
+#ifdef JSON_SIGNING_ON
+        response = signer->sign(response);
+#endif
     }
     else if (action == "authorize") {
       string token = root["tokens"].as<string>();
@@ -391,18 +377,8 @@ string VssCommandProcessor::processQuery(const string &req_json,
               + to_string(subscribeID) + " with request id " + request_id);
 
       response = processUnsubscribe(request_id, subscribeID);
-    } else if ( action == "kuksa-authorize") {
-      string clientID = root["clientid"].as<string>();
-      string clientSecret = root["secret"].as<string>();
-      //string request_id = root["requestId"].as<int>();
-      string request_id = root["requestId"].as<string>();
-      logger->Log(LogLevel::VERBOSE, "vsscommandprocessor::processQuery: kuksa authorize query with clientID = "
-           + clientID + " with secret " + clientSecret);
-      response = processAuthorizeWithPermManager(channel, request_id, clientID, clientSecret);
     } else if (action == "updateVSSTree") {
-      string request_id = root["requestId"].as<string>();
-      logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: update MetaData query  for with request id " + request_id);
-      response = processUpdateVSSTree(channel, request_id, root["metadata"]);
+      response = processUpdateVSSTree(channel,root);
     } else {
       string path = root["path"].as<string>();
       string request_id = root["requestId"].as<string>();
@@ -411,27 +387,19 @@ string VssCommandProcessor::processQuery(const string &req_json,
              + path + " with request id " + request_id);
         response =
             processSubscribe(channel, request_id, path);
-      } else if (action == "getMetaData") {
-        logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: get MetaData query  for "
-             + path + " with request id " + request_id);
-        response = processGetMetaData(request_id, path);
-      } else if (action == "updateMetaData") {
-        string request_id = root["requestId"].as<string>();
-        logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: update MetaData query  for with request id " + request_id);
-        response = processUpdateMetaData(channel, request_id, path, root["metadata"]);
       } else {
-        logger->Log(LogLevel::INFO, "VssCommandProcessor::processQuery: Unknown action " + action);
+        logger->Log(LogLevel::WARNING, "VssCommandProcessor::processQuery: Unknown action " + action);
         return JsonResponses::malFormedRequest("Unknown action requested");
       }
     }
   } catch (jsoncons::ser_error &e) {
-    logger->Log(LogLevel::ERROR, "JSON parse error");
+    logger->Log(LogLevel::WARNING, "JSON parse error");
     return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::key_not_found &e) {
-    logger->Log(LogLevel::ERROR, "JSON key not found error");
+    logger->Log(LogLevel::WARNING, "JSON key not found error");
     return JsonResponses::malFormedRequest(e.what());
   } catch (jsoncons::not_an_object &e) {
-    logger->Log(LogLevel::ERROR, "JSON not an object error");
+    logger->Log(LogLevel::WARNING, "JSON not an object error");
     return JsonResponses::malFormedRequest(e.what());
   }
 

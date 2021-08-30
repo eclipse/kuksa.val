@@ -17,20 +17,21 @@
 #include <memory>
 #include <string>
 
+#include "kuksa.pb.h"
+
 using namespace std;
 
-class WsChannel;
 class ILogger;
 
 class IAuthenticator {
 public:
   virtual ~IAuthenticator() {}
 
-  virtual int validate(WsChannel &channel,
+  virtual int validate(kuksa::kuksaChannel &channel,
                        string authToken) = 0;
   virtual void updatePubKey(string key) = 0;
-  virtual bool isStillValid(WsChannel &channel) = 0;
-  virtual void resolvePermissions(WsChannel &channel) = 0;
+  virtual bool isStillValid(kuksa::kuksaChannel &channel) = 0;
+  virtual void resolvePermissions(kuksa::kuksaChannel &channel) = 0;
 };
 
 #endif

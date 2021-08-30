@@ -1,3 +1,2 @@
-importlib_metadata >= 3.6
-websockets~=8.1
+kuksa-viss-client
 gps

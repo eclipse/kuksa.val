@@ -17,7 +17,8 @@
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/test/included/unit_test.hpp>
 //can not undefine here, needs to be on for whole compilation unit to prevent warning
- 
+
+#include "UnitTestHelpers.hpp" 
 
 #include <string>
 #include <memory>
@@ -38,12 +39,8 @@
 #include "BasicLogger.hpp"
 #include "IServerMock.hpp"
 #include "IPublisherMock.hpp"
+#include "kuksa.pb.h"
 
-
-namespace utf = boost::unit_test;
-// using namespace jsoncons;
-// using namespace jsoncons::jsonpath;
-// using jsoncons::json;
 
 /* AUTH_JWT permission token looks like this
 {
@@ -64,9 +61,6 @@ This has be signed using a local private/pub key pair using RS256 Algorithm (asy
 
 */
 #define AUTH_JWT "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJrdWtzYS52YWwiLCJpc3MiOiJFY2xpcHNlIEtVS1NBIERldiIsImFkbWluIjp0cnVlLCJtb2RpZnlUcmVlIjp0cnVlLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTc2NzIyNTU5OSwia3Vrc2EtdnNzIjp7IioiOiJydyJ9fQ.p2cnFGH16QoQ14l6ljPVKggFXZKmD-vrw8G6Vs6DvAokjsUG8FHh-F53cMsE-GDjyZH_1_CrlDCnbGlqjsFbgAylqA7IAJWp9_N6dL5p8DHZTwlZ4IV8L1CtCALs7XVqvcQKHCCzB63Y8PgVDCAqpQSRb79JPVD4pZwkBKpOknfEY5y9wfbswZiRKdgz7o61_oFnd-yywpse-23HD6v0htThVF1SuGL1PuvGJ8p334nt9bpkZO3gaTh1xVD_uJMwHzbuBCF33_f-I5QMZO6bVooXqGfe1zvl3nDrPEjq1aPulvtP8RgREYEqE6b2hB8jouTiC_WpE3qrdMw9sfWGFbm04qC-2Zjoa1yYSXoxmYd0SnliSYHAad9aXoEmFENezQV-of7sc-NX1-2nAXRAEhaqh0IRuJwB4_sG7SvQmnanwkz-sBYxKqkoFpOsZ6hblgPDOPYY2NAsZlYkjvAL2mpiInrsmY_GzGsfwPeAx31iozImX75rao8rm-XucAmCIkRlpBz6MYKCjQgyRz3UtZCJ2DYF4lKqTjphEAgclbYZ7KiCuTn9HualwtEmVzHHFneHMKl7KnRQk-9wjgiyQ5nlsVpCCblg6JKr9of4utuPO3cBvbjhB4_ueQ40cpWVOICcOLS7_w0i3pCq1ZKDEMrYDJfz87r2sU9kw1zeFQk";
-
-namespace bt = boost::unit_test;
-#define PORT 8090
 
 std::shared_ptr<ILogger> logger;
 std::shared_ptr<ISubscriptionHandler> subhandler;
@@ -95,7 +89,7 @@ kuksavalunittest::kuksavalunittest() {
   accesshandler = std::make_shared<IAccessCheckerMock>();
   subhandler = std::make_shared<SubscriptionHandler>(logger, httpServer, authhandler, accesshandler);
   subhandler->addPublisher(mqttPublisher);
-  database = std::make_shared<VssDatabase>(logger, subhandler, accesshandler);
+  database = std::make_shared<VssDatabase>(logger, subhandler);
   commandProc = std::make_shared<VssCommandProcessor>(logger, database, authhandler , accesshandler, subhandler);
   json_signer = std::make_shared<SigningHandler>(logger);
   database->initJsonTree("test_vss_rel_2.0.json");
@@ -104,7 +98,7 @@ kuksavalunittest::kuksavalunittest() {
    auto accesshandler_real = std::make_shared<AccessChecker>(authhandler);
    auto subhandler_auth = std::make_shared<SubscriptionHandler>(logger, httpServer, authhandler, accesshandler_real);
    subhandler_auth->addPublisher(mqttPublisher);
-   auto database_auth = std::make_shared<VssDatabase>(logger, subhandler_auth, accesshandler_real);
+   auto database_auth = std::make_shared<VssDatabase>(logger, subhandler_auth);
    database_auth->initJsonTree("test_vss_rel_2.0.json");
 
    commandProc_auth = std::make_shared<VssCommandProcessor>(logger, database_auth, authhandler , accesshandler_real, subhandler_auth);
@@ -135,13 +129,13 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     string test_path_Uint32 = "Vehicle.OBD.TimeSinceDTCCleared";
     VSSPath vss_test_path_Uint32 = VSSPath::fromVSSGen1(test_path_Uint32);
 
-    string test_path_int8 = "Vehicle.OBD.ShortTermFuelTrim2";
+    string test_path_int8 = "Vehicle.Body.Mirrors.Right.Tilt";
     VSSPath vss_test_path_int8 = VSSPath::fromVSSGen1(test_path_int8);
 
     string test_path_int16 = "Vehicle.OBD.FuelInjectionTiming";
     VSSPath vss_test_path_int16 = VSSPath::fromVSSGen1(test_path_int16);
 
-    string test_path_int32 = "Vehicle.Drivetrain.Transmission.Speed";
+    string test_path_int32 = "Vehicle.ADAS.CruiseControl.SpeedSet";
     VSSPath vss_test_path_int32 = VSSPath::fromVSSGen1(test_path_int32);
 
     string test_path_boolean = "Vehicle.OBD.Status.MIL";
@@ -150,7 +144,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     string test_path_Float = "Vehicle.OBD.FuelRate";
    VSSPath vss_test_path_Float = VSSPath::fromVSSGen1(test_path_Float);
 
-    string test_path_Double =  "Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Latitude";
+    string test_path_Double =  "Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Altitude";
     VSSPath vss_test_path_Double = VSSPath::fromVSSGen1(test_path_Double);
 
     string test_path_string = "Vehicle.Cabin.Infotainment.Media.Played.URI";
@@ -160,8 +154,8 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     MOCK_EXPECT(accesshandler->checkReadAccess).returns(true);
     MOCK_EXPECT(mqttPublisher->sendPathValue).returns(true);
     json result;
-    WsChannel channel;
-    channel.setConnID(1234);
+    kuksa::kuksaChannel channel;
+    channel.set_connectionid(1234);
     string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -172,7 +166,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
     string get_request(R"({
 		"action": "get",
-		"path": "Vehicle.OBD.Speed",
+		"path": "Vehicle.Speed",
 		"requestId": "8756"
 	})");
     string response = commandProc->processQuery(get_request,channel);
@@ -181,33 +175,33 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint8_boundary_low;
     test_value_Uint8_boundary_low = numeric_limits<uint8_t>::min();
 
-    database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_low, true);
-    result = database->getSignal(channel, vss_test_path_Uint8,true);
+    database->setSignal(vss_test_path_Uint8, test_value_Uint8_boundary_low);
+    result = database->getSignal(vss_test_path_Uint8);
 
-    BOOST_TEST(result["value"].as<uint8_t>() == numeric_limits<uint8_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<uint8_t>() == numeric_limits<uint8_t>::min());
 
     json test_value_Uint8_boundary_high;
     test_value_Uint8_boundary_high = numeric_limits<uint8_t>::max();
 
-    database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_high, true);
-    result = database->getSignal(channel, vss_test_path_Uint8, true);
+    database->setSignal(vss_test_path_Uint8, test_value_Uint8_boundary_high);
+    result = database->getSignal(vss_test_path_Uint8);
 
-   BOOST_TEST(result["value"].as<uint8_t>() == numeric_limits<uint8_t>::max());
+   BOOST_TEST(result["dp"]["value"].as<uint8_t>() == numeric_limits<uint8_t>::max());
 
     json test_value_Uint8_boundary_middle;
     test_value_Uint8_boundary_middle = numeric_limits<uint8_t>::max() / 2;
 
-    database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_middle, true);
-    result = database->getSignal(channel, vss_test_path_Uint8, true);
+    database->setSignal(vss_test_path_Uint8, test_value_Uint8_boundary_middle);
+    result = database->getSignal(vss_test_path_Uint8);
 
-    BOOST_TEST(result["value"].as<uint8_t>() == numeric_limits<uint8_t>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<uint8_t>() == numeric_limits<uint8_t>::max() / 2);
 
     // Test out of bound
     bool isExceptionThrown = false;
     json test_value_Uint8_boundary_low_outbound;
-    test_value_Uint8_boundary_low_outbound = -1;
+    test_value_Uint8_boundary_low_outbound = "-1";
     try {
-       database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_low_outbound, true);
+       database->setSignal(vss_test_path_Uint8, test_value_Uint8_boundary_low_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -216,9 +210,9 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     isExceptionThrown = false;
 
     json test_value_Uint8_boundary_high_outbound;
-    test_value_Uint8_boundary_high_outbound = numeric_limits<uint8_t>::max() + 1;
+    test_value_Uint8_boundary_high_outbound = "256";
     try {
-       database->setSignal(channel,vss_test_path_Uint8, test_value_Uint8_boundary_high_outbound, true);
+       database->setSignal(vss_test_path_Uint8, test_value_Uint8_boundary_high_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -231,33 +225,33 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint16_boundary_low;
     test_value_Uint16_boundary_low = numeric_limits<uint16_t>::min();
 
-    database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_low,true);
-    result = database->getSignal(channel, vss_test_path_Uint16, true);
+    database->setSignal(vss_test_path_Uint16, test_value_Uint16_boundary_low);
+    result = database->getSignal(vss_test_path_Uint16);
 
-    BOOST_TEST(result["value"].as<uint16_t>() == numeric_limits<uint16_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<uint16_t>() == numeric_limits<uint16_t>::min());
 
     json test_value_Uint16_boundary_high;
     test_value_Uint16_boundary_high = numeric_limits<uint16_t>::max();
 
-    database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_high,true);
-    result = database->getSignal(channel, vss_test_path_Uint16, true);
+    database->setSignal(vss_test_path_Uint16, test_value_Uint16_boundary_high);
+    result = database->getSignal(vss_test_path_Uint16);
 
-    BOOST_TEST(result["value"].as<uint16_t>() == numeric_limits<uint16_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<uint16_t>() == numeric_limits<uint16_t>::max());
 
     json test_value_Uint16_boundary_middle;
     test_value_Uint16_boundary_middle = numeric_limits<uint16_t>::max() / 2;
 
-    database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_middle,true);
-    result = database->getSignal(channel, vss_test_path_Uint16, true);
+    database->setSignal(vss_test_path_Uint16, test_value_Uint16_boundary_middle);
+    result = database->getSignal(vss_test_path_Uint16);
 
-    BOOST_TEST(result["value"].as<uint16_t>() == numeric_limits<uint16_t>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<uint16_t>() == numeric_limits<uint16_t>::max() / 2);
 
     // Test out of bound
     isExceptionThrown = false;
     json test_value_Uint16_boundary_low_outbound;
-    test_value_Uint16_boundary_low_outbound = -1;
+    test_value_Uint16_boundary_low_outbound = "-1";
     try {
-       database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_low_outbound,true);
+       database->setSignal(vss_test_path_Uint16, test_value_Uint16_boundary_low_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -266,9 +260,9 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     isExceptionThrown = false;
 
     json test_value_Uint16_boundary_high_outbound;
-    test_value_Uint16_boundary_high_outbound = numeric_limits<uint16_t>::max() + 1;
+    test_value_Uint16_boundary_high_outbound = "65537";
     try {
-       database->setSignal(channel,vss_test_path_Uint16, test_value_Uint16_boundary_high_outbound,true);
+       database->setSignal(vss_test_path_Uint16, test_value_Uint16_boundary_high_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -281,33 +275,33 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Uint32_boundary_low;
     test_value_Uint32_boundary_low = numeric_limits<uint32_t>::min();
 
-    database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_low,true);
-    result = database->getSignal(channel, vss_test_path_Uint32, true);
+    database->setSignal(vss_test_path_Uint32, test_value_Uint32_boundary_low);
+    result = database->getSignal(vss_test_path_Uint32);
 
-    BOOST_TEST(result["value"].as<uint32_t>() == numeric_limits<uint32_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<uint32_t>() == numeric_limits<uint32_t>::min());
 
     json test_value_Uint32_boundary_high;
     test_value_Uint32_boundary_high = numeric_limits<uint32_t>::max();
 
-    database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_high,true);
-    result = database->getSignal(channel, vss_test_path_Uint32, true);
+    database->setSignal(vss_test_path_Uint32, test_value_Uint32_boundary_high);
+    result = database->getSignal(vss_test_path_Uint32);
 
-    BOOST_TEST(result["value"].as<uint32_t>() == numeric_limits<uint32_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<uint32_t>() == numeric_limits<uint32_t>::max());
 
     json test_value_Uint32_boundary_middle;
     test_value_Uint32_boundary_middle = numeric_limits<uint32_t>::max() / 2;
 
-    database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_middle,true);
-    result = database->getSignal(channel, vss_test_path_Uint32, true);
+    database->setSignal(vss_test_path_Uint32, test_value_Uint32_boundary_middle);
+    result = database->getSignal(vss_test_path_Uint32);
 
-    BOOST_TEST(result["value"].as<uint32_t>() == numeric_limits<uint32_t>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<uint32_t>() == numeric_limits<uint32_t>::max() / 2);
 
     // Test out of bound
     isExceptionThrown = false;
     json test_value_Uint32_boundary_low_outbound;
-    test_value_Uint32_boundary_low_outbound = -1;
+    test_value_Uint32_boundary_low_outbound = "-1";
     try {
-       database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_low_outbound,true);
+       database->setSignal(vss_test_path_Uint32, test_value_Uint32_boundary_low_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -317,9 +311,9 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
     json test_value_Uint32_boundary_high_outbound;
     uint64_t maxU32_value = numeric_limits<uint32_t>::max();
-    test_value_Uint32_boundary_high_outbound = maxU32_value + 1;
+    test_value_Uint32_boundary_high_outbound = "4294967297";
     try {
-       database->setSignal(channel,vss_test_path_Uint32, test_value_Uint32_boundary_high_outbound,true);
+       database->setSignal(vss_test_path_Uint32, test_value_Uint32_boundary_high_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -331,41 +325,41 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int8_boundary_low;
     test_value_int8_boundary_low = numeric_limits<int8_t>::min();
 
-    database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_low,true);
-    result = database->getSignal(channel, vss_test_path_int8, true);
+    database->setSignal(vss_test_path_int8, test_value_int8_boundary_low);
+    result = database->getSignal(vss_test_path_int8);
 
-    BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<int8_t>() == numeric_limits<int8_t>::min());
 
     json test_value_int8_boundary_high;
     test_value_int8_boundary_high = numeric_limits<int8_t>::max();
 
-    database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_high,true);
-    result = database->getSignal(channel, vss_test_path_int8, true);
+    database->setSignal(vss_test_path_int8, test_value_int8_boundary_high);
+    result = database->getSignal(vss_test_path_int8);
 
-    BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<int8_t>() == numeric_limits<int8_t>::max());
 
     json test_value_int8_boundary_middle;
     test_value_int8_boundary_middle = numeric_limits<int8_t>::max() / 2;
 
-    database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_middle,true);
-    result = database->getSignal(channel, vss_test_path_int8, true);
+    database->setSignal(vss_test_path_int8, test_value_int8_boundary_middle);
+    result = database->getSignal(vss_test_path_int8);
 
-    BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<int8_t>() == numeric_limits<int8_t>::max() / 2);
 
     json test_value_int8_boundary_middle_neg;
     test_value_int8_boundary_middle_neg = numeric_limits<int8_t>::min() / 2;
 
-    database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_middle_neg,true);
-    result = database->getSignal(channel, vss_test_path_int8, true);
+    database->setSignal(vss_test_path_int8, test_value_int8_boundary_middle_neg);
+    result = database->getSignal(vss_test_path_int8);
 
-    BOOST_TEST(result["value"].as<int8_t>() == numeric_limits<int8_t>::min() / 2);
+    BOOST_TEST(result["dp"]["value"].as<int8_t>() == numeric_limits<int8_t>::min() / 2);
 
     // Test out of bound
     isExceptionThrown = false;
     json test_value_int8_boundary_low_outbound;
-    test_value_int8_boundary_low_outbound = numeric_limits<int8_t>::min() - 1;
+    test_value_int8_boundary_low_outbound = "-129";
     try {
-       database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_low_outbound,true);
+       database->setSignal(vss_test_path_int8, test_value_int8_boundary_low_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -374,9 +368,9 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     isExceptionThrown = false;
 
     json test_value_int8_boundary_high_outbound;
-    test_value_int8_boundary_high_outbound = numeric_limits<int8_t>::max() + 1;
+    test_value_int8_boundary_high_outbound = "128";
     try {
-       database->setSignal(channel,vss_test_path_int8, test_value_int8_boundary_high_outbound,true);
+       database->setSignal(vss_test_path_int8, test_value_int8_boundary_high_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -388,41 +382,41 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int16_boundary_low;
     test_value_int16_boundary_low = numeric_limits<int16_t>::min();
 
-    database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_low,true);
-    result = database->getSignal(channel, vss_test_path_int16, true);
+    database->setSignal(vss_test_path_int16, test_value_int16_boundary_low);
+    result = database->getSignal(vss_test_path_int16);
 
-    BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<int16_t>() == numeric_limits<int16_t>::min());
 
     json test_value_int16_boundary_high;
     test_value_int16_boundary_high = numeric_limits<int16_t>::max();
 
-    database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_high,true);
-    result = database->getSignal(channel, vss_test_path_int16, true);
+    database->setSignal(vss_test_path_int16, test_value_int16_boundary_high);
+    result = database->getSignal(vss_test_path_int16);
 
-    BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<int16_t>() == numeric_limits<int16_t>::max());
 
     json test_value_int16_boundary_middle;
     test_value_int16_boundary_middle = numeric_limits<int16_t>::max()/2;
 
-    database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_middle,true);
-    result = database->getSignal(channel, vss_test_path_int16, true);
+    database->setSignal(vss_test_path_int16, test_value_int16_boundary_middle);
+    result = database->getSignal(vss_test_path_int16);
 
-    BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::max()/2);
+    BOOST_TEST(result["dp"]["value"].as<int16_t>() == numeric_limits<int16_t>::max()/2);
 
     json test_value_int16_boundary_middle_neg;
     test_value_int16_boundary_middle_neg = numeric_limits<int16_t>::min()/2;
 
-    database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_middle_neg,true);
-    result = database->getSignal(channel, vss_test_path_int16, true);
+    database->setSignal(vss_test_path_int16, test_value_int16_boundary_middle_neg);
+    result = database->getSignal(vss_test_path_int16);
 
-    BOOST_TEST(result["value"].as<int16_t>() == numeric_limits<int16_t>::min()/2);
+    BOOST_TEST(result["dp"]["value"].as<int16_t>() == numeric_limits<int16_t>::min()/2);
 
     // Test out of bound
     isExceptionThrown = false;
     json test_value_int16_boundary_low_outbound;
-    test_value_int16_boundary_low_outbound = numeric_limits<int16_t>::min() - 1;
+    test_value_int16_boundary_low_outbound = "-32769";
     try {
-       database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_low_outbound,true);
+       database->setSignal(vss_test_path_int16, test_value_int16_boundary_low_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -431,9 +425,9 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     isExceptionThrown = false;
 
     json test_value_int16_boundary_high_outbound;
-    test_value_int16_boundary_high_outbound = numeric_limits<int16_t>::max() + 1;
+    test_value_int16_boundary_high_outbound = "32768";
     try {
-       database->setSignal(channel,vss_test_path_int16, test_value_int16_boundary_high_outbound,true);
+       database->setSignal(vss_test_path_int16, test_value_int16_boundary_high_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -446,42 +440,42 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_int32_boundary_low;
     test_value_int32_boundary_low = numeric_limits<int32_t>::min();
 
-    database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_low,true);
-    result = database->getSignal(channel, vss_test_path_int32, true);
+    database->setSignal(vss_test_path_int32, test_value_int32_boundary_low);
+    result = database->getSignal(vss_test_path_int32);
 
-    BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::min());
+    BOOST_TEST(result["dp"]["value"].as<int32_t>() == numeric_limits<int32_t>::min());
 
     json test_value_int32_boundary_high;
     test_value_int32_boundary_high = numeric_limits<int32_t>::max() ;
 
-    database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_high,true);
-    result = database->getSignal(channel, vss_test_path_int32, true);
+    database->setSignal(vss_test_path_int32, test_value_int32_boundary_high);
+    result = database->getSignal(vss_test_path_int32);
 
-    BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<int32_t>() == numeric_limits<int32_t>::max());
 
     json test_value_int32_boundary_middle;
     test_value_int32_boundary_middle = numeric_limits<int32_t>::max() / 2;
 
-    database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_middle,true);
-    result = database->getSignal(channel, vss_test_path_int32, true);
+    database->setSignal(vss_test_path_int32, test_value_int32_boundary_middle);
+    result = database->getSignal(vss_test_path_int32);
 
-    BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<int32_t>() == numeric_limits<int32_t>::max() / 2);
 
     json test_value_int32_boundary_middle_neg;
     test_value_int32_boundary_middle_neg = numeric_limits<int32_t>::min() / 2;
 
-    database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_middle_neg,true);
-    result = database->getSignal(channel, vss_test_path_int32, true);
+    database->setSignal(vss_test_path_int32, test_value_int32_boundary_middle_neg);
+    result = database->getSignal(vss_test_path_int32);
 
-    BOOST_TEST(result["value"].as<int32_t>() == numeric_limits<int32_t>::min() / 2);
+    BOOST_TEST(result["dp"]["value"].as<int32_t>() == numeric_limits<int32_t>::min() / 2);
 
     // Test out of bound
     isExceptionThrown = false;
     json test_value_int32_boundary_low_outbound;
     int64_t minInt32_value = numeric_limits<int32_t>::min();
-    test_value_int32_boundary_low_outbound = minInt32_value - 1;
+    test_value_int32_boundary_low_outbound = "-2147483649";
     try {
-       database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_low_outbound,true);
+       database->setSignal(vss_test_path_int32, test_value_int32_boundary_low_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -491,9 +485,9 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
     json test_value_int32_boundary_high_outbound;
     int64_t maxInt32_value = numeric_limits<int32_t>::max();
-    test_value_int32_boundary_high_outbound = maxInt32_value + 1;
+    test_value_int32_boundary_high_outbound = "2147483648";
     try {
-       database->setSignal(channel,vss_test_path_int32, test_value_int32_boundary_high_outbound,true);
+       database->setSignal(vss_test_path_int32, test_value_int32_boundary_high_outbound);
     } catch (outOfBoundException & e) {
        isExceptionThrown =  true;
     }
@@ -504,110 +498,74 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_Float_boundary_low;
     test_value_Float_boundary_low = std::numeric_limits<float>::min();
 
-    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_low,true);
-    result = database->getSignal(channel, vss_test_path_Float, true);
+    database->setSignal(vss_test_path_Float, test_value_Float_boundary_low);
+    result = database->getSignal(vss_test_path_Float);
 
 
-    BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::min());
+    BOOST_TEST(result["dp"]["value"].as<float>() == std::numeric_limits<float>::min());
 
     json test_value_Float_boundary_high;
     test_value_Float_boundary_high = std::numeric_limits<float>::max();
 
-    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_high,true);
-    result = database->getSignal(channel, vss_test_path_Float, true), true;
+    database->setSignal(vss_test_path_Float, test_value_Float_boundary_high);
+    result = database->getSignal(vss_test_path_Float);
 
-    BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::max());
-
-
-    json test_value_Float_boundary_low_neg;
-    test_value_Float_boundary_low_neg = std::numeric_limits<float>::min() * -1;
-
-    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_low_neg,true);
-    result = database->getSignal(channel, vss_test_path_Float, true);
-
-
-    BOOST_TEST(result["value"].as<float>() == (std::numeric_limits<float>::min() * -1));
-
-    json test_value_Float_boundary_high_neg;
-    test_value_Float_boundary_high_neg = std::numeric_limits<float>::max() * -1;
-
-    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_high_neg,true);
-    result = database->getSignal(channel, vss_test_path_Float, true);
-
-    BOOST_TEST(result["value"].as<float>() == (std::numeric_limits<float>::max() * -1));
+    BOOST_TEST(result["dp"]["value"].as<float>() == std::numeric_limits<float>::max());
 
 
     json test_value_Float_boundary_middle;
     test_value_Float_boundary_middle = std::numeric_limits<float>::max() / 2;
 
-    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_middle,true);
-    result = database->getSignal(channel, vss_test_path_Float, true);
+    database->setSignal(vss_test_path_Float, test_value_Float_boundary_middle);
+    result = database->getSignal(vss_test_path_Float);
 
 
-    BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<float>() == std::numeric_limits<float>::max() / 2);
 
     json test_value_Float_boundary_middle_neg;
     test_value_Float_boundary_middle_neg = std::numeric_limits<float>::min() * 2;
 
-    database->setSignal(channel,vss_test_path_Float, test_value_Float_boundary_middle_neg,true);
-    result = database->getSignal(channel, vss_test_path_Float, true);
+    database->setSignal(vss_test_path_Float, test_value_Float_boundary_middle_neg);
+    result = database->getSignal(vss_test_path_Float);
 
-    BOOST_TEST(result["value"].as<float>() == std::numeric_limits<float>::min() * 2);
+    BOOST_TEST(result["dp"]["value"].as<float>() == std::numeric_limits<float>::min() * 2);
 
-    
+
     
 //---------------------  Double SET/GET TEST ------------------------------------
 
     json test_value_Double_boundary_low;
     test_value_Double_boundary_low = std::numeric_limits<double>::min();
 
-    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_low,true);
-    result = database->getSignal(channel, vss_test_path_Double, true);
+    database->setSignal(vss_test_path_Double, test_value_Double_boundary_low);
+    result = database->getSignal(vss_test_path_Double);
 
-    BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::min());
+    BOOST_TEST(result["dp"]["value"].as<double>() == std::numeric_limits<double>::min());
 
     json test_value_Double_boundary_high;
     test_value_Double_boundary_high = std::numeric_limits<double>::max();
 
-    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_high,true);
-    result = database->getSignal(channel, vss_test_path_Double, true);
+    database->setSignal(vss_test_path_Double, test_value_Double_boundary_high);
+    result = database->getSignal(vss_test_path_Double);
 
-    BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::max());
-
-
-    json test_value_Double_boundary_low_neg;
-    test_value_Double_boundary_low_neg = std::numeric_limits<double>::min() * -1;
-
-    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_low_neg,true);
-    result = database->getSignal(channel, vss_test_path_Double, true);
-
-    BOOST_TEST(result["value"].as<double>() == (std::numeric_limits<double>::min() * -1));
-
-    json test_value_Double_boundary_high_neg;
-    test_value_Double_boundary_high_neg = std::numeric_limits<double>::max() * -1;
-
-    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_high_neg,true);
-    result = database->getSignal(channel ,vss_test_path_Double, true);
-
-    BOOST_TEST(result["value"].as<double>() == (std::numeric_limits<double>::max() * -1));
-
+    BOOST_TEST(result["dp"]["value"].as<double>() == std::numeric_limits<double>::max());
 
 
     json test_value_Double_boundary_middle;
     test_value_Double_boundary_middle = std::numeric_limits<double>::max() / 2;
 
-    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_middle,true);
-    result = database->getSignal(channel, vss_test_path_Double, true);
+    database->setSignal(vss_test_path_Double, test_value_Double_boundary_middle);
+    result = database->getSignal(vss_test_path_Double);
 
-    BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::max() / 2);
+    BOOST_TEST(result["dp"]["value"].as<double>() == std::numeric_limits<double>::max() / 2);
 
     json test_value_Double_boundary_middle_neg;
     test_value_Double_boundary_middle_neg = std::numeric_limits<double>::min() * 2;
 
-    database->setSignal(channel,vss_test_path_Double, test_value_Double_boundary_middle_neg,true);
-    result = database->getSignal(channel, vss_test_path_Double, true);
+    database->setSignal(vss_test_path_Double, test_value_Double_boundary_middle_neg);
+    result = database->getSignal(vss_test_path_Double);
 
-    BOOST_TEST(result["value"].as<double>() == std::numeric_limits<double>::min() * 2);
+    BOOST_TEST(result["dp"]["value"].as<double>() == std::numeric_limits<double>::min() * 2);
 
     
 
@@ -617,51 +575,51 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     json test_value_String_empty;
     test_value_String_empty = "";
 
-    database->setSignal(channel,vss_test_path_string, test_value_String_empty,true);
-    result = database->getSignal(channel, vss_test_path_string, true);
+    database->setSignal(vss_test_path_string, test_value_String_empty);
+    result = database->getSignal(vss_test_path_string);
 
-    BOOST_TEST(result["value"].as<std::string>() == "");
+    BOOST_TEST(result["dp"]["value"].as<std::string>() == "");
 
     json test_value_String_null;
     test_value_String_null = "\0";
 
-    database->setSignal(channel,vss_test_path_string, test_value_String_null,true);
-    result = database->getSignal(channel, vss_test_path_string, true);
+    database->setSignal(vss_test_path_string, test_value_String_null);
+    result = database->getSignal(vss_test_path_string);
 
-    BOOST_TEST(result["value"].as<std::string>() == "\0");
+    BOOST_TEST(result["dp"]["value"].as<std::string>() == "\0");
 
     json test_value_String_long;
     test_value_String_long = "hello to w3c vis server unit test with boost libraries! This is a test string to test string data type without special characters, but this string is pretty long";
 
-    database->setSignal(channel,vss_test_path_string, test_value_String_long,true);
-    result = database->getSignal(channel, vss_test_path_string, true);
+    database->setSignal(vss_test_path_string, test_value_String_long);
+    result = database->getSignal(vss_test_path_string);
 
-    BOOST_TEST(result["value"].as<std::string>() == test_value_String_long);
+    BOOST_TEST(result["dp"]["value"].as<std::string>() == test_value_String_long);
 
     json test_value_String_long_with_special_chars;
     test_value_String_long_with_special_chars = "hello to w3c vis server unit test with boost libraries! This is a test string conatains special chars like üö Ä? $ % #";
 
-    database->setSignal(channel,vss_test_path_string, test_value_String_long_with_special_chars,true);
-    result = database->getSignal(channel, vss_test_path_string, true);
+    database->setSignal(vss_test_path_string, test_value_String_long_with_special_chars);
+    result = database->getSignal(vss_test_path_string);
 
-    BOOST_TEST(result["value"].as<std::string>() == test_value_String_long_with_special_chars);
+    BOOST_TEST(result["dp"]["value"].as<std::string>() == test_value_String_long_with_special_chars);
 
 //---------------------  Boolean SET/GET TEST ------------------------------------
     json test_value_bool_false;
     test_value_bool_false = false;
 
-    database->setSignal(channel,vss_test_path_boolean, test_value_bool_false,true);
-    result = database->getSignal(channel, vss_test_path_boolean, true);
+    database->setSignal(vss_test_path_boolean, test_value_bool_false);
+    result = database->getSignal(vss_test_path_boolean);
 
-    BOOST_TEST(result["value"].as<bool>() == test_value_bool_false);
+    BOOST_TEST(result["dp"]["value"].as<bool>() == test_value_bool_false);
 
     json test_value_bool_true;
     test_value_bool_true = true;
 
-    database->setSignal(channel,vss_test_path_boolean, test_value_bool_true,true);
-    result = database->getSignal(channel, vss_test_path_boolean, true);
+    database->setSignal(vss_test_path_boolean, test_value_bool_true);
+    result = database->getSignal(vss_test_path_boolean);
 
-    BOOST_TEST(result["value"].as<bool>() == test_value_bool_true);
+    BOOST_TEST(result["dp"]["value"].as<bool>() == test_value_bool_true);
 }
 
 
@@ -670,7 +628,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 
 BOOST_AUTO_TEST_CASE(test_metadata_simple)
 {
-    string test_path = "Vehicle.OBD.EngineSpeed"; // pass a valid path without wildcard.
+    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.OBD.EngineSpeed"); // pass a valid path without wildcard.
 
     json result = database->getMetaData(test_path);
 
@@ -703,7 +661,7 @@ BOOST_AUTO_TEST_CASE(test_metadata_simple)
 
 BOOST_AUTO_TEST_CASE(test_metadata_with_wildcard)
 {
-    string test_path = "Vehicle.*.EngineSpeed"; // pass a valid path with wildcard.
+    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.*.EngineSpeed"); // pass a valid path with wildcard.
 
     json result = database->getMetaData(test_path);
 
@@ -736,7 +694,7 @@ BOOST_AUTO_TEST_CASE(test_metadata_with_wildcard)
 
 BOOST_AUTO_TEST_CASE(test_metadata_branch)
 {
-    string test_path = "Vehicle.Chassis.SteeringWheel"; // pass a valid branch path without wildcard.
+    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.Chassis.SteeringWheel"); // pass a valid branch path without wildcard.
 
     json result = database->getMetaData(test_path);
 
@@ -795,7 +753,7 @@ BOOST_AUTO_TEST_CASE(test_metadata_branch)
 
 BOOST_AUTO_TEST_CASE(test_metadata_branch_with_wildcard)
 {
-    string test_path = "Vehicle.*.SteeringWheel"; // pass a valid branch path with wildcard.
+    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.*.SteeringWheel"); // pass a valid branch path with wildcard.
 
     json result = database->getMetaData(test_path);
 
@@ -843,8 +801,8 @@ BOOST_AUTO_TEST_CASE(test_metadata_branch_with_wildcard)
 
 BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 {
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -857,7 +815,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 		"action": "set",
 		"path": "Vehicle.OBD.EngineSpeed",
 		"requestId": "8750",
-                "value" : 2345.0
+                "value" : "2345.0"
 	})");
 
    string set_response = commandProc->processQuery(set_request,channel);
@@ -870,9 +828,8 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
      )");
 
 
-   BOOST_TEST(set_response_json.contains("timestamp") == true);
-   // remove timestamp to match
-   set_response_json.erase("timestamp");
+   verify_and_erase_timestamp(set_response_json);
+
 
    BOOST_TEST(set_response_json == set_response_expected);
 
@@ -890,26 +847,26 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 
    json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345.0
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
 
 BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
 {
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -927,9 +884,11 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
 
    json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
 #ifdef JSON_SIGNING_ON
@@ -938,13 +897,9 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
-
-
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -980,9 +935,9 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
      )");
 
 
-   BOOST_TEST(set_response_json.contains("timestamp") == true);
+   BOOST_TEST(set_response_json.contains("ts") == true);
    // remove timestamp to match
-   set_response_json.erase("timestamp");
+   set_response_json.erase("ts");
 
    BOOST_TEST(set_response_json == set_response_expected);
 
@@ -1023,10 +978,10 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
 
    json response_json = json::parse(response);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 }
 */
@@ -1034,8 +989,8 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
 
 BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 {
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1056,17 +1011,14 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 
    json expected = json::parse(R"({
                          "action":"get",
-                         "error":{"message":"I can not find Signal/*/RPM1 in my db","number":404,"reason":"Path not found"},
+                         "error":{"message":"I can not find Signal.*.RPM1 in my db","number":404,"reason":"Path not found"},
                          "requestId":"8756"
                          })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1101,10 +1053,10 @@ BOOST_AUTO_TEST_CASE(process_query_set_withwildcard_invalid)
    json response_json = json::parse(response);
 
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 }
 */
@@ -1141,10 +1093,10 @@ BOOST_AUTO_TEST_CASE(process_query_set_invalid_value)
    json response_json = json::parse(response);
 
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 }
 */
@@ -1181,10 +1133,10 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
    json response_json = json::parse(response);
 
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 
 
@@ -1211,10 +1163,10 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
    json response_response_getvalid_json = json::parse(response_getvalid);
 
 
-   BOOST_TEST(response_response_getvalid_json.contains("timestamp") == true);
+   BOOST_TEST(response_response_getvalid_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_response_getvalid_json.erase("timestamp");
+   response_response_getvalid_json.erase("ts");
    BOOST_TEST(response_response_getvalid_json == expected_getvalid);
 }
 */
@@ -1224,8 +1176,8 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
 BOOST_AUTO_TEST_CASE(json_SigningHandler)
 {
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1246,17 +1198,17 @@ BOOST_AUTO_TEST_CASE(json_SigningHandler)
 #endif
    json response_json = json::parse(response);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-   // remove timestamp to match
-   response_json.erase("timestamp");
-
    json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
+   verify_and_erase_timestamp(response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
    // Pre-check
    BOOST_TEST(response_json == expected);
 
@@ -1296,8 +1248,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJyIn19.jbhdMq5hEWXXNfZn9xE4rECIWEVsw-q3g-jxp5lLS0VAZ2WYOGoSd5JX2P9YG0Lals7Ue0wdXtgLSFtvIGU4Ol2MuPaF-Rbb-Q5O4njxg60AZ00kr6RywpyGZHK0eT9MuFCnVMN8Krf3lo2pPB1ms-WAHX6rfArbXxx0FsMau9Ewn_3m3Sc-6sz5alQw1Y7Rk0GD9Y7WP_mbICU__gd40Ypu_ki1i59M8ba5GNfd8RytEIJXAg7RTcKREWDZfMdFH5X7F6gAPA7h_tVH3-bsbT-nOsKCbM-3PM0EKAOl104SwmKcqoWnfXbUow5zt25O8LYwmrukuRBtWiLI5FxeW6ovmS-1acvS3w1LXlQZVGWtM_ZC7shtHh-iz7nyL1WCTpZswHgoqVrvnJ0PVZQkBMBFKvsbu9WkWPUqHe0sx2cDUOdolelspfClO6iP7CYTUQQqyDov9zByDiBfQ7rILQ_LcwPG6UAAbEgM0pC_lntsPzbdcq0V-rE_OMO6y7HtmGN7GPhYHGU0K4qQBuYI_Pdn2gqyCEciI6_awB1LG4RwfoC8ietGUuGmxdcl2PWm0DI-Kj1f1bNlwc-54LKg8v5K54zsBdmK4SrrJ6Nt6OgCqq3On7zHfTDFN01dqWP6EoQHhEn6Akx5HiioTW3CHSVq6pd09Po5cgAAIoQE2U0";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1315,18 +1267,18 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
 
    json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1350,8 +1302,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJyIn19.jbhdMq5hEWXXNfZn9xE4rECIWEVsw-q3g-jxp5lLS0VAZ2WYOGoSd5JX2P9YG0Lals7Ue0wdXtgLSFtvIGU4Ol2MuPaF-Rbb-Q5O4njxg60AZ00kr6RywpyGZHK0eT9MuFCnVMN8Krf3lo2pPB1ms-WAHX6rfArbXxx0FsMau9Ewn_3m3Sc-6sz5alQw1Y7Rk0GD9Y7WP_mbICU__gd40Ypu_ki1i59M8ba5GNfd8RytEIJXAg7RTcKREWDZfMdFH5X7F6gAPA7h_tVH3-bsbT-nOsKCbM-3PM0EKAOl104SwmKcqoWnfXbUow5zt25O8LYwmrukuRBtWiLI5FxeW6ovmS-1acvS3w1LXlQZVGWtM_ZC7shtHh-iz7nyL1WCTpZswHgoqVrvnJ0PVZQkBMBFKvsbu9WkWPUqHe0sx2cDUOdolelspfClO6iP7CYTUQQqyDov9zByDiBfQ7rILQ_LcwPG6UAAbEgM0pC_lntsPzbdcq0V-rE_OMO6y7HtmGN7GPhYHGU0K4qQBuYI_Pdn2gqyCEciI6_awB1LG4RwfoC8ietGUuGmxdcl2PWm0DI-Kj1f1bNlwc-54LKg8v5K54zsBdmK4SrrJ6Nt6OgCqq3On7zHfTDFN01dqWP6EoQHhEn6Akx5HiioTW3CHSVq6pd09Po5cgAAIoQE2U0";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1370,17 +1322,36 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
    json expected = json::parse(R"({
     "action": "get",
     "requestId": "8756",
-    "value": [{"Vehicle.VehicleIdentification.vehicleinteriorType":"---"},{"Vehicle.VehicleIdentification.vehicleinteriorColor":"---"},{"Vehicle.VehicleIdentification.vehicleSpecialUsage":"---"},{"Vehicle.VehicleIdentification.vehicleSeatingCapacity":"---"},{"Vehicle.VehicleIdentification.vehicleModelDate":"---"},{"Vehicle.VehicleIdentification.vehicleConfiguration":"---"},{"Vehicle.VehicleIdentification.purchaseDate":"---"},{"Vehicle.VehicleIdentification.productionDate":"---"},{"Vehicle.VehicleIdentification.meetsEmissionStandard":"---"},{"Vehicle.VehicleIdentification.knownVehicleDamages":"---"},{"Vehicle.VehicleIdentification.dateVehicleFirstRegistered":"---"},{"Vehicle.VehicleIdentification.bodyType":"---"},{"Vehicle.VehicleIdentification.Year":"---"},{"Vehicle.VehicleIdentification.WMI":"---"},{"Vehicle.VehicleIdentification.VIN":"---"},{"Vehicle.VehicleIdentification.Model":"---"},{"Vehicle.VehicleIdentification.Brand":"---"},{"Vehicle.VehicleIdentification.ACRISSCode":"---"}]
+    "data":[
+        {"path": "Vehicle.VehicleIdentification.ACRISSCode", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.Brand", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.Model", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.VIN", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.WMI", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.Year", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.bodyType", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.dateVehicleFirstRegistered", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.knownVehicleDamages", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.meetsEmissionStandard", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.productionDate", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.purchaseDate", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleConfiguration", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleModelDate", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleSeatingCapacity", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleSpecialUsage", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleinteriorColor", "dp":{"value": "---"}},
+        {"path": "Vehicle.VehicleIdentification.vehicleinteriorType", "dp":{"value": "---"}}
+        ]
     })");
 
-   json response_json = json::parse(response);
+  json response_json = json::parse(response);
 
+  verify_and_erase_timestamp(response_json);
+  for (auto &  dataRes : response_json["data"].array_range()) {
+    verify_and_erase_timestampZero(dataRes["dp"]);
+  }
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
-   BOOST_TEST(response_json == expected);
+  BOOST_TEST(response_json == expected);
 }
 
 BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
@@ -1402,8 +1373,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJyIn19.jbhdMq5hEWXXNfZn9xE4rECIWEVsw-q3g-jxp5lLS0VAZ2WYOGoSd5JX2P9YG0Lals7Ue0wdXtgLSFtvIGU4Ol2MuPaF-Rbb-Q5O4njxg60AZ00kr6RywpyGZHK0eT9MuFCnVMN8Krf3lo2pPB1ms-WAHX6rfArbXxx0FsMau9Ewn_3m3Sc-6sz5alQw1Y7Rk0GD9Y7WP_mbICU__gd40Ypu_ki1i59M8ba5GNfd8RytEIJXAg7RTcKREWDZfMdFH5X7F6gAPA7h_tVH3-bsbT-nOsKCbM-3PM0EKAOl104SwmKcqoWnfXbUow5zt25O8LYwmrukuRBtWiLI5FxeW6ovmS-1acvS3w1LXlQZVGWtM_ZC7shtHh-iz7nyL1WCTpZswHgoqVrvnJ0PVZQkBMBFKvsbu9WkWPUqHe0sx2cDUOdolelspfClO6iP7CYTUQQqyDov9zByDiBfQ7rILQ_LcwPG6UAAbEgM0pC_lntsPzbdcq0V-rE_OMO6y7HtmGN7GPhYHGU0K4qQBuYI_Pdn2gqyCEciI6_awB1LG4RwfoC8ietGUuGmxdcl2PWm0DI-Kj1f1bNlwc-54LKg8v5K54zsBdmK4SrrJ6Nt6OgCqq3On7zHfTDFN01dqWP6EoQHhEn6Akx5HiioTW3CHSVq6pd09Po5cgAAIoQE2U0";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1422,17 +1393,36 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
    json expected = json::parse(R"({
                    "action":"get",
                    "requestId":"8756",
-                   "value":[{"Vehicle.VehicleIdentification.vehicleinteriorType":"---"},{"Vehicle.VehicleIdentification.vehicleinteriorColor":"---"},{"Vehicle.VehicleIdentification.vehicleSpecialUsage":"---"},{"Vehicle.VehicleIdentification.vehicleSeatingCapacity":"---"},{"Vehicle.VehicleIdentification.vehicleModelDate":"---"},{"Vehicle.VehicleIdentification.vehicleConfiguration":"---"},{"Vehicle.VehicleIdentification.purchaseDate":"---"},{"Vehicle.VehicleIdentification.productionDate":"---"},{"Vehicle.VehicleIdentification.meetsEmissionStandard":"---"},{"Vehicle.VehicleIdentification.knownVehicleDamages":"---"},{"Vehicle.VehicleIdentification.dateVehicleFirstRegistered":"---"},{"Vehicle.VehicleIdentification.bodyType":"---"},{"Vehicle.VehicleIdentification.Year":"---"},{"Vehicle.VehicleIdentification.WMI":"---"},{"Vehicle.VehicleIdentification.VIN":"---"},{"Vehicle.VehicleIdentification.Model":"---"},{"Vehicle.VehicleIdentification.Brand":"---"},{"Vehicle.VehicleIdentification.ACRISSCode":"---"}]
+                   "data":[
+                        {"path": "Vehicle.VehicleIdentification.ACRISSCode", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.Brand", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.Model", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.VIN", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.WMI", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.Year", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.bodyType", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.dateVehicleFirstRegistered", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.knownVehicleDamages", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.meetsEmissionStandard", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.productionDate", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.purchaseDate", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleConfiguration", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleModelDate", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleSeatingCapacity", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleSpecialUsage", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleinteriorColor", "dp":{"value": "---"}},
+                        {"path": "Vehicle.VehicleIdentification.vehicleinteriorType", "dp":{"value": "---"}}
+                        ]
         })");
 
-   json response_json = json::parse(response);
+  json response_json = json::parse(response);
+ 
+  verify_and_erase_timestamp(response_json);
+  for (auto &  dataRes : response_json["data"].array_range()) {
+    verify_and_erase_timestampZero(dataRes["dp"]);
+  }
 
-
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
-   BOOST_TEST(response_json == expected);
+  BOOST_TEST(response_json == expected);
 }
 
 BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
@@ -1454,8 +1444,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJyIn19.VDr_UU_efYVaotMSRs-Ga7xf1a7ArEb0oTfJixTR4ah9aXnXYNHL-f4N4YZQ1A4mX3YhdcxifgV2kE1XwXE0XBoYjydy9g8pZhPm-fMF3z9zTeWRhPBSSHYLgcJQRINChtipmn1RIQxeeEqDX3E0n4utb0HfNXcEDTOKSeP4sFygjiDyEJYl_zn1JoMWfV8HJ9beYgVybKyMRLkM7FsGqT-aUOVfdxhH3nQSGFleI-nzFh6fFIaVbNdZo9u4moeIcaoeZJLJEe2410-xTtByxp_fN0OTxntHbloLSRLjY8MxC1hu1Uhbxs5GKPfJDV7ZhhbULzqqiRMSGn13ELJO-yPEnaHV8NZ8V9U6My-rBkEGgVcwCsbyDu-i7hAP8fepFCpyYfmZkypXxrZQHj8idJ16SXHNzNLL4Q7uiXSwc9oPSRI8FcbEwk-Ul7sD-X7kUqfFukO49NGUdobc-JhVzsJl-eofwe0H0Rq3hme6Rj1kFjitLYU2SyZjUsYrrGpYrghahh7MfSjf2lqNi159wfYtZtopoBrbPmAJ3HnzWXYM2ai0kroELRCaHz4adodMtem4qTBGJoYgG7hAg1OxvnbOdYOD7yZ46-RxBGgaoWuxAnQRHsnGs4j0SaXRTVWvTBHg21tI6AHo4wwyfUD4pGEaxB3M3bEH9m2hWl4HZpk";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1474,17 +1464,14 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to Vehicle/OBD/Speed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"Insufficient read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
 
-   //BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1506,8 +1493,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZDEiOiJyIn19.rST_a1LunN5PT1UbqFfiSS5-75nX29fXh0ZUFbIGWADk7JInDDo7EP6tt2HmiX6vW3RoeKVoZCM_UB9fKfKmJMA9-pgBkeGjVcf8PmGzIJUKJPjPp3vRUrWop0UABeCqlnlQ7SFO3IlfcSarHg0P9SdmPQm6WOtJSqv806KIe5cLVhl9Ikr0cmYMO5IJ5IQzQP6cDcWl5zro75v5MtQbjHrNBKAm7qclQnBtx0oeMmdSmLQLJR0RLy10VeORtqqrSksy2QKmVkrmK2vX1GuwR-kOOEqBZWz9j8HJ4I05XpCdltKx1P41mQIWxZKUp87uKsqZBe_8V5Bd2bqYbP3MKyIxsZEUGUjjpbLogu1DBS05oJHc4_Al6AMclX5DVkWDL7M1HMGwgOAqIfsQwwiGJah6n9c43K2oDGHmsc0zrKmNcx-UDA7dqbg1PnrAWx7Ex__nI95zhoDYnbsoxLhg_tOVaCzvvA3pCU8IEDcTBSyDp-PUVzF6m3TbzJlwrLRP2_kzl48asn5U1fiMvGTFiVzRUv34uvnelQuK0954NsqnOi9tHAP2ljNrP75KuehAqmdWhHXWMkxoUFbQ974bWP6J0eYu1SnuQs2mR-3bf_HhxxPNI-5tgNOZ0ROwfDfHrOLdMP1RgoweLrpvmffwhV1aFTAQyvqjSJYVl9tZKfk";
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1517,7 +1504,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
    commandProc_auth->processQuery(authReqJson.as_string(),channel);
    string request(R"({
 		"action": "get",
-		"path": "Vehicle.OBD.EngineSpeed",
+		"path": "Vehicle/OBD/EngineSpeed",
 		"requestId": "8756"
 	})");
 
@@ -1525,15 +1512,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to Vehicle/OBD/EngineSpeed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"Insufficient read access to Vehicle/OBD/EngineSpeed","number":403,"reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
    json response_json = json::parse(response);
-   BOOST_TEST(response_json.contains("timestamp") == true);
 
-   // remove timestamp to match
-   response_json.erase("timestamp");
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1557,8 +1542,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQiOiJyIn19.aFM4kmqmupJmxkCXXPHUnmC5JC4ioIYwczk_YcGLy8ULfT4As6fzZNnAFTZVk-axBbIHnU3aUTigI5wZroF0ZkdWzJ1FA1-ZEXRLwUug9pigOC4hvTn4layT4tSEylHm3Mhh8M3Z0O4QKr-TuKZgZcbIICjrI3GQvm0kdkAO1hUTDPF2yQv16qCPuWvmJEDmy70MjzZfKIy94LCXL6Gf1OdIo4hXIbhLFPOR4ea8iaEz35VEjEZ828KbP8DCXRNWlad-CjAx7f4whS_YHctVZelFoa5G-MzNXRcr54VmkGbYM4WGDn6Twamsfb7YmwROzNmsI8DNahWWXciWxVZElsAexKx5yFXr3CslxG8dbgZgHWQ1tZe0Nq1b-4XUkomz6e6hd0iUF913D-TjvBACz4fpl5_28Wr0TMy84w1DvkpfNmgQ_1fiZNbho2uBxDoisfDWq_sI_ph0xO5mu-HKrs2T_tkuFveCPDHvIm1uZIzT8hX2cFDoBNClUlf4BOo6EHw3Ax9ISr28WzRxpZPOs9bYh4AIlnkqh28P91emK7pdb4eXhZKm3ZVWGEA17pLUUraxEhTYWXAFMsafwqTAaUhYt-JUBiExvHRvZpa49UDkXd4lJvl9gYO9YPiyrG6dioIsK9QSw-Mhob2WacRUzbG0O8V9uVApjw73tK4FYhA";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1576,18 +1561,18 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
 
   json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1600,7 +1585,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
   "sub": "Example JWT",
   "iss": "Eclipse kuksa",
   "admin": true,
-  "iat": 1516239022,
+  "i
+  at": 1516239022,
   "exp": 1609372800,
   "kuksa-vss": {
     "Vehicle.OBD.*": "r"    (branch permission with a *)
@@ -1610,8 +1596,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQiOiJyIn19.aFM4kmqmupJmxkCXXPHUnmC5JC4ioIYwczk_YcGLy8ULfT4As6fzZNnAFTZVk-axBbIHnU3aUTigI5wZroF0ZkdWzJ1FA1-ZEXRLwUug9pigOC4hvTn4layT4tSEylHm3Mhh8M3Z0O4QKr-TuKZgZcbIICjrI3GQvm0kdkAO1hUTDPF2yQv16qCPuWvmJEDmy70MjzZfKIy94LCXL6Gf1OdIo4hXIbhLFPOR4ea8iaEz35VEjEZ828KbP8DCXRNWlad-CjAx7f4whS_YHctVZelFoa5G-MzNXRcr54VmkGbYM4WGDn6Twamsfb7YmwROzNmsI8DNahWWXciWxVZElsAexKx5yFXr3CslxG8dbgZgHWQ1tZe0Nq1b-4XUkomz6e6hd0iUF913D-TjvBACz4fpl5_28Wr0TMy84w1DvkpfNmgQ_1fiZNbho2uBxDoisfDWq_sI_ph0xO5mu-HKrs2T_tkuFveCPDHvIm1uZIzT8hX2cFDoBNClUlf4BOo6EHw3Ax9ISr28WzRxpZPOs9bYh4AIlnkqh28P91emK7pdb4eXhZKm3ZVWGEA17pLUUraxEhTYWXAFMsafwqTAaUhYt-JUBiExvHRvZpa49UDkXd4lJvl9gYO9YPiyrG6dioIsK9QSw-Mhob2WacRUzbG0O8V9uVApjw73tK4FYhA";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1629,18 +1615,18 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
 
   json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1663,8 +1649,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS4qLkVuZ2luZVNwZWVkIjoiciJ9fQ.fUyHFOh3rD2IwOVMIYzNKdR4Y6IbKmQhN3Y2pGfcOy8SjXcE5MS6owIYRUVCxnlnH9-ywpNrwvePgKPHnjnWq8wSHr6I22zh3dNty0dFn-gJ82LQ-aNRKcweFqZXXP7-b-__Lc_ivEZpl-w0T9IzPWsUhZyt82XIPkzOZrfULv-DhXpoVIFTr-nz7KSpypcp0j_zXvbkf35bLLwcca7nMY5a9ftMKzMcv4xWekjPQQYvGchtLi1lOG1k8iHlf_cGsVEE4CK55x3bkrEjOYagT7WlRkMgR4F4HOzG0LNHsiXEVpNf17cs1Fsy6K5ObY-_J4BCx8wWGc7Bnkg4yap_3jG1IW_o7gcINcx4WiTNHz42LU6d0GQ9spc3vSP5vPm7J1aglBqazYf-tWRHp7QF8WDtAgenLpb4Ld4n_Aq5gHBWfOlt4tCyMgOgLlnzUJT1yc65vNesB7zUAFCdJ49kSV4Lwf0hv4W-hXl3wUPvb06yaff4U2_zrDQOc7GhoVLMzHmAYccNlDEMfM6HjQAnGLLIdvMxfs5g4a2CLKfxbOusRAQYNd4XwU4CpNAWabiu0FHIC43vy578zY3dpCHBOtpEC5csNEnHqyTSWdJwMy9BLmPneNM04NIHni-4ir4ExzK1TUmIDisk5_KBWmcjKyW-HX8k_u2gxylCf9I82Y0";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1682,18 +1668,18 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
 
   json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1716,8 +1702,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLiouRW5naW5lU3BlZWQiOiJ3In19.ILMNoPpsF9OD_EhBRvm679kGFFzQVOWpxtws9flHjyoXBUuswfTYo6VTZySksyIv2EEVsFwgHG6EpYU18dXvpBXWI7KtUlkUy0ewiwNXZDsrpPVD1_dhlSs5aNvHsGJr2X_aHF-gZ89XtZ1sBBcza7FdtoMQMn9hyWs3rPi5d552uwxCpMO7EDwzb8rNrndEbtuORQmSCSHb74gVP5_thZvKmfCvJLOYaqXbtIff7CNJc5JtmOp7Suv2ICVhDAyiVRAF8wC5yXCRS_MfHRHT-VVO6PvnOzUkZU4VskkCz10L4XyHhj-2GEnXaPnVV76H1BZscLAnshoiR1I6rWAA4yvRcriJkmnM3DSJqvPJ4wQ7pZsZE48n6jfrPU1fZPGrCIMbJ67-YntL9XL0GHO2AdJTD9nj4sYpVVSPJPheQSLVbQwUJq7JPczkJ04kvDpLIOp27A8GnT0JN78liQSH4VUuExY3et2f5VbyGKZbEbwtV_R8WuVOuFKGlrI07KhpYsz3avVNwNZonjEuU7f6Uadad2zZh96nJ623BgbdNhMCC-WkjoXZos7JjKIXKKLH1_LyHIVpubZFlzh2GUJNItr7k-VlLodjrvqsoBcz-Zi0KyUco69X5qz9qousN4E3LPSP5btefq-D2nhFUkn2lW_YPyWA6Wtfi6Fauby0ZD8";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1735,15 +1721,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"No read access to Vehicle/OBD/EngineSpeed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"Insufficient read access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
    json response_json = json::parse(response);
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
+   
+   verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
 }
@@ -1767,8 +1751,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_wildcard_req
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLiouRW5naW5lU3BlZWQiOiJyIn19.4L_gleoOJ29SR75go0qtBgYjwkwWE0ofYMMQJm884-ifCNihl3aSNhxjVy-6KUQckTd-OMiGkd1RRXElHfnaLfVSmpaFAIjupzvXaKwEoLa6duXfh3-qaEQPSCUxSjr8Tur3aXkj8nJEcSYBYUo_RTX-Srgto0dSTLQza0Lvm0aYPHhE6oIy2dniMIxwCSNxtarFt6-DWIxR3RqFcTVcuGtgn3A6JCm-WurI2zHsmF2BHrIfUYWuTdzUH16QLSfviTVcMjBLgGhVGdQPz22t4nKtdwcVMJkYfLsaU-GYuRi-ZMIrbi7F1oU8pU21U4Ja9C9CuR-H4Xhy2uG_FVQmog-_K-kR6_tndbM-AL7BnfOt-T_QpD-CSfCY0K5Y1bS_IuiM6MrXu5J2q1lfLp_TAK9YBWpuKRGhxdke7zHlSB37dpbiqZFIdGwfJ7Kq6XzqZNFRkWw7_XM2U4s5OXcw2JDklJYJ_EA1bUBhoPb-UHCqYxTP6G5OAHgD1Ydji93o3IsRSt6cX8o7hsmF79L3HvSzCm-qTN_EPhvbVfucJFj5phOd_9GjoFn3ySkwTINX_Pe3aT-Kz9qn5_Sb6utxw4eYvf_e_TYH6bAICjb9OmOyvH5gS9u2ieJ_1ra4SIGuZ25d86m3aRBybJSnFCprpsv63ziKXNGcL2vIGlCzKUc";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1785,18 +1769,15 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_wildcard_req
    string response = commandProc_auth->processQuery(request,channel);
 
   json expected = json::parse(R"({
-    "action": "get",
-    "requestId": "8756",
-    "value":[{"Vehicle.OBD.EngineSpeed":"---"}]
+    "action":"get",
+    "error":{"message":"Insufficient read access to Vehicle.OBD.*","number":403,"reason":"Forbidden"},
+    "requestId":"8756"
     })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1819,8 +1800,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_branch_path_
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLiouRW5naW5lU3BlZWQiOiJyIn19.4L_gleoOJ29SR75go0qtBgYjwkwWE0ofYMMQJm884-ifCNihl3aSNhxjVy-6KUQckTd-OMiGkd1RRXElHfnaLfVSmpaFAIjupzvXaKwEoLa6duXfh3-qaEQPSCUxSjr8Tur3aXkj8nJEcSYBYUo_RTX-Srgto0dSTLQza0Lvm0aYPHhE6oIy2dniMIxwCSNxtarFt6-DWIxR3RqFcTVcuGtgn3A6JCm-WurI2zHsmF2BHrIfUYWuTdzUH16QLSfviTVcMjBLgGhVGdQPz22t4nKtdwcVMJkYfLsaU-GYuRi-ZMIrbi7F1oU8pU21U4Ja9C9CuR-H4Xhy2uG_FVQmog-_K-kR6_tndbM-AL7BnfOt-T_QpD-CSfCY0K5Y1bS_IuiM6MrXu5J2q1lfLp_TAK9YBWpuKRGhxdke7zHlSB37dpbiqZFIdGwfJ7Kq6XzqZNFRkWw7_XM2U4s5OXcw2JDklJYJ_EA1bUBhoPb-UHCqYxTP6G5OAHgD1Ydji93o3IsRSt6cX8o7hsmF79L3HvSzCm-qTN_EPhvbVfucJFj5phOd_9GjoFn3ySkwTINX_Pe3aT-Kz9qn5_Sb6utxw4eYvf_e_TYH6bAICjb9OmOyvH5gS9u2ieJ_1ra4SIGuZ25d86m3aRBybJSnFCprpsv63ziKXNGcL2vIGlCzKUc";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1837,18 +1818,15 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_branch_path_
    string response = commandProc_auth->processQuery(request,channel);
 
   json expected = json::parse(R"({
-    "action": "get",
-    "requestId": "8756",
-    "value": [{"Vehicle.OBD.EngineSpeed":"---"}]
+    "action":"get",
+    "error":{"message":"Insufficient read access to Vehicle.OBD","number":403,"reason":"Forbidden"},
+    "requestId":"8756"
     })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1871,8 +1849,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZSI6InIifX0.AKCWRDrtl4UkFzAGEzsyUZIKH4Q7jHg_Y5p8xVMLWtGTXIeFdQlz7FW-6rAy1Os9ad-H8ghEepcy2gs6DK3kr3FNDxqUyIaz8p_CDkwrgqp0Wczi1DsgwbyTsY2wsDa94Mja3ng2VszQgs4FZmsdbnzFzJeAsGucOZeIQj8w68up6YI6KXiCjO1094I2eixkclNnb1psPiucTkyListTLHxK3029fZT1EGGcrt7ziFYGiT5Z0Zk7x0PSN7dvmaT1rMOBWjbpluLCepkWZYt73ipO8YoAWhluMiW0sJI7ezrIU3UAKDkna_6kjAapm-9vAVTA63Tv4ovnRaALb_V2oxbIGCPTNoAY7ui00uFcxuN2B5l4M05OFgMIcxwS9-UEVQIWbFUxvPTQLNkOp12jd73ic786lUOs7fvuwseMZ2KX9cpV03TSAN1BIwG_TJ0iOQJ_5wuyDFRqwBK8zubg-zohUPMwsLpZgc7fTVI7AhXzGLZ57fE977NsluzfjFS0smtuzN-8JTvAMnCrgTQwu5GyTiL64a3NlYcQ2qt5K6D8xOIs7xSe8i0_PlKSgG8ECMOBE3JwSCwU1q83mTPCTSGHxTaNYnPhputc6gEiPv2VYmppGrMCeG2d5oLNzGhecIaLf_PGTTSmrUUZNK6HkuybgZStgMdN5uMTXrBkEvw";
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1890,18 +1868,18 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
 
   json expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
     "requestId": "8756",
-    "value": 2345
+    "data":{
+        "path": "Vehicle.OBD.EngineSpeed",
+        "dp":{"value": "2345.0"}
+    }
     })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
+   verify_and_erase_timestamp(response_json["data"]["dp"]);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1925,8 +1903,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3MDkzNzI4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5TcGVlZCI6IncifX0.KE0I1N6Izp_5k-vj8WkB23aKaPiHyrZc0jNulQHGNmwvNnJUaXp7N79-ACZPxVVI_f_MWLkanmMXHr4NqV-nIv5Tzcc4B7WMylF_DSI2kNmOqNqArQgcAgof90Z-mTDu6mdXvlIRmP0h_Zf7Bzcmp5HzgyonNpNsqjU6NZsBJbPWZZr-jWewslIt9dPVd3ZH8Q8F84bKldx2ur8oL-3bxj9CQ426TvGqT8ey-V_79IyFOMftKL0X0QcBlLhF5FwcrUBkJ2MbfJrtNL6egHqjQ70bGvYN7fj5zLTOP2dgAN-xLTFE8HhScc6f0dCi5aAZBKobU2Uw3t_soSuKr5Gx0kYStVFkW8A_TIBVdEPIT_gWogm9AqWWj9Q9ss8sp4_ozsMruXNTyhomYt6dfLtb2D7UQkkrfxB5jC2FND5j7EYiDn4ZM3qsJApXHcwY0fQEKRjon2rmFeR1kKmrp9WSLeUbOpuhRpZYJOwnTvNSQOMIWixM51AkX0JmTdHip25ffXpmBfvGmNUD-KzLanxkY0K88pcDX1qnnyjx3c75bWsg-PCWvMNyqElqTsgQxzRQ0RhIpk0LhEU1mLMO-yVWhsHqfJc9CzNJhP0Lzt5lUYKJg3NgEvmyXbx-5SxArzIqRO2KtPI5pKT-4A_y5IVQRuJu2yTwt9qkBlX0dMnfnhs";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
 
    string authReq(R"({
 		"action": "authorize",
@@ -1937,7 +1915,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
    commandProc->processQuery(authReqJson.as_string(),channel);
    string request(R"({
 		"action": "set",
-		"path": "Vehicle.OBD.Speed",
+		"path": "Vehicle/OBD/Speed",
                 "value" : 200,
 		"requestId": "8756"
 	})");
@@ -1951,11 +1929,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -1978,8 +1953,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5TcGVlZCI6IncifX0.HOAb7fh1IRTtIXGI3GlptjIZgUYGXKkF8Zp0A2CrqhYY3-5RzuuQ4cTzc_FQfn8hRO0CzF5hARGpvECR7fMxTyKMOelnqI9DJbCL_wyHIrizOo_fZwoEt_GH5AMKawryn3XkFsyOwCl74V8coYboycCpQXKyMHfz4zXGOh6Re9iXX7eBU6U0RCxCUso1pALmMvF2PoUHlZRtFJg1VhhErRoCSu5F-dCDykd04rorbzTOsgRuzHfAXoRQVprb4NwoT99jw1qg-Su0q8LxsDUtRfxdDHBmAXJVhmTzWSwzzD6da08PLoIojyIuSPk2AWTH8u0tMz9anI13I2R4nS6ikXeg3oVaxcXcj4gTnhYfJmwx0zyThuHSJ4lEpxYMAOgP49s6jpHdSBamOiTnB4Nkrm_stCcT4bCZCZ-9bjVxXkXZe49fLVDOrg1FhGJ5sJazYZC6z7JKly8BE-FO2bQiYiMB-XD7AEgPSp61nAY_JtSQTsxa3lEBSGJJQYLqcQMZ_aLIQY0fSUjrtjG4jQpi-walriUUyP87-1SqdIV12rgvOtn1sSHm0rwGfSKf43f3HnwngbotVkWaZ7t4NvBkLU2FMrMeiG_8x5Xjq1mnZlI_K3bMRg7yAzznrrDIe3sUxP0Etnjky0CNYpeqwYGZmHNRdHAUNnWaNVGRt_tJBZc";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1989,7 +1964,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
    commandProc_auth->processQuery(authReqJson.as_string(),channel);
    string request(R"({
 		"action": "set",
-		"path": "Vehicle.OBD.RPM",
+		"path": "Vehicle.OBD.EngineSpeed",
                 "value" : 200,
 		"requestId": "8756"
 	})");
@@ -1998,17 +1973,14 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
 
   json expected = json::parse(R"({
     "action":"set",
-    "error":{"message":"No write  access to Vehicle/OBD/RPM","number":403,"reason":"Forbidden"},
+    "error":{"message":"No write access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
     "requestId":"8756"
     })");
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -2031,8 +2003,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3MDkzNzI4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC4qIjoicncifX0.U4zpy38DBTx2thPWfOMKALfZovJdkr5xQWDQaGSQo6sMhG-MgDz2UZDvVyRllHiv76f2VmZ2X0TnUZ_Z6yFUmjVYq83LGzUjSDY-xFLLRqOPvFKsQbTmOLbT629uU5Pz2m6x1HcxHBVCxNvI3pZw1D_rHODkVVlgSjycDK5NaHi9EdbSDmccmwk3jI6tPag0eKC7adzBlqkt-h6vqlx_FRz7kjyhiLXmR95QIV3_0MIyq484SsU4ztMPgmHBn1VUWz0x5EW065J2BIavXpaF20oNek0ZzsGcDq-UEQOLPDFoAnYykFrcYmIlXc51wRU2Mw-IIIIs4CV9-Vp1GkQfhQCicmR3OprRepzi_C0Fdh6kwSetAYJWqlVOeo1oUIxFIYbxGFjtdG38dOaacDddBnJ93K8JlnbFdp79Ins39HCmRPit198vdf7gLRcM_GLtvGF6SbT0V2tn17CNt2UxLEniHp7hGybxBVKqgTws2H73ZLe4HEq3UU8vhbeg2V2KXeSXvDJeE3LZvDWARafyHVXrkOx8-O9HqIClfAr-LAl7nnBqq2f9DneW1hjFZOFV5RUCrJ_UpZR_hyEU_aroXO6MNw_MC6KvZeOC6ti1NO6uAB3BYHzpNP1mlyUHlfRl-oLuKZFFqFVBrxY3tBrQwgzfhPZwi427ZIwrNlfv-aU";
 
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -2042,8 +2014,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
    commandProc->processQuery(authReqJson.as_string(),channel);
    string request(R"({
 		"action": "set",
-		"path": "Vehicle.OBD.Speed",
-                "value" : 345,
+        "path": "Vehicle.OBD.Speed",
+        "value" : "345",
 		"requestId": "8756"
 	})");
 
@@ -2056,11 +2028,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 
    // verify with a get request
@@ -2075,18 +2044,18 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 
   json get_expected = json::parse(R"({
     "action": "get",
-    "path": "Vehicle.OBD.Speed",
     "requestId": "8756",
-    "value": 345
+    "data":{
+        "path": "Vehicle.OBD.Speed",
+        "dp":{"value": "345"}
+    }
     })");
 
    json get_response_json = json::parse(get_response);
 
+   verify_and_erase_timestamp(get_response_json);
+   verify_and_erase_timestamp(get_response_json["data"]["dp"]);
 
-   BOOST_TEST(get_response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   get_response_json.erase("timestamp");
    BOOST_TEST(get_response_json == get_expected);
 }
 
@@ -2109,8 +2078,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRCI6IncifX0.SEWdQbdA8GIbxyC_2f1vV5CB_k7JF-krXnBplROgmvG5qLhZn8QTWkfjdEpPLhsnClpc3meX-bkAJA1T25ISJGRwg5fugRBtjgbpk9sSP3grRuhQVjZSvWoajIB7sHrRkI0J9ggS7jegQpZjGnrBh0nFuEAAbCQY6ToQCYWnz5phTqO9YKZK3AZ3JfPKIqxZ0_MSrrfK_VTWtSE5TDzo8_NVu9Mmqzz_2_EcPiF5r9te-Pe_y4WsVj1WGkbXQoSlLw4b5aTk19DipQAqTS7nL-b0ce1ljuKnSE5-ksM0zMMWQ2Fh_hJyppkUi-vDBQPL4ZHTBDl33AaZnwwlNbUbWOqbuEDKmJk7jRQBfLqKkh2NsifI4wY0Bhmbm9v8-wJESItBw3AVQI1uyan9KHO5OBaH-qKnY1CcGCnNq04-BEsXT5vlVbGlFoFXzB1pw4d27oHkm73Yz2or9MxO5Uv3UPMjqRy-czIdncfewLxBzgT13owfuAP9Fm2t5YXaRpSPiki-QI4Zf02iSRETIM6l5CdSLHAdqOnujYkZjjRauhulp1nuCMQuXxotmn-Mp9OHENtSonddmXC3NtDc5WDMir9lf1NdAItEFfeS8TmeyyTiqxERmxyu8heAeKiOKYQAIrbcNgap7ggiCAjKviQfv-sQIJvFJ0gmHNN9xqQkNTg";
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -2121,7 +2090,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
    
    string request(R"({
 		"action": "set",
-		"path": "Vehicle.OBD.Speed",
+		"path": "Vehicle/OBD/Speed",
                 "value" : 345,
 		"requestId": "8756"
 	})");
@@ -2138,18 +2107,15 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
    //childs. So we test accordingly 
    json expected = json::parse(R"({
     "action":"set",
-    "error":{"message":"No write  access to Vehicle/OBD/Speed","number":403,"reason":"Forbidden"},
+    "error":{"message":"No write access to Vehicle/OBD/Speed","number":403,"reason":"Forbidden"},
     "requestId":"8756"
     })");
     
 
    json response_json = json::parse(response);
 
+   verify_and_erase_timestamp(response_json);
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 
    // verify with a get request
@@ -2167,17 +2133,14 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
   json get_expected = json::parse(R"({
     "action": "get",
-    "error":{"message":"No read access to Vehicle/OBD/Speed","number":403,"reason":"Forbidden"},
+    "error":{"message":"Insufficient read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
     "requestId": "8757"
     })");
 
    json get_response_json = json::parse(get_response);
 
+   verify_and_erase_timestamp(get_response_json);
 
-   BOOST_TEST(get_response_json.contains("timestamp") == true);
-
-   // remove timestamp to match
-   get_response_json.erase("timestamp");
    BOOST_TEST(get_response_json == get_expected);
 
 }
@@ -2231,10 +2194,10 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_permitted_path)
    json response_json = json::parse(response);
 
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 
    // verify with a get request the the previous set has not worked.
@@ -2257,10 +2220,10 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_permitted_path)
    json get_response_json = json::parse(get_response);
 
 
-   BOOST_TEST(get_response_json.contains("timestamp") == true);
+   BOOST_TEST(get_response_json.contains("ts") == true);
 
    // remove timestamp to match
-   get_response_json.erase("timestamp");
+   get_response_json.erase("ts");
    BOOST_TEST(get_response_json == get_expected);
 }
 */
@@ -2314,10 +2277,10 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path)
    json response_json = json::parse(response);
 
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   BOOST_TEST(response_json.contains("ts") == true);
 
    // remove timestamp to match
-   response_json.erase("timestamp");
+   response_json.erase("ts");
    BOOST_TEST(response_json == expected);
 
    // verify with a get request the the previous set has not worked.
@@ -2340,10 +2303,10 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path)
    json get_response_json = json::parse(get_response);
 
 
-   BOOST_TEST(get_response_json.contains("timestamp") == true);
+   BOOST_TEST(get_response_json.contains("ts") == true);
 
    // remove timestamp to match
-   get_response_json.erase("timestamp");
+   get_response_json.erase("ts");
    BOOST_TEST(get_response_json == get_expected);
 }
 */
@@ -2369,8 +2332,8 @@ BOOST_AUTO_TEST_CASE(subscription_test)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -2394,7 +2357,6 @@ BOOST_AUTO_TEST_CASE(subscription_test)
      "requestId":"8778"
     })");
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
    BOOST_TEST(response_json.contains("subscriptionId") == true);
 
    int subID = response_json["subscriptionId"].as<int>();
@@ -2402,9 +2364,8 @@ BOOST_AUTO_TEST_CASE(subscription_test)
    // checked if subid is available. now remove to assert.
    response_json.erase("subscriptionId");
 
+   verify_and_erase_timestamp(response_json);
 
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 
 
@@ -2420,21 +2381,20 @@ BOOST_AUTO_TEST_CASE(subscription_test)
    string unsub_response = commandProc->processQuery(temp_unsubreq.as_string(),channel);
    json unsub_response_json = json::parse(unsub_response);
 
-   // assert timestamp and subid.
-   BOOST_TEST(unsub_response_json.contains("timestamp") == true);
    BOOST_TEST(unsub_response_json.contains("subscriptionId") == true);
 
    // compare the subit passed and returned.
    BOOST_TEST(unsub_response_json["subscriptionId"].as<int>() == subID);
 
-   // remove timestamp and subid to assert other part of the response.because these are variables.
+   // remove subid to assert other part of the response.because these are variables.
    unsub_response_json.erase("subscriptionId");
-   unsub_response_json.erase("timestamp");
 
    json expected_unsub = json::parse(R"({
      "action":"unsubscribe",
      "requestId":"8779"
     })");
+
+   verify_and_erase_timestamp(unsub_response_json);
 
    BOOST_TEST(unsub_response_json == expected_unsub);
 }
@@ -2457,8 +2417,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuKiI6InJ3In19.LLdJFIuoViNF4uVv1IL30fXPySoM1oCHxLrWm6xM_4eynvXqPvrCI9fW__GMI0d8PxBLpM8FhgG3ynVVlOuLV_Sl6lDImZlkNQiR02lJwFqf67RWVdI4f4uhdHdKjEpe0a0F-6e7McS__3qQYyjNuQAZIIXkZUIDyXye9upwNARj1wGPtZyNzSY1uyxmuc7MMPaILAIzL8ZnY_D9qgbpbiInGavZtDE_X1iy9GhxbUguP8oiVYn14-H6RBDIF0s5dXwXnJ0cm9Q2DTFpb0YRq4sMgTC4PT1Smdda_6Pj2ELmBjGbH7PYlqfVk1jVdSPGcUpU48e__qVitSRkEK_unM5CihrDVIy7nw3_KclIZJa8_af3kQ4x-leg-ErRCt78j5l0DDxIo5EtCxAeLbO7baZD6D1tPrb3vYkI_9zl1vzydp_nmNMS9QzCRq5yEJfP07gpvG0Z1O0tSLedSCG9cZJ-lJ3Oj3bqxNxk3ih6vKfjnvjAgli7wEP_etHofZmqs3NI-qtP6ldz93fBfAK_iApsSnG4PV7oS_-3UQIow6fUHAA8szn4Ad1ZYiaDsXRcHbdIoLEemGDllkRTYNBe_5vFDT3s1gY82L3fvgwAzTGZ2k46eh66Zx3SmuPgHlCQK6gR-6eAVn0jh_Tjk5vubtin6UdRjHF0Y4BvCwvE0bk";
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -2485,7 +2445,6 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
      "requestId":"8778"
     })");
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
    BOOST_TEST(response_json.contains("subscriptionId") == true);
 
    int subID = response_json["subscriptionId"].as<int>();
@@ -2493,9 +2452,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
    // checked if subid is available. now remove to assert.
    response_json.erase("subscriptionId");
 
+   verify_and_erase_timestamp(response_json);
 
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 
 
@@ -2511,21 +2469,21 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
    string unsub_response = commandProc->processQuery(temp_unsubreq.as_string(),channel);
    json unsub_response_json = json::parse(unsub_response);
 
-   // assert timestamp and subid.
-   BOOST_TEST(unsub_response_json.contains("timestamp") == true);
+   // assert subid.
    BOOST_TEST(unsub_response_json.contains("subscriptionId") == true);
 
    // compare the subit passed and returned.
    BOOST_TEST(unsub_response_json["subscriptionId"].as<int>() == subID);
 
-   // remove timestamp and subid to assert other part of the response.because these are variables.
+   // remove subid to assert other part of the response.because these are variables.
    unsub_response_json.erase("subscriptionId");
-   unsub_response_json.erase("timestamp");
 
    json expected_unsub = json::parse(R"({
      "action":"unsubscribe",
      "requestId":"8779"
     })");
+
+   verify_and_erase_timestamp(unsub_response_json);
 
    BOOST_TEST(unsub_response_json == expected_unsub);
 }
@@ -2549,8 +2507,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIiwiVmVoaWNsZS5PQkQuU3BlZWQiOiJ3In19.ob9r5oT8R5TEtQ1ZULw2jJZpplv3-hMSd9rgFqU0CUTg-G4zhMLwegTmNDgY2EAyhOQ2LSNXK46b-ftCiVINWfnOIlNAwTmXoRNNqJ5F81aVpt8ub1aMUt0B8iKHH1Vy9sNMDrdjbB8qnNK-9SodsEafxvHAN816b81FZplA8z4S5F1gRjiCeK_tI_ZltiGYHp5FKcu25WuQosasZOUiGS7i_WFLftSn59S4lb2cBgpYIVxsGYjsnDKxc_mTNJRaCF5W5kF9zMaOR2x0sXJaZRWQnl5ioCu6tbneUF9Sb5ri1hR5m720WdNuu9iBaWbYno8QtjS8Di5L6KoIRNAcvGkAXuhLhmhSTd4ANYd9Ccc2xU6v4YWiKR4Sq3PXRvSfI-RUBuniOGi_v4Bpe8571B6EBZ3sPI3lkdgekusjqo_Man0WUc-h56ZttWsaqPVFyrSBz7uVtlcRHCwXrLaTwF-7rvNKwR5n3tIy-QG2YCQqQVr7-2934-NSADY8yTuKg-7bvv0DQv0pvNwwPjXE0Y6DSXGsk2PdujD8qai2aW5bZd9LI2WNxFqftm_t-cdicKgipzZVCzwwK9kTbpPq5KesVUymc8TIhmJynrh7lIVh-1EfvEY8T-v374kVppQ-k6aZmPphMvcWNF04x07_rw1DWxKoLIX4tTBvXiApSWo";
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -2575,10 +2533,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission)
                    "requestId":"8778"
                    })");
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   verify_and_erase_timestamp(response_json);
 
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -2602,8 +2558,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIiwiVmVoaWNsZS5PQkQuU3BlZWQiOiJ3In19.ob9r5oT8R5TEtQ1ZULw2jJZpplv3-hMSd9rgFqU0CUTg-G4zhMLwegTmNDgY2EAyhOQ2LSNXK46b-ftCiVINWfnOIlNAwTmXoRNNqJ5F81aVpt8ub1aMUt0B8iKHH1Vy9sNMDrdjbB8qnNK-9SodsEafxvHAN816b81FZplA8z4S5F1gRjiCeK_tI_ZltiGYHp5FKcu25WuQosasZOUiGS7i_WFLftSn59S4lb2cBgpYIVxsGYjsnDKxc_mTNJRaCF5W5kF9zMaOR2x0sXJaZRWQnl5ioCu6tbneUF9Sb5ri1hR5m720WdNuu9iBaWbYno8QtjS8Di5L6KoIRNAcvGkAXuhLhmhSTd4ANYd9Ccc2xU6v4YWiKR4Sq3PXRvSfI-RUBuniOGi_v4Bpe8571B6EBZ3sPI3lkdgekusjqo_Man0WUc-h56ZttWsaqPVFyrSBz7uVtlcRHCwXrLaTwF-7rvNKwR5n3tIy-QG2YCQqQVr7-2934-NSADY8yTuKg-7bvv0DQv0pvNwwPjXE0Y6DSXGsk2PdujD8qai2aW5bZd9LI2WNxFqftm_t-cdicKgipzZVCzwwK9kTbpPq5KesVUymc8TIhmJynrh7lIVh-1EfvEY8T-v374kVppQ-k6aZmPphMvcWNF04x07_rw1DWxKoLIX4tTBvXiApSWo";
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -2628,10 +2584,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath)
                    "requestId":"8778"
                    })");
 
-   BOOST_TEST(response_json.contains("timestamp") == true);
+   verify_and_erase_timestamp(response_json);
 
-   // remove timestamp to match
-   response_json.erase("timestamp");
    BOOST_TEST(response_json == expected);
 }
 
@@ -2655,11 +2609,14 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
    //json perm = json::parse(R"({"$['Vehicle']['children'][*]['children']['EngineSpeed']" : "wr"})");
    json perm = json::parse(R"({"Vehicle.*.EngineSpeed" : "wr"})");
 
-    WsChannel channel;
-    channel.setConnID(1234);
-    channel.setAuthorized(true);
-    channel.setAuthToken(AUTH_TOKEN);
-    channel.setPermissions(perm);
+   std::string channelperm;
+   perm.dump_pretty(channelperm);
+
+    kuksa::kuksaChannel channel;
+    channel.set_connectionid(1234);
+    channel.set_authorized(true);
+    channel.set_authtoken(AUTH_TOKEN);
+    channel.set_permissions(channelperm);
     string request(R"({
                    "action": "subscribe",
                    "path": "Vehicle.*.EngineSpeed",
@@ -2679,12 +2636,12 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
 
     json response_json = json::parse(response);
     json request_json = json::parse(request);
-    BOOST_TEST(response_json.contains("timestamp") == true);
     BOOST_TEST(response_json.contains("subscriptionId") == true);
-    // remove timestamp to match
-    response_json.erase("timestamp");
     response_json.erase("subscriptionId");
     request_json.erase("path");
+
+    verify_and_erase_timestamp(response_json);
+
     BOOST_TEST(response_json == expected);
 }
 
@@ -2704,8 +2661,8 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
 }*/
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIiwiVmVoaWNsZS5PQkQuU3BlZWQiOiJ3In19.ob9r5oT8R5TEtQ1ZULw2jJZpplv3-hMSd9rgFqU0CUTg-G4zhMLwegTmNDgY2EAyhOQ2LSNXK46b-ftCiVINWfnOIlNAwTmXoRNNqJ5F81aVpt8ub1aMUt0B8iKHH1Vy9sNMDrdjbB8qnNK-9SodsEafxvHAN816b81FZplA8z4S5F1gRjiCeK_tI_ZltiGYHp5FKcu25WuQosasZOUiGS7i_WFLftSn59S4lb2cBgpYIVxsGYjsnDKxc_mTNJRaCF5W5kF9zMaOR2x0sXJaZRWQnl5ioCu6tbneUF9Sb5ri1hR5m720WdNuu9iBaWbYno8QtjS8Di5L6KoIRNAcvGkAXuhLhmhSTd4ANYd9Ccc2xU6v4YWiKR4Sq3PXRvSfI-RUBuniOGi_v4Bpe8571B6EBZ3sPI3lkdgekusjqo_Man0WUc-h56ZttWsaqPVFyrSBz7uVtlcRHCwXrLaTwF-7rvNKwR5n3tIy-QG2YCQqQVr7-2934-NSADY8yTuKg-7bvv0DQv0pvNwwPjXE0Y6DSXGsk2PdujD8qai2aW5bZd9LI2WNxFqftm_t-cdicKgipzZVCzwwK9kTbpPq5KesVUymc8TIhmJynrh7lIVh-1EfvEY8T-v374kVppQ-k6aZmPphMvcWNF04x07_rw1DWxKoLIX4tTBvXiApSWo";
 
-   WsChannel channel;
-   channel.setConnID(1234);
+   kuksa::kuksaChannel channel;
+   channel.set_connectionid(1234);
     
    string authReq(R"({
 		"action": "authorize",
@@ -2735,14 +2692,14 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
     json response_json = json::parse(response);
     json request_json = json::parse(request);
     // TEST response for parameters
-    BOOST_TEST(response_json.contains("timestamp") == true);
     BOOST_TEST(response_json.contains("subscriptionId") == true);
     // TEST request for parameters
     BOOST_TEST(request_json.contains("path") == true);
-    // remove timestamp to match
-    response_json.erase("timestamp");
     response_json.erase("subscriptionId");
     request_json.erase("path");
+
+    verify_and_erase_timestamp(response_json);
+
     BOOST_TEST(response_json == expected);
 }
 
@@ -2766,8 +2723,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard)
     string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
 
 
-    WsChannel channel;
-    channel.setConnID(1234);
+    kuksa::kuksaChannel channel;
+    channel.set_connectionid(1234);
     string authReq(R"({
                    "action": "authorize",
                    "requestId": "878787"
@@ -2792,8 +2749,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard)
                                 "requestId":"878787"
                                 })");
 
-    BOOST_TEST(response_json.contains("timestamp") == true);
-    // remove timestamp to match
-    response_json.erase("timestamp");
+   verify_and_erase_timestamp(response_json);
+
     BOOST_TEST(response_json == expected);
 }

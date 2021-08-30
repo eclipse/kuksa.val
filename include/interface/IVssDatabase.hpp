@@ -19,31 +19,30 @@
 #include <jsoncons/json.hpp>
 #include <boost/filesystem.hpp>
 
+#include "kuksa.pb.h"
 #include "VSSPath.hpp"
-
-class WsChannel;
 
 class IVssDatabase {
   public:
     virtual ~IVssDatabase() {}
 
     virtual void initJsonTree(const boost::filesystem::path &fileName) = 0;
-    virtual void updateJsonTree(WsChannel& channel, const jsoncons::json& value) = 0;
-    virtual void updateMetaData(WsChannel& channel, const std::string& path, const jsoncons::json& value) = 0;
-    virtual jsoncons::json getMetaData(const std::string &path) = 0;
+    virtual void updateJsonTree(kuksa::kuksaChannel& channel, jsoncons::json& value) = 0;
+    virtual void updateMetaData(kuksa::kuksaChannel& channel, const VSSPath& path, const jsoncons::json& value) = 0;
+    virtual jsoncons::json getMetaData(const VSSPath &path) = 0;
   
-    virtual jsoncons::json setSignal(WsChannel& channel, const VSSPath &path, jsoncons::json &value, bool gen1_compat) = 0; //gen2 version
+    virtual jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) = 0; //gen2 version
+    virtual jsoncons::json getSignal(const VSSPath& path) = 0;
 
     virtual bool pathExists(const VSSPath &path) = 0;
     virtual bool pathIsWritable(const VSSPath &path) = 0;
+    virtual std::list<VSSPath> getLeafPaths(const VSSPath& path) = 0;
 
+    virtual void checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val) = 0;
                            
-    virtual jsoncons::json getSignal(WsChannel& channel, const VSSPath& path, bool gen1_compat) = 0;
-
     // TODO: temporary added while components are refactored
     jsoncons::json data_tree__;
     jsoncons::json meta_tree__;
-    virtual std::string getVSSSpecificPath(const std::string &path, bool& isBranch, jsoncons::json& tree) = 0;
 };
 
 #endif

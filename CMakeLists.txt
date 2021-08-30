@@ -61,13 +61,9 @@ include(boost.cmake)
 
 # OpenSSL
 find_package(OpenSSL REQUIRED)
-message(STATUS " openssl libraries ${OPENSSL_LIBRARIES}")
+message(STATUS "openssl libraries ${OPENSSL_LIBRARIES}")
 
-# glib, gobject
 FIND_PACKAGE(PkgConfig)
-PKG_CHECK_MODULES(GLIB glib-2.0)
-PKG_CHECK_MODULES(GObject gobject-2.0)
-PKG_CHECK_MODULES(GIO gio-2.0)
 
 # mosquitto
 find_path(MOSQUITTO_INCLUDE_DIR 	NAMES mosquitto.h ) 
@@ -100,3 +96,5 @@ enable_testing()
 include(CTest)
 add_subdirectory(test)
 add_subdirectory(test/unit-test)
+
+

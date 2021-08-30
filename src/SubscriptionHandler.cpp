@@ -48,26 +48,25 @@ SubscriptionHandler::~SubscriptionHandler() {
   stopThread();
 }
 
-SubscriptionId SubscriptionHandler::subscribe(WsChannel& channel,
+SubscriptionId SubscriptionHandler::subscribe(kuksa::kuksaChannel& channel,
                                               std::shared_ptr<IVssDatabase> db,
                                               const string &path) {
   // generate subscribe ID "randomly".
   SubscriptionId subId = rand() % 9999999;
   // embed connection ID into subID.
-  subId = channel.getConnID() + subId;
+  subId = channel.connectionid() + subId;
 
-  bool isBranch = false;
-  string jPath = db->getVSSSpecificPath(path, isBranch, db->data_tree__);
+  VSSPath vssPath = VSSPath::fromVSS(path);
 
-  if (jPath == "") {
+  if (not db->pathExists(vssPath)) {
     throw noPathFoundonTree(path);
-  } else if (!checkAccess->checkReadAccess(channel, VSSPath::fromJSON(jPath))) {
+  } else if (!checkAccess->checkReadAccess(channel, vssPath)) {
     stringstream msg;
     msg << "no permission to subscribe to path " << path;
     throw noPermissionException(msg.str());
   }
 
-  jsoncons::json resArray = jsonpath::json_query(db->data_tree__, jPath);
+  jsoncons::json resArray = jsonpath::json_query(db->data_tree__, vssPath.getJSONPath());
 
   if (resArray.is_array() && resArray.size() == 1) {
     std::unique_lock<std::mutex> lock(accessMutex);
@@ -80,7 +79,7 @@ SubscriptionId SubscriptionHandler::subscribe(WsChannel& channel,
                   + string("ID with a new one"));
     }
 
-    subscribeHandle[sigUUID][subId] = channel.getConnID();
+    subscribeHandle[sigUUID][subId] = channel.connectionid();
 
     return subId;
   } else if (resArray.is_array()) {
@@ -130,11 +129,22 @@ int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
   return 0;
 }
 
-int SubscriptionHandler::updateByUUID(const string &signalUUID,
-                                      const jsoncons::json &value) {
+std::shared_ptr<IServer> SubscriptionHandler::getServer() {
+  return server;
+}
+
+int SubscriptionHandler::updateByUUID(const string &signalUUID, const json &data) {
   std::stringstream ss;
-  ss << pretty_print(value);
-  logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByUUID: new value set at path " + signalUUID + ss.str());
+  ss << "SubscriptionHandler::update: set value "
+     << data["dp"]["value"]
+     << " for path " << data["path"].as<string>()
+     << " for UUID " << signalUUID;
+  logger->Log(LogLevel::VERBOSE, ss.str());
+
+  for(auto & publisher: publishers_){
+    publisher->sendPathValue(data["path"].as<string>(), data["dp"]["value"]);
+  }
+
   std::unique_lock<std::mutex> lock(accessMutex);
   auto handle = subscribeHandle.find(signalUUID);
   if (handle == subscribeHandle.end()) {
@@ -146,28 +156,9 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID,
     std::lock_guard<std::mutex> lock(subMutex);
     tuple<SubscriptionId, ConnectionId, json> newSub;
     logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByUUID: new value set at path " + std::to_string(subID.first) + ss.str());
-    newSub = std::make_tuple(subID.first, subID.second, value);
+    newSub = std::make_tuple(subID.first, subID.second, data);
     buffer.push(newSub);
     c.notify_one();
-  }
-
-  return 0;
-}
-
-std::shared_ptr<IServer> SubscriptionHandler::getServer() {
-  return server;
-}
-
-int SubscriptionHandler::updateByPath(const string &path, const json &value) {
-  /* TODO: Implement */
-  (void) path;
-  (void) value;
-  
-  std::stringstream ss;
-  ss << pretty_print(value);
-  logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByPath: new value set at path " + path + ss.str());
-  for(auto & publisher: publishers_){
-    publisher->sendPathValue(path, value);
   }
 
 
@@ -184,13 +175,12 @@ void* SubscriptionHandler::subThreadRunner() {
       buffer.pop();
 
       auto connId = std::get<1>(newSub);
-      jsoncons::json value = std::get<2>(newSub);
+      jsoncons::json data = std::get<2>(newSub);
 
       jsoncons::json answer;
-      answer["action"] = "subscribe";
+      answer["action"] = "subscription";
       answer["subscriptionId"] = std::get<0>(newSub);
-      answer.insert_or_assign("value", value);
-      answer["timestamp"] = JsonResponses::getTimeStamp();
+      answer.insert_or_assign("data", data);
 
       stringstream ss;
       ss << pretty_print(answer);

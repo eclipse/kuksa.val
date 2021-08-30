@@ -14,7 +14,8 @@
 set(Boost_USE_STATIC_LIBS OFF)
 set(BOOST_VER 1.75.0)
 set(Boost_NO_BOOST_CMAKE ON)
-set(BOOST_COMPONENTS filesystem program_options system)
+set(BOOST_COMPONENTS filesystem program_options system log thread)
+ADD_DEFINITIONS(-DBOOST_LOG_DYN_LINK)
 
 # Workaround function to allow cmake call `find_package` twice. Avoide side effects from local variables, which are produced be `find_package`
 function(findBoost Required)
@@ -31,7 +32,7 @@ findBoost("")
 
 if(NOT Boost_FOUND)
   string(REPLACE "." "_" BOOST_VER_ ${BOOST_VER}) 
-  set(BOOST_URL "https://dl.bintray.com/boostorg/release/${BOOST_VER}/source/boost_${BOOST_VER_}.tar.bz2" CACHE STRING "Boost download URL")
+  set(BOOST_URL "https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER}/source/boost_${BOOST_VER_}.tar.bz2" CACHE STRING "Boost download URL")
   set(BOOST_URL_SHA256 "953db31e016db7bb207f11432bef7df100516eeb746843fa0486a222e3fd49cb" CACHE STRING "Boost download URL SHA256 checksum")
   option(BOOST_DISABLE_TESTS "Do not build test targets" OFF)
   include(FetchContent)

@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2020 Robert Bosch GmbH.
+ * Copyright (c) 2020-2021 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -18,6 +18,8 @@
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <turtle/mock.hpp>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
+
+#include "UnitTestHelpers.hpp"
 
 #include <memory>
 #include <string>
@@ -64,7 +66,7 @@ struct TestSuiteFixture {
     std::string vss_file{"test_vss_rel_2.0.json"};
 
     MOCK_EXPECT(logMock->Log).at_least(0);  // ignore log events
-    db = std::make_shared<VssDatabase>(logMock, subHandlerMock, accCheckMock);
+    db = std::make_shared<VssDatabase>(logMock, subHandlerMock);
     db->initJsonTree(vss_file);
 
     processor = std::make_unique<VssCommandProcessor>(
@@ -86,9 +88,9 @@ BOOST_FIXTURE_TEST_SUITE(Gen2SetTests, TestSuiteFixture);
 
 /** Set an existing sensor */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -115,14 +117,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
       .returns(true);
 
   // Notify subscribers
-  MOCK_EXPECT(subHandlerMock->updateByPath)
-      .once()
-      .with(path, 100)
-      .returns(true);
-
   MOCK_EXPECT(subHandlerMock->updateByUUID)
       .once()
-      .with(mock::any, 100)
+      .with(mock::any, mock::any)
       .returns(true);
 
   // run UUT
@@ -130,20 +127,16 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
 
 /** Send an invalid JSON */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -156,17 +149,16 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
   jsonSetRequestForSignal["value"] = 100;
 
   std::string expectedJsonString{R"(
-      {
-  "action": "set",
-  "error": {
-    "message": "Schema error: VSS set malformed: #/requestId: Expected string, found uint64",
-    "number": 400,
-    "reason": "Bad Request"
-  },
-  "requestId": "100",
-  "timestamp": 0
-}
-      )"};
+  {
+    "action": "set",
+    "error": {
+      "message": "Schema error: #/requestId: Expected string, found uint64",
+      "number": 400,
+      "reason": "Bad Request"
+    },
+    "requestId": "100"
+  }
+  )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // run UUT
@@ -174,20 +166,16 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
 
 /** Send an invalid JSON, without any determinable Request Id */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -199,12 +187,11 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
 {
   "action": "set",
   "error": {
-    "message": "Schema error: VSS set malformed: #: Required property \"requestId\" not found\n#/path: Expected string, found uint64",
+    "message": "Schema error: #: Required property \"requestId\" not found\n#/path: Expected string, found uint64",
     "number": 400,
     "reason": "Bad Request"
   },
-  "requestId": "UNKNOWN",
-  "timestamp": 0
+  "requestId": "UNKNOWN"
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -214,20 +201,16 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
 
 /** Set an non-existing path */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -250,8 +233,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
     "number": 404,
     "reason": "Path not found"
   },
-  "requestId": "1",
-  "timestamp": 0
+  "requestId": "1"
   }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -267,11 +249,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
 
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -279,9 +257,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
 
 /** Set branch */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -304,8 +282,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
     "number": 403,
     "reason": "Forbidden"
   },
-  "requestId": "1",
-  "timestamp": 0
+  "requestId": "1"
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -321,11 +298,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
 
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -333,9 +306,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
 
 /** Set attribute */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
-  WsChannel channel;
-  channel.setAuthorized(false);
-  channel.setConnID(1);
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -358,8 +331,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
     "number": 403,
     "reason": "Forbidden"
   },
-  "requestId": "1",
-  "timestamp": 0
+  "requestId": "1"
 }
       )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
@@ -375,16 +347,46 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
 
   auto res = json::parse(resStr);
 
-  // Does result have a timestamp?
-  BOOST_TEST(res["timestamp"].as<int64_t>() > 0);
-
-  // Remove timestamp for comparision purposes
-  expectedJson["timestamp"] = res["timestamp"].as<int64_t>();
+  verify_and_erase_timestamp(res);
 
   BOOST_TEST(res == expectedJson);
 }
 
+BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
+  kuksa::kuksaChannel channel;
+
+  jsoncons::json jsonSetRequestForSignal;
+  jsoncons::json jsonNoAccess;
+
+  string requestId = "1";
+  const VSSPath vss_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
+
+  // setup
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["path"] = vss_path.to_string();
+  jsonSetRequestForSignal["requestId"] = requestId;
+  jsonSetRequestForSignal["value"] = 100;
+
+  JsonResponses::noAccess(requestId, "set", "No write access to " + vss_path.to_string(), jsonNoAccess);
 
 
+  // expectations
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .returns(false);
 
+  // run UUT
+  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+  verify_and_erase_timestamp(res);
+  verify_and_erase_timestamp(jsonNoAccess);
+
+  BOOST_TEST(res == jsonNoAccess);
 }
+
+BOOST_AUTO_TEST_SUITE_END()
+

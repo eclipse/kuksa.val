@@ -11,15 +11,17 @@ LABEL maintainer="Sebastian Schildt <sebastian.schildt@de.bosch.com>"
 
 
 
-RUN apk update && apk add cmake wget alpine-sdk glib-dev openssl-dev libstdc++ mosquitto-dev
+RUN apk update && apk add cmake wget alpine-sdk linux-headers openssl-dev libstdc++ mosquitto-dev
 
 
 #Build Boost 1.75
+ENV BOOST_VER=1.75.0
+ENV BOOST_VER_=1_75_0
 RUN mkdir /buildboost
 WORKDIR /buildboost
-RUN wget https://dl.bintray.com/boostorg/release/1.75.0/source/boost_1_75_0.tar.bz2
-RUN tar xvjf boost_1_75_0.tar.bz2
-WORKDIR /buildboost/boost_1_75_0
+RUN wget   https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER}/source/boost_${BOOST_VER_}.tar.bz2
+RUN tar xvjf boost_${BOOST_VER_}.tar.bz2
+WORKDIR /buildboost/boost_${BOOST_VER_}
 RUN ./bootstrap.sh
 RUN ./b2 -j 6 install
 

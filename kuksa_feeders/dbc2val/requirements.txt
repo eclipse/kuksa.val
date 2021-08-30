@@ -2,4 +2,6 @@ pyserial
 cantools
 python-can
 pyyaml
-websockets
+j1939
+py_expression_eval
+kuksa-viss-client
