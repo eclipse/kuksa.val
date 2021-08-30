@@ -48,8 +48,6 @@ set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
 set(_REFLECTION grpc++_reflection)
 set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
 
-include(GoogleTest)
-
 #
 # Generate Protobuf/Grpc source files
 #
@@ -114,7 +112,7 @@ target_include_directories(${SERVER_OBJ_LIB_NAME}
 
 target_link_libraries(${SERVER_OBJ_LIB_NAME}
   PUBLIC
-    ${_REFLECTION}
+    -Wl,--push-state,--no-as-needed,--whole-archive ${_REFLECTION} -Wl,--pop-state
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
 
@@ -216,9 +214,14 @@ if(BUILD_EXE)
   target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE Threads::Threads)
   target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
   target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE "-ldl")
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PUBLIC "-ldl")
   target_include_directories(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIR})
   target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_LIBRARY})
+  target_link_libraries(${GRPC_CLIENT_EXE_NAME}
+  PUBLIC
+    -Wl,--push-state,--no-as-needed,--whole-archive ${_REFLECTION} -Wl,--pop-state
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
   message(STATUS "Build target files for grpc client")
 
   # CPack

@@ -324,6 +324,25 @@ void startClient(std::string port, std::string certPath, bool allowInsecureConn 
   }
 }
 
+void reflection(std::string certPath){
+  std::string cert; 
+  std::string key;
+  std::string root;
+  std::string clientpemfile_ = certPath + "/Client.pem";
+  std::string clientkeyfile_ = certPath + "/Client.key";
+  std::string clientrootfile_ = certPath + "/CA.pem";
+  grpcHandler::read (clientpemfile_, cert);
+  grpcHandler::read (clientkeyfile_, key);
+  grpcHandler::read (clientrootfile_, root);
+  grpc::SslCredentialsOptions opts; 
+  opts.pem_cert_chain = cert;
+  opts.pem_private_key = key;
+  opts.pem_root_certs = root;
+  std::shared_ptr<grpc::Channel> channel =
+  grpc::CreateChannel("127.0.0.1.50051", grpc::SslCredentials(opts));
+  grpc::ProtoReflectionDescriptorDatabase reflection_db(channel);
+}
+
 int main(int argc, char** argv) {
   // Instantiate the client. It requires a channel, out of which the actual RPCs
   // are created. This channel models a connection to an endpoint specified by
