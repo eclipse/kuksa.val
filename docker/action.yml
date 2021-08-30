@@ -3,6 +3,6 @@ name: 'Build Env'
 description: 'Build Development Env'
 runs:
   using: 'docker'
-  image: 'Dockerfile.dev'
+  image: 'docker/Dockerfile.dev'
 #  args:
 #    - ${{ inputs.who-to-greet }}
