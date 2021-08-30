@@ -32,7 +32,7 @@ jobs:
       with:
         file: docker/Dockerfile.dev
         context: .
-        outputs: type=docker,dest=/tmp/kuksa-val-dev-ubuntu20.04-${{ steps.meta.outputs.tags }}.tar
+        outputs: type=docker,dest=/tmp/kuksa-val-dev-ubuntu20.04-${{ steps.meta.outputs.version }}.tar
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
