@@ -36,7 +36,7 @@ jobs:
     - name: build kuksa gps feeder docker
       uses: docker/build-push-action@v2
       with:
-        platform: linux/amd64,linux/arm64
+        platforms: linux/amd64,linux/arm64
         context: kuksa_feeders/gps2val
         outputs: type=docker,dest=/tmp/${{ steps.meta.outputs.version }}.tar
         push: ${{ github.event_name != 'pull_request' }}
