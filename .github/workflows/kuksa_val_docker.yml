@@ -40,7 +40,6 @@ jobs:
         platforms: linux/amd64,linux/arm64
         file: docker/Dockerfile
         context: .
-        outputs: type=docker,dest=/tmp/${{ steps.meta.outputs.version }}.tar
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

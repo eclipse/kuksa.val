@@ -38,7 +38,6 @@ jobs:
       with:
         platforms: linux/amd64,linux/arm64
         context: kuksa_feeders/gps2val
-        outputs: type=docker,dest=/tmp/${{ steps.meta.outputs.version }}.tar
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

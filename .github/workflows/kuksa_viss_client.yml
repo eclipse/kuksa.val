@@ -38,7 +38,6 @@ jobs:
       with:
         platforms: linux/amd64,linux/arm64
         context: kuksa_viss_client
-        outputs: type=docker,dest=/tmp/k${{ steps.meta.outputs.version }}.tar
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
