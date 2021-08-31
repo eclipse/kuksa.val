@@ -20,7 +20,7 @@ jobs:
       with:
         # list of Docker images to use as base name for tags
         images: |
-          kuksa
+          uksa-viss-client-
         # generate Docker tags based on the following events/attributes
         tags: |
           type=ref,event=branch
@@ -38,7 +38,7 @@ jobs:
       with:
         platform: linux/amd64,linux/arm64
         context: kuksa_viss_client
-        outputs: type=docker,dest=/tmp/kuksa-viss-client-${{ steps.meta.outputs.version }}.tar
+        outputs: type=docker,dest=/tmp/k${{ steps.meta.outputs.version }}.tar
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
