@@ -21,6 +21,7 @@
 #include <csignal>
 
 #include <boost/program_options.hpp>
+#include <boost/log/sources/logger.hpp>
 #include <boost/filesystem.hpp>
 #include <jsoncons/json.hpp>
 #include <jsonpath/json_query.hpp>
@@ -48,16 +49,15 @@ using jsoncons::json;
 
 // Websocket port
 #define PORT 8090
-
-static VssDatabase* gDatabase = NULL;
-bool ctrlC_flag = false;
-
+sighandler_t former_handler;
 void ctrlC_Handler(sig_atomic_t signal)
 {
   try
   {
-    delete gDatabase;             //explicit delete for boost::log to save log files to the correct location
-    ctrlC_flag = true;
+    std::cout << "STOP ..." << std::endl;
+    boost::log::core::get()->remove_all_sinks();                                                 
+    std::signal(signal, former_handler);
+    std::raise(signal);
   }
   catch(const std::exception& e)
   {
@@ -82,9 +82,6 @@ void httpRunServer(boost::program_options::variables_map variables, std::shared_
                            variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
     httpServer->Start();
 
-    while (!ctrlC_flag) {
-      usleep(1000000);
-    }
 }
 
 int main(int argc, const char *argv[]) {
@@ -97,7 +94,7 @@ int main(int argc, const char *argv[]) {
     std::cout << "-dirty";
   std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
 
-  signal(SIGINT,ctrlC_Handler);
+  former_handler = signal(SIGINT,ctrlC_Handler);
 
   program_options::options_description desc{"OPTIONS"};
   desc.add_options()
@@ -234,7 +231,6 @@ int main(int argc, const char *argv[]) {
     else if(variables["record"].as<string>() !="noRecord")
       throw std::runtime_error("record option \"" + variables["record"].as<string>() + "\" is invalid");
 
-    gDatabase = database.get();
 
     auto cmdProcessor = std::make_shared<VssCommandProcessor>(
         logger, database, tokenValidator, accessCheck, subHandler);
@@ -269,6 +265,8 @@ int main(int argc, const char *argv[]) {
       std::thread grpc(grpcHandler::RunServer, cmdProcessor, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
       http.join();
       grpc.join();
+      
+
     }
   } catch (const program_options::error &ex) {
     print_usage(argv[0], desc);
