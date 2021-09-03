@@ -27,3 +27,9 @@ cd test/unit-test
 ```
 
 Obviously, there should be no errors :)
+
+There are only unit tests for the gRPC Client Business Logic. For testing the Server use grpc_cli. Follow the instructions from https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md.
+Before you start using grpc_cli you have to start the server.
+With ./grpc_cli ls you can expose the services and their rpc methods and proto messages.
+With ./grpc_cli call you can make a call and specify parameters.
+With this the interface could be tested manually.
