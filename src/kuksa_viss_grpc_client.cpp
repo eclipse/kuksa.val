@@ -225,7 +225,7 @@ int main(int argc, char** argv) {
     std::cout << "\t--insecure default: false | if you call the client with --insecure it establishes a insecure connection" << std::endl;
   }
   else{
-    bool insecure;
+    bool insecure = false;
     if (var.count("config-file")) {
     auto configFile = var["config-file"].as<boost::filesystem::path>();
     auto configFilePath = boost::filesystem::path(configFile);
