@@ -13,7 +13,7 @@
 set(gRPC_SSL_PROVIDER "package" CACHE STRING "Provider of ssl library")
 set(GRPC_VER 1.39.1)
 
-find_package(gRPC ${BOOST_VER} EXACT)
+find_package(gRPC ${GRPC_VER} EXACT)
 find_package(Protobuf)
 
 if(Protobuf_FOUND AND gRPC_FOUND)
