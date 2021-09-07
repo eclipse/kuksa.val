@@ -58,6 +58,7 @@ find_package(Threads REQUIRED)
 
 # Boost
 include(boost.cmake)
+include(grpc.cmake)
 
 # OpenSSL
 find_package(OpenSSL REQUIRED)

@@ -17,14 +17,21 @@ RUN apk update && apk add cmake wget alpine-sdk linux-headers openssl-dev libstd
 #Build Boost 1.75
 ENV BOOST_VER=1.75.0
 ENV BOOST_VER_=1_75_0
-RUN mkdir /buildboost
-WORKDIR /buildboost
 RUN wget   https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER}/source/boost_${BOOST_VER_}.tar.bz2
 RUN tar xvjf boost_${BOOST_VER_}.tar.bz2
-WORKDIR /buildboost/boost_${BOOST_VER_}
+WORKDIR /boost_${BOOST_VER_}
 RUN ./bootstrap.sh
 RUN ./b2 -j 6 install
 
+WORKDIR /
+# Build and install grpc
+ENV GRPC_VER=1.39.1
+RUN git clone --recurse-submodules -b v${GRPC_VER} https://github.com/grpc/grpc
+RUN mkdir -p /grpc/build
+WORKDIR /grpc/build
+RUN cmake -DgRPC_INSTALL=ON  -DgRPC_BUILD_TESTS=OFF -DgRPC_SSL_PROVIDER=package ..
+RUN make -j 6
+RUN make install
 
 ADD . /kuksa.val
 RUN  rm -rf /kuksa.val/build  && mkdir  /kuksa.val/build 
