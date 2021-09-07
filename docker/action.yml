@@ -1,8 +1,8 @@
 # action.yml
-name: 'Build Env'
-description: 'Build Development Env'
+name: 'Build and test'
+description: 'Build enviroment and test'
 runs:
   using: 'docker'
-  image: 'docker'
+  image: 'Dockerfile.dev'
   args:
     - -f Dockerfile.dev

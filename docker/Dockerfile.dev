@@ -37,6 +37,11 @@ WORKDIR /grpc/build
 RUN cmake -DgRPC_INSTALL=ON  -DgRPC_BUILD_TESTS=OFF -DgRPC_SSL_PROVIDER=package ..
 RUN make -j 6
 RUN make install
+RUN mkdir -p /grpc/third_party/abseil-cpp/build
+WORKDIR /grpc/third_party/abseil-cpp/build
+RUN cmake -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE ..
+RUN make -j 6
+RUN make install
 
 
 ADD . /kuksa.val
