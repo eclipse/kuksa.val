@@ -11,10 +11,10 @@
 # *****************************************************************************
 
 set(gRPC_SSL_PROVIDER "package" CACHE STRING "Provider of ssl library")
-set(GRPC_VER 1.39.1)
+set(GRPC_VER 1.40.0)
 
-find_package(gRPC ${GRPC_VER} EXACT)
 find_package(Protobuf)
+find_package(gRPC ${GRPC_VER} EXACT CONFIG)
 
 if(Protobuf_FOUND AND gRPC_FOUND)
     message(STATUS "Using protobuf ${protobuf_VERSION}")
