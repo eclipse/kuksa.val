@@ -178,17 +178,24 @@ void startClient(std::string port, std::string certPath, bool allowInsecureConn 
           std::cout << reply << std::endl;
         } 
       }
-      else if(msg[0] == "setValue"){
-        if(msg.size() < 2){
-          std::cout << "You have to specify a path" << std::endl;
-        }
-        if(temp.size() < 2){
-          std::cout << "You have to specify a value" << std::endl;
-        }
-        else{
-          reply = connGrpcSes.setValue(msg[1],temp[1]);
-          std::cout << reply << std::endl;
-        }
+     else if(msg[0] == "setValue"){
+          if(msg.size() < 2){
+            std::cout << "You have to specify a path" << std::endl;
+          }
+          if(temp.size() < 2 && msg.size() < 3){
+            std::cout << "You have to specify a value" << std::endl;
+          }
+          else{
+            std::string value;
+            if(temp.size() < 2){
+              value = msg[2];
+            }
+            else{
+              value = temp[1];
+            }
+            reply = connGrpcSes.setValue(msg[1],value);
+            std::cout << reply << std::endl;
+          }
       }
       else if(msg[0] == "quit"){
         reply = temp[0];
