@@ -5,4 +5,4 @@ runs:
   using: 'docker'
   image: 'Dockerfile.dev'
   args:
-    - -f Dockerfile.dev
+    - ./run_tests.sh -a /out"
