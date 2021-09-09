@@ -257,9 +257,9 @@ int main(int argc, const char *argv[]) {
           }
         }
       }
-      bool insecureConn = false;
+      bool insecureConn;
       if(variables.count("insecure")){
-        insecureConn=true;
+        insecureConn = variables["insecure"].as<bool>();
       }
       std::thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
       std::thread grpc(grpcHandler::RunServer, cmdProcessor, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
