@@ -4,7 +4,6 @@ Using `./kuksa-val-server -h`, you can get a list of supported options:
 
 ```
 Usage: ./kuksa-val-server OPTIONS
-
 OPTIONS:
   -h [ --help ]                         Help screen
   -c [ --config-file ] arg (="config.ini")
@@ -24,10 +23,14 @@ OPTIONS:
   --vss arg                             [mandatory] Path to VSS data file 
                                         describing VSS data tree structure 
                                         which `kuksa-val-server` shall handle. 
-                                        Sample 'vss_release_2.0.json' file can be 
-                                        found under [unit-test](./data/vss-core/
-                                        vss_release_2.0.json)
-                                        
+                                        Sample 'vss_release_2.0.json' file can 
+                                        be found under [data](./data/vss-core/v
+                                        ss_release_2.0.json)
+  --overlays arg                        Path to a directory cotaiing additional
+                                        VSS models. All json files will be 
+                                        applied on top of the main vss file 
+                                        given by the -vss parameter in 
+                                        alphanumerical order
   --cert-path arg (=".")                [mandatory] Directory path where 
                                         'Server.pem', 'Server.key' and 
                                         'jwt.key.pub' are located. 
@@ -46,18 +49,13 @@ OPTIONS:
   --port arg (=8090)                    If provided, `kuksa-val-server` shall 
                                         use different server port than default 
                                         '8090' value
-  --record (=0)                         Enable record feature for replaying into
-                                        the server later on. Record file will be 
-                                        stored to the specified path with timestamp.
-                                        File format is *.csv
-                                        possible values:
-                                          - noRecord: no Recording will be applied
-                                          - recordSet: Record Set Value (inputs of the server)
-                                          - recordSetandGet: Record Set Value and Get Value (in- and outputs of the server)
-                      
-  --record-path (='.')                  Specify path where the record file should 
-                                        be stored to. 
-
+  --record arg (=noRecord)              Enables recording into log file, for 
+                                        later being replayed into the server 
+                                        noRecord: no data will be recorded
+                                        recordSet: record setting values only
+                                        recordSetAndGet: record getting value 
+                                        and setting value
+  --record-path arg (=.)                Specifies record file path.
   --log-level arg                       Enable selected log level value. To 
                                         allow for different log level 
                                         combinations, parameter can be provided
@@ -81,7 +79,7 @@ MQTT Options:
                                         client. Defaults to 60
   --mqtt.retry arg (=3)                 Times of retry via connections. 
                                         Defaults to 3
-  --mqtt.topic-prefix arg               Prefix to add for each mqtt topics
+  --mqtt.topic-prefix arg (=vss)        Prefix to add for each mqtt topics
   --mqtt.publish arg                    List of vss data path (using readable 
                                         format with `.`) to be published to 
                                         mqtt broker, using ";" to seperate 

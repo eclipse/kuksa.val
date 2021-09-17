@@ -1,7 +1,8 @@
 # Updating/Extending VSS structure during runtime
 
 Upon startup the KUKSA.val server loads a JSON file describing the data points it manages. Usually this is a version of the [Geniivi Vehicle Signal Specification](https://github.com/GENIVI/vehicle_signal_specification/).
-If you want to extend or modify this structure in your application, it is not neccesary to modify Genivi VSS, instead you can extend the loaded VSS structure during runtime.
+
+If you want to extend or modify the VSS structure from your application during runtime, this is possible using the `updateVSSTree` and `updateMetaData` requests described here.
 
 ## Overlays using updateVSSTree
 The updateVSSTree method takes an input JSON that follows the same rules as the initial VSS JSON. This is added as an _overlay_ meaning:
@@ -72,4 +73,4 @@ updateMetaData updateMetaData Vehicle.Speed '{"max":9999}'
 As the Input data to `updateVSSTree` as well as `updateMetaData`is merged with the existing data structure, there is no way to _remove_ previously added elements.
 
 **This feature schould be considered Beta quality.**
-Similar to the initial JSON, there is not much input verification going on. We _check_ that you provide syntactically valid JSON, we _trust_ that it is a valid VSS structure. Therefore, as a system desing suggestion, we recommend you perform any neccesary, potentially dangerous, data structure modifcations during an initialization phase.
+Similar to the initial JSON, there is not much input verification going on. We _check_ that you provide syntactically valid JSON, we _trust_ that it is a valid VSS structure. Therefore, as a system design suggestion, we recommend you perform any neccesary, potentially dangerous, data structure modifcations during system initialization phase, preferably using the `--overlays` parameter of `kuksa-val-server`.
