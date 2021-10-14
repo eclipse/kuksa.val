@@ -2,8 +2,12 @@
 UIspeed_signed257:
   minupdatedelay: 100
   targets: 
-    Vehicle.Speed: {}
-    Vehicle.OBD.Speed: {}
+    Vehicle.Speed:
+      transform:
+        math: "floor(x)"
+    Vehicle.OBD.Speed:
+      transform:
+        math: "floor(x)"
 
 
 #this is kW, do some magic to get in 0-100 int range
