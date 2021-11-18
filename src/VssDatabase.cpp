@@ -58,14 +58,13 @@ bool VssDatabase::isAttribute(const json &element) {
 }
 
 
-/** Iterates over a given VSS tree and checks for sensors and actuators specifying the "default"
- *  metadata. If a default is present, it will be used as "value" (and thus returned upon get
- *  even if there has been no previous set)
+/** Iterates over a given VSS tree and checks attributes specifying the "default"
+ *  metadata. If a default is present, it will be used as "value" (and thus returned upon get)
  */ 
 void VssDatabase::applyDefaultValues(json &tree, VSSPath path) {
   //logger_->Log(LogLevel::VERBOSE, "Applying default values in "+path.to_string());
 
-  if ( isSensor(tree) || isActor(tree) || isAttribute(tree)) {
+  if ( isAttribute(tree)) {
     if (tree.contains("default")) {
       logger_->Log(LogLevel::INFO, "Setting default for "+path.to_string()+" to "+tree["default"].as<string>());
       /** Not using setSignal, as that always operates on the complete tree. However applyDefaultValues shall also
