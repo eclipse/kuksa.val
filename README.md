@@ -16,7 +16,6 @@ See [Supported Protocol](doc/protocol/README.md) for a detailled overview.
  - Websocket interface, TLS-secured or plain
  - [Experimental REST interface](doc/rest-api.md), TLS-secured or plain
  - [Fine-grained authorisation](doc/jwt.md) based on JSON Webtokens (RFC 7519)
- - Optional [JSON signing](doc/json-signing.md) of messages
  - Built-in MQTT publisher
  - [Python viss client](./kuksa_viss_client) to interactively explore and modify the VISS data points and data structure
  - Multiple [example apps](./kuksa_apps) in different programming languages to communicate with different frameworks 
