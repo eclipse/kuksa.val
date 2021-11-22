@@ -33,9 +33,6 @@
 #include "ISubscriptionHandler.hpp"
 #include <boost/algorithm/string.hpp>
 
-#ifdef JSON_SIGNING_ON
-#include "SigningHandler.hpp"
-#endif
 
 using namespace std;
 
@@ -51,18 +48,11 @@ VssCommandProcessor::VssCommandProcessor(
   subHandler = subhandler;
   accessValidator_ = accC;
   requestValidator = new VSSRequestValidator(logger);
-#ifdef JSON_SIGNING_ON
-  // TODO: add signer as dependency
-  signer = std::make_shared<SigningHandler>();
-#endif
 }
 
 VssCommandProcessor::~VssCommandProcessor() {
   accessValidator_.reset();
   delete requestValidator;
-#ifdef JSON_SIGNING_ON
-  signer.reset();
-#endif
 }
 
 
@@ -339,27 +329,15 @@ string VssCommandProcessor::processQuery(const string &req_json,
 
     if (action == "get") {
         response = processGet2(channel, root);
-#ifdef JSON_SIGNING_ON
-        response = signer->sign(response);
-#endif  
     }
     else if (action == "set") {
         response = processSet2(channel, root);
-#ifdef JSON_SIGNING_ON
-        response = signer->sign(response);
-#endif
     }
     else if (action == "getMetaData") {
         response = processGetMetaData(root);
-#ifdef JSON_SIGNING_ON
-        response = signer->sign(response);
-#endif
     }
     else if (action == "updateMetaData") {
         response = processUpdateMetaData(channel, root);
-#ifdef JSON_SIGNING_ON
-        response = signer->sign(response);
-#endif
     }
     else if (action == "authorize") {
       string token = root["tokens"].as<string>();
