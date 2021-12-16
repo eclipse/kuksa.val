@@ -16,16 +16,16 @@ OPTIONS:
                                         easily (e.g. test and production 
                                         setup).Sample of configuration file 
                                         parameters looks like:
-                                        vss = vss_release_2.1.json
+                                        vss = vss_release_2.2.json
                                         cert-path = . 
                                         log-level = ALL
                                         
   --vss arg                             [mandatory] Path to VSS data file 
                                         describing VSS data tree structure 
                                         which `kuksa-val-server` shall handle. 
-                                        Sample 'vss_release_2.1.json' file can 
+                                        Sample 'vss_release_2.2json' file can 
                                         be found under [data](./data/vss-core/v
-                                        ss_release_2.0.json)
+                                        ss_release_2.2.json)
   --overlays arg                        Path to a directory cotaiing additional
                                         VSS models. All json files will be 
                                         applied on top of the main vss file 

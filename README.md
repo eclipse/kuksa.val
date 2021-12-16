@@ -105,7 +105,7 @@ After you successfully built the kuksa.val server you can run it like this
 ```bash
 #assuming you are inside kuksa.val/build directory
 cd src
-./kuksa-val-server  --vss ./vss_release_2.1.json --log-level ALL
+./kuksa-val-server  --vss ./vss_release_2.2.json --log-level ALL
 
 ```
 Setting log level to `ALL` gives you some more information about what is going on.
