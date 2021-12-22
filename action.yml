@@ -3,6 +3,6 @@ name: 'Build and test'
 description: 'Build enviroment and test'
 runs:
   using: 'docker'
-  image: 'Dockerfile.dev'
+  image: 'Dockerfile'
   args:
     - ./run_tests.sh -a /out"
