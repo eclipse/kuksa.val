@@ -38,9 +38,6 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::shared_ptr<IAuthenticator> tokenValidator;
   std::shared_ptr<IAccessChecker> accessValidator_;
   VSSRequestValidator *requestValidator;
-#ifdef JSON_SIGNING_ON
-  std::shared_ptr<SigningHandler> signer;
-#endif
 
   std::string processUpdateMetaData(kuksa::kuksaChannel& channel, jsoncons::json& request);
   std::string processAuthorizeWithPermManager(kuksa::kuksaChannel &channel, const std::string & request_id,

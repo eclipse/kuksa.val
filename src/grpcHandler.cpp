@@ -106,7 +106,7 @@ void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std:
 
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
-  ServerBuilder builder;
+  grpc::ServerBuilder builder;
 
   if(allowInsecureConn){
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
@@ -137,9 +137,8 @@ void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std:
   // Register "service" as the instance through which we'll communicate with
   // clients. In this case it corresponds to an *synchronous* service.
   builder.RegisterService(&service);
-  // Finally assemble the server.
-  std::shared_ptr<Server> server(builder.BuildAndStart());
-  handler.grpcServer = server;
+  // Finally assemble the server
+  handler.grpcServer = builder.BuildAndStart();
   handler.grpcProcessor = Processor;
   handler.logger_=logger_;
   handler.logger_->Log(LogLevel::INFO, "Kuksa viss gRPC server Version 1.0.0");

@@ -23,6 +23,8 @@
 #include <string>
 #include <memory>
 #include <limits>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include "KuksavalUnitTest.hpp"
 #include "exception.hpp"
 
@@ -30,7 +32,6 @@
 #include "IAccessCheckerMock.hpp"
 #include "Authenticator.hpp"
 #include "AccessChecker.hpp"
-#include "SigningHandler.hpp"
 #include "SubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
 #include "VssCommandProcessor.hpp"
@@ -40,7 +41,10 @@
 #include "IServerMock.hpp"
 #include "IPublisherMock.hpp"
 #include "kuksa.pb.h"
-
+#include "kuksa.grpc.pb.h"
+#include "grpcHandler.hpp"
+#include "kuksa_mock.grpc.pb.h"
+#include "GrpcConnection.hpp"
 
 /* AUTH_JWT permission token looks like this
 {
@@ -67,13 +71,11 @@ std::shared_ptr<ISubscriptionHandler> subhandler;
 std::shared_ptr<IAuthenticator> authhandler;
 std::shared_ptr<IAccessCheckerMock> accesshandler;
 std::shared_ptr<IVssDatabase> database;
-std::shared_ptr<ISigningHandler> json_signer;
 std::shared_ptr<IVssCommandProcessor> commandProc;
 std::shared_ptr<IServer> httpServer;
 std::shared_ptr<IPublisherMock> mqttPublisher;
 
 std::shared_ptr<VssCommandProcessor> commandProc_auth;
-
 
 kuksavalunittest unittestObj;
 
@@ -91,7 +93,6 @@ kuksavalunittest::kuksavalunittest() {
   subhandler->addPublisher(mqttPublisher);
   database = std::make_shared<VssDatabase>(logger, subhandler);
   commandProc = std::make_shared<VssCommandProcessor>(logger, database, authhandler , accesshandler, subhandler);
-  json_signer = std::make_shared<SigningHandler>(logger);
   database->initJsonTree("test_vss_rel_2.0.json");
 
    //we can not mock for testing authentication
@@ -102,8 +103,6 @@ kuksavalunittest::kuksavalunittest() {
    database_auth->initJsonTree("test_vss_rel_2.0.json");
 
    commandProc_auth = std::make_shared<VssCommandProcessor>(logger, database_auth, authhandler , accesshandler_real, subhandler_auth);
-
-
 }
 
 kuksavalunittest::~kuksavalunittest() {
@@ -111,7 +110,197 @@ kuksavalunittest::~kuksavalunittest() {
 
 
 
+// gRPC Tests
+// It is necessary to start a testing instance of the server 
+// For testing the client the server could be mocked
+
+//-------------------------------------gRPC Client Logic Test
+class FakeClient {
+ public:
+  FakeClient(kuksa::viss_client::StubInterface* stub) : connGrpcSes(grpc::CreateChannel("127.0.0.1", grpc::InsecureChannelCredentials())), stub_(stub){
+  }
+  ~FakeClient() = default;
+  void Setup(){
+   connGrpcSes.setCMAKE_TESTING_ENABLED(true);
+   connGrpcSes.setReqID("\"82bff318-9199-4742-b2f8-2b06d23d4af4\"");
+   connGrpcSes.setStubtest_(stub_);
+  }
+
+  void GetMetaData() {
+    json expected = json::parse(R"({
+        "action": "getMetaData", 
+        "metadata": {
+            "Vehicle": {
+                "children": {
+                    "Speed": {
+                        "datatype": "int32", 
+                        "description": "Vehicle speed, as sensed by the gearbox.", 
+                        "max": 250, 
+                        "min": -250, 
+                        "type": "sensor", 
+                        "unit": "km/h", 
+                        "uuid": "efe50798638d55fab18ab7d43cc490e9"
+                    }
+                }, 
+                "description": "High-level vehicle data.", 
+                "type": "branch", 
+                "uuid": "ccc825f94139544dbb5f4bfd033bece6"
+            }
+        }, 
+        "requestId": "82bff318-9199-4742-b2f8-2b06d23d4af4", 
+        "ts": "2021-08-23T09:40:53.1629708053Z"
+    })");
+    std::string reply = connGrpcSes.GetMetaData("Vehicle.Speed");
+    json result = json::parse(reply);
+    std::string resAction = result["action"].to_string();
+    std::string expAction = expected["action"].to_string();
+    BOOST_TEST(resAction == expAction);
+    BOOST_TEST(result["requestId"].to_string() == connGrpcSes.getReqID());
+    BOOST_TEST(result["metadata"].to_string() == expected["metadata"].to_string());
+  }
+
+  void doAuth(){
+    json expected = json::parse(R"({
+    "TTL": 1767225599, 
+    "action": "authorize", 
+    "requestId": "82bff318-9199-4742-b2f8-2b06d23d4af4", 
+    "ts": "2021-08-24T07:22:15.1629786135Z"
+    })");
+    std::string reply = connGrpcSes.AuthorizeChannel("../../../kuksa_certificates/jwt/super-admin.json.token");
+    json result = json::parse(reply);
+    std::string resAction = result["action"].to_string();
+    std::string expAction = expected["action"].to_string();
+    BOOST_TEST(resAction == expAction);
+    BOOST_TEST(result["TTL"].as<uint64_t>() == expected["TTL"].as<uint64_t>());
+    BOOST_TEST(result["requestId"].to_string() == expected["requestId"].to_string());
+  }
+
+  void GetValue() {
+    json expected = json::parse(R"({
+     "action": "get", 
+     "data": {
+        "dp": {
+              "ts": "1981-01-01T00:00:00.0000000000Z", 
+              "value": "---"
+        }, 
+        "path": "Vehicle.Speed"
+      }, 
+      "requestId": "82bff318-9199-4742-b2f8-2b06d23d4af4", 
+      "ts": "2021-08-30T06:56:11.1630302971Z"
+    })");
+    std::string reply = connGrpcSes.getValue("Vehicle.Speed");
+    json result = json::parse(reply);
+    std::string resAction = result["action"].to_string();
+    std::string expAction = expected["action"].to_string();
+    BOOST_TEST(resAction == expAction);
+    BOOST_TEST(result["data"]["path"].to_string() == expected["data"]["path"].to_string());
+    BOOST_TEST(result["data"]["dp"]["value"].to_string() == expected["data"]["dp"]["value"].to_string());
+    BOOST_TEST(result["requestId"].to_string() == expected["requestId"].to_string());
+  }
+
+  void SetValue() {
+    json expected = json::parse(R"({
+    "action": "set", 
+    "requestId": "82bff318-9199-4742-b2f8-2b06d23d4af4", 
+    "ts": "2021-08-31T07:37:44.1630391864Z"
+    })");
+    std::string reply = connGrpcSes.setValue("Vehicle.Speed","200");
+    json result = json::parse(reply);
+    std::string resAction = result["action"].to_string();
+    std::string expAction = expected["action"].to_string();
+    BOOST_TEST(resAction == expAction);
+    BOOST_TEST(result["requestId"].to_string() == expected["requestId"].to_string());
+  }
+ private:
+    kuksa::viss_client::StubInterface* stub_;
+    kuksa::kuksaChannel kuksa_channel;
+    GrpcConnection connGrpcSes;
+};
+
 //--------Do not change the order of the tests in this file, because some results are dependent on the previous tests and data in the db-------
+//----------------------------------------------------gRPC Client Logic Tests 
+BOOST_AUTO_TEST_CASE(Test_GetMetaDataService){
+   kuksa::Mockviss_clientStub stub;
+   FakeClient client(&stub);
+   client.Setup();
+   kuksa::metaData resp;
+   resp.set_value_(R"({
+        "action": "getMetaData",
+        "metadata": {
+            "Vehicle": {
+                "children": {
+                    "Speed": {
+                        "datatype": "int32",
+                        "description": "Vehicle speed, as sensed by the gearbox.",
+                        "max": 250,
+                        "min": -250,
+                        "type": "sensor",
+                        "unit": "km/h",
+                        "uuid": "efe50798638d55fab18ab7d43cc490e9"
+                    }
+                },
+                "description": "High-level vehicle data.",
+                "type": "branch",
+                "uuid": "ccc825f94139544dbb5f4bfd033bece6"
+            }
+        },
+        "requestId": "82bff318-9199-4742-b2f8-2b06d23d4af4",
+        "ts": "2021-08-23T09:40:53.1629708053Z"
+    })");
+    EXPECT_CALL(stub, GetMetaData(testing::_,testing::_,testing::_)).Times(testing::AtLeast(1)).WillOnce(testing::DoAll(testing::SetArgPointee<2>(resp), testing::Return(grpc::Status::OK)));
+    client.GetMetaData();
+}
+
+BOOST_AUTO_TEST_CASE(Test_GetValueService){
+   kuksa::Mockviss_clientStub stub;
+   FakeClient client(&stub);
+   client.Setup();
+   kuksa::value resp;
+   resp.set_value_(R"({
+     "action": "get",
+     "data": {
+        "dp": {
+              "ts": "1981-01-01T00:00:00.0000000000Z",
+              "value": "---"
+        },
+        "path": "Vehicle.Speed"
+      },
+      "requestId": "82bff318-9199-4742-b2f8-2b06d23d4af4",
+      "ts": "2021-08-30T06:56:11.1630302971Z"
+    })");
+    EXPECT_CALL(stub, GetValue(testing::_,testing::_,testing::_)).Times(testing::AtLeast(1)).WillOnce(testing::DoAll(testing::SetArgPointee<2>(resp), testing::Return(grpc::Status::OK)));
+    client.GetValue();
+}
+
+BOOST_AUTO_TEST_CASE(Test_SetValueService){
+   kuksa::Mockviss_clientStub stub;
+   FakeClient client(&stub);
+   client.Setup();
+   kuksa::setStatus resp;
+   resp.set_status_(R"({
+    "action": "set",
+    "requestId": "82bff318-9199-4742-b2f8-2b06d23d4af4",
+    "ts": "2021-08-31T07:37:44.1630391864Z"
+    })");
+    EXPECT_CALL(stub, SetValue(testing::_,testing::_,testing::_)).Times(testing::AtLeast(1)).WillOnce(testing::DoAll(testing::SetArgPointee<2>(resp), testing::Return(grpc::Status::OK)));
+    client.SetValue();
+}
+
+BOOST_AUTO_TEST_CASE(Test_AuthService){
+   kuksa::Mockviss_clientStub stub;
+   FakeClient client(&stub);
+   client.Setup();
+   kuksa::authStatus resp;
+   resp.set_status_(R"({
+    "TTL": 1767225599,
+    "action": "authorize",
+    "requestId": "82bff318-9199-4742-b2f8-2b06d23d4af4",
+    "ts": "2021-08-24T07:22:15.1629786135Z"
+    })");
+    EXPECT_CALL(stub, AuthorizeChannel(testing::_,testing::_,testing::_)).Times(testing::AtLeast(1)).WillOnce(testing::DoAll(testing::SetArgPointee<2>(resp), testing::Return(grpc::Status::OK)));
+    client.doAuth();
+}
+
 //----------------------------------------------------VssDatabase Tests 
 
 // set method tests
@@ -841,9 +1030,6 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 	})");
 
    string response = commandProc->processQuery(get_request,channel);
-#ifdef JSON_SIGNING_ON
-   response = json_signer->decode(response);
-#endif
 
    json expected = json::parse(R"({
     "action": "get",
@@ -890,10 +1076,6 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
         "dp":{"value": "2345.0"}
     }
     })");
-
-#ifdef JSON_SIGNING_ON
-   response = json_signer->decode(response);
-#endif
 
    json response_json = json::parse(response);
 
@@ -972,9 +1154,6 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
     }
     )");
 
-#ifdef JSON_SIGNING_ON
-   response = json_signer->decode(response);
-#endif
 
    json response_json = json::parse(response);
 
@@ -1005,9 +1184,6 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 	})");
 
    string response = commandProc->processQuery(request,channel);
-#ifdef JSON_SIGNING_ON
-   response = json_signer->decode(response);
-#endif
 
    json expected = json::parse(R"({
                          "action":"get",
@@ -1156,9 +1332,6 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
     "value": 2345
     })");
 
-#ifdef JSON_SIGNING_ON
-   response_getvalid = json_signer->decode(response_getvalid);
-#endif
 
    json response_response_getvalid_json = json::parse(response_getvalid);
 
@@ -1170,62 +1343,6 @@ BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
    BOOST_TEST(response_response_getvalid_json == expected_getvalid);
 }
 */
-
-//----------------------------------------------------json SigningHandler Tests ------------------------------------------------------------------------
-
-BOOST_AUTO_TEST_CASE(json_SigningHandler)
-{
-
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
-   string authReq(R"({
-		"action": "authorize",
-		"requestId": "87568"
-	})");
-   json authReqJson = json::parse(authReq);
-   authReqJson["tokens"] = AUTH_JWT;
-   commandProc->processQuery(authReqJson.as_string(),channel);
-
-   string get_request(R"({
-		"action": "get",
-		"path": "Vehicle.OBD.EngineSpeed",
-		"requestId": "8756"
-	})");
-
-   string response = commandProc->processQuery(get_request,channel);
-#ifdef JSON_SIGNING_ON
-   response = json_signer->decode(response);
-#endif
-   json response_json = json::parse(response);
-
-   json expected = json::parse(R"({
-    "action": "get",
-    "requestId": "8756",
-    "data":{
-        "path": "Vehicle.OBD.EngineSpeed",
-        "dp":{"value": "2345.0"}
-    }
-    })");
-
-   verify_and_erase_timestamp(response_json);
-   verify_and_erase_timestamp(response_json["data"]["dp"]);
-   // Pre-check
-   BOOST_TEST(response_json == expected);
-
-#ifdef JSON_SIGNING_ON
-   // sign the response json
-   string signedData = json_signer->sign(response_json);
-
-
-   // now decode the signed json
-   string decoded_json_as_string = json_signer->decode(signedData);
-   json decoded_json = json::parse(decoded_json_as_string);
-
-
-   // Assert decodes and the expected json
-   BOOST_TEST(decoded_json == expected);
-#endif
-}
 
 //----------------------------------------------------Token permissions Tests ------------------------------------------------------------------------
 
@@ -2630,9 +2747,6 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
                                 "requestId": "8778"
                                 })");
 
-#ifdef JSON_SIGNING_ON
-    response = json_signer->decode(response);
-#endif
 
     json response_json = json::parse(response);
     json request_json = json::parse(request);
@@ -2685,9 +2799,6 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
                                 "requestId": "4243"
                                 })");
 
-#ifdef JSON_SIGNING_ON
-    response = json_signer->decode(response);
-#endif
 
     json response_json = json::parse(response);
     json request_json = json::parse(request);

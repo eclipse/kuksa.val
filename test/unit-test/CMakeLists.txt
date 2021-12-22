@@ -14,6 +14,19 @@
 project(kuksa-val-unit-test)
 enable_testing()
 include(CTest)
+include(FetchContent)
+
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        release-1.11.0
+)
+
+FetchContent_GetProperties(googletest)
+if(NOT googletest_POPULATED)
+  FetchContent_Populate(googletest)
+  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+endif()
 
 ######
 # CMake configuration responsible for building kuksa-val optional unit tests based on core library
@@ -29,7 +42,11 @@ set(BUILD_UNIT_TEST OFF CACHE BOOL "Build unit tests")
 
 set(proto_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/../../src/proto")
 include_directories(${proto_gen_dir})
-message(STATUS "${proto_gen_dir}")
+include_directories(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+
+# Prevent GoogleTest from overriding our compiler/linker options
+# when building with Visual Studio
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 if(BUILD_UNIT_TEST)
   add_executable(${UNITTEST_EXE_NAME}
@@ -46,6 +63,7 @@ if(BUILD_UNIT_TEST)
     KuksavalUnitTest.cpp
     UpdateVSSTreeTest.cpp
     UpdateMetadataTest.cpp
+    kuksa_grpc_client_mock.cpp
   )
 
   # declares a test with our executable
@@ -66,10 +84,10 @@ if(BUILD_UNIT_TEST)
   target_include_directories(${UNITTEST_EXE_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
   target_include_directories(${UNITTEST_EXE_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../include/interface)
 
-  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE turtle)
+  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE turtle gmock_main gtest)
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
-  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE jsoncons jwt-cpp)
+  target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE jsoncons jwt-cpp gtest_main gmock)
 
   configure_file(test_vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../kuksa_certificates/jwt/jwt.key.pub ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)

@@ -451,17 +451,6 @@ BOOST_AUTO_TEST_CASE(applyDefaultValues_Recurse) {
         ],
         "type": "attribute",
         "uuid": "0c4cf2b3979456928967e73b646bda05"
-      },
-      "ChargePortFlap": {
-        "datatype": "string",
-        "default": "closed",
-        "description": "Signal indicating if charge port cover is open or closed, can potentially be controlled manually.",
-        "enum": [
-          "open",
-          "closed"
-        ],
-        "type": "actuator",
-        "uuid": "528e53ad98c1546b90bb48f24f04815a"
       }
     }
   }
@@ -484,18 +473,6 @@ BOOST_AUTO_TEST_CASE(applyDefaultValues_Recurse) {
         ],
         "type": "attribute",
         "uuid": "0c4cf2b3979456928967e73b646bda05"
-      },
-      "ChargePortFlap": {
-        "datatype": "string",
-        "default": "closed",
-        "value": "closed",
-        "description": "Signal indicating if charge port cover is open or closed, can potentially be controlled manually.",
-        "enum": [
-          "open",
-          "closed"
-        ],
-        "type": "actuator",
-        "uuid": "528e53ad98c1546b90bb48f24f04815a"
       }
     }
   }

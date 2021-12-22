@@ -18,13 +18,13 @@
 #include <string>
 
 #include <jsoncons/json.hpp>
+#include "VssCommandProcessor.hpp"
 
 // #include "VssDatabase.hpp"
 // #include "WsServer.hpp"
 // #include "SubscriptionHandler.hpp"
 // #include "Authenticator.hpp"
 // #include "AccessChecker.hpp"
-// #include "SigningHandler.hpp"
 
 // using namespace std;
 // using namespace jsoncons;
@@ -34,7 +34,7 @@
 class kuksavalunittest {
 
  public:
-
+    std::shared_ptr<VssCommandProcessor> commandProc_auth_;
     kuksavalunittest();
     ~kuksavalunittest();
 };

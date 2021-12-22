@@ -27,6 +27,7 @@
 
 #include "grpcHandler.hpp"
 #include "kuksa.grpc.pb.h"
+#include "GrpcConnection.hpp"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -36,131 +37,6 @@ using grpc::ServerContext;
 using grpc::Status;
 using kuksa::viss_client;
 
-class GrpcConnection;
-
-class grpcConnectionHandler {
-    private:
-        std::mutex mconnGrpc;
-        std::unordered_map<uint64_t, std::shared_ptr<kuksa::kuksaChannel>> connGrpc;
-    public:
-        kuksa::kuksaChannel& addClient(boost::uuids::uuid uuid){
-          auto newChannel = std::make_shared<kuksa::kuksaChannel>();
-          std::lock_guard<std::mutex> lock(mconnGrpc);
-          uint64_t value = reinterpret_cast<uint64_t>(uuid.data);
-          newChannel->set_connectionid(value);
-          newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_GRPC);
-          connGrpc[reinterpret_cast<uint64_t>(uuid.data)] = newChannel;
-          return *newChannel;
-        }
-        void RemoveClient(const boost::uuids::uuid uuid){
-          std::lock_guard<std::mutex> lock(mconnGrpc);
-          connGrpc.erase(reinterpret_cast<uint64_t>(uuid.data));
-        }
-        std::unordered_map<uint64_t, std::shared_ptr<kuksa::kuksaChannel>> getConnGrpc() {
-            return this->connGrpc;
-        }
-        grpcConnectionHandler() = default;
-        ~grpcConnectionHandler() = default;
-};
-
-grpcConnectionHandler connGrpcHandler;
-
-// handles gRPC Connections
-// provides setValue, getValue, getMetaData, authorizeChannel as services
-// kuksa_channel is for authorizing against the db
-class GrpcConnection {
- public:
-  GrpcConnection(std::shared_ptr<Channel> channel)
-      : stub_(viss_client::NewStub(channel)) {
-        uuid = boost::uuids::random_generator()();
-        std::stringstream ss;
-        ss << uuid;
-        reqID = ss.str();
-        kuksa_channel = connGrpcHandler.addClient(uuid);
-  }
-
-  ~GrpcConnection(){
-    kuksa_channel.~kuksaChannel();
-    connGrpcHandler.RemoveClient(uuid);
-  }
-
-
-  std::string GetMetaData(std::string vssPath){
-    kuksa::getMetaDataRequest request;
-    kuksa::metaData reply;
-    ClientContext context;
-    request.set_path_(vssPath);
-    request.set_reqid_(reqID);
-    Status status = stub_->GetMetaData(&context, request, &reply);
-    if (status.ok()) {
-      return reply.value_();
-    } else {
-      std::cout << status.error_code() << ": " << status.error_message()
-                << std::endl;
-      return "RPC failed";
-    }
-  }
-
-  std::string AuthorizeChannel(std::string file){
-    kuksa::authorizeRequest request;
-    kuksa::authStatus reply;
-    ClientContext context;
-    std::string token;
-    grpcHandler::read(file,token);
-    request.set_token_(token);
-    request.set_reqid_(reqID);
-    request.mutable_channel_()->MergeFrom(kuksa_channel);
-    Status status = stub_->AuthorizeChannel(&context, request, &reply);
-    if (status.ok()) {
-      kuksa_channel = reply.channel_();
-      return reply.status_();
-    } else {
-      std::cout << status.error_code() << ": " << status.error_message()
-                << std::endl;
-      return "RPC failed";
-    }
-  }
-
-  std::string getValue(std::string vssPath){
-    kuksa::getRequest request;
-    kuksa::value reply;
-    ClientContext context;
-    request.set_path_(vssPath);
-    request.set_reqid_(reqID);
-     request.mutable_channel_()->MergeFrom(kuksa_channel);
-    Status status = stub_->GetValue(&context, request, &reply);
-    if (status.ok()) {
-      return reply.value_();
-    } else {
-      std::cout << status.error_code() << ": " << status.error_message()
-                << std::endl;
-      return "RPC failed";
-    }
-  }
-
-  std::string setValue(std::string vssPath, std::string value){
-    kuksa::setRequest request;
-    kuksa::setStatus reply;
-    ClientContext context;
-    request.set_path_(vssPath);
-    request.set_value_(value);
-    request.set_reqid_(reqID);
-     request.mutable_channel_()->MergeFrom(kuksa_channel);
-    Status status = stub_->SetValue(&context, request, &reply);
-    if (status.ok()) {
-      return reply.status_();
-    } else {
-      std::cout << status.error_code() << ": " << status.error_message()
-                << std::endl;
-      return "RPC failed";
-    }
-  }
- private:
-  boost::uuids::uuid uuid;
-  std::unique_ptr<viss_client::Stub> stub_;
-  kuksa::kuksaChannel kuksa_channel;
-  std::string reqID;
-};
 
 // splits the input by a delimiter if no delimiter is provided uses " " as delimiter
 std::vector<std::string> split(std::string const& input, std::string const& separator = " ")
@@ -302,17 +178,24 @@ void startClient(std::string port, std::string certPath, bool allowInsecureConn 
           std::cout << reply << std::endl;
         } 
       }
-      else if(msg[0] == "setValue"){
-        if(msg.size() < 2){
-          std::cout << "You have to specify a path" << std::endl;
-        }
-        if(temp.size() < 2){
-          std::cout << "You have to specify a value" << std::endl;
-        }
-        else{
-          reply = connGrpcSes.setValue(msg[1],temp[1]);
-          std::cout << reply << std::endl;
-        }
+     else if(msg[0] == "setValue"){
+          if(msg.size() < 2){
+            std::cout << "You have to specify a path" << std::endl;
+          }
+          if(temp.size() < 2 && msg.size() < 3){
+            std::cout << "You have to specify a value" << std::endl;
+          }
+          else{
+            std::string value;
+            if(temp.size() < 2){
+              value = msg[2];
+            }
+            else{
+              value = temp[1];
+            }
+            reply = connGrpcSes.setValue(msg[1],value);
+            std::cout << reply << std::endl;
+          }
       }
       else if(msg[0] == "quit"){
         reply = temp[0];
@@ -328,7 +211,6 @@ int main(int argc, char** argv) {
   // Instantiate the client. It requires a channel, out of which the actual RPCs
   // are created. This channel models a connection to an endpoint specified by
   // the argument "--target=" which is the only expected argument.
-  bool insecureConn = false;
   boost::program_options::options_description desc{"OPTIONS"};
   desc.add_options()
     ("help,h", "Help screen")
@@ -350,6 +232,7 @@ int main(int argc, char** argv) {
     std::cout << "\t--insecure default: false | if you call the client with --insecure it establishes a insecure connection" << std::endl;
   }
   else{
+    bool insecure = false;
     if (var.count("config-file")) {
     auto configFile = var["config-file"].as<boost::filesystem::path>();
     auto configFilePath = boost::filesystem::path(configFile);
@@ -372,9 +255,9 @@ int main(int argc, char** argv) {
     boost::program_options::store(parse_command_line(argc, argv, desc), var);
     }
     if(var.count("insecure")){
-      insecureConn = true;
+      insecure = var["insecure"].as<bool>();
     }
-    startClient(var["target"].as<std::string>(),var["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
+    startClient(var["target"].as<std::string>(),var["cert-path"].as<boost::filesystem::path>().string(),insecure);
   }
   return 0;
 }

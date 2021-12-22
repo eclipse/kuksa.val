@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2019-2020 Robert Bosch GmbH.
+ * Copyright (c) 2019-2021 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -39,6 +39,8 @@
 #include "MQTTPublisher.hpp"
 #include "exception.hpp"
 #include "grpcHandler.hpp"
+#include "OverlayLoader.hpp"
+
 
 #include "../buildinfo.h"
 
@@ -103,10 +105,11 @@ int main(int argc, const char *argv[]) {
       "Configuration file with `kuksa-val-server` input parameters."
       "Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup)."
       "Sample of configuration file parameters looks like:\n"
-      "vss = vss_release_2.0.json\n"
+      "vss = vss_release_2.1.json\n"
       "cert-path = . \n"
       "log-level = ALL\n")
-    ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which `kuksa-val-server` shall handle. Sample 'vss_release_2.0.json' file can be found under [data](./data/vss-core/vss_release_2.0.json)")
+    ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which `kuksa-val-server` shall handle. Sample 'vss_release_2.1.json' file can be found under [data](./data/vss-core/vss_release_2.1.json)")
+    ("overlays", program_options::value<boost::filesystem::path>(), "Path to a directory cotaiing additional VSS models. All json files will be applied on top of the main vss file given by the -vss parameter in alphanumerical order")
     ("cert-path", program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
       "[mandatory] Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. ")
     ("insecure", program_options::bool_switch()->default_value(false), "By default, `kuksa-val-server` shall accept only SSL (TLS) secured connections. If provided, `kuksa-val-server` shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.")
@@ -188,6 +191,14 @@ int main(int argc, const char *argv[]) {
   try {
     // initialize server
     auto vss_path = variables["vss"].as<boost::filesystem::path>();
+
+    //check overlaypath
+    std::vector<boost::filesystem::path> overlayfiles;
+    if ( variables.count("overlays") )
+    {
+      overlayfiles = gatherOverlays(logger, variables["overlays"].as<boost::filesystem::path>());
+    }
+
     // initialize pseudo random number generator
     std::srand(std::time(nullptr));
 
@@ -236,6 +247,7 @@ int main(int argc, const char *argv[]) {
         logger, database, tokenValidator, accessCheck, subHandler);
 
     database->initJsonTree(vss_path);
+    applyOverlays(logger, overlayfiles ,database);
 
     if(variables.count("mqtt.publish")){
         string path_to_publish = variables["mqtt.publish"].as<string>();
@@ -257,9 +269,9 @@ int main(int argc, const char *argv[]) {
           }
         }
       }
-      bool insecureConn = false;
+      bool insecureConn;
       if(variables.count("insecure")){
-        insecureConn=true;
+        insecureConn = variables["insecure"].as<bool>();
       }
       std::thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
       std::thread grpc(grpcHandler::RunServer, cmdProcessor, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
