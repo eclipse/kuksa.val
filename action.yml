@@ -5,7 +5,6 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - pwd&&
     - ./run_tests.sh
     - -a 
     - /out"
