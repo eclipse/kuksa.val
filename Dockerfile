@@ -50,5 +50,7 @@ WORKDIR /kuksa.val/build
 RUN cmake .. -DBUILD_UNIT_TEST=ON -DCMAKE_BUILD_TYPE=Coverage
 RUN make -j8
 
-CMD ./src/kuksa-val-server -c src/config.ini 
+WORKDIR /kuksa.val
+
+CMD ./build/src/kuksa-val-server -c src/config.ini 
 

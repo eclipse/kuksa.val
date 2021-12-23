@@ -6,3 +6,4 @@ runs:
   image: 'Dockerfile'
   args:
     - ./run_tests.sh -a /out"
+
