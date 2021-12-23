@@ -16,8 +16,8 @@ jobs:
     - uses: actions/checkout@v2
       with: 
         submodules: recursive
-    - name: ci
-      uses: .github/actions/
+    - name: Unit test
+      uses: ./.github/actions/unit-test
     - name: listing test results
       run: ls out 
     - name: Publish Test Report
