@@ -17,8 +17,7 @@ jobs:
       with: 
         submodules: recursive
     - name: ci
-      id: test
-      uses: ./
+      uses: .github/actions/
     - name: listing test results
       run: ls out 
     - name: Publish Test Report

@@ -42,3 +42,7 @@ WORKDIR /grpc/third_party/abseil-cpp/build
 RUN cmake -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE ..
 RUN make -j 6
 RUN make install
+
+COPY run_tests.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
