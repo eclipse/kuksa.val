@@ -64,10 +64,11 @@ function(protobuf_gen)
     set(PROTO_HDRS "${ARG_OUTPUT}/${filename}.pb.h")
     set(GRPC_SRCS "${ARG_OUTPUT}/${filename}.grpc.pb.cc")
     set(GRPC_HDRS "${ARG_OUTPUT}/${filename}.grpc.pb.h")
+    set(GRPC_MOCK_HDRS "${ARG_OUTPUT}/${filename}_mock.grpc.pb.h")
     add_custom_command(
-        OUTPUT "${PROTO_SRCS}" "${PROTO_HDRS}" "${GRPC_SRCS}" "${GRPC_HDRS}"
+        OUTPUT "${PROTO_SRCS}" "${PROTO_HDRS}" "${GRPC_SRCS}" "${GRPC_HDRS}" "${GRPC_MOCK_HDRS}"
         COMMAND ${_PROTOBUF_PROTOC}
-        ARGS --grpc_out "${ARG_OUTPUT}"
+        ARGS --grpc_out "generate_mock_code=true:${ARG_OUTPUT}"
           --cpp_out "${ARG_OUTPUT}"
           -I "${ARG_PROTO_PATH}"
           --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
