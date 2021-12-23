@@ -17,4 +17,7 @@ jobs:
       with: 
         submodules: recursive
     - name: ci
+      id: test
       uses: ./
+    - name: listing test results
+      run: ls -llR ${{ steps.executor.outputs.test }}
