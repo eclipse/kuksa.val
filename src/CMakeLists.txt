@@ -26,7 +26,7 @@ set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
 set(GRPC_CLIENT_EXE_NAME kuksa_viss_grpc_client) 
 
 
-set(proto_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/proto")
+set(proto_gen_dir "${CMAKE_BINARY_DIR}/proto")
 set(kuksa_proto "${CMAKE_CURRENT_SOURCE_DIR}/../protos/kuksa.proto")
 get_filename_component(kuksa_proto_path "${kuksa_proto}" PATH)
 file(MAKE_DIRECTORY ${proto_gen_dir})

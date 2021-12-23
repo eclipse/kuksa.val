@@ -40,7 +40,7 @@ set(BUILD_UNIT_TEST OFF CACHE BOOL "Build unit tests")
 ###
 # Setup targets
 
-set(proto_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/../../src/proto")
+set(proto_gen_dir "${CMAKE_BINARY_DIR}/proto")
 include_directories(${proto_gen_dir})
 include_directories(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
 

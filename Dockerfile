@@ -23,7 +23,7 @@ RUN apt-get  update && DEBIAN_FRONTEND="noninteractive" apt-get -y install libss
 ENV BOOST_VER=1.75.0
 ENV BOOST_VER_=1_75_0
 RUN wget https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER}/source/boost_${BOOST_VER_}.tar.bz2
-RUN tar xvjf boost_${BOOST_VER_}.tar.bz2
+RUN tar xjf boost_${BOOST_VER_}.tar.bz2
 WORKDIR /boost_${BOOST_VER_}
 RUN ./bootstrap.sh
 RUN ./b2 -j 6 install
