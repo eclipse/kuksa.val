@@ -17,7 +17,7 @@ jobs:
       with: 
         submodules: recursive
     - name: Unit test
-      uses: ./.github/actions/unit-test
+      uses: ./
     - name: listing test results
       run: ls out 
     - name: Publish Test Report
