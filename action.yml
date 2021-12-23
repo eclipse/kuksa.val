@@ -4,8 +4,8 @@ description: 'Build enviroment and test'
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  args:
-    - ./run_tests.sh
-    - -a 
-    - /out"
+#  args:
+#    - ./run_tests.sh
+#    - -a 
+#    - /out"
 

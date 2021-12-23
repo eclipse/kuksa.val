@@ -20,4 +20,4 @@ jobs:
       id: test
       uses: ./
     - name: listing test results
-      run: ls -llR ${{ steps.executor.outputs.test }}
+      run: ls -llR 
