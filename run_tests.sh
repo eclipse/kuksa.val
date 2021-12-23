@@ -25,11 +25,7 @@ then
     builddir=build
     echo "Use default build director ${builddir}"
 fi
-if [ ! -d "${builddir}" ] 
-then
-  echo "ERROR: Please name the build directory as the first parameter."
-  printUsage
-fi
+mkdir -p ${builddir}
 echo "Go to build directory ${builddir}"
 cd ${builddir}
 
