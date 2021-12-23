@@ -5,7 +5,8 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - ls 
+    - mkdir
+    - build_TEST
 #    - ./run_tests.sh
 #    - -a 
 #    - /out"
