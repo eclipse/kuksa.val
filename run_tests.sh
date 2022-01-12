@@ -40,6 +40,7 @@ ctest --output-on-failure
 gcovr -r ..  --branches -e ../test/ -e ../3rd-party-libs/ --xml -o coverage.xml
 
 if [ ! -d "${artifactdir}" ] 
+then
   mkdir -p ${artifactdir}
 fi
 echo "archive artifacts under ${artifactdir}"
