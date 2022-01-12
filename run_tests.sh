@@ -39,11 +39,11 @@ rm -rf coverage.xml
 ctest --output-on-failure
 gcovr -r ..  --branches -e ../test/ -e ../3rd-party-libs/ --xml -o coverage.xml
 
+echo "archive artifacts under ${artifactdir}"
+cd ${basepath}
 if [ ! -d "${artifactdir}" ] 
 then
   mkdir -p ${artifactdir}
 fi
-echo "archive artifacts under ${artifactdir}"
-cd ${basepath}
 cp ${builddir}/test/unit-test/results.xml ${artifactdir}/
 cp ${builddir}/coverage.xml ${artifactdir}/
