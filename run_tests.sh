@@ -31,6 +31,8 @@ cd ${builddir}
 
 cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON -DCTEST_RESULT_CODE=no ..
 
+make -j8
+
 rm -rf test/unit-test/results.xml
 rm -rf coverage.xml
 
