@@ -26,9 +26,7 @@ jobs:
         name: unittest
         path: out
     - name: Publish Test Report
-      uses: dorny/test-reporter@v1
-      if: success() || failure() # always run even if the previous step fails
+      uses: mikepenz/action-junit-report@v2
+      if: always() # always run even if the previous step fails
       with:
-        name: JEST Tests
-        path: 'out/*.xml'
-        reporter: jest-junit
+        report_paths: 'out/*.xml'
