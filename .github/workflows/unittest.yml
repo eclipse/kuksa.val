@@ -1,4 +1,4 @@
-name: CI
+name: unittests
 
 on:
   push:
@@ -29,4 +29,4 @@ jobs:
       uses: mikepenz/action-junit-report@v2
       if: always() # always run even if the previous step fails
       with:
-        report_paths: 'out/results.xml'
+        report_paths: 'out/*.xml'
