@@ -39,8 +39,15 @@ jobs:
         platforms: linux/arm64
         file: docker/Dockerfile
         context: .
-        push: ${{ github.event_name != 'pull_request' }}
+        #push: ${{ github.event_name != 'pull_request' }}
+        push: false
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+        outputs: type=docker,dest=/tmp/${{ steps.meta.outputs.tags }}.tar # multi-platform images cannot be exported with the docker export type`
         cache-from: type=gha, scope=${{ github.workflow }}
         cache-to: type=gha, scope=${{ github.workflow }}
+    - name: Upload ARM64 artifact 
+      uses: actions/upload-artifact@v2
+      with:
+        name: kuksa_val_arm64
+        path: /tmp/${{ steps.meta.outputs.tags }}.tar
