@@ -1,4 +1,4 @@
-name: kuksa_val_docker
+name: kuksa_val_docker arm64
 
 on:
   push:
