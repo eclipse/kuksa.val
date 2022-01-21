@@ -11,7 +11,7 @@ The KUKSA.val server runs on a vehicle computer with a given VSS model, the mode
 KUKSA clients (feeders & applications) are using the VISS protocol to talk to KUKSA.val. Transport layer security is provided by TLS. JWT tokens are used to enforce access rights on a signal level, so that each client only has read and write access to a well defined subset of the VSS model.
 
 ## Data Feeders 
-Components populating the VSS tree are called  *data feeders*. Technically they are just normal KUKSA.val clients. Usually a feeder will gather some data from a vehicle using any kind of standard or proprietary protocol, convert its representation the the one mandated by VSS and set the VSS signal using VISS.
+Components providing data for leaves in the VSS tree are called  *data feeders*. Technically they are just normal KUKSA.val clients. Usually a feeder will gather some data from a vehicle using any kind of standard or proprietary protocol, convert its representation the one mandated by VSS and set the VSS signal using VISS.
 
 The following picture shows different kinds of possible KUKSA.val feeders 
 
