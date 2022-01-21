@@ -1,6 +1,6 @@
 # System Architecture and Deployment
 
-The KUKSA.val server aims to provide a consistent view of all signals inside a vehicle. The data model follows the [COVESA Vehicle Signal Specification](https://github.com/COVESA/vehicle_signal_specification) data is accessed using a variant of the [W3C VISS protocol](https://github.com/w3c/automotive).
+The KUKSA.val server aims to provide a consistent view of all signals inside a vehicle. The data model follows the [COVESA Vehicle Signal Specification](https://github.com/COVESA/vehicle_signal_specification) while the data is accessed using a variant of the [W3C VISS protocol](https://github.com/w3c/automotive).
 
 The following picture shows the basic system architecture:
 
@@ -17,11 +17,11 @@ The following picture shows different kinds of possible KUKSA.val feeders
 
 ![Feeder options](./pictures/sysarch_feeders.svg)
 
-We assume running KUKSA.val on a vehicle computer. Some signals might originate in an embedded ECU only connected via CAN (ECU 1). Published data is received by the vehicle computer and can be mapped to the VSS data model by a feeder. The [DBC Feeder](../kuksa_feeders/dbc2val/) included in KUKSA.val allows mapping of data from a CAN bus based on a DBC description and some mapping rules.
+We assume running KUKSA.val on a vehicle computer. Some signals might originate in an embedded ECU only connected via CAN (e.g. ECU 1). Published data is received by the vehicle computer and can be mapped to the VSS data model by a feeder. The [DBC Feeder](../kuksa_feeders/dbc2val/) included in KUKSA.val allows mapping of data from a CAN bus based on a DBC description and some mapping rules.
 
 Other ECUs with Ethernet connectivity might publish data as SomeIP services. Following the pattern of the CAN feeder, a SomeIP feeder mapping data to the VSS model can be created.
 
-Some data might originate in the same compute unit running the KUKSA.val server. In this example we assume the Vehicle Computer runs an adaptive AutoSAR subsystem. In that case a feeder using the APIs of the underlying system can be created, without the need to parse a specific serialisation first (ara::com Feeder).
+Some data might originate in the same compute unit running the KUKSA.val server. In this example we assume the Vehicle Computer runs an Adaptive AutoSAR subsystem. In that case a feeder using the APIs of the underlying system can be created, without the need to parse a specific serialisation first (ara::com Feeder).
 
 Finally, there may be other  processor based platforms in a vehicle such as another vehicle computer, a domain, or zone controller or an infotainment system (VCU). These systems can feed data by interacting with the remote KUKSA.val server by using the VISS protocol directly. 
 
