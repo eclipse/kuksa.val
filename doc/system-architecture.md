@@ -11,7 +11,7 @@ The KUKSA.val server runs on a vehicle computer with a given VSS model, the mode
 KUKSA clients (feeders & applications) are using the VISS protocol to talk to KUKSA.val. Transport layer security is provided by TLS. JWT tokens are used to enforce access rights on a signal level, so that each client only has read and write access to a well defined subset of the VSS model.
 
 ## Data Feeders 
-Components providing data for leaves in the VSS tree are called  *data feeders*. Technically they are just normal KUKSA.val clients. Usually a feeder will gather some data from a vehicle using any kind of standard or proprietary protocol, convert its representation the one mandated by VSS and set the VSS signal using VISS.
+Components providing data for leaves in the VSS tree are called  *data feeders*. Technically they are just normal KUKSA.val clients. Usually a feeder will gather some data from a vehicle using any kind of standard or proprietary protocol, convert its representation the one mandated by VSS and set the VSS signal using the VISS protocol.
 
 The following picture shows different kinds of possible KUKSA.val feeders 
 
@@ -54,9 +54,9 @@ We assume the primary vehicle computer contains the fully populated VSS model fo
 
 In a redundancy scenario there may be a backup vehicle computer with a KUKSA.val server instance that is kept in sync, so that in case of a failover, the last known data is available for all VSS data points. We assume an optimized VSS Sync component to be used that might deal with one-way or two-way syncs. Currently KUKSA.val does not include a sync mechanism.
 
-A vehicle can have additional  domain controllers such as the powertrain controller. The Powertrain controller can use VSS for internal data not relevant to other domains and extending it with VSS data relevant to powertrain functionality provided by the central Vehicle computer.
+A vehicle can have additional  domain controllers such as the powertrain controller. The Powertrain controller can use VSS to manage internal data not relevant to other domains as well as accessing other VSS data relevant to powertrain functionality provided by the central vehicle computer.
 
-The Infotainment/Displays example augments this pattern, where the system subscribes needed data from the central Vehicle Computer (e.g. data that needs to be visualized), but also feeds data back to main VSS model (e.g. if a driver sets charge limits in the UI). 
+The Infotainment/Displays example extends this pattern, where the system subscribes needed data from the central Vehicle Computer (e.g. data that needs to be visualized), but also feeds data back to main VSS model (e.g. if a driver sets charge limits in the UI). 
 
 
 
