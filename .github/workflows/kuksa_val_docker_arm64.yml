@@ -8,7 +8,7 @@ on:
     
 jobs:
   build:
-    runs-on: [ self-hosted, kuksa-x64 ]
+    runs-on: [ self-hosted ]
 
     steps:
     - uses: actions/checkout@v2
