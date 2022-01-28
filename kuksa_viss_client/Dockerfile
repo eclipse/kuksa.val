@@ -13,7 +13,8 @@ RUN apk update && apk add git
 ADD . /kuksa.val
 WORKDIR /kuksa.val
 RUN pip install --upgrade pip build
-RUN rm -rf dist && python -m build
+RUN rm -rf dist 
+RUN python -m build
 RUN mkdir /kuksa_viss_client
 RUN pip install --target /kuksa_viss_client --no-cache-dir dist/*.whl 
 

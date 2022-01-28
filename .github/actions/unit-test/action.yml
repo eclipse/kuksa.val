@@ -1,0 +1,10 @@
+# action.yml
+name: 'Build and test'
+description: 'Build enviroment and test'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - -a 
+    - out
+

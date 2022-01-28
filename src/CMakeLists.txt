@@ -24,61 +24,16 @@ set(SERVER_OBJ_LIB_NAME ${SERVER_EXE_NAME}-object )
 set(SERVER_LIB_NAME ${SERVER_EXE_NAME}-core )
 set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
 set(GRPC_CLIENT_EXE_NAME kuksa_viss_grpc_client) 
-set(gRPC_SSL_PROVIDER "package" CACHE STRING "Provider of ssl library")
 
-### grpc repository and submodule fetch
-include(FetchContent)
 
-## GRPC ##
-FetchContent_Declare(
-  gRPC
-  GIT_REPOSITORY https://github.com/grpc/grpc
-  GIT_TAG        v1.38.0
-)
-## END GRPC ##
-
-set(FETCHCONTENT_QUIET OFF)
-## Disable tests in GRPC                                                        
-set(BUILD_TESTING OFF) 
-FetchContent_MakeAvailable(gRPC)
-
-# gRPC and Protobuf variables
-set(_GRPC_GRPCPP grpc++)
-set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
-set(_REFLECTION grpc++_reflection)
-set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
-
-include(GoogleTest)
-
-#
-# Generate Protobuf/Grpc source files
-#
-get_filename_component(k_proto "../protos/kuksa.proto" ABSOLUTE)
-get_filename_component(k_proto_path "${k_proto}" PATH)
-
-set(k_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.pb.cc")
-set(k_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.pb.h")
-set(k_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.grpc.pb.cc")
-set(k_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa.grpc.pb.h")
-set(k_grpc_mock_hdrs "${CMAKE_CURRENT_BINARY_DIR}/proto/kuksa_mock.grpc.pb.h")
-set(proto_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/proto")
-
+set(proto_gen_dir "${CMAKE_BINARY_DIR}/proto")
+set(kuksa_proto "${CMAKE_CURRENT_SOURCE_DIR}/../protos/kuksa.proto")
+get_filename_component(kuksa_proto_path "${kuksa_proto}" PATH)
 file(MAKE_DIRECTORY ${proto_gen_dir})
-
-add_custom_command(
-      OUTPUT "${k_proto_srcs}" "${k_proto_hdrs}" "${k_grpc_srcs}" "${k_grpc_hdrs}" "${k_grpc_mock_hdrs}"
-      COMMAND ${_PROTOBUF_PROTOC}
-      ARGS
-        --grpc_out "generate_mock_code=true:${proto_gen_dir}"
-        --cpp_out "${proto_gen_dir}"
-        -I "${k_proto_path}"
-        --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-        "${k_proto}"
-      DEPENDS "${k_proto}"
+protobuf_gen(PROTO ${kuksa_proto}
+    PROTO_PATH ${kuksa_proto_path}
+    OUTPUT ${proto_gen_dir}
 )
-
-message(STATUS "generated *.pb.cc and *.pb.h files for ${k_proto}")
-
 include_directories("${proto_gen_dir}")
 
 
@@ -97,8 +52,8 @@ list(REMOVE_ITEM LIB_SOURCES "${PROJECT_SOURCE_DIR}/main.cpp")
 
 ###
 # set main 'object library' as target to prevent multiple compilations of same sources
-add_library(${SERVER_OBJ_LIB_NAME} OBJECT ${LIB_SOURCES} ${k_proto_srcs}
-${k_grpc_srcs})
+add_library(${SERVER_OBJ_LIB_NAME} OBJECT ${LIB_SOURCES} ${PROTO_SRCS}
+${GRPC_SRCS})
 
 target_compile_features(${SERVER_OBJ_LIB_NAME} PUBLIC cxx_std_14)
 
@@ -170,8 +125,8 @@ target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVE
 
 if(BUILD_EXE)
   add_executable(${SERVER_EXE_NAME} main.cpp
-  ${k_proto_srcs}
-  ${k_grpc_srcs})
+  ${PROTO_SRCS}
+  ${GRPC_SRCS})
   ## GRPC targets
   add_executable(${GRPC_CLIENT_EXE_NAME} "${GRPC_CLIENT_EXE_NAME}.cpp")
 

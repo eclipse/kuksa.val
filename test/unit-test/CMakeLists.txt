@@ -40,7 +40,7 @@ set(BUILD_UNIT_TEST OFF CACHE BOOL "Build unit tests")
 ###
 # Setup targets
 
-set(proto_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/../../src/proto")
+set(proto_gen_dir "${CMAKE_BINARY_DIR}/proto")
 include_directories(${proto_gen_dir})
 include_directories(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
 
@@ -69,7 +69,7 @@ if(BUILD_UNIT_TEST)
   # declares a test with our executable
   set(CTEST_RESULT_CODE yes CACHE BOOL "Build unit tests")
   add_test(NAME ${UNITTEST_EXE_NAME}
-    COMMAND $<TARGET_FILE:${UNITTEST_EXE_NAME}> --log_format=XML --log_sink=results.xml --log_level=all --report_level=short --result_code=${CTEST_RESULT_CODE}
+    COMMAND $<TARGET_FILE:${UNITTEST_EXE_NAME}> --log_format=JUNIT --log_sink=results.xml --log_level=all --report_level=short --result_code=${CTEST_RESULT_CODE}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   )
   target_compile_features(${UNITTEST_EXE_NAME} PRIVATE cxx_std_14)

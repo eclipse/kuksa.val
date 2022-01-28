@@ -1,0 +1,32 @@
+name: unittests
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - '0.*'
+  pull_request:
+    branches: [ master ]
+    
+jobs:
+  buildAndTest:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with: 
+        submodules: recursive
+    - name: Unit test
+      uses: ./.github/actions/unit-test
+    - name: listing test results
+      run: ls out 
+    - name: Upload unittests artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: unittest
+        path: out
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@v2
+      if: always() # always run even if the previous step fails
+      with:
+        report_paths: 'out/*.xml'
