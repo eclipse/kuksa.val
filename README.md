@@ -22,6 +22,7 @@ Check [System Architecture](doc/system-architecture.md) for an overview how KUKS
  - [Python viss client](./kuksa_viss_client) to interactively explore and modify the VISS data points and data structure
  - Multiple [example apps](./kuksa_apps) in different programming languages to communicate with different frameworks 
  - Multiple [feeders](./kuksa_feeders) to provide vehicle data for the `kuksa.val` server
+ - Support most of data types, which is specified in [COVESA VSS data model](https://covesa.github.io/vehicle_signal_specification/rule_set/data_entry/data_types/). Support of `Arrays` will come soon.
 
 
 ## Quick start
