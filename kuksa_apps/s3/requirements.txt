@@ -1,4 +1,3 @@
-importlib_metadata >= 3.6
-websockets~=8.1
+kuksa-viss-client
 boto3~=1.16.5
 pyarrow~=3.0.0
