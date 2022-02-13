@@ -14,11 +14,20 @@ If you do not have a gps device, you can use your cellphone to forward gps data 
 ```
 gpsd -N udp://0.0.0.0:29998
 ```
-## Using docker
-To build:
+## Install dependencies and execution
+```
+pip install -r requirements.txt
+python gpsd_feeder.py
+```
+
+### Using docker
+You can also use `docker` to execute the feeder platform independently.
+To build a docker image:
 ```
 docker build -t gpsd_feeder .
 ```
+
+You can also download docker images from the [release page](https://github.com/eclipse/kuksa.val/releases).
 
 To run:
 ```
