@@ -16,7 +16,7 @@ services:
     ports:
       - 1883:1883
   kuksa-val:
-    image: ${ARCH}/kuksa-val:0.1.8
+    image: ${ARCH}/kuksa-val:0.2.0
     restart: unless-stopped 
     ports:
       - 8090:8090
