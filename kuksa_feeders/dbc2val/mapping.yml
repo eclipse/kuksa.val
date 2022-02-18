@@ -30,6 +30,38 @@ SteeringAngle129:
       transform:
         math: "floor(x+0.5)"
 
+DI_uiSpeed:
+  minupdatedelay: 100
+  targets: 
+    Vehicle.Speed: {}
+    Vehicle.OBD.Speed: {}
+
+#"DI_GEAR_D" 0 "DI_GEAR_INVALID" 3 "DI_GEAR_N" 1 "DI_GEAR_P" 2 "DI_GEAR_R" 7 "DI_GEAR_SNA" ;
+DI_gear:
+  minupdatedelay: 100
+  targets:
+    Vehicle.Powertrain.Transmission.Gear:
+      transform:
+        fullmapping:
+          DI_GEAR_D: 1
+          DI_GEAR_INVALID: 0
+          DI_GEAR_P: 0
+          DI_GEAR_R: -1
+    Vehicle.Chassis.ParkingBrake.IsEngaged:
+      transform:
+        fullmapping:
+          DI_GEAR_D: "false"
+          DI_GEAR_INVALID: "false"
+          DI_GEAR_P: "frue"
+          DI_GEAR_R: "false"
+
+
+DIR_torqueActual:
+  minupdatedelay: 100
+  targets:
+    Vehicle.Powertrain.ElectricMotor.Motor.Torque: {}
+
+
 # HV System Voltage
 # let's take this as batteryVoltage, but no match in VSS 2.2
 #PCS_dcdcHvBusVolt:
@@ -52,13 +84,6 @@ PCS_dcdcLvBusVolt:
 CP_hvChargeStatus:
   minupdatedelay: 1000
   targets:
-    Vehicle.Powertrain.Battery.Charging.ChargePlugStatus:
-      transform:
-        fullmapping:
-          CP_CHARGE_CONNECTED: "true"
-          CP_CHARGE_ENABLED: "true"
-          CP_CHARGE_STANDBY: "true"
-          CP_CHARGE_INACTIVE: "false"
     Vehicle.Powertrain.Battery.Charging.ChargePlugStatus:
       transform:
         fullmapping:
