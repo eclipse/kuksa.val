@@ -28,11 +28,8 @@ Install requirements with
 pip install -r requirements.txt
 ```
 
-Check commandline options with
+The DBC feeder is configured using a config file. Check [dbc_feeder.ini](config/dbc_feeder.ini) for supported options.
 
-```
-./dbcfeeder.py
-```
 
 ## Example mapping and data
 KUKSA.val includes an example can trace to play around. The file `candump-2021-12-08_151848.log.xz`
@@ -44,7 +41,52 @@ The canlog in the repo is compressed, to uncompress it (will be around 150MB) do
 unxz candump-2021-12-08_151848.log.xz
 ```
 
-Take a look at the mapping.yml to see how the mapping is done.
+The mapping.yml describes how to map CAN data described in a DBC file to VSS. Let's look at some example entries
+
+```yaml
+PCS_dcdcLvBusVolt:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.OBD.ControlModuleVoltage: {}
+```
+This takes the signal `PCS_dcdcLvBusVolt` from the DBC file and updates VSS path `Vehicle.OBD.ControlModuleVoltage`. Except the scaling/mapping described in the DBC file, no further preprocessing takes place before writing the received value to KUKSA.val. 
+
+`minupdatedelay` specifies a minimum time in ms that needs to pass before a signal will be updated in KUKSA.val again. This is useful for high frequency signals to lessen the load on the system, e.g. if a battery voltage is put on the CAN every 5 ms, it is unlikely we need to update it as often.
+
+A more complex example:
+
+```yaml
+VCFRONT_brakeFluidLevel:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.Chassis.Axle.Row1.Wheel.Left.Brake.FluidLevelLow:
+      transform:
+        fullmapping:
+          LOW: "true"
+          NORMAL: "false"
+    Vehicle.Chassis.Axle.Row1.Wheel.Right.Brake.FluidLevelLow:
+      transform:
+        fullmapping:
+          LOW: "true"
+          NORMAL: "false"
+```
+Here the same DBC signal `VCFRONT_brakeFluidLevel`is mapped to different VSS path. Also _fullmapping_ transform is applied. The value `LOW` from the DBC is mapped to the value `true` in the VSS path and `NORMAL`is mapped to `false`. In the _fullmapping_ transform, if no match is found, the value will be ignored. There also exists a _partialmapping_ transform, which works similarly, with the difference, that if no match is found the value from the DBC will be written as-is to KUKSA.val.
+
+Another transform is the _math_ transform
+
+```yaml
+VCLEFT_mirrorTiltXPosition:
+   minupdatedelay: 100
+   targets:
+    Vehicle.Body.Mirrors.Left.Pan:
+      transform: #scale 0..5 to -100..100
+        math: floor((x*40)-100)
+```
+
+This can be used if the scale of a signal as described in the DBC is not compatible with the VSS model.  The value - with all transforms described in the DBC -  is used as `x` on the formula given by the _math_ transform. For available operators, functions and constants supported by the _math_ transform check https://pypi.org/project/py-expression-eval/.
+
+
+Take a look at the mapping.yml to see more examples.
 
 ## Testing using virtual can bus
 You can use the following command to create an virtual CAN interface and replay recorded candump log to test the dbc feeder:
