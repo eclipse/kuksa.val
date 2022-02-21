@@ -1,36 +1,364 @@
-# Mapping Speed
-UIspeed_signed257:
+###############################################################################
+# Copyright (c) 2022 Robert Bosch GmbH
+#
+# All rights reserved. This configuration file is provided to you under the
+# terms and conditions of the Eclipse Distribution License v1.0 which
+# accompanies this distribution, and is available at
+# http://www.eclipse.org/org/documents/edl-v10.php
+###############################################################################
+# This is a mapping of some Tesla Model 3 signals to VSS.
+# The CAN trace is from the vehicle CAN of a 2018 M3 with software  2021.40.6
+# The mapping is not necessarily always correct/exact but should serve as a
+# good example how to use DBC feeder
+#
+# There is a lot more to be found in the traces. Feel free to suggest PRs
+#
+# This maps to VSS 2.2 
+# 
+# Uses model 3 DBC by Josh Wardell  https://github.com/joshwardell/model3dbc
+#
+
+
+
+#Steering angle
+# Note VSS is angle of the steering wheel, DBC might be angle or steering?
+# Converting to int
+SteeringAngle129:
+  minupdatedelay: 100
+  targets:
+    Vehicle.Chassis.SteeringWheel.Angle:
+      transform:
+        math: "floor(x+0.5)"
+
+DI_uiSpeed:
   minupdatedelay: 100
   targets: 
     Vehicle.Speed: {}
     Vehicle.OBD.Speed: {}
 
-
-#this is kW, do some magic to get in 0-100 int range
-RearPower266:
-  minupdatedelay: 100
-  targets:
-    Vehicle.OBD.EngineLoad:
-      transform:
-        math: "floor(abs(x/5))"
-
-#Mapping to numeriv VSS gears, and extract parking state
-DIgear118:
+#"DI_GEAR_D" 0 "DI_GEAR_INVALID" 3 "DI_GEAR_N" 1 "DI_GEAR_P" 2 "DI_GEAR_R" 7 "DI_GEAR_SNA" ;
+DI_gear:
   minupdatedelay: 100
   targets:
     Vehicle.Powertrain.Transmission.Gear:
       transform:
         fullmapping:
-          Neutral: 0
-          Idle: 0
-          Park: 0
-          Reverse: -1
-          Drive: 1
+          DI_GEAR_D: 1
+          DI_GEAR_INVALID: 0
+          DI_GEAR_P: 0
+          DI_GEAR_R: -1
     Vehicle.Chassis.ParkingBrake.IsEngaged:
       transform:
         fullmapping:
-          Neutral: "false"
-          Idle: "false"
-          Park: "true"
-          Reverse: "false"
-          Drive: "false"
+          DI_GEAR_D: "false"
+          DI_GEAR_INVALID: "false"
+          DI_GEAR_P: "frue"
+          DI_GEAR_R: "false"
+
+
+DIR_torqueActual:
+  minupdatedelay: 100
+  targets:
+    Vehicle.Powertrain.ElectricMotor.Motor.Torque: {}
+
+
+# HV System Voltage
+# let's take this as batteryVoltage, but no match in VSS 2.2
+#PCS_dcdcHvBusVolt:
+#  minupdatedelay: 1000
+
+
+# LV System Voltage
+PCS_dcdcLvBusVolt:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.OBD.ControlModuleVoltage: {}
+
+
+# LV system output in Amps
+# Can not find in VSS
+# CM_ SG_ 692 PCS_dcdcLvOutputCurrent "DCDC 12v Output Current";
+#  minupdatedelay: 1000
+
+
+CP_hvChargeStatus:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.Powertrain.Battery.Charging.ChargePlugStatus:
+      transform:
+        fullmapping:
+          CP_CHARGE_CONNECTED: "false"
+          CP_CHARGE_ENABLED: "true"
+          CP_CHARGE_FAULTED: "false"
+          CP_CHARGE_INACTIVE: "false"
+          CP_CHARGE_STANDBY: "false"
+          CP_EVSE_TEST_PASSED: "true"
+          CP_EXT_EVSE_TEST_ACTIVE: "true"
+
+
+
+VCFRONT_brakeFluidLevel:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.Chassis.Axle.Row1.Wheel.Left.Brake.FluidLevelLow:
+      transform:
+        fullmapping:
+          LOW: "true"
+          NORMAL: "false"
+    Vehicle.Chassis.Axle.Row1.Wheel.Right.Brake.FluidLevelLow:
+      transform:
+        fullmapping:
+          LOW: "true"
+          NORMAL: "false"
+    Vehicle.Chassis.Axle.Row2.Wheel.Left.Brake.FluidLevelLow:
+      transform:
+        fullmapping:
+          LOW: "true"
+          NORMAL: "false"
+    Vehicle.Chassis.Axle.Row2.Wheel.Right.Brake.FluidLevelLow:
+      transform:
+        fullmapping:
+          LOW: "true"
+          NORMAL: "false"
+
+#
+#VCFRONT_coolantLevel:
+# No Coolantlevel in VSS
+
+VCFRONT_tempAmbientFiltered:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.AmbientAirTemperature: 
+      transform: {}
+
+
+VCFRONT_washerFluidLevel:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.Body.Windshield.Front.WasherFluid.LevelLow:
+      transform:
+        fullmapping:
+          LOW: "true"
+          NORMAL: "false"
+
+#CM_ SG_ 306 SmoothBattCurrent132 "HV Battery Current";  
+#Alternate signal: PTC_voltageHV
+# Not in VSS 2.2
+
+
+# Seems to be not correctly defined in DBC
+#VCLEFT_vehiclePowerStateDBG 2 "VEHICLE_POWER_STATE_ACCESSORY" 1 "VEHICLE_POWER_STATE_CONDITIONING" 3 "VEHICLE_POWER_STATE_DRIVE" 0 "VEHICLE_POWER_STATE_OFF" ;
+#VCRIGHT_vehiclePowerStateDBG:
+#  minupdatedelay: 100
+#  targets:
+#    Vehicle.LowVoltageSystemState:
+#      transform:
+#        fullmapping:
+#          VEHICLE_POWER_STATE_ACCESSORY: "ACC"
+#          VEHICLE_POWER_STATE_CONDITIONING: "START"
+#          VEHICLE_POWER_STATE_DRIVE: "ON"
+#          VEHICLE_POWER_STATE_OFF: "OFF"
+
+
+#VCRIGHT_mirrorFoldState:
+#   minupdatedelay: 1000
+#   targets:
+#    Vehicle.Body.Mirrors.Right.xxx:
+#not in VSS
+
+#VCRIGHT_mirrorHeatState not in DBC, assuming this signal signal for both sides
+VCLEFT_mirrorHeatState:
+   minupdatedelay: 1000
+   targets:
+    Vehicle.Body.Mirrors.Left.Heating.Status:
+      transform:
+        fullmapping:
+          HEATER_STATE_ON: "true"
+          HEATER_STATE_OFF: "false"
+    Vehicle.Body.Mirrors.Right.Heating.Status:
+      transform:
+        fullmapping:
+          HEATER_STATE_ON: "true"
+          HEATER_STATE_OFF: "false"
+
+VCLEFT_mirrorTiltYPosition:
+   minupdatedelay: 100
+   targets:
+    Vehicle.Body.Mirrors.Left.Tilt:
+      transform: #scale 0..5 to -100..100
+        math: floor((x*40)-100)
+
+VCLEFT_mirrorTiltXPosition:
+   minupdatedelay: 100
+   targets:
+    Vehicle.Body.Mirrors.Left.Pan:
+      transform: #scale 0..5 to -100..100
+        math: floor((x*40)-100)
+
+
+VCRIGHT_mirrorTiltYPosition:
+   minupdatedelay: 100
+   targets:
+    Vehicle.Body.Mirrors.Right.Tilt:
+      transform: #scale 0..5 to -100..100
+        math: floor((x*40)-100)
+
+VCRIGHT_mirrorTiltXPosition:
+   minupdatedelay: 100
+   targets:
+    Vehicle.Body.Mirrors.Right.Pan:
+      transform: #scale 0..5 to -100..100
+        math: floor((x*40)-100)
+
+#VAL_ 259 VCRIGHT_trunkLatchStatus 5 "LATCH_AJAR" 2 "LATCH_CLOSED" 3 "LATCH_CLOSING" 7 "LATCH_DEFAULT" 8 "LATCH_FAULT" 1 "LATCH_OPENED" 4 "LATCH_OPENING" 0 "LATCH_SNA" 6 "LATCH_TIMEOUT" ;
+#Alternative UI_a003_TrunkOpen
+VCRIGHT_trunkLatchStatus:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.Body.Trunk.IsOpen:
+      transform:
+        fullmapping:
+          LATCH_AJAR: "true"
+          LATCH_CLOSED: "false"
+          LATCH_CLOSING: "true"
+          LATCH_FAULT: "true"
+          LATCH_OPENED: "true"
+          LATCH_OPENING: "true"
+          
+
+# IGBT temperature is not "Motor" temperature, but let's use it, as that might be the more critical temp anyway
+PTC_rightTempIGBT:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.Powertrain.ElectricMotor.Motor.Temperature:
+      transforn: {}
+
+# Front door
+#VAL_ 290 VCLEFT_frontDoorState 1 "DOOR_STATE_CLOSED" 4 "DOOR_STATE_OPEN_OR_AJAR" 3 "DOOR_STATE_RELEASING_LATCH" 0 "DOOR_STATE_UNKNOWN" 2 "DOOR_STATE_WAIT_FOR_SHORT_DROP" ;
+VCLEFT_frontDoorState:
+  minupdatedelay: 500
+  targets:
+    Vehicle.Cabin.Door.Row1.Left.IsOpen:
+      transform:
+        fullmapping:
+          DOOR_STATE_CLOSED: "false"
+          DOOR_STATE_OPEN_OR_AJAR: "true"
+
+VCLEFT_rearDoorState:
+  minupdatedelay: 500
+  targets:
+    Vehicle.Cabin.Door.Row2.Left.IsOpen:
+      transform:
+        fullmapping:
+          DOOR_STATE_CLOSED: "false"
+          DOOR_STATE_OPEN_OR_AJAR: "true"
+
+
+# For some reason nothing for right in DBC
+# VCRIGHT_frontDoorState:
+#   minupdatedelay: 500
+#   targets:
+#     Vehicle.Cabin.Door.Row1.Right.IsOpen:
+#       transform:
+#         fullmapping:
+#           DOOR_STATE_CLOSED: "false"
+#           DOOR_STATE_OPEN_OR_AJAR: "true"
+
+# VCRIGHT_rearDoorState:
+#   minupdatedelay: 500
+#   targets:
+#     Vehicle.Cabin.Door.Row2.Right.IsOpen:
+#       transform:
+#         fullmapping:
+#           DOOR_STATE_CLOSED: "false"
+#           DOOR_STATE_OPEN_OR_AJAR: "true"
+
+
+VCFRONT_driverBuckleStatus:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.Cabin.Seat.Row1.Pos1.IsBelted:
+      transform:
+        fullmapping:
+          BUCKLED: "true"
+          UNBUCKLED: "false"
+
+VCFRONT_passengerPresent:
+  minupdatedelay: 1000
+  targets:
+    Vehicle.Cabin.Seat.Row1.Pos2.HasPassenger:
+      transform:
+        fullmapping:
+          1: "true"
+          0: "false"
+
+VCRIGHT_brakeLightStatus:
+  minupdatedelay: 100
+  targets: 
+    Vehicle.Body.Lights.IsBrakeOn:
+      transform:
+        fullmapping:
+          LIGHT_OFF: "false"
+          LIGHT_ON: "true"
+          LIGHT_FAULT: "false"
+          LIGHT_SNA: "false"
+
+#VCRIGHT_interiorTrunkLightStatus Not in VSS
+
+VCRIGHT_rearFogLightStatus:
+  minupdatedelay: 100
+  targets: 
+    Vehicle.Body.Lights.IsRearFogOn:
+      transform:
+        fullmapping:
+          LIGHT_OFF: "false"
+          LIGHT_ON: "true"
+          LIGHT_FAULT: "false"
+          LIGHT_SNA: "false"
+
+VCRIGHT_reverseLightStatus:
+  minupdatedelay: 100
+  targets: 
+    Vehicle.Body.Lights.IsBackupOn:
+      transform:
+        fullmapping:
+          LIGHT_OFF: "false"
+          LIGHT_ON: "true"
+          LIGHT_FAULT: "false"
+          LIGHT_SNA: "false"
+
+VCRIGHT_turnSignalStatus:
+  minupdatedelay: 100
+  targets: 
+    Vehicle.Body.Lights.IsRightIndicatorOn:
+      transform:
+        fullmapping:
+          LIGHT_OFF: "false"
+          LIGHT_ON: "true"
+          LIGHT_FAULT: "false"
+          LIGHT_SNA: "false"
+
+VCLEFT_turnSignalStatus:
+  minupdatedelay: 100
+  targets: 
+    Vehicle.Body.Lights.IsLeftIndicatorOn:
+      transform:
+        fullmapping:
+          LIGHT_OFF: "false"
+          LIGHT_ON: "true"
+          LIGHT_FAULT: "false"
+          LIGHT_SNA: "false"
+
+
+# The values really called "TRAILER_LIGHT_XXX", in DBC, probably a typo
+VCLEFT_trailerDetected:
+  minupdatedelay: 3000
+  targets:
+    Vehicle.Trailer.Connected:
+      transform:
+        fullmapping:
+          TRAILER_LIGHT_DETECTION_SNA: "false"
+          TRAILER_LIGHT_DETECTION_DETECTED: "true"
+          TRAILER_LIGHT_DETECTION_FAULT: "false"
+          TRAILER_LIGHT_DETECTION_NOT_DETECTED: "false"
+
