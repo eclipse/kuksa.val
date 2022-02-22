@@ -11,7 +11,7 @@
 # *****************************************************************************
 
 set(gRPC_SSL_PROVIDER "package" CACHE STRING "Provider of ssl library")
-set(GRPC_VER 1.40.0)
+set(GRPC_VER 1.44.0)
 
 find_package(Protobuf)
 find_package(gRPC ${GRPC_VER} EXACT CONFIG)
