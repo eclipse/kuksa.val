@@ -97,6 +97,16 @@ void checkEnumType(jsoncons::json &enumDefinition, jsoncons::json &val ) {
     throw outOfBoundException(msg.str());
 }
 
+void VssDatabase::checkArrayType(std::string datatype, jsoncons::json &val ) {
+    jsoncons::json metadata;
+    metadata["datatype"] = datatype;
+    for (auto v : val.array_range())
+    {
+        std::cout << v << std::endl;
+        checkAndSanitizeType(metadata, v);
+    }
+}
+
 
 /** This will check whether &val val is a valid value for the sensor described
  *  by meta  and whether  it is within the limits defined by VSS if any */
@@ -139,6 +149,9 @@ void VssDatabase::checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val
       if (meta.contains("enum") ) {
         checkEnumType(meta["enum"], val);
       }
+    }
+    else if (dt.rfind("[]") == dt.size()-2){
+        checkArrayType(dt.substr(0, dt.size()-2), val);
     }
     else {
       std::string msg = "The datatype " + dt + " is not supported ";

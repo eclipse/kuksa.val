@@ -69,5 +69,9 @@ class VssDatabase : public IVssDatabase {
 
   void applyDefaultValues(jsoncons::json &tree, VSSPath currentPath);
 
+  private:
+
+    void checkArrayType(std::string datatype, jsoncons::json &val );
+
 };
 #endif
