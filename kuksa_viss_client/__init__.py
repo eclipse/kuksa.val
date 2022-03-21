@@ -120,7 +120,7 @@ class KuksaClientThread(threading.Thread):
         req = {}
         req["action"]= "set"
         req["path"] = path
-        req["value"] = value
+        req["value"] = json.loads(value)
         return self._sendReceiveMsg(req, timeout)
 
 
