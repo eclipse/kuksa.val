@@ -362,3 +362,10 @@ VCLEFT_trailerDetected:
           TRAILER_LIGHT_DETECTION_FAULT: "false"
           TRAILER_LIGHT_DETECTION_NOT_DETECTED: "false"
 
+# Mapping RearPower to EngineLoad 
+RearPower266:
+  minupdatedelay: 100
+  targets:
+    Vehicle.OBD.EngineLoad:
+      transform:
+        math: "floor(abs(x/5))"
