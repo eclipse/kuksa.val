@@ -43,10 +43,15 @@ KUKSA.val supports VSS1 (dot-seperated) and VSS2 paths (slash-seperated) paths, 
 ```json 
 {
     "action": "get", 
-    "path": "Vehicle.Speed", 
-    "requestId": "82176895204605218443916772566374508384", 
-    "ts": 1608121891, 
-    "value": "100"
+    "data": {
+        "dp": {
+            "ts": "2022-03-22T16:25:52.1647962752Z", 
+            "value": 200
+        }, 
+        "path": "Vehicle.Speed"
+    }, 
+    "requestId": "1454963f-8b48-4e23-bc1b-7cd14d0cc22a", 
+    "ts": "2022-03-22T16:25:58.1647962758Z"
 }
 ```
 
@@ -70,7 +75,7 @@ The same works with VSS2 paths
     "data": {
         "dp": {
             "ts": "2021-07-13T20:27:17.1626204437Z", 
-            "value": "200"
+            "value": 200
         }, 
         "path": "Vehicle/Speed"
     }, 
