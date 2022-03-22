@@ -71,7 +71,7 @@ class VssDatabase : public IVssDatabase {
 
   private:
 
-    void checkArrayType(std::string datatype, jsoncons::json &val );
+    void checkArrayType(std::string& subdatatype, jsoncons::json &val);
 
 };
 #endif

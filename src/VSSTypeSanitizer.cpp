@@ -97,9 +97,9 @@ void checkEnumType(jsoncons::json &enumDefinition, jsoncons::json &val ) {
     throw outOfBoundException(msg.str());
 }
 
-void VssDatabase::checkArrayType(std::string datatype, jsoncons::json &val ) {
+void VssDatabase::checkArrayType(std::string& subdatatype, jsoncons::json &val) {
     jsoncons::json metadata;
-    metadata["datatype"] = datatype;
+    metadata["datatype"] = subdatatype;
     for (auto v : val.array_range())
     {
         checkAndSanitizeType(metadata, v);
