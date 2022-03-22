@@ -42,7 +42,7 @@
 
 namespace {
 // common resources for tests
-std::string validFilename{"test_vss_rel_2.0.json"};
+std::string validFilename{"test_vss_rel_2.2.json"};
 
 std::shared_ptr<ILoggerMock> logMock;
 std::shared_ptr<IAuthenticatorMock> authMock;
@@ -63,7 +63,7 @@ struct TestSuiteFixture {
     accCheckMock = std::make_shared<IAccessCheckerMock>();
     subHandlerMock = std::make_shared<ISubscriptionHandlerMock>();
 
-    std::string vss_file{"test_vss_rel_2.0.json"};
+    std::string vss_file{validFilename};
 
     MOCK_EXPECT(logMock->Log).at_least(0);  // ignore log events
     db = std::make_shared<VssDatabase>(logMock, subHandlerMock);
@@ -132,6 +132,54 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
   BOOST_TEST(res == expectedJson);
 }
 
+/** Set an array */
+BOOST_AUTO_TEST_CASE(Gen2_Set_Array) {
+  kuksa::kuksaChannel channel;
+  channel.set_authorized(false);
+  channel.set_connectionid(1);
+
+  jsoncons::json jsonSetRequestForSignal;
+
+  string requestId = "1";
+  std::string path{"Vehicle/OBD/DTCList"};
+  std::string value{R"(
+    ["dtc1", "dtc2"]
+  )"};
+  const VSSPath vss_path = VSSPath::fromVSSGen2(path);
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["requestId"] = requestId;
+  jsonSetRequestForSignal["value"] = jsoncons::json::parse(value);
+
+  std::string expectedJsonString{R"(
+      {
+    "action": "set", 
+    "requestId": "1"
+    }
+      )"};
+  jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
+
+  // Write access has been checked
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+      .with(mock::any, vss_path)
+      .returns(true);
+
+  // Notify subscribers
+  MOCK_EXPECT(subHandlerMock->updateByUUID)
+      .once()
+      .with(mock::any, mock::any)
+      .returns(true);
+
+  // run UUT
+  auto resStr =
+      processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  verify_and_erase_timestamp(res);
+
+  BOOST_TEST(res == expectedJson);
+}
 /** Send an invalid JSON */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
   kuksa::kuksaChannel channel;

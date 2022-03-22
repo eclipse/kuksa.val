@@ -102,7 +102,6 @@ void VssDatabase::checkArrayType(std::string datatype, jsoncons::json &val ) {
     metadata["datatype"] = datatype;
     for (auto v : val.array_range())
     {
-        std::cout << v << std::endl;
         checkAndSanitizeType(metadata, v);
     }
 }
