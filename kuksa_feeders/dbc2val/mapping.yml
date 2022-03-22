@@ -52,7 +52,7 @@ DI_gear:
         fullmapping:
           DI_GEAR_D: "false"
           DI_GEAR_INVALID: "false"
-          DI_GEAR_P: "frue"
+          DI_GEAR_P: "true"
           DI_GEAR_R: "false"
 
 
