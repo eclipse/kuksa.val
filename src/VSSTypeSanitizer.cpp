@@ -150,7 +150,8 @@ void VssDatabase::checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val
       }
     }
     else if (dt.rfind("[]") == dt.size()-2){
-        checkArrayType(dt.substr(0, dt.size()-2), val);
+        std::string subdatatype = dt.substr(0, dt.size()-2);
+        checkArrayType(subdatatype, val);
     }
     else {
       std::string msg = "The datatype " + dt + " is not supported ";
