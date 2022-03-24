@@ -17,7 +17,7 @@ RUN apt-get  update && DEBIAN_FRONTEND="noninteractive" apt-get -y install libss
                         git \
                         cmake \
                         libmosquitto-dev \
-                        gcovr
+                        gcovr lcov
 
 # Build and install Boost 1.75
 ENV BOOST_VER=1.75.0
