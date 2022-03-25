@@ -121,8 +121,11 @@ class KuksaClientThread(threading.Thread):
         req["action"]= "set"
         req["path"] = path
         try:
-            if isinstance(json.loads(value), list):
-                req["value"] = json.loads(value)
+            jsonValue = json.loads(value)
+            if isinstance(jsonValue, list):
+                req["value"] = [] 
+                for v in jsonValue:
+                    req["value"].append(str(v))
             else:
                 req["value"] = str(value)
         except json.decoder.JSONDecodeError:

@@ -100,9 +100,20 @@ void checkEnumType(jsoncons::json &enumDefinition, jsoncons::json &val ) {
 void VssDatabase::checkArrayType(std::string& subdatatype, jsoncons::json &val) {
     jsoncons::json metadata;
     metadata["datatype"] = subdatatype;
-    for (auto v : val.array_range())
-    {
-        checkAndSanitizeType(metadata, v);
+    try{
+        for (auto v : val.array_range())
+        {
+            checkAndSanitizeType(metadata, v);
+        }
+    }
+    catch(std::exception const& e) {
+      std::stringstream msg;
+      msg << "Value " << val << " can not be converted to defined type " << subdatatype << "[]. Reason: " << e.what();
+      throw outOfBoundException(msg.str());
+    } catch(...) {
+      std::stringstream msg;
+      msg << "Value " << val << " can not be converted to defined type " << subdatatype << "[]. Reason: " << boost::current_exception_diagnostic_information();
+      throw outOfBoundException(msg.str());
     }
 }
 
