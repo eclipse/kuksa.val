@@ -29,7 +29,7 @@ mkdir -p ${builddir}
 echo "Go to build directory ${builddir}"
 cd ${builddir}
 
-cmake -DBUILD_UNIT_TEST=ON -DCTEST_RESULT_CODE=no -DCATCH_ENABLE_COVERAGE=ON ..
+cmake -DBUILD_UNIT_TEST=ON -DCTEST_RESULT_CODE=no -DENABLE_COVERAGE=ON ..
 
 make -j8
 

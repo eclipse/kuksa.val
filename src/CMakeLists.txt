@@ -123,10 +123,17 @@ target_include_directories(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${
 target_link_libraries(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
 target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
 
+
 if(BUILD_EXE)
   add_executable(${SERVER_EXE_NAME} main.cpp
-  ${PROTO_SRCS}
-  ${GRPC_SRCS})
+    ${PROTO_SRCS}
+    ${GRPC_SRCS}
+  )
+
+  if (ENABLE_COVERAGE)
+    add_coverage(${SERVER_EXE_NAME})
+  endif()
+
   ## GRPC targets
   add_executable(${GRPC_CLIENT_EXE_NAME} "${GRPC_CLIENT_EXE_NAME}.cpp")
 

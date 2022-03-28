@@ -90,6 +90,20 @@ add_library(turtle INTERFACE)
 target_include_directories(turtle SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party-libs/turtle/include)
 
 ###
+# codecov
+if (ENABLE_COVERAGE)
+  FetchContent_Declare(
+    cmake-codecov
+    GIT_REPOSITORY https://github.com/RWTH-HPC/CMake-codecov.git
+    GIT_TAG        1974181d8515441329e3a03ccf47a99518402491
+  )
+  FetchContent_Populate(cmake-codecov)
+  set(CMAKE_MODULE_PATH "${cmake-codecov_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+  set(ENABLE_COVERAGE ON CACHE BOOL "Enable coverage build." FORCE)
+  find_package(codecov)
+endif()
+
+###
 # Add project subdirectories to build
 
 add_subdirectory(src)
@@ -99,3 +113,9 @@ add_subdirectory(test)
 add_subdirectory(test/unit-test)
 
 
+###
+# codecov
+if (ENABLE_COVERAGE)
+  list(APPEND LCOV_REMOVE_PATTERNS "'/usr/*'")
+  coverage_evaluate()
+endif()
