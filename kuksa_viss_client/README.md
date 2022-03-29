@@ -55,6 +55,29 @@ updateVISSTree      Update VISS Tree Entry
 ```
 
 Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](../doc/liveUpdateVSSTree.md).
+
+**Note**: You can also use `setValue` to change the value of an array, but the value should not contains any non-quoted spaces. Consider the following examples:
+
+```
+Test Client> setValue Vehicle.OBD.DTCList ["dtc1","dtc2"]
+{
+    "action": "set", 
+    "requestId": "f7b199ce-4d86-4759-8d9a-d6f8f935722d", 
+    "ts": "2022-03-22T17:19:34.1647965974Z"
+}
+
+Test Client> setValue Vehicle.OBD.DTCList '["dtc1", "dtc2"]'
+{
+    "action": "set", 
+    "requestId": "d4a19322-67d8-4fad-aa8a-2336404414be", 
+    "ts": "2022-03-22T17:19:44.1647965984Z"
+}
+
+Test Client> setValue Vehicle.OBD.DTCList ["dtc1", "dtc2"]
+usage: setValue [-h] Path Value
+setValue: error: unrecognized arguments: dtc2 ]
+```
+
 #### Docker
 You can build a docker image of the testclient using the [`Dockerfile`](./Dockerfile). Not the most effcient way to pack a small python script, but it is easy to get started. The Dockerfile needs to be executed on the parent directory (so it include the needed certificates and `pip` package configuration).
 

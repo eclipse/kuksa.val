@@ -143,6 +143,16 @@ BOOST_AUTO_TEST_CASE(uint8_limits) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
+BOOST_AUTO_TEST_CASE(uint8_array) {
+  jsoncons::json meta = createUnlimitedMeta("uint8[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"10", "127"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value.push_back("-10");
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+
 BOOST_AUTO_TEST_CASE(int8_nolimits) {
   jsoncons::json meta = createUnlimitedMeta("int8");
   jsoncons::json value = "-10";
@@ -173,6 +183,14 @@ BOOST_AUTO_TEST_CASE(int8_limits) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
+BOOST_AUTO_TEST_CASE(int8_array) {
+  jsoncons::json meta = createUnlimitedMeta("int8[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"10", "127"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value.push_back("-129");
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
 
 BOOST_AUTO_TEST_CASE(uint16_nolimits) {
   jsoncons::json meta = createUnlimitedMeta("uint16");
@@ -204,6 +222,15 @@ BOOST_AUTO_TEST_CASE(uint16_limits) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
+BOOST_AUTO_TEST_CASE(uint16_array) {
+  jsoncons::json meta = createUnlimitedMeta("uint16[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"10", "4096"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value.push_back("-129");
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
 BOOST_AUTO_TEST_CASE(int16_nolimits) {
   jsoncons::json meta = createUnlimitedMeta("int16");
   jsoncons::json value = "-10";
@@ -231,6 +258,15 @@ BOOST_AUTO_TEST_CASE(int16_limits) {
   BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
 
   meta = createMaxlimitedMeta("int16", 10);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(int16_array) {
+  jsoncons::json meta = createUnlimitedMeta("int16[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"10", "-10"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value.push_back("65600");
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
@@ -265,6 +301,15 @@ BOOST_AUTO_TEST_CASE(uint32_limits) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
+BOOST_AUTO_TEST_CASE(uint32_array) {
+  jsoncons::json meta = createUnlimitedMeta("uint32[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"10", "1000"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value.push_back("-10");
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
 BOOST_AUTO_TEST_CASE(int32_nolimits) {
   jsoncons::json meta = createUnlimitedMeta("int32");
   jsoncons::json value = "10";
@@ -292,6 +337,15 @@ BOOST_AUTO_TEST_CASE(int32_limits) {
   BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
 
   meta = createMaxlimitedMeta("int32", 38000);
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+BOOST_AUTO_TEST_CASE(int32_array) {
+  jsoncons::json meta = createUnlimitedMeta("int32[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"10", "300"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value.push_back("-4294967297");
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
@@ -334,6 +388,14 @@ BOOST_AUTO_TEST_CASE(uint64_limits) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
+BOOST_AUTO_TEST_CASE(uint64_array) {
+  jsoncons::json meta = createUnlimitedMeta("uint64[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"10", "100000"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value.push_back("-10");
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
 
 BOOST_AUTO_TEST_CASE(int64_nolimits) {
   jsoncons::json meta = createUnlimitedMeta("int64");
@@ -365,6 +427,14 @@ BOOST_AUTO_TEST_CASE(int64_limits) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
+BOOST_AUTO_TEST_CASE(int64_array) {
+  jsoncons::json meta = createUnlimitedMeta("int64[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"10", "-100000"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value.push_back("-18446744073709551617");
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
 
 BOOST_AUTO_TEST_CASE(float_nolimits) {
   jsoncons::json meta = createUnlimitedMeta("float");
@@ -396,6 +466,14 @@ BOOST_AUTO_TEST_CASE(float_limits) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
+BOOST_AUTO_TEST_CASE(float_array) {
+  jsoncons::json meta = createUnlimitedMeta("float[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"10", "-10"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value.push_back("-4e38");
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
 //Only "limited" double tests, as "long double" might not be longer than double
 //on all platforms, using som "bigint" library is to expensive
 BOOST_AUTO_TEST_CASE(double_limits) {
@@ -429,6 +507,15 @@ BOOST_AUTO_TEST_CASE(boolean) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
+BOOST_AUTO_TEST_CASE(boolean_array) {
+  jsoncons::json meta = createUnlimitedMeta("boolean[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"true", "false"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value.push_back("False");
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
 BOOST_AUTO_TEST_CASE(enumtype) {
   jsoncons::json meta = createEnumMeta("[\"bla\", \"blu\"]");
   jsoncons::json value = "bla";
@@ -450,6 +537,11 @@ BOOST_AUTO_TEST_CASE(string) {
   BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
 }
 
+BOOST_AUTO_TEST_CASE(string_array) {
+  jsoncons::json meta = createUnlimitedMeta("string[]");
+  jsoncons::json value(jsoncons::json_array_arg, {"Use", "Iceoryx!"});
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+}
 
 BOOST_AUTO_TEST_CASE(bogus) {
   jsoncons::json meta = createUnlimitedMeta("not_a_ttype");

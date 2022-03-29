@@ -89,6 +89,10 @@ if(BUILD_UNIT_TEST)
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE jsoncons jwt-cpp gtest_main gmock)
 
-  configure_file(test_vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.2.json ${CMAKE_CURRENT_BINARY_DIR}/test_vss_rel_2.2.json COPYONLY)
+
+  # old test json file to satisfy old test cases 
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test_vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR}/test_vss_rel_2.0.json COPYONLY)
+
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../kuksa_certificates/jwt/jwt.key.pub ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 endif(BUILD_UNIT_TEST)

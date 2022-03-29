@@ -120,7 +120,17 @@ class KuksaClientThread(threading.Thread):
         req = {}
         req["action"]= "set"
         req["path"] = path
-        req["value"] = value
+        try:
+            jsonValue = json.loads(value)
+            if isinstance(jsonValue, list):
+                req["value"] = [] 
+                for v in jsonValue:
+                    req["value"].append(str(v))
+            else:
+                req["value"] = str(value)
+        except json.decoder.JSONDecodeError:
+            req["value"] = str(value)
+
         return self._sendReceiveMsg(req, timeout)
 
 
