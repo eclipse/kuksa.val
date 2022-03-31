@@ -10,7 +10,7 @@ coverage:
       default:
         target: 80%
   ignore:
-    - "**/external/clara.hpp"
+    - "test/"
 
 
 codecov:

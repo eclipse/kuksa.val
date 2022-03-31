@@ -23,9 +23,12 @@ set(SERVER_EXE_NAME "${PROJECT_NAME}" )
 set(SERVER_OBJ_LIB_NAME ${SERVER_EXE_NAME}-object )
 set(SERVER_LIB_NAME ${SERVER_EXE_NAME}-core )
 set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
+set(GRPC_SERVER_LIB_NAME kuksa_viss_grpc_server) 
 set(GRPC_CLIENT_EXE_NAME kuksa_viss_grpc_client) 
 
 
+### 
+# Setup grpc
 set(proto_gen_dir "${CMAKE_BINARY_DIR}/proto")
 set(kuksa_proto "${CMAKE_CURRENT_SOURCE_DIR}/../protos/kuksa.proto")
 get_filename_component(kuksa_proto_path "${kuksa_proto}" PATH)
@@ -35,6 +38,15 @@ protobuf_gen(PROTO ${kuksa_proto}
     OUTPUT ${proto_gen_dir}
 )
 include_directories("${proto_gen_dir}")
+add_library(${GRPC_SERVER_LIB_NAME} OBJECT ${PROTO_SRCS}
+  ${GRPC_SRCS}
+)
+target_link_libraries(${GRPC_SERVER_LIB_NAME}
+  PUBLIC
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF}
+    ${_REFLECTION}
+)
 
 
 ###
@@ -52,8 +64,7 @@ list(REMOVE_ITEM LIB_SOURCES "${PROJECT_SOURCE_DIR}/main.cpp")
 
 ###
 # set main 'object library' as target to prevent multiple compilations of same sources
-add_library(${SERVER_OBJ_LIB_NAME} OBJECT ${LIB_SOURCES} ${PROTO_SRCS}
-${GRPC_SRCS})
+add_library(${SERVER_OBJ_LIB_NAME} OBJECT ${LIB_SOURCES})
 
 target_compile_features(${SERVER_OBJ_LIB_NAME} PUBLIC cxx_std_14)
 
@@ -69,9 +80,8 @@ target_include_directories(${SERVER_OBJ_LIB_NAME}
 
 target_link_libraries(${SERVER_OBJ_LIB_NAME}
   PUBLIC
-    ${_REFLECTION}
-    ${_GRPC_GRPCPP}
-    ${_PROTOBUF_LIBPROTOBUF})
+    ${GRPC_SERVER_LIB_NAME}
+)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   target_compile_options(${SERVER_OBJ_LIB_NAME} PUBLIC -Wall -Wextra -Werror -Wno-error=unused-result -Wno-error=unused-parameter -Wno-error=deprecated-declarations -Wno-error=deprecated-copy -Wno-error=nonnull)
@@ -124,18 +134,19 @@ target_link_libraries(${SERVER_LIB_NAME}        PUBLIC $<TARGET_PROPERTY:${SERVE
 target_link_libraries(${SERVER_LIB_STATIC_NAME} PUBLIC $<TARGET_PROPERTY:${SERVER_OBJ_LIB_NAME},INTERFACE_LINK_LIBRARIES>)
 
 
+if (ENABLE_COVERAGE)
+  add_coverage(${SERVER_OBJ_LIB_NAME})
+endif()
+
+
+
 if(BUILD_EXE)
   add_executable(${SERVER_EXE_NAME} main.cpp
-    ${PROTO_SRCS}
-    ${GRPC_SRCS}
   )
 
   if (ENABLE_COVERAGE)
     add_coverage(${SERVER_EXE_NAME})
   endif()
-
-  ## GRPC targets
-  add_executable(${GRPC_CLIENT_EXE_NAME} "${GRPC_CLIENT_EXE_NAME}.cpp")
 
   # using static library to simplify existing packaging and maintainance
   target_link_libraries(${SERVER_EXE_NAME} PRIVATE ${SERVER_LIB_STATIC_NAME})
@@ -175,7 +186,14 @@ if(BUILD_EXE)
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../data/vss-core/vss_release_2.2.json DESTINATION bin/${SERVER_EXE_NAME})
 
 
-  #GRPC
+  #GRPC client
+  
+  add_executable(${GRPC_CLIENT_EXE_NAME} "${GRPC_CLIENT_EXE_NAME}.cpp")
+
+  if (ENABLE_COVERAGE)
+    add_coverage(${GRPC_CLIENT_EXE_NAME})
+  endif()
+
   # using static library to simplify existing packaging and maintainance
   target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${SERVER_LIB_STATIC_NAME})
 
@@ -183,9 +201,9 @@ if(BUILD_EXE)
   target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE Threads::Threads)
   target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
   target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE "-ldl")
   target_include_directories(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIR})
   target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_LIBRARY})
+  target_link_options(${GRPC_CLIENT_EXE_NAME} PRIVATE "-ldl")
   message(STATUS "Build target files for grpc client")
 
   # CPack
