@@ -23,7 +23,7 @@ set(SERVER_EXE_NAME "${PROJECT_NAME}" )
 set(SERVER_OBJ_LIB_NAME ${SERVER_EXE_NAME}-object )
 set(SERVER_LIB_NAME ${SERVER_EXE_NAME}-core )
 set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
-set(GRPC_SERVER_LIB_NAME kuksa_viss_grpc_server) 
+set(GRPC_GENERATED_LIB_NAME kuksa_viss_grpc_generated-object) 
 set(GRPC_CLIENT_EXE_NAME kuksa_viss_grpc_client) 
 
 
@@ -38,10 +38,10 @@ protobuf_gen(PROTO ${kuksa_proto}
     OUTPUT ${proto_gen_dir}
 )
 include_directories("${proto_gen_dir}")
-add_library(${GRPC_SERVER_LIB_NAME} OBJECT ${PROTO_SRCS}
+add_library(${GRPC_GENERATED_LIB_NAME} OBJECT ${PROTO_SRCS}
   ${GRPC_SRCS}
 )
-target_link_libraries(${GRPC_SERVER_LIB_NAME}
+target_link_libraries(${GRPC_GENERATED_LIB_NAME}
   PUBLIC
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF}
@@ -80,7 +80,7 @@ target_include_directories(${SERVER_OBJ_LIB_NAME}
 
 target_link_libraries(${SERVER_OBJ_LIB_NAME}
   PUBLIC
-    ${GRPC_SERVER_LIB_NAME}
+    ${GRPC_GENERATED_LIB_NAME}
 )
 
 if(CMAKE_COMPILER_IS_GNUCXX)
