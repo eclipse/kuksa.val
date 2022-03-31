@@ -1,3 +1,5 @@
+ [![codecov](https://codecov.io/gh/eclipse/kuksa.val/branch/master/graph/badge.svg?token=M4FT175771)](https://codecov.io/gh/eclipse/kuksa.val)
+
 # KUKSA.VAL
 ![kuksa.val Logo](./doc/pictures/logo.png)
 
