@@ -69,7 +69,7 @@ if(BUILD_UNIT_TEST)
   # declares a test with our executable
   set(CTEST_RESULT_CODE yes CACHE BOOL "Build unit tests")
   add_test(NAME ${UNITTEST_EXE_NAME}
-    COMMAND $<TARGET_FILE:${UNITTEST_EXE_NAME}> --log_format=JUNIT --log_sink=results.xml --log_level=all --report_level=short --result_code=${CTEST_RESULT_CODE}
+    COMMAND $<TARGET_FILE:${UNITTEST_EXE_NAME}> --log_format=XML --log_sink=results.xml --log_level=all --report_level=short --result_code=${CTEST_RESULT_CODE}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   )
   target_compile_features(${UNITTEST_EXE_NAME} PRIVATE cxx_std_14)
@@ -95,4 +95,7 @@ if(BUILD_UNIT_TEST)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test_vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR}/test_vss_rel_2.0.json COPYONLY)
 
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../kuksa_certificates/jwt/jwt.key.pub ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  if (ENABLE_COVERAGE)
+    add_coverage(${UNITTEST_EXE_NAME})
+  endif()
 endif(BUILD_UNIT_TEST)

@@ -29,15 +29,16 @@ mkdir -p ${builddir}
 echo "Go to build directory ${builddir}"
 cd ${builddir}
 
-cmake -DCMAKE_BUILD_TYPE=Coverage -DBUILD_UNIT_TEST=ON -DCTEST_RESULT_CODE=no ..
+cmake -DBUILD_UNIT_TEST=ON -DCTEST_RESULT_CODE=no -DENABLE_COVERAGE=ON ..
 
 make -j8
 
 rm -rf test/unit-test/results.xml
-rm -rf coverage.xml
+rm -rf lcov/data/capture/all_targets.info
 
 ctest --output-on-failure
-gcovr -r ..  --branches -e ../test/ -e ../3rd-party-libs/ --xml -o coverage.xml
+make lcov 
+lcov --list lcov/data/capture/all_targets.info
 
 echo "archive artifacts under ${artifactdir}"
 cd ${basepath}
@@ -46,4 +47,4 @@ then
   mkdir -p ${artifactdir}
 fi
 cp ${builddir}/test/unit-test/results.xml ${artifactdir}/
-cp ${builddir}/coverage.xml ${artifactdir}/
+cp ${builddir}/lcov/data/capture/all_targets.info ${artifactdir}/
