@@ -41,18 +41,19 @@ namespace JsonResponses {
     return ss.str();
   }
 
-  void malFormedRequest(std::string message, jsoncons::json& jsonResponse) {
+  void malFormedRequest(std::string message, jsoncons::json& jsonResponse, std::string requestId) {
     jsoncons::json error;
 
     error["number"] = 400;
     error["reason"] = "Bad Request";
     error["message"] = message;
     jsonResponse["error"] = error;
+    jsonResponse["requestId"] = requestId;
     jsonResponse["ts"] = getTimeStamp();
   }
-  std::string malFormedRequest(std::string message) {
+  std::string malFormedRequest(std::string message, std::string requestId) {
     jsoncons::json answer;
-    malFormedRequest(message, answer);
+    malFormedRequest(message, answer, requestId);
 
     std::stringstream ss;
     ss << pretty_print(answer);

@@ -155,7 +155,7 @@ int SubscriptionHandler::updateByUUID(const string &signalUUID, const json &data
   for (auto subID : handle->second) {
     std::lock_guard<std::mutex> lock(subMutex);
     tuple<SubscriptionId, ConnectionId, json> newSub;
-    logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByUUID: new value set at path " + std::to_string(subID.first) + ss.str());
+    logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByUUID: new value set at path " + std::to_string(subID.first) + ": " + ss.str());
     newSub = std::make_tuple(subID.first, subID.second, data);
     buffer.push(newSub);
     c.notify_one();

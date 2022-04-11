@@ -70,6 +70,54 @@ static const char* SCHEMA_SET=R"(
 }
 )";
 
+
+static const char* SCHEMA_SUBSCRIBE=R"(
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Subscribe Request",
+    "description": "Allows the client to subscribe to time-varying signal notifications on the server.",
+    "type": "object",
+    "required": ["action", "path", "requestId"],
+    "properties": {
+        "action": {
+            "enum": [ "subscribe" ],
+            "description": "The identifier for the subscription request"
+        },
+        "path": {
+            "$ref": "viss#/definitions/path"
+        },
+        "filters": {
+            "$ref": "viss#/definitions/filters"
+        },
+        "requestId": {
+            "$ref": "viss#/definitions/requestId"
+        }
+    }
+}
+)";
+
+static const char* SCHEMA_UNSUBSCRIBE=R"(
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Unsubscribe Request",
+    "description": "Allows the client to unsubscribe to time-varying signal notifications on the server.",
+    "type": "object",
+    "required": ["action", "subscriptionId", "requestId"],
+    "properties": {
+        "action": {
+            "enum": [ "unsubscribe" ],
+            "description": "The identifier for the unsubscribe request"
+        },
+        "subscriptionId": {
+            "$ref": "viss#/definitions/subscriptionId"
+        }, 
+        "requestId": {
+            "$ref": "viss#/definitions/requestId"
+        }
+    }
+}
+)";
+
 static const char* SCHEMA_UPDATE_VSS_TREE=R"(
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
