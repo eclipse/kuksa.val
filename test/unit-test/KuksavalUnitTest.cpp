@@ -2476,7 +2476,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
 
    BOOST_TEST(response_json.contains("subscriptionId") == true);
 
-   int subID = response_json["subscriptionId"].as<int>();
+   std::string subID = response_json["subscriptionId"].as<std::string>();
 
    // checked if subid is available. now remove to assert.
    response_json.erase("subscriptionId");
@@ -2501,7 +2501,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
    BOOST_TEST(unsub_response_json.contains("subscriptionId") == true);
 
    // compare the subit passed and returned.
-   BOOST_TEST(unsub_response_json["subscriptionId"].as<int>() == subID);
+   BOOST_TEST(unsub_response_json["subscriptionId"].as<std::string>() == subID);
 
    // remove subid to assert other part of the response.because these are variables.
    unsub_response_json.erase("subscriptionId");
@@ -2564,7 +2564,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
 
    BOOST_TEST(response_json.contains("subscriptionId") == true);
 
-   int subID = response_json["subscriptionId"].as<int>();
+   std::string subID = response_json["subscriptionId"].as<std::string>();
 
    // checked if subid is available. now remove to assert.
    response_json.erase("subscriptionId");
@@ -2590,7 +2590,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
    BOOST_TEST(unsub_response_json.contains("subscriptionId") == true);
 
    // compare the subit passed and returned.
-   BOOST_TEST(unsub_response_json["subscriptionId"].as<int>() == subID);
+   BOOST_TEST(unsub_response_json["subscriptionId"].as<std::string>() == subID);
 
    // remove subid to assert other part of the response.because these are variables.
    unsub_response_json.erase("subscriptionId");
