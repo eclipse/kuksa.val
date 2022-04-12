@@ -1187,7 +1187,7 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 
    json expected = json::parse(R"({
                          "action":"get",
-                         "error":{"message":"I can not find Signal.*.RPM1 in my db","number":404,"reason":"Path not found"},
+                         "error":{"message":"I can not find Signal.*.RPM1 in my db","number":"404","reason":"Path not found"},
                          "requestId":"8756"
                          })");
 
@@ -1197,152 +1197,6 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 
    BOOST_TEST(response_json == expected);
 }
-
-/* Multiset not supported, will reappear with Gen2  support */
-/*
-BOOST_AUTO_TEST_CASE(process_query_set_withwildcard_invalid)
-{
-   WsChannel channel;
-   channel.setConnID(1234);
-   string authReq(R"({
-		"action": "authorize",
-		"requestId": "87568"
-	})");
-   json authReqJson = json::parse(authReq);
-   authReqJson["tokens"] = AUTH_JWT;
-   commandProc->processQuery(authReqJson.as_string(),channel);
-   string request(R"({
-		"action": "set",
-		"path": "Signal.OBD.*",
-                "value" : [{"RPM1" : 345} , {"Speed1" : 546}],
-		"requestId": "8756"
-	})");
-
-   string response = commandProc->processQuery(request,channel);
-
-   json expected = json::parse(R"({
-                              "action":"set",
-                              "error":{"message":"I can not find Signal.OBD.* in my db","number":404,"reason":"Path not found"},
-                              "requestId":"8756"
-                              })");
-
-   json response_json = json::parse(response);
-
-
-   BOOST_TEST(response_json.contains("ts") == true);
-
-   // remove timestamp to match
-   response_json.erase("ts");
-   BOOST_TEST(response_json == expected);
-}
-*/
-
-///HERE
-/* Multiset not supported, will reappear with Gen2  support */
-/*
-BOOST_AUTO_TEST_CASE(process_query_set_invalid_value)
-{
-   WsChannel channel;
-   channel.setConnID(1234);
-   string authReq(R"({
-		"action": "authorize",
-		"requestId": "87568"
-	})");
-   json authReqJson = json::parse(authReq);
-   authReqJson["tokens"] = AUTH_JWT;
-   commandProc->processQuery(authReqJson.as_string(),channel);
-   string request(R"({
-		"action": "set",
-		"path": "Vehicle.OBD.*",
-                "value" : [{"ThrottlePosition" : 34563843034034845945054}],
-		"requestId": "8756"
-	})");
-
-   string response = commandProc->processQuery(request,channel);
-
-   json expected = json::parse(R"({
-                               "action":"set",
-                               "error":{"message":"The type uint8 with value 3.45638e+22 is out of bound","number":400,"reason":"Value passed is out of bounds"},
-                               "requestId":"8756"
-                               })");
-
-   json response_json = json::parse(response);
-
-
-   BOOST_TEST(response_json.contains("ts") == true);
-
-   // remove timestamp to match
-   response_json.erase("ts");
-   BOOST_TEST(response_json == expected);
-}
-*/
-
-/* Multiset currently not supported, will come in Gen2 compliant way in the future */
-/*
-BOOST_AUTO_TEST_CASE(process_query_set_one_valid_one_invalid_value)
-{
-   WsChannel channel;
-   channel.setConnID(1234);
-   string authReq(R"({
-		"action": "authorize",
-		"requestId": "87568"
-	})");
-   json authReqJson = json::parse(authReq);
-   authReqJson["tokens"] = AUTH_JWT;
-   commandProc->processQuery(authReqJson.as_string(),channel);
-
-   string request(R"({
-		"action": "set",
-		"path": "Vehicle.OBD.*",
-                "value" : [{"ThrottlePosition" : 34563843034034845945054},{"EngineSpeed" : 1000}],
-		"requestId": "8756"
-	})");
-
-   string response = commandProc->processQuery(request,channel);
-
-   json expected = json::parse(R"({
-                               "action":"set",
-                               "error":{"message":"The type uint8 with value 3.45638e+22 is out of bound","number":400,"reason":"Value passed is out of bounds"},
-                               "requestId":"8756"
-                               })");
-
-   json response_json = json::parse(response);
-
-
-   BOOST_TEST(response_json.contains("ts") == true);
-
-   // remove timestamp to match
-   response_json.erase("ts");
-   BOOST_TEST(response_json == expected);
-
-
-   string request_getvalid(R"({
-		"action": "get",
-		"path": "Vehicle.*.EngineSpeed",
-		"requestId": "8756"
-	})");
-
-   string response_getvalid = commandProc->processQuery(request_getvalid,channel);
-
-   // This shows that the value from the previous test is not set because of out of bound exception for the ThrottlePosition value, Therefore the RPM was not set despite being   valid. if you swap the order in which the signals are set in above test case then the value here would be 1000.
-   json expected_getvalid = json::parse(R"({
-    "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": "8756",
-    "value": 2345
-    })");
-
-
-   json response_response_getvalid_json = json::parse(response_getvalid);
-
-
-   BOOST_TEST(response_response_getvalid_json.contains("ts") == true);
-
-   // remove timestamp to match
-   response_response_getvalid_json.erase("ts");
-   BOOST_TEST(response_response_getvalid_json == expected_getvalid);
-}
-*/
 
 //----------------------------------------------------Token permissions Tests ------------------------------------------------------------------------
 
@@ -1581,7 +1435,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"Insufficient read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"Insufficient read access to Vehicle.OBD.Speed","number":"403","reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
@@ -1629,7 +1483,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"Insufficient read access to Vehicle/OBD/EngineSpeed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"Insufficient read access to Vehicle/OBD/EngineSpeed","number":"403","reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
@@ -1838,7 +1692,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
 
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"Insufficient read access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"Insufficient read access to Vehicle.OBD.EngineSpeed","number":"403","reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
@@ -1887,7 +1741,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_wildcard_req
 
   json expected = json::parse(R"({
     "action":"get",
-    "error":{"message":"Insufficient read access to Vehicle.OBD.*","number":403,"reason":"Forbidden"},
+    "error":{"message":"Insufficient read access to Vehicle.OBD.*","number":"403","reason":"Forbidden"},
     "requestId":"8756"
     })");
 
@@ -1936,7 +1790,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_branch_path_
 
   json expected = json::parse(R"({
     "action":"get",
-    "error":{"message":"Insufficient read access to Vehicle.OBD","number":403,"reason":"Forbidden"},
+    "error":{"message":"Insufficient read access to Vehicle.OBD","number":"403","reason":"Forbidden"},
     "requestId":"8756"
     })");
 
@@ -2090,7 +1944,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
 
   json expected = json::parse(R"({
     "action":"set",
-    "error":{"message":"No write access to Vehicle.OBD.EngineSpeed","number":403,"reason":"Forbidden"},
+    "error":{"message":"No write access to Vehicle.OBD.EngineSpeed","number":"403","reason":"Forbidden"},
     "requestId":"8756"
     })");
 
@@ -2224,7 +2078,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
    //childs. So we test accordingly 
    json expected = json::parse(R"({
     "action":"set",
-    "error":{"message":"No write access to Vehicle/OBD/Speed","number":403,"reason":"Forbidden"},
+    "error":{"message":"No write access to Vehicle/OBD/Speed","number":"403","reason":"Forbidden"},
     "requestId":"8756"
     })");
     
@@ -2250,7 +2104,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
   json get_expected = json::parse(R"({
     "action": "get",
-    "error":{"message":"Insufficient read access to Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
+    "error":{"message":"Insufficient read access to Vehicle.OBD.Speed","number":"403","reason":"Forbidden"},
     "requestId": "8757"
     })");
 
@@ -2262,171 +2116,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 
 }
 
-
-/* No wildcard writes supported until implemented in Gen2 compliant way */
-/*
-BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_permitted_path)
-{
-/*
-    Token looks like this.
-
- {
-  "sub": "Example JWT",
-  "iss": "Eclipse kuksa",
-  "admin": true,
-  "iat": 1516239022,
-  "exp": 1609372800,
-  "kuksa-vss": {
-    "Vehicle.OBD.EngineSpeed": "wr",                     ("wr" or "rw" both work!)
-    "Vehicle.OBD.Speed": "w"
-  }
-}
-*/
-/*
-   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
-
-   WsChannel channel;
-   channel.setConnID(1234);
-   string authReq(R"({
-		"action": "authorize",
-		"requestId": "87568"
-	})");
-   json authReqJson = json::parse(authReq);
-   authReqJson["tokens"] = AUTH_TOKEN;
-   commandProc->processQuery(authReqJson.as_string(),channel);
-   string request(R"({
-		"action": "set",
-		"path": "Vehicle.*",
-                "value" : [{"OBD.Speed":35}, {"OBD.EngineSpeed":50}],
-		"requestId": "8756"
-	})");
-
-   string response = commandProc->processQuery(request,channel);
-
-  json expected = json::parse(R"({
-    "action":"set",
-    "requestId":"8756"
-    })");
-
-   json response_json = json::parse(response);
-
-
-   BOOST_TEST(response_json.contains("ts") == true);
-
-   // remove timestamp to match
-   response_json.erase("ts");
-   BOOST_TEST(response_json == expected);
-
-   // verify with a get request the the previous set has not worked.
-
-    string get_request(R"({
-		"action": "get",
-		"path": "Vehicle.OBD.EngineSpeed",
-		"requestId": "8756"
-	})");
-
-   string get_response = commandProc->processQuery(get_request,channel);
-
-  json get_expected = json::parse(R"({
-    "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": "8756",
-    "value": 50
-    })");
-
-   json get_response_json = json::parse(get_response);
-
-
-   BOOST_TEST(get_response_json.contains("ts") == true);
-
-   // remove timestamp to match
-   get_response_json.erase("ts");
-   BOOST_TEST(get_response_json == get_expected);
-}
-*/
-
-/* Wildcard writes not supported, until implemented Gen2 compliant */
-/*
-BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_in_unpermitted_path)
-{
-/*
-    Token looks like this.
-
- {
-  "sub": "Example JWT",
-  "iss": "Eclipse kuksa",
-  "admin": true,
-  "iat": 1516239022,
-  "exp": 1924948800,
-  "kuksa-vss": {
-    "Vehicle.OBD.EngineSpeed": "wr"    ("wr" or "rw" both work!)
-  }
-}
-*/
-
-/*
-   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIn19.O43MpewKMaYLyR0v_1c8STIiGt8fZMfkELda57RmVQxurdtOugT4iObXYF4xIDe68OOJPTk5KY4bYfCjHpYHuh9Cx1AeBAEya3x99KqIJsUhvzLuzvFO2iKbqgZOBt9miVPUC33tYuITNy3avUfzd12uC7a3fSGMlSoidtOfyBaUaxZJav-kGimgvhCUZvb4uHrjQW8ixDlXHgVtKddSmFj3F4fViJ2C0yFx_38c5F_sne5z55Y5zkDaXHVPRmskRZ5YyGpO4IF5KP5LgKR45iFU4_Pm3SmKfI3gpeF4AifyVT5zoE96Woj3KIvfnHG9Jog3ip-Kl4ikVkx_hyuSsvANGWaKx2xfmtrJ0GYQZqitMGBdW_VsCShInDJAkadSHzft6Efi8p0ysvKr5KvLUDb5vu28jSoAbMQs9ufOgUPNZvnTsYdVqaof-7Z7VEo_hJV3nQH5tFlvoMGrqQH2mGQTjDhHpNTWPotq3rMzDl8WbUjrJbDkFikKMByU-xv9pUWSWZ-ndxk45yLbpWUShZVsueoTDRO65kJvxuXPgmt68fiDSNJp4ZnmjeuC3TApv7UrqqPYKGUwpkz9gQF3_MLg2glEJUry5w9P-gEBObQ0mY5nM4W_5fMY_nDy1j1qUY4SsKi-0Xu45Dej3k-cqWoqWVwFEh3CiI4v7wQR_hY";
-
-   WsChannel channel;
-   channel.setConnID(1234);
-   string authReq(R"({
-		"action": "authorize",
-		"requestId": "87568"
-	})");
-   json authReqJson = json::parse(authReq);
-   authReqJson["tokens"] = AUTH_TOKEN;
-   commandProc_auth->processQuery(authReqJson.as_string(),channel);
-   string request(R"({
-		"action": "set",
-		"path": "Vehicle.OBD.*",
-                "value" : [{"Speed":35}, {"EngineSpeed":444}],
-		"requestId": "8756"
-	})");
-
-   string response = commandProc_auth->processQuery(request,channel);
-
-  json expected = json::parse(R"({
-    "action":"set",
-    "error":{"message":"Path(s) in set request do not have write access or is invalid","number":403,"reason":"Forbidden"},
-    "requestId":"8756"
-    })");
-
-   json response_json = json::parse(response);
-
-
-   BOOST_TEST(response_json.contains("ts") == true);
-
-   // remove timestamp to match
-   response_json.erase("ts");
-   BOOST_TEST(response_json == expected);
-
-   // verify with a get request the the previous set has not worked.
-
-    string get_request(R"({
-		"action": "get",
-		"path": "Vehicle.OBD.EngineSpeed",
-		"requestId": "8756"
-	})");
-
-   string get_response = commandProc_auth->processQuery(get_request,channel);
-
-  json get_expected = json::parse(R"({
-    "action": "get",
-    "path": "Vehicle.OBD.EngineSpeed",
-    "requestId": "8756",
-    "value": "---"
-    })");
-
-   json get_response_json = json::parse(get_response);
-
-
-   BOOST_TEST(get_response_json.contains("ts") == true);
-
-   // remove timestamp to match
-   get_response_json.erase("ts");
-   BOOST_TEST(get_response_json == get_expected);
-}
-*/
 
 
 //----------------------------------------------------subscription permission Tests ------------------------------------------------------------------------
@@ -2646,7 +2335,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission)
 
    json expected = json::parse(R"({
                    "action":"subscribe",
-                   "error":{"message":"no permission to subscribe to path Vehicle.OBD.Speed","number":403,"reason":"Forbidden"},
+                   "error":{"message":"no permission to subscribe to path Vehicle.OBD.Speed","number":"403","reason":"Forbidden"},
                    "requestId":"8778"
                    })");
 
@@ -2697,7 +2386,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath)
 
    json expected = json::parse(R"({
                    "action":"subscribe",
-                   "error":{"message":"I can not find Vehicle.OBD.EngineSpeed1 in my db","number":404,"reason":"Path not found"},
+                   "error":{"message":"I can not find Vehicle.OBD.EngineSpeed1 in my db","number":"404","reason":"Path not found"},
                    "requestId":"8778"
                    })");
 
@@ -2856,7 +2545,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard)
 
     json expected = json::parse(R"({
                                 "action":"subscribe",
-                                "error":{"message":"I can not find Signal.*.CatCamera in my db","number":404,"reason":"Path not found"},
+                                "error":{"message":"I can not find Signal.*.CatCamera in my db","number":"404","reason":"Path not found"},
                                 "requestId":"878787"
                                 })");
 

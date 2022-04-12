@@ -201,7 +201,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
     "action": "set",
     "error": {
       "message": "Schema error: #/requestId: Expected string, found uint64",
-      "number": 400,
+      "number": "400",
       "reason": "Bad Request"
     },
     "requestId": "100"
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
   "action": "set",
   "error": {
     "message": "Schema error: #: Required property \"requestId\" not found\n#/path: Expected string, found uint64",
-    "number": 400,
+    "number": "400",
     "reason": "Bad Request"
   },
   "requestId": "UNKNOWN"
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
   "action": "set",
   "error": {
     "message": "I can not find Vehicle/Fluxcapacitor/Charge in my db",
-    "number": 404,
+    "number": "404",
     "reason": "Path not found"
   },
   "requestId": "1"
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
   "action": "set",
   "error": {
     "message": "Can not set Vehicle/VehicleIdentification. Only sensor or actor leaves can be set.",
-    "number": 403,
+    "number": "403",
     "reason": "Forbidden"
   },
   "requestId": "1"
@@ -376,7 +376,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
   "action": "set",
   "error": {
     "message": "Can not set Vehicle/VehicleIdentification/Brand. Only sensor or actor leaves can be set.",
-    "number": 403,
+    "number": "403",
     "reason": "Forbidden"
   },
   "requestId": "1"

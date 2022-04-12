@@ -696,7 +696,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
   jsonSubscribeRequestForSignal["path"] = path;
   jsonSubscribeRequestForSignal["requestId"] = requestId;
 
-  jsonSignalValueErr["number"] = 400;
+  jsonSignalValueErr["number"] = "400";
   jsonSignalValueErr["reason"] = "Bad Request";
   jsonSignalValueErr["message"] = "Unknown";
   jsonSignalValue["action"] = "subscribe";
@@ -966,7 +966,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
   jsonUnsubscribeRequestForSignal["subscriptionId"] = std::to_string(subscriptionId);
   jsonUnsubscribeRequestForSignal["requestId"] = requestId;
 
-  jsonSignalValueErr["number"] = 400;
+  jsonSignalValueErr["number"] = "400";
   jsonSignalValueErr["reason"] = "Unknown error";
   jsonSignalValueErr["message"] = "Error while unsubscribing";
   jsonSignalValue["action"] = "unsubscribe";
@@ -1117,7 +1117,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
   jsonAuthRequest["requestId"] = requestId;
   jsonAuthRequest["tokens"] = dummyToken;
 
-  jsonValueErr["number"] = 401;
+  jsonValueErr["number"] = "401";
   jsonValueErr["reason"] = "Invalid Token";
   jsonValueErr["message"] = "Check the JWT token passed";
   jsonValue["action"] = "authorize";
@@ -1163,7 +1163,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  jsonValueErr["number"] = 400;
+  jsonValueErr["number"] = "400";
   jsonValueErr["reason"] = "Bad Request";
   jsonValueErr["message"] = "Key not found: 'action'";
 

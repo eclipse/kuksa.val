@@ -400,7 +400,7 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_brokenrequest) {
   "action": "updateVSSTree",
   "error": {
     "message": "Schema error: #: Required property \"metadata\" not found",
-    "number": 400,
+    "number": "400",
     "reason": "Bad Request"
   },
   "requestId": "1"

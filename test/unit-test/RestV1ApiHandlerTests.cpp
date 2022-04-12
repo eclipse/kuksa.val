@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(Given_GetMethod_When_InvalidRootResourceTarget_Shall_Return
   BOOST_TEST(resultJson["action"].as<std::string>() == "get");
   BOOST_TEST(resultJson.contains("error"));
   auto errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 }
 
 BOOST_AUTO_TEST_CASE(Given_GetMethod_When_InvalidTargetFormats_Shall_ReturnValidErrorJson)
@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE(Given_GetMethod_When_InvalidTargetFormats_Shall_ReturnValid
   BOOST_TEST(resultJson["action"].as<std::string>() == "get");
   BOOST_TEST(resultJson.contains("error"));
   auto errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 404);
+  BOOST_TEST(errJson["number"].as<std::string>() == "404");
 
   // verify
 
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(Given_GetMethod_When_InvalidTargetFormats_Shall_ReturnValid
   BOOST_TEST(resultJson["action"].as<std::string>() == "get");
   BOOST_TEST(resultJson.contains("error"));
   errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 
   // verify
 
@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE(Given_GetMethod_When_InvalidTargetFormats_Shall_ReturnValid
   BOOST_TEST(resultJson["action"].as<std::string>() == "get");
   BOOST_TEST(resultJson.contains("error"));
   errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 
   // verify
 
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(Given_GetMethod_When_InvalidTargetFormats_Shall_ReturnValid
   BOOST_TEST(resultJson["action"].as<std::string>() == "get");
   BOOST_TEST(resultJson.contains("error"));
   errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 }
 
 BOOST_AUTO_TEST_CASE(Given_PutMethod_When_InvalidTargetString_Shall_ReturnValidErrorJson)
@@ -280,7 +280,7 @@ BOOST_AUTO_TEST_CASE(Given_PutMethod_When_InvalidTargetString_Shall_ReturnValidE
   BOOST_TEST(resultJson["action"].as<std::string>() == "set");
   BOOST_TEST(resultJson.contains("error"));
   auto errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 
   // verify
 
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE(Given_PutMethod_When_InvalidTargetString_Shall_ReturnValidE
   BOOST_TEST(resultJson["action"].as<std::string>() == "set");
   BOOST_TEST(resultJson.contains("error"));
   errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 
   // verify
 
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE(Given_PutMethod_When_InvalidTargetString_Shall_ReturnValidE
   BOOST_TEST(resultJson["action"].as<std::string>() == "set");
   BOOST_TEST(resultJson.contains("error"));
   errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 }
 
 
@@ -326,7 +326,7 @@ BOOST_AUTO_TEST_CASE(Given_PostMethod_When_InvalidAuthorizeTargetString_Shall_Re
   BOOST_TEST(resultJson["action"].as<std::string>() == "authorize");
   BOOST_TEST(resultJson.contains("error"));
   auto errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 
   // verify
 
@@ -339,7 +339,7 @@ BOOST_AUTO_TEST_CASE(Given_PostMethod_When_InvalidAuthorizeTargetString_Shall_Re
   BOOST_TEST(resultJson["action"].as<std::string>() == "authorize");
   BOOST_TEST(resultJson.contains("error"));
   errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 
   // verify
 
@@ -352,7 +352,7 @@ BOOST_AUTO_TEST_CASE(Given_PostMethod_When_InvalidAuthorizeTargetString_Shall_Re
   BOOST_TEST(resultJson["action"].as<std::string>() == "authorize");
   BOOST_TEST(resultJson.contains("error"));
   errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 
   // verify
 
@@ -365,7 +365,7 @@ BOOST_AUTO_TEST_CASE(Given_PostMethod_When_InvalidAuthorizeTargetString_Shall_Re
   BOOST_TEST(resultJson["action"].as<std::string>() == "authorize");
   BOOST_TEST(resultJson.contains("error"));
   errJson = resultJson["error"].as<jsoncons::json>();
-  BOOST_TEST(errJson["number"].as<int>() == 400);
+  BOOST_TEST(errJson["number"].as<std::string>() == "400");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
