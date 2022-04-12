@@ -84,7 +84,7 @@ string VssCommandProcessor::processUpdateVSSTree(kuksa::kuksaChannel& channel, j
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json error;
 
-    error["number"] = 401;
+    error["number"] = "401";
     error["reason"] = "Unknown error";
     error["message"] = e.what();
 
@@ -129,7 +129,7 @@ string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
   result["ts"] = JsonResponses::getTimeStamp();
   if (0 == st.size()){
     jsoncons::json error;
-    error["number"] = 404;
+    error["number"] = "404";
     error["reason"] = "Path not found";
     error["message"] = "In database no metadata found for path " + path.getVSSPath();
     result["error"] = error;
@@ -175,7 +175,7 @@ string VssCommandProcessor::processUpdateMetaData(kuksa::kuksaChannel& channel, 
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json error;
 
-    error["number"] = 401;
+    error["number"] = "401";
     error["reason"] = "Unknown error";
     error["message"] = e.what();
 
@@ -206,7 +206,7 @@ string VssCommandProcessor::processAuthorize(kuksa::kuksaChannel &channel,
     jsoncons::json error;
     result["action"] = "authorize";
     result["requestId"] = request_id;
-    error["number"] = 401;
+    error["number"] = "401";
     error["reason"] = "Invalid Token";
     error["message"] = "Check the JWT token passed";
 

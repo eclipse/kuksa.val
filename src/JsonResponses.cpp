@@ -24,7 +24,7 @@ namespace JsonResponses {
     jsonResponse["action"] = action;
     jsonResponse["requestId"] = request_id;
     jsoncons::json error;
-    error["number"] = 400;
+    error["number"] = "400";
     error["reason"] = "Bad Request";
     error["message"] = message;
     jsonResponse["error"] = error;
@@ -44,7 +44,7 @@ namespace JsonResponses {
   void malFormedRequest(std::string message, jsoncons::json& jsonResponse, std::string requestId) {
     jsoncons::json error;
 
-    error["number"] = 400;
+    error["number"] = "400";
     error["reason"] = "Bad Request";
     error["message"] = message;
     jsonResponse["error"] = error;
@@ -68,7 +68,7 @@ namespace JsonResponses {
     jsonResponse["action"] = action;
     jsonResponse["requestId"] = request_id;
     jsoncons::json error;
-    error["number"] = 404;
+    error["number"] = "404";
     error["reason"] = "Path not found";
     error["message"] = "I can not find " + path + " in my db";
     jsonResponse["error"] = error;
@@ -92,7 +92,7 @@ namespace JsonResponses {
     jsoncons::json error;
     jsonResponse["action"] = action;
     jsonResponse["requestId"] = request_id;
-    error["number"] = 403;
+    error["number"] = "403";
     error["reason"] = "Forbidden";
     error["message"] = message;
     jsonResponse["error"] = error;
@@ -116,7 +116,7 @@ namespace JsonResponses {
     jsonResponse["action"] = action;
     jsonResponse["requestId"] = request_id;
     jsoncons::json error;
-    error["number"] = 400;
+    error["number"] = "400";
     error["reason"] = "Value passed is out of bounds";
     error["message"] = message;
     jsonResponse["error"] = error;

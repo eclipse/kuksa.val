@@ -83,7 +83,7 @@ string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
 
     root["action"] = "subscribe";
     root["requestId"] = request_id;
-    error["number"] = 400;
+    error["number"] = "400";
     error["reason"] = "Bad Request";
     error["message"] = "Unknown";
 

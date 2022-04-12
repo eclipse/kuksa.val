@@ -62,7 +62,7 @@ string VssCommandProcessor::processUnsubscribe(kuksa::kuksaChannel &channel,
 
     root["action"] = "unsubscribe";
     root["requestId"] = request_id;
-    error["number"] = 400;
+    error["number"] = "400";
     error["reason"] = "Unknown error";
     error["message"] = "Error while unsubscribing";
 
