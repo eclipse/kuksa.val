@@ -17,7 +17,7 @@
 #include <string>
 #include <memory>
 #include <jsoncons/json.hpp>
-
+#include <boost/uuid/uuid.hpp>
 #include "IPublisher.hpp"
 #include "IServer.hpp"
 #include "VSSPath.hpp"
@@ -29,7 +29,7 @@ class WsServer;
 class IVssDatabase;
 class IPublisher;
 
-using SubscriptionId = uint32_t;
+using SubscriptionId = boost::uuids::uuid;
 
 class ISubscriptionHandler {
   public:

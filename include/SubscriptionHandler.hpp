@@ -22,6 +22,9 @@
 #include <thread>
 #include <memory>
 
+#include <boost/uuid/uuid.hpp> 
+#include <boost/functional/hash.hpp>
+
 #include <jsoncons/json.hpp>
 
 #include "visconf.hpp"
@@ -40,12 +43,22 @@ class ILogger;
 
 
 using SubConnId = uint64_t;
+using SubscriptionId = boost::uuids::uuid;
 
 // Subscription ID: Client ID
-using subscriptions_t = std::unordered_map<SubscriptionId, SubConnId>;
+struct UUIDHasher
+{
+  std::size_t operator()(const boost::uuids::uuid& k) const
+  {
+    using std::size_t;
 
-// Subscription UUID
-typedef std::string uuid_t;
+    boost::hash<boost::uuids::uuid> uuid_hasher;
+
+    return (uuid_hasher(k));
+  }
+};
+using subscriptions_t = std::unordered_map<SubscriptionId, SubConnId, UUIDHasher>;
+
 
 class SubscriptionHandler : public ISubscriptionHandler {
  private:

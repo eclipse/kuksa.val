@@ -13,6 +13,8 @@
  */
 
 #include <boost/algorithm/string.hpp>
+#include <boost/uuid/uuid.hpp> 
+#include <boost/uuid/uuid_io.hpp>  
 #include "ISubscriptionHandler.hpp"
 #include "JsonResponses.hpp"
 #include "VSSRequestValidator.hpp"
@@ -46,7 +48,7 @@ string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
           "VssCommandProcessor::processSubscribe: Client wants to subscribe ") +
           path);
 
-  uint32_t subId = -1;
+  boost::uuids::uuid subId;;
   try {
     subId = subHandler->subscribe(channel, database, path);
   } catch (noPathFoundonTree &noPathFound) {
@@ -66,33 +68,15 @@ string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
         request_id, "get", string("Unhandled error: ") + e.what());
   }
 
-  if (subId > 0) {
-    jsoncons::json answer;
-    answer["action"] = "subscribe";
-    answer["requestId"] = request_id;
-    answer["subscriptionId"] = std::to_string(subId);
-    answer["ts"] = JsonResponses::getTimeStamp();
+  //If no exceptions, we have a vaöid subscription ID
+  
+  jsoncons::json answer;
+  answer["action"] = "subscribe";
+  answer["requestId"] = request_id;
+  answer["subscriptionId"] = boost::uuids::to_string(subId);
+  answer["ts"] = JsonResponses::getTimeStamp();
 
-    std::stringstream ss;
-    ss << pretty_print(answer);
-    return ss.str();
-
-  } else {
-    jsoncons::json root;
-    jsoncons::json error;
-
-    root["action"] = "subscribe";
-    root["requestId"] = request_id;
-    error["number"] = "400";
-    error["reason"] = "Bad Request";
-    error["message"] = "Unknown";
-
-    root["error"] = error;
-    root["ts"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-
-    ss << pretty_print(root);
-    return ss.str();
-  }
+  std::stringstream ss;
+  ss << pretty_print(answer);
+  return ss.str();
 }

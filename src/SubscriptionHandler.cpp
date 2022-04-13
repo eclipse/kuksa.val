@@ -16,6 +16,9 @@
 #include <unistd.h>  // usleep
 #include <string>
 
+#include <boost/uuid/uuid_generators.hpp> 
+#include <boost/uuid/uuid_io.hpp>         
+
 #include <jsonpath/json_query.hpp>
 
 #include "AccessChecker.hpp"
@@ -49,9 +52,7 @@ SubscriptionId SubscriptionHandler::subscribe(kuksa::kuksaChannel& channel,
                                               std::shared_ptr<IVssDatabase> db,
                                               const string& path) {
   // generate subscribe ID "randomly".
-  SubscriptionId subId = rand() % 9999999;  // Todo UUID
-  // embed connection ID into subID.
-  subId = channel.connectionid() + subId;
+  SubscriptionId subId = boost::uuids::random_generator()();
 
   VSSPath vssPath = VSSPath::fromVSS(path);
 
@@ -87,7 +88,7 @@ int SubscriptionHandler::unsubscribe(SubscriptionId subscribeID) {
   bool found_subscription=false;
   logger->Log(LogLevel::VERBOSE,
               string("SubscriptionHandler::unsubscribe: Unsubscribe on ") +
-                  std::to_string(subscribeID));
+                  boost::uuids::to_string(subscribeID));
   std::unique_lock<std::mutex> lock(accessMutex);
   for (auto& sub : subscriptions) {
     auto subsforpath = &(sub.second);
@@ -147,12 +148,9 @@ int SubscriptionHandler::publishForVSSPath(const VSSPath path,
   logger->Log(LogLevel::VERBOSE, ss.str());
 
   std::unique_lock<std::mutex> lock(accessMutex);
-  logger->Log(LogLevel::VERBOSE,
-              string("SubscriptionHandler::publishForVSSPath: Trigger  "));
   auto handle = subscriptions.find(path);
   if (handle == subscriptions.end()) {
     // no subscriptions for path
-    logger->Log(LogLevel::VERBOSE, "No supscriptions for path");
     return 0;
   }
 
@@ -162,7 +160,7 @@ int SubscriptionHandler::publishForVSSPath(const VSSPath path,
     logger->Log(
         LogLevel::VERBOSE,
         "SubscriptionHandler::publishForVSSPath: new value set at path " +
-            std::to_string(subID.first) + ": " + ss.str());
+            boost::uuids::to_string(subID.first) + ": " + ss.str());
     newSub = std::make_tuple(subID.first, subID.second, data);
     buffer.push(newSub);
     c.notify_one();
@@ -185,7 +183,7 @@ void* SubscriptionHandler::subThreadRunner() {
 
       jsoncons::json answer;
       answer["action"] = "subscription";
-      answer["subscriptionId"] = std::get<0>(newSub);
+      answer["subscriptionId"] = boost::uuids::to_string(std::get<0>(newSub));
       answer.insert_or_assign("data", data);
 
       stringstream ss;
