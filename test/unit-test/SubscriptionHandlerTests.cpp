@@ -449,7 +449,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
       .once()
       .with(channel.connectionid(), jsonVerify);
 
-    BOOST_TEST(subHandler->updateByUUID(uuids[index], data) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(uuids[index], data) == 0);
     usleep(10000); // allow for subthread handler to run
   }
 }
@@ -543,7 +543,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->updateByUUID(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -650,7 +650,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->updateByUUID(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -673,7 +673,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT to verify if removed channel is not called anymore
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->updateByUUID(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -685,7 +685,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
                                  "5c28427f79ca5fe394b47fe057a2af9b"};
   unsigned index = 0;
   VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
-  BOOST_TEST(subHandler->updateByUUID(uuids[index], packDataInJson(vsspath, std::to_string(index))) == 0);
+  BOOST_TEST(subHandler->publishForVSSPath(uuids[index], packDataInJson(vsspath, std::to_string(index))) == 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

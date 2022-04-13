@@ -425,7 +425,7 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
 
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
-          subHandler_->updateByUUID(resJson["uuid"].as<string>(), data);
+          subHandler_->publishForVSSPath(path, data);
         }
       }
       else {
