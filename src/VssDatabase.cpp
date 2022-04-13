@@ -133,6 +133,21 @@ bool VssDatabase::pathIsWritable(const VSSPath &path) {
   return false;
 }
 
+// Check if a path is readable _in principle_, i.e. whether it is an actor, sensor or attribute.
+// This does _not_ check whether a user is authorized, and it will return false in case
+// the VSSPath references multiple destinations
+bool VssDatabase::pathIsReadable(const VSSPath &path) {
+  jsoncons::json res = jsonpath::json_query(data_tree__, path.getJSONPath(),jsonpath::result_type::value);
+  if (res.size() != 1) { //either no match, or multiple matches
+    return false;
+  }
+  if ( isSensor(res[0]) || isActor(res[0])|| isAttribute(res[0]) ) {
+    return true; //sensors, actors and attributes can be read
+  }
+  //else it is either another type (branch), or a broken part (no type at all) of the tree, and thus not writable
+  return false;
+}
+
 
 //returns true if the given path contains usable leafs
 bool VssDatabase::checkPathValid(const VSSPath & path){
