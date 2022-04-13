@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(update_metadata_brokenrequest) {
   "action": "updateMetaData",
   "error": {
     "message": "Schema error: #/metadata: Expected object, found uint64",
-    "number": 400,
+    "number": "400",
     "reason": "Bad Request"
   },
   "requestId": "1"

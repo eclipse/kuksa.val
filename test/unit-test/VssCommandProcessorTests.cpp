@@ -652,7 +652,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
   jsonSignalValue["action"] = "subscribe";
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["ts"] = 11111111;
-  jsonSignalValue["subscriptionId"] = subscriptionId;
+  jsonSignalValue["subscriptionId"] = std::to_string(subscriptionId);
 
   // expectations
 
@@ -696,7 +696,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
   jsonSubscribeRequestForSignal["path"] = path;
   jsonSubscribeRequestForSignal["requestId"] = requestId;
 
-  jsonSignalValueErr["number"] = 400;
+  jsonSignalValueErr["number"] = "400";
   jsonSignalValueErr["reason"] = "Bad Request";
   jsonSignalValueErr["message"] = "Unknown";
   jsonSignalValue["action"] = "subscribe";
@@ -918,13 +918,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
   channel.set_connectionid(1);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
-  jsonUnsubscribeRequestForSignal["subscriptionId"] = subscriptionId;
+  jsonUnsubscribeRequestForSignal["subscriptionId"] = std::to_string(subscriptionId);
   jsonUnsubscribeRequestForSignal["requestId"] = requestId;
 
   jsonSignalValue["action"] = "unsubscribe";
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["ts"] = 11111111;
-  jsonSignalValue["subscriptionId"] = subscriptionId;
+  jsonSignalValue["subscriptionId"] = std::to_string(subscriptionId);
 
   // expectations
 
@@ -963,10 +963,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
   channel.set_connectionid(1);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
-  jsonUnsubscribeRequestForSignal["subscriptionId"] = subscriptionId;
+  jsonUnsubscribeRequestForSignal["subscriptionId"] = std::to_string(subscriptionId);
   jsonUnsubscribeRequestForSignal["requestId"] = requestId;
 
-  jsonSignalValueErr["number"] = 400;
+  jsonSignalValueErr["number"] = "400";
   jsonSignalValueErr["reason"] = "Unknown error";
   jsonSignalValueErr["message"] = "Error while unsubscribing";
   jsonSignalValue["action"] = "unsubscribe";
@@ -1117,7 +1117,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
   jsonAuthRequest["requestId"] = requestId;
   jsonAuthRequest["tokens"] = dummyToken;
 
-  jsonValueErr["number"] = 401;
+  jsonValueErr["number"] = "401";
   jsonValueErr["reason"] = "Invalid Token";
   jsonValueErr["message"] = "Check the JWT token passed";
   jsonValue["action"] = "authorize";
@@ -1163,11 +1163,14 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   // validate that at least one log event was processed
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
-  jsonValueErr["number"] = 400;
+  jsonValueErr["number"] = "400";
   jsonValueErr["reason"] = "Bad Request";
   jsonValueErr["message"] = "Key not found: 'action'";
+
   jsonExpected["error"] = jsonValueErr;
   jsonExpected["ts"] = 123;
+  jsonExpected["requestId"] = "UNKNOWN";
+
 
   //////////////////////
   // check empty request
@@ -1181,8 +1184,8 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
-  /// check request with only action
-  jsonRequest["action"] = "notSupportedAction";
+  /// check request with only get action
+  jsonRequest["action"] = "get";
   resStr = processor->processQuery(jsonRequest.as_string(), channel);
   res = json::parse(resStr);
 
@@ -1201,8 +1204,12 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   resStr = processor->processQuery(jsonRequest.as_string(), channel);
   res = json::parse(resStr);
 
-  jsonValueErr["message"] = "Key not found: 'requestId'";
+  jsonValueErr["message"] = "Schema error: #: Required property \"requestId\" not found";
+
+  jsonExpected["requestId"] = "UNKNOWN";
   jsonExpected["error"] = jsonValueErr;
+  jsonExpected["action"] = "get";
+
 
   BOOST_TEST(res.contains("ts"));
   BOOST_TEST(res["ts"].is_string());
@@ -1210,19 +1217,25 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   BOOST_TEST(res == jsonExpected);
 
   //////////////////////
-  /// check request with added requestId
+  /// check request with added requestId, but illegal action
   jsonRequest["requestId"] = 1;
+  jsonRequest["action"] = "nothing";
+
   resStr = processor->processQuery(jsonRequest.as_string(), channel);
   res = json::parse(resStr);
 
   jsonValueErr["message"] = "Unknown action requested";
   jsonExpected["error"] = jsonValueErr;
+  jsonExpected.erase("action");
+  jsonExpected["requestId"] = "1";
+
 
   BOOST_TEST(res.contains("ts"));
   BOOST_TEST(res["ts"].is_string());
   jsonExpected["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
 
   BOOST_TEST(res == jsonExpected);
+
 
   //////////////////////
   /// check random string as request
@@ -1231,6 +1244,8 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   jsonValueErr["message"] = "";
   jsonExpected["error"] = jsonValueErr;
+  jsonExpected["requestId"] = "UNKNOWN";
+
 
   BOOST_TEST(res.contains("ts"));
   BOOST_TEST(res["ts"].is_string());

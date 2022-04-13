@@ -28,10 +28,10 @@ namespace JsonResponses {
                         std::string message,
                         jsoncons::json& jsonResponse);
 
-  std::string malFormedRequest(std::string message);
+  std::string malFormedRequest(std::string message, std::string requestId="UNKNOWN");
   
   void malFormedRequest(std::string message,
-                        jsoncons::json& jsonResponse);
+                        jsoncons::json& jsonResponse, std::string requesId="UNKNOWN");
 
   /** A API call requested a non-existant path */
   std::string pathNotFound(std::string request_id,

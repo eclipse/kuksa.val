@@ -56,94 +56,6 @@ VssCommandProcessor::~VssCommandProcessor() {
 }
 
 
-
-string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
-                                             const string & request_id, 
-                                             const string & path) {
-  logger->Log(LogLevel::VERBOSE, string("VssCommandProcessor::processSubscribe: Client wants to subscribe ")+path);
-
-  uint32_t subId = -1;
-  try {
-    subId = subHandler->subscribe(channel, database, path);
-  } catch (noPathFoundonTree &noPathFound) {
-    logger->Log(LogLevel::ERROR, string(noPathFound.what()));
-    return JsonResponses::pathNotFound(request_id, "subscribe", path);
-  } catch (noPermissionException &nopermission) {
-    logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request_id, "subscribe", nopermission.what());
-  } catch (genException &outofboundExp) {
-    logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
-    return JsonResponses::valueOutOfBounds(request_id, "subscribe",
-                                    outofboundExp.what());
-  } catch (std::exception &e) {
-    logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
-    return JsonResponses::malFormedRequest(request_id, "get", string("Unhandled error: ") + e.what());
-  }
-
-  if (subId > 0) {
-    jsoncons::json answer;
-    answer["action"] = "subscribe";
-    answer["requestId"] = request_id;
-    answer["subscriptionId"] = subId;
-    answer["ts"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(answer);
-    return ss.str();
-
-  } else {
-    jsoncons::json root;
-    jsoncons::json error;
-
-    root["action"] = "subscribe";
-    root["requestId"] = request_id;
-    error["number"] = 400;
-    error["reason"] = "Bad Request";
-    error["message"] = "Unknown";
-
-    root["error"] = error;
-    root["ts"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-
-    ss << pretty_print(root);
-    return ss.str();
-  }
-}
-
-string VssCommandProcessor::processUnsubscribe(const string & request_id,
-                                               uint32_t subscribeID) {
-  int res = subHandler->unsubscribe(subscribeID);
-  if (res == 0) {
-    jsoncons::json answer;
-    answer["action"] = "unsubscribe";
-    answer["requestId"] = request_id;
-    answer["subscriptionId"] = subscribeID;
-    answer["ts"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(answer);
-    return ss.str();
-
-  } else {
-    jsoncons::json root;
-    jsoncons::json error;
-
-    root["action"] = "unsubscribe";
-    root["requestId"] = request_id;
-    error["number"] = 400;
-    error["reason"] = "Unknown error";
-    error["message"] = "Error while unsubscribing";
-
-    root["error"] = error;
-    root["ts"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(root);
-    return ss.str();
-  }
-}
-
 string VssCommandProcessor::processUpdateVSSTree(kuksa::kuksaChannel& channel, jsoncons::json &request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateVSSTree");
   
@@ -172,7 +84,7 @@ string VssCommandProcessor::processUpdateVSSTree(kuksa::kuksaChannel& channel, j
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json error;
 
-    error["number"] = 401;
+    error["number"] = "401";
     error["reason"] = "Unknown error";
     error["message"] = e.what();
 
@@ -217,7 +129,7 @@ string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
   result["ts"] = JsonResponses::getTimeStamp();
   if (0 == st.size()){
     jsoncons::json error;
-    error["number"] = 404;
+    error["number"] = "404";
     error["reason"] = "Path not found";
     error["message"] = "In database no metadata found for path " + path.getVSSPath();
     result["error"] = error;
@@ -263,7 +175,7 @@ string VssCommandProcessor::processUpdateMetaData(kuksa::kuksaChannel& channel, 
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json error;
 
-    error["number"] = 401;
+    error["number"] = "401";
     error["reason"] = "Unknown error";
     error["message"] = e.what();
 
@@ -294,7 +206,7 @@ string VssCommandProcessor::processAuthorize(kuksa::kuksaChannel &channel,
     jsoncons::json error;
     result["action"] = "authorize";
     result["requestId"] = request_id;
-    error["number"] = 401;
+    error["number"] = "401";
     error["reason"] = "Invalid Token";
     error["message"] = "Check the JWT token passed";
 
@@ -347,28 +259,17 @@ string VssCommandProcessor::processQuery(const string &req_json,
            + token + " with request id " + request_id);
 
       response = processAuthorize(channel, request_id, token);
-    } else if (action == "unsubscribe") {
-      //string request_id = root["requestId"].as<int>();
-      string request_id = root["requestId"].as<string>();
-      uint32_t subscribeID = root["subscriptionId"].as<int>();
-      logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: unsubscribe query  for sub ID = "
-              + to_string(subscribeID) + " with request id " + request_id);
-
-      response = processUnsubscribe(request_id, subscribeID);
+    } 
+    else if (action == "unsubscribe") {
+      response = processUnsubscribe(channel, root);
+    } 
+    else if (action == "subscribe") {
+      response = processSubscribe(channel, root);
     } else if (action == "updateVSSTree") {
       response = processUpdateVSSTree(channel,root);
     } else {
-      string path = root["path"].as<string>();
-      string request_id = root["requestId"].as<string>();
-     if (action == "subscribe") {
-        logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: subscribe query  for "
-             + path + " with request id " + request_id);
-        response =
-            processSubscribe(channel, request_id, path);
-      } else {
-        logger->Log(LogLevel::WARNING, "VssCommandProcessor::processQuery: Unknown action " + action);
-        return JsonResponses::malFormedRequest("Unknown action requested");
-      }
+      logger->Log(LogLevel::WARNING, "VssCommandProcessor::processQuery: Unknown action " + action);
+      return JsonResponses::malFormedRequest("Unknown action requested", root.get_value_or<std::string>("requestId", "UNKNOWN"));
     }
   } catch (jsoncons::ser_error &e) {
     logger->Log(LogLevel::WARNING, "JSON parse error");
@@ -380,8 +281,6 @@ string VssCommandProcessor::processQuery(const string &req_json,
     logger->Log(LogLevel::WARNING, "JSON not an object error");
     return JsonResponses::malFormedRequest(e.what());
   }
-
-
   return response;
 }
 

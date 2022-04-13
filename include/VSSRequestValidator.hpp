@@ -36,6 +36,9 @@ class VSSRequestValidator {
 
         void validateGet(jsoncons::json &request);
         void validateSet(jsoncons::json &request);
+        void validateSubscribe(jsoncons::json &request);
+        void validateUnsubscribe(jsoncons::json &request);
+
         void validateUpdateMetadata(jsoncons::json &request);
         void validateUpdateVSSTree(jsoncons::json &request);
 
@@ -45,6 +48,8 @@ class VSSRequestValidator {
         class MessageValidator;
         std::unique_ptr<VSSRequestValidator::MessageValidator> getValidator;
         std::unique_ptr<VSSRequestValidator::MessageValidator> setValidator;
+        std::unique_ptr<VSSRequestValidator::MessageValidator> subscribeValidator;
+        std::unique_ptr<VSSRequestValidator::MessageValidator> unsubscribeValidator;
         std::unique_ptr<VSSRequestValidator::MessageValidator> updateMetadataValidator;
         std::unique_ptr<VSSRequestValidator::MessageValidator> updateVSSTreeValidator;
 

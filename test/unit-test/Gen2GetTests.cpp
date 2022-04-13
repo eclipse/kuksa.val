@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON) {
       "action": "get",
       "error": {
         "message": "Schema error: #/requestId: Expected string, found uint64",
-        "number": 400,
+        "number": "400",
         "reason": "Bad Request"
       },
       "requestId": "100"
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON_NoRequestID) {
       "action": "get",
       "error": {
         "message": "Schema error: #: Required property \"requestId\" not found\n#/path: Expected string, found uint64",
-        "number": 400,
+        "number": "400",
         "reason": "Bad Request"
       },
       "requestId": "UNKNOWN"

@@ -47,13 +47,14 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::string processUpdateVSSTree(kuksa::kuksaChannel& channel, jsoncons::json &request);
 
  public:
-  std::string processSubscribe(kuksa::kuksaChannel& channel, const std::string& request_id, const std::string& path);
-  std::string processUnsubscribe(const std::string & request_id, uint32_t subscribeID);
   std::string processGetMetaData(jsoncons::json &request);
   std::string processAuthorize(kuksa::kuksaChannel& channel, const std::string & request_id,
                           const std::string & token);
   std::string processGet2(kuksa::kuksaChannel &channel, jsoncons::json &request);
   std::string processSet2(kuksa::kuksaChannel &channel, jsoncons::json &request);
+  std::string processSubscribe(kuksa::kuksaChannel& channel, jsoncons::json &request);
+  std::string processUnsubscribe(kuksa::kuksaChannel &channel, jsoncons::json &request);
+  
   VssCommandProcessor(std::shared_ptr<ILogger> loggerUtil,
                       std::shared_ptr<IVssDatabase> database,
                       std::shared_ptr<IAuthenticator> vdator,

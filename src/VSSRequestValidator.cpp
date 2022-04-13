@@ -65,6 +65,9 @@ VSSRequestValidator::VSSRequestValidator(std::shared_ptr<ILogger> loggerUtil) :
   
   this->getValidator            = std::make_unique<MessageValidator>( VSS_JSON::SCHEMA_GET);
   this->setValidator            = std::make_unique<MessageValidator>( VSS_JSON::SCHEMA_SET);
+  this->subscribeValidator      = std::make_unique<MessageValidator>( VSS_JSON::SCHEMA_SUBSCRIBE);
+  this->unsubscribeValidator    = std::make_unique<MessageValidator>( VSS_JSON::SCHEMA_UNSUBSCRIBE);
+
   this->updateMetadataValidator = std::make_unique<MessageValidator>( VSS_JSON::SCHEMA_UPDATE_METADATA);
   this->updateVSSTreeValidator  = std::make_unique<MessageValidator>( VSS_JSON::SCHEMA_UPDATE_VSS_TREE);
 }
@@ -78,6 +81,14 @@ void VSSRequestValidator::validateGet(jsoncons::json& request) {
 
 void VSSRequestValidator::validateSet(jsoncons::json& request) {
   setValidator->validate(request);
+}
+
+void VSSRequestValidator::validateSubscribe(jsoncons::json& request) {
+  subscribeValidator->validate(request);
+}
+
+void VSSRequestValidator::validateUnsubscribe(jsoncons::json& request) {
+  unsubscribeValidator->validate(request);
 }
 
 void VSSRequestValidator::validateUpdateMetadata(jsoncons::json& request) {

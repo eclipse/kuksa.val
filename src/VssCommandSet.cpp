@@ -94,7 +94,7 @@ std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
     root["action"] = "set";
     root.insert_or_assign("requestId", request["requestId"]);
 
-    error["number"] = 401;
+    error["number"] = "401";
     error["reason"] = "Unknown error";
     error["message"] = e.what();
 
