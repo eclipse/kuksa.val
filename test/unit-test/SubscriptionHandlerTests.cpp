@@ -27,6 +27,10 @@
 #include <list>
 #include <thread>
 
+#include <boost/uuid/uuid.hpp>            
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include "WsChannel.hpp"
 #include "ILoggerMock.hpp"
 #include "IVssDatabaseMock.hpp"
@@ -86,10 +90,15 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
     .once()
     .with(vsspath)
     .returns(true);
+  MOCK_EXPECT(dbMock->pathIsReadable)
+    .once()
+    .with(vsspath)
+    .returns(true);
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .once()
     .with(mock::any, vsspath)
     .returns(true);
+
 
   // load data tree
   // TODO: remove when this implicit dependency is removed
@@ -101,7 +110,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
   SubscriptionId res;
   BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath.getVSSPath()));
 
-  BOOST_TEST(res != 0u);
+  BOOST_TEST(res.version() == 4);
 }
 
 BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Shall_SubscribeAll)
@@ -128,6 +137,10 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
       .once()
       .with(vsspath[index])
       .returns(true);
+    MOCK_EXPECT(dbMock->pathIsReadable)
+      .once()
+      .with(vsspath[index])
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
       .with(mock::any, vsspath[index])
@@ -146,7 +159,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
     SubscriptionId res;
 
     BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath()));
-    BOOST_TEST(res != 0u);
+    BOOST_TEST(res.version() == 4);
 
     // check that the value is different from previously returned
     auto cmp = (resSet.find(res) == resSet.end());
@@ -180,6 +193,10 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
     .exactly(clientNum)
     .with(vsspath)
     .returns(true);
+  MOCK_EXPECT(dbMock->pathIsReadable)
+    .exactly(clientNum)
+    .with(vsspath)
+    .returns(true);  
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
     .with(mock::any, vsspath)
@@ -197,7 +214,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
     SubscriptionId res;
 
     BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath.getVSSPath()));
-    BOOST_TEST(res != 0u);
+    BOOST_TEST(res.version() == 4);
 
     // check that the value is different from previously returned
     auto cmp = (resSet.find(res) == resSet.end());
@@ -238,6 +255,10 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
       .once()
       .with(vsspath[index])
       .returns(true);
+    MOCK_EXPECT(dbMock->pathIsReadable)
+      .once()
+      .with(vsspath[index])
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
       .with(mock::any, vsspath[index])
@@ -257,7 +278,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
     SubscriptionId res;
 
     BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath()));
-    BOOST_TEST(res != 0u);
+    BOOST_TEST(res.version() == 4);
 
     // check that the value is different from previously returned
     auto cmp = (resSet.find(res) == resSet.end());
@@ -289,6 +310,10 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
       .once()
       .with(vsspath[index])
       .returns(true);
+    MOCK_EXPECT(dbMock->pathIsReadable)
+      .once()
+      .with(vsspath[index])
+      .returns(true);      
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
       .with(mock::any, vsspath[index])
@@ -307,7 +332,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
     SubscriptionId res;
 
     BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath()));
-    BOOST_TEST(res != 0u);
+    BOOST_TEST(res.version() == 4);
 
     // check that the value is different from previously returned
     auto cmp = (resSet.find(res) == resSet.end());
@@ -344,6 +369,10 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
     .exactly(clientNum)
     .with(vsspath)
     .returns(true);
+  MOCK_EXPECT(dbMock->pathIsReadable)
+    .exactly(clientNum)
+    .with(vsspath)
+    .returns(true);  
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
     .with(mock::any, vsspath)
@@ -361,7 +390,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
     SubscriptionId res;
 
     BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath.getVSSPath()));
-    BOOST_TEST(res != 0u);
+    BOOST_TEST(res.version() == 4);
 
     // check that the value is different from previously returned
     auto cmp = (resSet.find(res) == resSet.end());
@@ -384,9 +413,6 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
 
   channel.set_connectionid(131313);
 
-  std::vector<std::string> uuids{"9521e8d36a9b546d9414a779f5dd9bef",
-                                 "c83f0c12653b5e7baf000799052f5533",
-                                 "5c28427f79ca5fe394b47fe057a2af9b"};
   std::vector<std::string> retDbListWider{"$['Vehicle']['children']['Acceleration']['children']['Vertical']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Longitudinal']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Lateral']"};
@@ -398,6 +424,10 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
 
   for (unsigned index = 0; index < paths; index++) {
     MOCK_EXPECT(dbMock->pathExists)
+      .once()
+      .with(vsspath[index])
+      .returns(true);
+    MOCK_EXPECT(dbMock->pathIsReadable)
       .once()
       .with(vsspath[index])
       .returns(true);
@@ -420,7 +450,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
 
     BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath()));
 
-    BOOST_TEST(subId != 0u);
+    BOOST_TEST(subId.version() == 4);
     resMap[index] = subId;
   }
 
@@ -429,7 +459,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
 
   // verify that each updated signal for which single client is subscribed to is called
   for (unsigned index = 0; index < paths; index++) {
-    answer["subscriptionId"] = resMap[index];
+    answer["subscriptionId"] = boost::uuids::to_string(resMap[index]);
     jsoncons::json data = packDataInJson(vsspath[index], std::to_string(index));
     answer["data"] = data;
 
@@ -447,9 +477,10 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
 
     MOCK_EXPECT(serverMock->SendToConnection)
       .once()
-      .with(channel.connectionid(), jsonVerify);
+      .with(channel.connectionid(), jsonVerify)
+      .returns(true);
 
-    BOOST_TEST(subHandler->publishForVSSPath(uuids[index], data) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], data) == 0);
     usleep(10000); // allow for subthread handler to run
   }
 }
@@ -469,9 +500,6 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     channels.push_back(std::move(channel));
   }
 
-  std::vector<std::string> uuids{"9521e8d36a9b546d9414a779f5dd9bef",
-                                 "c83f0c12653b5e7baf000799052f5533",
-                                 "5c28427f79ca5fe394b47fe057a2af9b"};
   std::vector<std::string> retDbListWider{"$['Vehicle']['children']['Acceleration']['children']['Vertical']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Longitudinal']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Lateral']"};
@@ -486,6 +514,10 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
       .exactly(channelCount)
       .with(vsspath[index])
       .returns(true);
+    MOCK_EXPECT(dbMock->pathIsReadable)
+      .exactly(channelCount)
+      .with(vsspath[index])
+      .returns(true);      
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
       .with(mock::any, vsspath[index])
@@ -507,7 +539,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
       BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath()));
 
-      BOOST_TEST(subId != 0u);
+      BOOST_TEST(subId.version() == 4);
       resMap[subId] = index;
     }
   }
@@ -526,7 +558,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     }
 
     if (ret) {
-      auto subId = response["subscriptionId"].as<uint64_t>();
+      auto subId = boost::uuids::string_generator()(response["subscriptionId"].as<std::string>());
       auto value = response["data"]["dp"]["value"].as<uint64_t>();
       // check if value match for given subscription id
       ret = (resMap[subId] == value);
@@ -538,12 +570,13 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   for (auto & ch : channels) {
     MOCK_EXPECT(serverMock->SendToConnection)
       .exactly(paths)
-      .with(ch.connectionid(), jsonVerify);
+      .with(ch.connectionid(), jsonVerify)
+      .returns(true);
   }
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -565,9 +598,6 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     channels.push_back(std::move(channel));
   }
 
-  std::vector<std::string> uuids{"9521e8d36a9b546d9414a779f5dd9bef",
-                                 "c83f0c12653b5e7baf000799052f5533",
-                                 "5c28427f79ca5fe394b47fe057a2af9b"};
   std::vector<std::string> retDbListWider{"$['Vehicle']['children']['Acceleration']['children']['Vertical']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Longitudinal']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Lateral']"};
@@ -582,6 +612,10 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
       .exactly(channelCount)
       .with(vsspath[index])
       .returns(true);
+    MOCK_EXPECT(dbMock->pathIsReadable)
+      .exactly(channelCount)
+      .with(vsspath[index])
+      .returns(true);      
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
       .with(mock::any, vsspath[index])
@@ -602,7 +636,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     }
 
     if (ret) {
-      auto subId = response["subscriptionId"].as<uint64_t>();
+      auto subId = boost::uuids::string_generator()(response["subscriptionId"].as<std::string>());
       auto value = response["data"]["dp"]["value"].as<uint64_t>();
 
       // check if value match for given subscription id
@@ -615,7 +649,8 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   for (auto & ch : channels) {
     MOCK_EXPECT(serverMock->SendToConnection)
       .exactly(paths)
-      .with(ch.connectionid(), jsonVerify);
+      .with(ch.connectionid(), jsonVerify)
+      .returns(true);
   }
 
   // load data tree
@@ -634,7 +669,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
       BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath()));
 
-      BOOST_TEST(subId != 0u);
+      BOOST_TEST(subId.version() == 4);
       resMap[subId] = index;
 
       // save subscription ids of client who will unsubscribe all later
@@ -650,7 +685,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -668,24 +703,22 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   for (auto & ch : channels) {
     MOCK_EXPECT(serverMock->SendToConnection)
       .exactly(paths)
-      .with(ch.connectionid(), jsonVerify);
+      .with(ch.connectionid(), jsonVerify)
+      .returns(true);
   }
 
   // call UUT to verify if removed channel is not called anymore
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(uuids[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
 }
 
 BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpdatedAndClientUnsubscribeAll_Shall_NotifyOnlySubscribedClient) {
-    std::vector<std::string> uuids{"9521e8d36a9b546d9414a779f5dd9bef",
-                                 "c83f0c12653b5e7baf000799052f5533",
-                                 "5c28427f79ca5fe394b47fe057a2af9b"};
   unsigned index = 0;
   VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
-  BOOST_TEST(subHandler->publishForVSSPath(uuids[index], packDataInJson(vsspath, std::to_string(index))) == 0);
+  BOOST_TEST(subHandler->publishForVSSPath(vsspath, packDataInJson(vsspath, std::to_string(index))) == 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

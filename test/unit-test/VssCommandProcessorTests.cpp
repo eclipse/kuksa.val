@@ -20,6 +20,10 @@
 #include <memory>
 #include <string>
 
+#include <boost/uuid/uuid.hpp>            
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include "WsChannel.hpp"
 #include "ILoggerMock.hpp"
 #include "IVssDatabaseMock.hpp"
@@ -637,7 +641,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
   jsoncons::json jsonSignalValue;
 
   string requestId = "1";
-  int subscriptionId = 123;
+  boost::uuids::uuid subscriptionId;
   std::string path{"Signal.OBD.DTC1"};
 
   // setup
@@ -652,7 +656,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
   jsonSignalValue["action"] = "subscribe";
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["ts"] = 11111111;
-  jsonSignalValue["subscriptionId"] = std::to_string(subscriptionId);
+  jsonSignalValue["subscriptionId"] = boost::uuids::to_string(subscriptionId);
 
   // expectations
 
@@ -696,9 +700,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
   jsonSubscribeRequestForSignal["path"] = path;
   jsonSubscribeRequestForSignal["requestId"] = requestId;
 
-  jsonSignalValueErr["number"] = "400";
-  jsonSignalValueErr["reason"] = "Bad Request";
-  jsonSignalValueErr["message"] = "Unknown";
+  jsonSignalValueErr["number"] = "404";
+  jsonSignalValueErr["reason"] = "Path not found";
+  jsonSignalValueErr["message"] = "I can not find Signal.OBD.DTC1 in my db";
   jsonSignalValue["action"] = "subscribe";
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["ts"] = 11111111;
@@ -711,7 +715,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
 
   MOCK_EXPECT(subsHndlMock->subscribe)
     .with(mock::any, dbMock, path)
-    .returns(0);
+    .throws(noPathFoundonTree(path));
 
   // run UUT
   auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
@@ -910,7 +914,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
   jsoncons::json jsonSignalValue;
 
   string requestId = "1";
-  int subscriptionId = 123;
+  boost::uuids::uuid subscriptionId;
 
   // setup
 
@@ -918,13 +922,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
   channel.set_connectionid(1);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
-  jsonUnsubscribeRequestForSignal["subscriptionId"] = std::to_string(subscriptionId);
+  jsonUnsubscribeRequestForSignal["subscriptionId"] = boost::uuids::to_string(subscriptionId);
   jsonUnsubscribeRequestForSignal["requestId"] = requestId;
 
   jsonSignalValue["action"] = "unsubscribe";
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["ts"] = 11111111;
-  jsonSignalValue["subscriptionId"] = std::to_string(subscriptionId);
+  jsonSignalValue["subscriptionId"] = boost::uuids::to_string(subscriptionId);
 
   // expectations
 
@@ -955,7 +959,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
   jsoncons::json jsonSignalValue, jsonSignalValueErr;
 
   string requestId = "1";
-  int subscriptionId = 123;
+  boost::uuids::uuid subscriptionId;
 
   // setup
 
@@ -963,7 +967,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
   channel.set_connectionid(1);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
-  jsonUnsubscribeRequestForSignal["subscriptionId"] = std::to_string(subscriptionId);
+  jsonUnsubscribeRequestForSignal["subscriptionId"] = boost::uuids::to_string(subscriptionId);
   jsonUnsubscribeRequestForSignal["requestId"] = requestId;
 
   jsonSignalValueErr["number"] = "400";
