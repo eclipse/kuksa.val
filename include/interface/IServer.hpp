@@ -38,6 +38,6 @@ class IServer {
 
     virtual void AddListener(ObserverType, std::shared_ptr<IVssCommandProcessor>) = 0;
     virtual void RemoveListener(ObserverType, std::shared_ptr<IVssCommandProcessor>) = 0;
-    virtual void SendToConnection(ConnectionId connID, const std::string &message) = 0;
+    virtual bool SendToConnection(ConnectionId connID, const std::string &message) = 0;
 };
 #endif

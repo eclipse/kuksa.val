@@ -80,6 +80,8 @@ SubscriptionId SubscriptionHandler::subscribe(kuksa::kuksaChannel& channel,
   logger->Log(LogLevel::VERBOSE,
               string("SubscriptionHandler::subscribe: Subscribing to ") +
                   vssPath.getVSSPath());
+
+  std::unique_lock<std::mutex> lock(accessMutex);                
   subscriptions[vssPath][subId] = channel.connectionid();
   return subId;
 }
@@ -125,10 +127,8 @@ int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
 
     if (found != std::end(subs.second)) {
       subs.second.erase(found);
-      logger->Log(LogLevel::VERBOSE,
-              string("SubscriptionHandler::unsubscribeAll: Unsubscribing "
-                     "for path ") +
-                  subs.first.getVSSPath());
+      logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::unsubscribeAll: Unsubscribing " +
+                  subs.first.getVSSPath() + " for "+std::to_string(connectionID) );
     }
   }
   return 0;
@@ -190,7 +190,10 @@ void* SubscriptionHandler::subThreadRunner() {
       ss << pretty_print(answer);
       string message = ss.str();
 
-      getServer()->SendToConnection(connId, message);
+      bool connectionexist=getServer()->SendToConnection(connId, message);
+      if(!connectionexist) {
+        this->unsubscribeAll(connId);
+      }
     } else {
       std::unique_lock<std::mutex> lock(subMutex);
       c.wait(lock);
