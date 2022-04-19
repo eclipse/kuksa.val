@@ -20,14 +20,14 @@ func main() {
     kuksaClientComm := kuksa_viss.KuksaClientComm{Config: &configKuksaClient}
     err := kuksaClientComm.ConnectToKuksaValServerWs()
     if err != nil {
-        log.Fatal("Connection Error:", err)
+        log.Fatalf("Connection Error: %v", err)
     }
     defer kuksaClientComm.Close()
 
     // Authorize the connection
     err = kuksaClientComm.AuthorizeKuksaValServerConn()
     if err != nil {
-        log.Fatalf("Authorization Error: ", err)
+        log.Fatalf("Authorization Error: %v", err)
     }
 
     // Get Value of Vehicle.Speed1
@@ -50,7 +50,7 @@ func main() {
             } else {
                 log.Printf("Vehicle.Speed Set: %d", i)
             }
-            time.Sleep(10 * time.Millisecond)
+            time.Sleep(10*time.Millisecond)
         }
     }()
 
@@ -58,7 +58,7 @@ func main() {
     finish := make(chan int)
     go func() {
 	tick := time.Tick(15*time.Millisecond)
-	done := time.After(1 * time.Second)
+	done := time.After(1*time.Second)
         for {
             select {
                 case <-tick:

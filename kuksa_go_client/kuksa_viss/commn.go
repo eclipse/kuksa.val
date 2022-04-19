@@ -161,7 +161,7 @@ func (cc *KuksaClientComm) communicationHandler(req objx.Map) (objx.Map, error) 
     }
 
     cc.requestStateMutex.Lock()
-    delete(cc.requestState, req.Get("request").String())
+    delete(cc.requestState, req.Get("requestId").String())
     cc.requestStateMutex.Unlock()
     return response, err
 }
