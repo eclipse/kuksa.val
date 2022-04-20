@@ -13,30 +13,32 @@
  */
 #include "SubscriptionHandler.hpp"
 
-#include <unistd.h> // usleep
+#include <unistd.h>  // usleep
 #include <string>
+
+#include <boost/uuid/uuid_generators.hpp> 
+#include <boost/uuid/uuid_io.hpp>         
 
 #include <jsonpath/json_query.hpp>
 
 #include "AccessChecker.hpp"
 #include "Authenticator.hpp"
-#include "exception.hpp"
-#include "visconf.hpp"
-#include "WsChannel.hpp"
-#include "VssDatabase.hpp"
 #include "ILogger.hpp"
 #include "JsonResponses.hpp"
+#include "VssDatabase.hpp"
+#include "WsChannel.hpp"
+#include "exception.hpp"
+#include "visconf.hpp"
 
 using namespace std;
 using namespace jsoncons::jsonpath;
 using jsoncons::json;
 
-SubscriptionHandler::SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
-                                         std::shared_ptr<IServer> wserver,
-                                         std::shared_ptr<IAuthenticator> authenticate,
-                                         std::shared_ptr<IAccessChecker> checkAcc):
-publishers_()
-{
+SubscriptionHandler::SubscriptionHandler(
+    std::shared_ptr<ILogger> loggerUtil, std::shared_ptr<IServer> wserver,
+    std::shared_ptr<IAuthenticator> authenticate,
+    std::shared_ptr<IAccessChecker> checkAcc)
+    : publishers_() {
   logger = loggerUtil;
   server = wserver;
   validator = authenticate;
@@ -44,129 +46,131 @@ publishers_()
   startThread();
 }
 
-SubscriptionHandler::~SubscriptionHandler() {
-  stopThread();
-}
+SubscriptionHandler::~SubscriptionHandler() { stopThread(); }
 
 SubscriptionId SubscriptionHandler::subscribe(kuksa::kuksaChannel& channel,
                                               std::shared_ptr<IVssDatabase> db,
-                                              const string &path) {
+                                              const string& path) {
   // generate subscribe ID "randomly".
-  SubscriptionId subId = rand() % 9999999;
-  // embed connection ID into subID.
-  subId = channel.connectionid() + subId;
+  SubscriptionId subId = boost::uuids::random_generator()();
 
   VSSPath vssPath = VSSPath::fromVSS(path);
 
-  if (not db->pathExists(vssPath)) {
+  if (!db->pathExists(vssPath)) {
     throw noPathFoundonTree(path);
+  } else if (!db->pathIsReadable(vssPath)) {
+    stringstream msg;
+    msg << path
+        << " is not a sensor, actor or attribute leaf. Subscribe not supported";
+    logger->Log(LogLevel::INFO,
+                "SubscriptionHandler::subscribe : " + msg.str());
+    throw noPathFoundonTree(msg.str());
   } else if (!checkAccess->checkReadAccess(channel, vssPath)) {
     stringstream msg;
     msg << "no permission to subscribe to path " << path;
     throw noPermissionException(msg.str());
   }
 
-  jsoncons::json resArray = jsonpath::json_query(db->data_tree__, vssPath.getJSONPath());
-
-  if (resArray.is_array() && resArray.size() == 1) {
-    std::unique_lock<std::mutex> lock(accessMutex);
-    jsoncons::json result = resArray[0];
-    string sigUUID = result["uuid"].as<string>();
-    auto handle = subscribeHandle.find(sigUUID);
-
-    if (handle != subscribeHandle.end()) {
-      logger->Log(LogLevel::VERBOSE, string("SubscriptionHandler::subscribe: Updating the previous subscribe ")
-                  + string("ID with a new one"));
-    }
-
-    subscribeHandle[sigUUID][subId] = channel.connectionid();
-
-    return subId;
-  } else if (resArray.is_array()) {
-    logger->Log(LogLevel::INFO, "SubscriptionHandler::subscribe :signals found in path" + path
-                + "Array size: " + to_string(resArray.size())
-                + ". Subscribe works for 1 signal at a time");
-    stringstream msg;
-    msg << "signals found in path" << path
-        << ". Subscribe works for 1 signal at a time";
-    throw noPathFoundonTree(msg.str());
-  } else {
-    logger->Log(LogLevel::ERROR, string("SubscriptionHandler::subscribe: some error occurred while adding ")
-                + string("subscription"));
-    stringstream msg;
-    msg << "some error occured while adding subscription for path = " << path;
-    throw genException(msg.str());
+  auto existingsubscription = subscriptions.find(vssPath);
+  if (existingsubscription != subscriptions.end()) {
+    logger->Log(LogLevel::VERBOSE, string("SubscriptionHandler::subscribe: "
+                                          "Updating the previous subscribe ") +
+                                       string("ID with a new one"));
   }
+  logger->Log(LogLevel::VERBOSE,
+              string("SubscriptionHandler::subscribe: Subscribing to ") +
+                  vssPath.getVSSPath());
+
+  std::unique_lock<std::mutex> lock(accessMutex);                
+  subscriptions[vssPath][subId] = channel.connectionid();
+  return subId;
 }
 
 int SubscriptionHandler::unsubscribe(SubscriptionId subscribeID) {
+  bool found_subscription=false;
+  logger->Log(LogLevel::VERBOSE,
+              string("SubscriptionHandler::unsubscribe: Unsubscribe on ") +
+                  boost::uuids::to_string(subscribeID));
   std::unique_lock<std::mutex> lock(accessMutex);
-  for (auto& uuid : subscribeHandle) {
-    auto subscriptions = &(uuid.second);
-    auto subscription = subscriptions->find(subscribeID);
-    if (subscription != subscriptions->end()) {
-      subscriptions->erase(subscription);
+  for (auto& sub : subscriptions) {
+    auto subsforpath = &(sub.second);
+    auto subid = subsforpath->find(subscribeID);
+    if (subid != subsforpath->end()) {
+      logger->Log(
+          LogLevel::VERBOSE,
+          string("SubscriptionHandler::unsubscribe: Unsubscribing path ") +
+              sub.first.getVSSPath());
+      subsforpath->erase(subid);
+      found_subscription=true;
     }
   }
-  return 0;
+  if (found_subscription)
+    return 0;
+  return -1;
 }
 
 int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
+  logger->Log(LogLevel::VERBOSE,
+              string("SubscriptionHandler::unsubscribeAll: Unsubscribing all "
+                     "for connectionId ") +
+                  std::to_string(connectionID));
+
   std::unique_lock<std::mutex> lock(accessMutex);
-  for (auto& uuid : subscribeHandle) {
-    auto condition = [connectionID](const std::pair<SubscriptionId, ConnectionId> & pair) {
-                        return (pair.second == (connectionID));
-                      };
+  for (auto& subs : subscriptions) {
+    auto condition =
+        [connectionID](const std::pair<SubscriptionId, ConnectionId>& pair) {
+          return (pair.second == (connectionID));
+        };
 
-    auto found = std::find_if(std::begin(uuid.second),
-                              std::end(uuid.second),
-                              condition);
+    auto found =
+        std::find_if(std::begin(subs.second), std::end(subs.second), condition);
 
-    if (found != std::end(uuid.second)) {
-      uuid.second.erase(found);
+    if (found != std::end(subs.second)) {
+      subs.second.erase(found);
+      logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::unsubscribeAll: Unsubscribing " +
+                  subs.first.getVSSPath() + " for "+std::to_string(connectionID) );
     }
   }
   return 0;
 }
 
-std::shared_ptr<IServer> SubscriptionHandler::getServer() {
-  return server;
-}
+std::shared_ptr<IServer> SubscriptionHandler::getServer() { return server; }
 
-int SubscriptionHandler::updateByUUID(const string &signalUUID, const json &data) {
+int SubscriptionHandler::publishForVSSPath(const VSSPath path,
+                                           const jsoncons::json& data) {
+  // Publish MQTT
+  for (auto& publisher : publishers_) {
+    publisher->sendPathValue(path.getVSSPath(), data["dp"]["value"]);
+  }
   std::stringstream ss;
-  ss << "SubscriptionHandler::update: set value "
-     << data["dp"]["value"]
-     << " for path " << data["path"].as<string>()
-     << " for UUID " << signalUUID;
+  ss << "SubscriptionHandler::publishForVSSPath: set value "
+     << data["dp"]["value"] << " for path " << path.to_string();
   logger->Log(LogLevel::VERBOSE, ss.str());
 
-  for(auto & publisher: publishers_){
-    publisher->sendPathValue(data["path"].as<string>(), data["dp"]["value"]);
-  }
-
   std::unique_lock<std::mutex> lock(accessMutex);
-  auto handle = subscribeHandle.find(signalUUID);
-  if (handle == subscribeHandle.end()) {
-    // UUID not found
+  auto handle = subscriptions.find(path);
+  if (handle == subscriptions.end()) {
+    // no subscriptions for path
     return 0;
   }
 
   for (auto subID : handle->second) {
     std::lock_guard<std::mutex> lock(subMutex);
     tuple<SubscriptionId, ConnectionId, json> newSub;
-    logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::updateByUUID: new value set at path " + std::to_string(subID.first) + ": " + ss.str());
+    logger->Log(
+        LogLevel::VERBOSE,
+        "SubscriptionHandler::publishForVSSPath: new value set at path " +
+            boost::uuids::to_string(subID.first) + ": " + ss.str());
     newSub = std::make_tuple(subID.first, subID.second, data);
     buffer.push(newSub);
     c.notify_one();
   }
-
-
   return 0;
 }
 
 void* SubscriptionHandler::subThreadRunner() {
-  logger->Log(LogLevel::VERBOSE, "SubscribeThread: Started Subscription Thread!");
+  logger->Log(LogLevel::VERBOSE,
+              "SubscribeThread: Started Subscription Thread!");
 
   while (isThreadRunning()) {
     if (buffer.size() > 0) {
@@ -179,22 +183,25 @@ void* SubscriptionHandler::subThreadRunner() {
 
       jsoncons::json answer;
       answer["action"] = "subscription";
-      answer["subscriptionId"] = std::get<0>(newSub);
+      answer["subscriptionId"] = boost::uuids::to_string(std::get<0>(newSub));
       answer.insert_or_assign("data", data);
 
       stringstream ss;
       ss << pretty_print(answer);
       string message = ss.str();
 
-      getServer()->SendToConnection(connId, message);
-    }
-    else {
+      bool connectionexist=getServer()->SendToConnection(connId, message);
+      if(!connectionexist) {
+        this->unsubscribeAll(connId);
+      }
+    } else {
       std::unique_lock<std::mutex> lock(subMutex);
       c.wait(lock);
     }
   }
 
-  logger->Log(LogLevel::VERBOSE, "SubscribeThread: Subscription handler thread stopped running");
+  logger->Log(LogLevel::VERBOSE,
+              "SubscribeThread: Subscription handler thread stopped running");
 
   return NULL;
 }

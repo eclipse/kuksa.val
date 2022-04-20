@@ -22,5 +22,5 @@ MOCK_BASE_CLASS( IServerMock, IServer )
 {
   MOCK_METHOD(AddListener, 2)
   MOCK_METHOD(RemoveListener, 2)
-  MOCK_METHOD(SendToConnection, 2, void( ConnectionId, const std::string & ) )
+  MOCK_METHOD(SendToConnection, 2, bool( ConnectionId, const std::string & ) )
 };

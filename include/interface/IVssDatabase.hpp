@@ -36,6 +36,8 @@ class IVssDatabase {
 
     virtual bool pathExists(const VSSPath &path) = 0;
     virtual bool pathIsWritable(const VSSPath &path) = 0;
+    virtual bool pathIsReadable(const VSSPath &path) = 0;
+
     virtual std::list<VSSPath> getLeafPaths(const VSSPath& path) = 0;
 
     virtual void checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val) = 0;

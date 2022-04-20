@@ -46,6 +46,8 @@ class VssDatabase : public IVssDatabase {
   //helpers
   bool pathExists(const VSSPath &path) override;
   bool pathIsWritable(const VSSPath &path) override;
+  bool pathIsReadable(const VSSPath &path) override;
+
   std::list<VSSPath> getLeafPaths(const VSSPath& path) override;
 
   void checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val) override;

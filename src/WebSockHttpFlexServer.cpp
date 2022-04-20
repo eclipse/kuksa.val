@@ -246,6 +246,8 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       boost::beast::multi_buffer bufferWrite_;
       char ping_state_ = 0;
 
+      mutable std::mutex queueMutex;
+
     protected:
       boost::asio::strand<
       boost::asio::io_context::executor_type> strand_;
@@ -412,11 +414,13 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
           return;
 
         // This indicates that the websocket_session was closed
-        if(ec == websocket::error::closed)
+        if(ec == websocket::error::closed) {
+          connHandler.RemoveClient(&derived());
           return;
+        }
 
         if(ec)
-          fail(ec, "read");
+          fail<>(&derived(),ec, "read");
 
         // Note that there is activity
         activity();
@@ -434,6 +438,8 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       }
 
       void write(const std::string &message) {
+        std::unique_lock<std::mutex> lock(queueMutex);
+
         writeQueue_.push_back(message);
 
         // there can be only one async_write request at any single time,
@@ -469,6 +475,8 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
 
         // Clear the buffer
         bufferWrite_.consume(bytesTransferred);
+
+        std::unique_lock<std::mutex> lock(queueMutex);
 
         writeQueue_.pop_front();
 
@@ -1452,7 +1460,9 @@ void WebSockHttpFlexServer::LoadCertData(std::string & certPath, boost::asio::ss
   isInitialized = true;
 }
 
-void WebSockHttpFlexServer::SendToConnection(ConnectionId connID, const std::string &message) {
+//Returns false, if connection is not found, as hint to caller to remove any state
+//regarding that connection
+bool WebSockHttpFlexServer::SendToConnection(ConnectionId connID, const std::string &message) {
   if (!isInitialized)
   {
     std::string err("Cannot send to connection, server not initialized!");
@@ -1504,6 +1514,11 @@ void WebSockHttpFlexServer::SendToConnection(ConnectionId connID, const std::str
       // TODO: check how we are going to handle ASYNC writes on HTTP connection?
     }
   }
+
+  if(!isFound) {
+      logger_->Log(LogLevel::VERBOSE, "Trying to publish on nonexisting connection ");
+  }
+  return isFound;
 }
 
 void WebSockHttpFlexServer::Start() {

@@ -92,7 +92,7 @@ class WebSockHttpFlexServer : public IServer {
 
     void AddListener(ObserverType type,   std::shared_ptr<IVssCommandProcessor> listener);
     void RemoveListener(ObserverType type, std::shared_ptr<IVssCommandProcessor> listener);
-    void SendToConnection(ConnectionId connID, const std::string &message);
+    bool SendToConnection(ConnectionId connID, const std::string &message);
 };
 
 

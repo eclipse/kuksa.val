@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
 
   //Setting data (to put a valid timestamp into tree)
   jsoncons::json value="100";
-  MOCK_EXPECT(subHandlerMock->updateByUUID)
+  MOCK_EXPECT(subHandlerMock->publishForVSSPath)
       .once()
       .with(mock::any, mock::any)
       .returns(true);

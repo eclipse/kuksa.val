@@ -13,6 +13,10 @@
  */
 
 #include <boost/algorithm/string.hpp>
+#include <boost/uuid/uuid.hpp>            
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include "ISubscriptionHandler.hpp"
 #include "JsonResponses.hpp"
 #include "VSSRequestValidator.hpp"
@@ -38,18 +42,18 @@ string VssCommandProcessor::processUnsubscribe(kuksa::kuksaChannel &channel,
   }
 
   string request_id = request["requestId"].as<string>();
-  uint32_t subscribeID = request["subscriptionId"].as<uint32_t>();
+  boost::uuids::uuid subscribeID = boost::uuids::string_generator()(request["subscriptionId"].as<std::string>());
   logger->Log(
       LogLevel::VERBOSE,
       "VssCommandProcessor::processQuery: unsubscribe query  for sub ID = " +
-          to_string(subscribeID) + " with request id " + request_id);
+          boost::uuids::to_string(subscribeID) + " with request id " + request_id);
 
   int res = subHandler->unsubscribe(subscribeID);
   if (res == 0) {
     jsoncons::json answer;
     answer["action"] = "unsubscribe";
     answer["requestId"] = request_id;
-    answer["subscriptionId"] = std::to_string(subscribeID);
+    answer["subscriptionId"] = boost::uuids::to_string(subscribeID);
     answer["ts"] = JsonResponses::getTimeStamp();
 
     std::stringstream ss;

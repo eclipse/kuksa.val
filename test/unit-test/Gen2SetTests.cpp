@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
       .returns(true);
 
   // Notify subscribers
-  MOCK_EXPECT(subHandlerMock->updateByUUID)
+  MOCK_EXPECT(subHandlerMock->publishForVSSPath)
       .once()
       .with(mock::any, mock::any)
       .returns(true);
@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Array) {
       .returns(true);
 
   // Notify subscribers
-  MOCK_EXPECT(subHandlerMock->updateByUUID)
+  MOCK_EXPECT(subHandlerMock->publishForVSSPath)
       .once()
       .with(mock::any, mock::any)
       .returns(true);

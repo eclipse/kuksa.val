@@ -22,6 +22,9 @@
 #include <thread>
 #include <memory>
 
+#include <boost/uuid/uuid.hpp> 
+#include <boost/functional/hash.hpp>
+
 #include <jsoncons/json.hpp>
 
 #include "visconf.hpp"
@@ -30,6 +33,7 @@
 #include "IAccessChecker.hpp"
 #include "IServer.hpp"
 #include "IPublisher.hpp"
+#include "VSSPath.hpp"
 
 class AccessChecker;
 class Authenticator;
@@ -39,17 +43,28 @@ class ILogger;
 
 
 using SubConnId = uint64_t;
+using SubscriptionId = boost::uuids::uuid;
 
 // Subscription ID: Client ID
-using subscriptions_t = std::unordered_map<SubscriptionId, SubConnId>;
+struct UUIDHasher
+{
+  std::size_t operator()(const boost::uuids::uuid& k) const
+  {
+    using std::size_t;
 
-// Subscription UUID
-typedef std::string uuid_t;
+    boost::hash<boost::uuids::uuid> uuid_hasher;
+
+    return (uuid_hasher(k));
+  }
+};
+using subscriptions_t = std::unordered_map<SubscriptionId, SubConnId, UUIDHasher>;
+
 
 class SubscriptionHandler : public ISubscriptionHandler {
  private:
+  std::unordered_map<VSSPath, subscriptions_t> subscriptions;
+
   std::shared_ptr<ILogger> logger;
-  std::unordered_map<uuid_t, subscriptions_t> subscribeHandle;
   std::shared_ptr<IServer> server;
   std::vector<std::shared_ptr<IPublisher>> publishers_;
   std::shared_ptr<IAuthenticator> validator;
@@ -76,7 +91,9 @@ class SubscriptionHandler : public ISubscriptionHandler {
                            const std::string &path);
   int unsubscribe(SubscriptionId subscribeID);
   int unsubscribeAll(ConnectionId connectionID);
-  int updateByUUID(const std::string &signalUUID, const jsoncons::json &value);
+  int publishForVSSPath(const VSSPath path, const jsoncons::json &value);
+
+
   std::shared_ptr<IServer> getServer();
   int startThread();
   int stopThread();

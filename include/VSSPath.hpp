@@ -60,4 +60,23 @@ class VSSPath {
 
 };
 
+//specialize std:hash for VSSPath so it can be used in eg unordered_map
+namespace std {
+
+  template <>
+  struct hash<VSSPath>
+  {
+    std::size_t operator()(const VSSPath& vp) const
+    {
+      using std::size_t;
+      using std::hash;
+      using std::string;
+      //based on VSSPAth equality, we really only need to hash vsspath
+      return hash<std::string>()(vp.getVSSPath());
+
+    }
+  };
+
+}
+
 #endif
