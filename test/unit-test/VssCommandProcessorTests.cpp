@@ -999,6 +999,54 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
   BOOST_TEST(res == jsonSignalValue);
 }
 
+BOOST_AUTO_TEST_CASE(Given_MalformedUUD_In_Unsubscribe)
+{
+  kuksa::kuksaChannel channel;
+
+  jsoncons::json jsonUnsubscribeRequestForSignal;
+  jsoncons::json jsonSignalValue, jsonSignalValueErr;
+
+  string requestId = "1";
+  boost::uuids::uuid subscriptionId;
+
+  // setup
+
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
+
+  jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
+  jsonUnsubscribeRequestForSignal["subscriptionId"] = "definitely-not-an-uuid";
+  jsonUnsubscribeRequestForSignal["requestId"] = requestId;
+
+  jsonSignalValueErr["number"] = "400";
+  jsonSignalValueErr["reason"] = "Bad Request";
+  jsonSignalValueErr["message"] = "Subscription ID is not a UUID: invalid uuid string";
+  jsonSignalValue["action"] = "unsubscribe";
+  jsonSignalValue["requestId"] = requestId;
+  jsonSignalValue["ts"] = 11111111;
+  jsonSignalValue["error"] = jsonSignalValueErr;
+
+  // expectations
+
+  // validate that at least one log event was processed
+  MOCK_EXPECT(logMock->Log).at_least( 1 );
+
+  MOCK_EXPECT(subsHndlMock->unsubscribe)
+    .with(subscriptionId)
+    .returns(1);
+
+  // run UUT
+  auto resStr = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonSignalValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
+
+  BOOST_TEST(res == jsonSignalValue);
+}
+
 ///////////////////////////
 // Test GET METADATA handling
 
