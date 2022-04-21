@@ -23,4 +23,5 @@ node_modules/
 .flows.json.backup
 flows_cred.json
 *.backup
-
+*.srl
+*.csr
