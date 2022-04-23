@@ -152,7 +152,30 @@ class KuksaClientThread(threading.Thread):
         res = self._sendReceiveMsg(req, timeout)
         resJson =  json.loads(res) 
         if "subscriptionId" in resJson:
-            self.subscriptionCallbacks[resJson["subscriptionId"]] = callback; 
+            self.subscriptionCallbacks[resJson["subscriptionId"]] = callback 
+        return res
+
+    # Unsubscribe value changes of to a given path.
+    # The subscription id from the response of the corresponding subscription request will be required
+    def unsubscribe(self, id, timeout = 5):
+        req = {}
+        req["action"]= "unsubscribe"
+        req["subscriptionId"] = id
+
+        res = {}
+        # Check if the subscription id exists
+        if id in self.subscriptionCallbacks.keys():
+            # No matter what happens, remove the callback
+            del(self.subscriptionCallbacks[id]) 
+            res = self._sendReceiveMsg(req, timeout)
+        else:
+            errMsg = {}
+            errMsg["number"] = "404"
+            errMsg["message"] = "Could not unsubscribe" 
+            errMsg["reason"] = "Subscription ID does not exist" 
+            res["error"] = errMsg
+            res = json.dumps(res)
+            
         return res
 
 
