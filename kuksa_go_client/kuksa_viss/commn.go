@@ -78,8 +78,10 @@ func (cc *KuksaClientComm) startCommunication() error {
 	cc.sendChannel = make(chan []byte, 10)
 	go func() {
 		for {
-			req := <-cc.sendChannel
-			cc.connSocket.WriteMessage(websocket.TextMessage, []byte(req))
+			req, ok := <-cc.sendChannel
+			if ok {
+				cc.connSocket.WriteMessage(websocket.TextMessage, []byte(req))
+			}
 		}
 	}()
 
