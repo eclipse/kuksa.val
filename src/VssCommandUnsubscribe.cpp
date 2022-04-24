@@ -37,12 +37,20 @@ string VssCommandProcessor::processUnsubscribe(kuksa::kuksaChannel &channel,
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
-        requestValidator->tryExtractRequestId(request), "get",
+        requestValidator->tryExtractRequestId(request), "unsubscribe",
         string("Unhandled error: ") + e.what());
   }
 
   string request_id = request["requestId"].as<string>();
-  boost::uuids::uuid subscribeID = boost::uuids::string_generator()(request["subscriptionId"].as<std::string>());
+  boost::uuids::uuid subscribeID;
+  try {
+    subscribeID = boost::uuids::string_generator()(request["subscriptionId"].as<std::string>());
+  } catch (std::runtime_error &e) {
+    logger->Log(LogLevel::ERROR, "Subscription ID is not a valid UUID");
+    return JsonResponses::malFormedRequest(
+        requestValidator->tryExtractRequestId(request), "unsubscribe",
+        string("Subscription ID is not a UUID: ") + e.what());
+  }
   logger->Log(
       LogLevel::VERBOSE,
       "VssCommandProcessor::processQuery: unsubscribe query  for sub ID = " +
