@@ -15,7 +15,7 @@ import queue, time, os
 from pygments import highlight, lexers, formatters
 from cmd2 import Cmd, with_argparser, with_category, Cmd2ArgumentParser, CompletionItem
 from cmd2.utils import CompletionError, basic_complete
-import functools
+import functools, subprocess
 DEFAULT_SERVER_ADDR = "127.0.0.1"
 DEFAULT_SERVER_PORT = 8090
 
@@ -196,6 +196,7 @@ class TestClient(Cmd):
                 self.subscribeIdToPath[resJson["subscriptionId"]] = args.Path
                 print("Subscription log available at " + fileName)
                 print("Execute tail -f " + fileName + " on another Terminal instance")
+                subprocess.Popen(["xterm", "-e", "/bin/bash", "-l", "-c", "tail -f " + fileName])
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
