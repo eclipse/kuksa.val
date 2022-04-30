@@ -37,6 +37,7 @@ else
     echo "No server keys configured, initialize with example"
     cp /kuksa.val/exampleconfig/certs/Server.key /config/certs/
     cp /kuksa.val/exampleconfig/certs/Server.pem /config/certs/
+    cp /kuksa.val/exampleconfig/certs/CA.pem /config/certs/
 fi
 
 
