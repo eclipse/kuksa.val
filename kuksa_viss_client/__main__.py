@@ -196,7 +196,9 @@ class TestClient(Cmd):
                 self.subscribeIdToPath[resJson["subscriptionId"]] = args.Path
                 print("Subscription log available at " + fileName)
                 print("Execute tail -f " + fileName + " on another Terminal instance")
-                subprocess.Popen(["xterm", "-e", "/bin/bash", "-l", "-c", "tail -f " + fileName])
+                from shutil import which
+                if which("xterm") != None:
+                    subprocess.Popen(["xterm", "-e", "/bin/bash", "-l", "-c", "tail -f " + fileName])
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -207,12 +209,13 @@ class TestClient(Cmd):
         if self.checkConnection():
             resp = self.commThread.unsubscribe(args.SubscribeId)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
-            path = self.subscribeIdToPath[args.SubscribeId]
-            if path in self.subscribeFileDesc:
-                self.subscribeFileDesc[path].close()
-                del(self.subscribeFileDesc[path])
-            del(self.subscribeIdToPath[args.SubscribeId])
-        self.pathCompletionItems = []
+            if args.SubscribeId in self.subscribeIdToPath.keys():
+                path = self.subscribeIdToPath[args.SubscribeId]
+                if path in self.subscribeFileDesc:
+                    self.subscribeFileDesc[path].close()
+                    del(self.subscribeFileDesc[path])
+                del(self.subscribeIdToPath[args.SubscribeId])
+            self.pathCompletionItems = []
 
     def do_quit(self, args):
         if hasattr(self, "commThread"):
