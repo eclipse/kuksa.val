@@ -31,9 +31,10 @@ Check [System Architecture](doc/system-architecture.md) for an overview how KUKS
 ### Using  Docker Image
 If you prefer to build kuksa.val yourself skip to [Building KUKSA.val](#Building-kuksaval).
 
-Download a current docker image from our CI server:
+Download a current docker image from one of our CI server:
 
-https://ci.eclipse.org/kuksa/job/kuksa.val/job/master/
+- https://ci.eclipse.org/kuksa/job/kuksa.val/job/master/
+- https://kuksaval.northeurope.cloudapp.azure.com/job/kuksaval-upstream/
 
 The container images should work with any OCI compliant container runtime, in this document we assume you are using docker
 
