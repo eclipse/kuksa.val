@@ -191,7 +191,7 @@ class TestClient(Cmd):
             resp = self.commThread.subscribe(args.Path, lambda msg: self.subscribeCallback(args.Path, msg))
             resJson =  json.loads(resp) 
             if "subscriptionId" in resJson:
-                fileName = os.getcwd() + "/log_"+args.Path+"_"+str(time.time())
+                fileName = os.getcwd() + "/log_"+args.Path.replace("/", ".")+"_"+str(time.time())
                 self.subscribeFileDesc[args.Path] = open(fileName, "w")
                 self.subscribeIdToPath[resJson["subscriptionId"]] = args.Path
                 print("Subscription log available at " + fileName)
