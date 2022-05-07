@@ -9,12 +9,13 @@
 # SPDX-License-Identifier: EPL-2.0
 ########################################################################
 import argparse, json, sys
+from re import sub
 from typing import Dict, List
 import queue, time, os
 from pygments import highlight, lexers, formatters
 from cmd2 import Cmd, with_argparser, with_category, Cmd2ArgumentParser, CompletionItem
 from cmd2.utils import CompletionError, basic_complete
-import functools
+import functools, subprocess
 DEFAULT_SERVER_ADDR = "127.0.0.1"
 DEFAULT_SERVER_PORT = 8090
 
@@ -83,6 +84,16 @@ class TestClient(Cmd):
 
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
+    def subscribeCallback(self, path, resp):
+        self.subscribeFileDesc[path].write(resp + "\n")
+        self.subscribeFileDesc[path].flush()
+
+    def subscriptionIdCompleter(self, text, line, begidx, endidx):
+        self.pathCompletionItems = []
+        for id in self.subscribeIdToPath.keys():
+            self.pathCompletionItems.append(CompletionItem(id))
+        return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
+    
     COMM_SETUP_COMMANDS = "Communication Set-up Commands"
     VISS_COMMANDS = "Kuksa Interaction Commands"
     INFO_COMMANDS = "Info Commands"
@@ -104,7 +115,14 @@ class TestClient(Cmd):
     ap_setValue.add_argument("Value", help="Value to be set")
 
     ap_getValue = argparse.ArgumentParser()
-    ap_getValue.add_argument("Path", help="Path whose metadata is to be read", completer_method=path_completer)
+    ap_getValue.add_argument("Path", help="Path to be read", completer_method=path_completer)
+
+    ap_subscribe = argparse.ArgumentParser()
+    ap_subscribe.add_argument("Path", help="Path to be subscribed", completer_method=path_completer)
+
+    ap_unsubscribe = argparse.ArgumentParser()
+    ap_unsubscribe.add_argument("SubscribeId", help="Corresponding subscription Id", completer_method=subscriptionIdCompleter)
+
     ap_getMetaData = argparse.ArgumentParser()
     ap_getMetaData.add_argument("Path", help="Path whose metadata is to be read", completer_method=path_completer)
     ap_updateMetaData = argparse.ArgumentParser()
@@ -127,6 +145,8 @@ class TestClient(Cmd):
         self.serverPort = DEFAULT_SERVER_PORT
         self.vssTree = {}
         self.pathCompletionItems = []
+        self.subscribeFileDesc = {}
+        self.subscribeIdToPath = {}
 
         print("Welcome to kuksa viss client version " + str(__version__))
         print()
@@ -136,7 +156,6 @@ class TestClient(Cmd):
 
         print()
         self.connect()
-
 
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_authorize)
@@ -164,6 +183,39 @@ class TestClient(Cmd):
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
+    @with_category(VISS_COMMANDS)
+    @with_argparser(ap_subscribe)
+    def do_subscribe(self, args):
+        """Subscribe the value of a path"""
+        if self.checkConnection():
+            resp = self.commThread.subscribe(args.Path, lambda msg: self.subscribeCallback(args.Path, msg))
+            resJson =  json.loads(resp) 
+            if "subscriptionId" in resJson:
+                fileName = os.getcwd() + "/log_"+args.Path.replace("/", ".")+"_"+str(time.time())
+                self.subscribeFileDesc[args.Path] = open(fileName, "w")
+                self.subscribeIdToPath[resJson["subscriptionId"]] = args.Path
+                print("Subscription log available at " + fileName)
+                print("Execute tail -f " + fileName + " on another Terminal instance")
+                from shutil import which
+                if which("xterm") != None:
+                    subprocess.Popen(["xterm", "-e", "/bin/bash", "-l", "-c", "tail -f " + fileName])
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
+
+    @with_category(VISS_COMMANDS)
+    @with_argparser(ap_unsubscribe)
+    def do_unsubscribe(self, args):
+        """Unsubscribe an existing subscription"""
+        if self.checkConnection():
+            resp = self.commThread.unsubscribe(args.SubscribeId)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+            if args.SubscribeId in self.subscribeIdToPath.keys():
+                path = self.subscribeIdToPath[args.SubscribeId]
+                if path in self.subscribeFileDesc:
+                    self.subscribeFileDesc[path].close()
+                    del(self.subscribeFileDesc[path])
+                del(self.subscribeIdToPath[args.SubscribeId])
+            self.pathCompletionItems = []
 
     def do_quit(self, args):
         if hasattr(self, "commThread"):
@@ -219,7 +271,6 @@ class TestClient(Cmd):
         if None == self.commThread or not self.commThread.wsConnected: 
             self.connect()
         return self.commThread.wsConnected
-
 
     def connect(self, insecure=False):
         """Connect to the VISS Server"""
