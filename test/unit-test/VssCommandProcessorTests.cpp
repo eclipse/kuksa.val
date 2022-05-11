@@ -541,7 +541,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["ts"] = 11111111;
 
-  JsonResponses::malFormedRequest(requestId, "get", "Unhandled error: std::exception", jsonMalformedReq);
+  JsonResponses::malFormedRequest(requestId, "set", "Unhandled error: std::exception", jsonMalformedReq);
 
   // expectations
 
