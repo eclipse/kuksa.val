@@ -52,6 +52,8 @@ class VssCommandProcessor : public IVssCommandProcessor {
                           const std::string & token);
   std::string processGet2(kuksa::kuksaChannel &channel, jsoncons::json &request);
   std::string processSet2(kuksa::kuksaChannel &channel, jsoncons::json &request);
+  std::string processGetTarget(kuksa::kuksaChannel &channel, jsoncons::json &request);
+  std::string processSetTarget(kuksa::kuksaChannel &channel, jsoncons::json &request);
   std::string processSubscribe(kuksa::kuksaChannel& channel, jsoncons::json &request);
   std::string processUnsubscribe(kuksa::kuksaChannel &channel, jsoncons::json &request);
   

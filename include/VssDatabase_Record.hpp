@@ -32,6 +32,8 @@ public:
     jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) override; //gen2 version
     jsoncons::json getSignal(const VSSPath &path) override; //Gen2 version
 
+    jsoncons::json setSignalTarget(const VSSPath &path, jsoncons::json &value) override;
+    jsoncons::json getSignalTarget(const VSSPath &path) override; 
 
 private:
 

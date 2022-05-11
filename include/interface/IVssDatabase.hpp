@@ -34,9 +34,13 @@ class IVssDatabase {
     virtual jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) = 0; //gen2 version
     virtual jsoncons::json getSignal(const VSSPath& path) = 0;
 
+    virtual jsoncons::json setSignalTarget(const VSSPath &path, jsoncons::json &value) = 0; 
+    virtual jsoncons::json getSignalTarget(const VSSPath& path) = 0;
+
     virtual bool pathExists(const VSSPath &path) = 0;
     virtual bool pathIsWritable(const VSSPath &path) = 0;
     virtual bool pathIsReadable(const VSSPath &path) = 0;
+    virtual bool pathIsTargetable(const VSSPath &path) = 0;
 
     virtual std::list<VSSPath> getLeafPaths(const VSSPath& path) = 0;
 

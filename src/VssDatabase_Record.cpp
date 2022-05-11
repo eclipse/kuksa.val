@@ -75,3 +75,19 @@ jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path)
 
     return VssDatabase::getSignal(path);
 }
+
+jsoncons::json VssDatabase_Record::setSignalTarget(const VSSPath &path, jsoncons::json &value)
+{
+    std::string json_val;
+    value.dump_pretty(json_val);
+    BOOST_LOG(lg) << "setTarget;" << path.to_string() << ";" + json_val;
+    return VssDatabase::setSignalTarget(path,value);
+}
+
+jsoncons::json VssDatabase_Record::getSignalTarget(const VSSPath &path)
+{
+    if(logMode_ == "recordSetAndGet")
+        BOOST_LOG(lg) << "getTarget;" << path.to_string();
+
+    return VssDatabase::getSignalTarget(path);
+}

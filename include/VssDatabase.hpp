@@ -47,6 +47,7 @@ class VssDatabase : public IVssDatabase {
   bool pathExists(const VSSPath &path) override;
   bool pathIsWritable(const VSSPath &path) override;
   bool pathIsReadable(const VSSPath &path) override;
+  bool pathIsTargetable(const VSSPath &path) override;
 
   std::list<VSSPath> getLeafPaths(const VSSPath& path) override;
 
@@ -68,6 +69,9 @@ class VssDatabase : public IVssDatabase {
   
   jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) override; //gen2 version
   jsoncons::json getSignal(const VSSPath &path) override; //Gen2 version
+
+  jsoncons::json setSignalTarget(const VSSPath &path, jsoncons::json &value) override; 
+  jsoncons::json getSignalTarget(const VSSPath &path) override; 
 
   void applyDefaultValues(jsoncons::json &tree, VSSPath currentPath);
 

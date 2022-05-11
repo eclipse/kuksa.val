@@ -31,7 +31,7 @@ static const char* SCHEMA_GET=R"(
     "required": ["action", "path", "requestId" ],
     "properties": {
         "action": {
-            "enum": [ "get", "getMetaData" ],
+            "enum": [ "get", "getMetaData", "getTargetValue" ],
             "description": "The identifier for the get request"
         },
         "path": {
@@ -54,7 +54,7 @@ static const char* SCHEMA_SET=R"(
     "required": ["action", "path", "value", "requestId"],
     "properties": {
         "action": {
-            "enum": [ "set" ],
+            "enum": [ "set", "setTargetValue" ],
             "description": "The identifier for the set request"
         },
         "path": {

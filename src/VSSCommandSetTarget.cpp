@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (c) 2020 Robert Bosch GmbH.
+ * Copyright (c) 2022 Robert Bosch GmbH.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -27,9 +27,9 @@
 #include <boost/algorithm/string.hpp>
 
 
-/** Implements the Websocket set request according to GEN2, with GEN1 backwards
+/** Implements the Websocket setTargetValue request according to GEN2, with GEN1 backwards
  * compatibility **/
-std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
+std::string VssCommandProcessor::processSetTarget(kuksa::kuksaChannel &channel,
                                              jsoncons::json &request) {
   try {
     requestValidator->validateSet(request);
@@ -37,19 +37,19 @@ std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
     std::string msg=std::string(e.what());
     boost::algorithm::trim(msg);
     logger->Log(LogLevel::ERROR, msg);
-    return JsonResponses::malFormedRequest( requestValidator->tryExtractRequestId(request), "set",
+    return JsonResponses::malFormedRequest( requestValidator->tryExtractRequestId(request), "setTargetValue",
                                            string("Schema error: ") + msg);
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
-        requestValidator->tryExtractRequestId(request) , "set", string("Unhandled error: ") + e.what());
+        requestValidator->tryExtractRequestId(request) , "setTargetValue", string("Unhandled error: ") + e.what());
   }
 
   VSSPath path = VSSPath::fromVSS(request["path"].as_string());
   
   string requestId = request["requestId"].as_string();
 
-  logger->Log(LogLevel::VERBOSE, "Set request with id " + requestId +
+  logger->Log(LogLevel::VERBOSE, "setTargetValue request with id " + requestId +
                                      " for path: " + path.to_string());
 
   //unpack any multiset or filters here later as in
@@ -65,33 +65,33 @@ std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
       stringstream msg;
       msg << "Path " << std::get<0>(setTuple).to_string() << " does not exist";
       logger->Log(LogLevel::WARNING,msg.str());
-      return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", std::get<0>(setTuple).to_string());
+      return JsonResponses::pathNotFound(request["requestId"].as<string>(), "setTargetValue", std::get<0>(setTuple).to_string());
     }
     if (! accessValidator_->checkWriteAccess(channel, std::get<0>(setTuple) )) {
       stringstream msg;
       msg << "No write access to " << std::get<0>(setTuple).to_string();
       logger->Log(LogLevel::WARNING,msg.str());
-      return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
+      return JsonResponses::noAccess(request["requestId"].as<string>(), "setTargetValue", msg.str());
     }
-    if (! database->pathIsWritable(std::get<0>(setTuple))) {
+    if (! database->pathIsTargetable(std::get<0>(setTuple))) {
       stringstream msg;
-      msg << "Can not set " << std::get<0>(setTuple).to_string() << ". Only sensor or actor leaves can be set.";
+      msg << "Can not set target value for " << std::get<0>(setTuple).to_string() << ". Only actor leaves have target values.";
       logger->Log(LogLevel::WARNING,msg.str());
-      return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
+      return JsonResponses::noAccess(request["requestId"].as<string>(), "setTargetValue", msg.str());
     }
   }
 
   //If all preliminary checks successful, we are setting everything
   try {
     for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
-      database->setSignal(std::get<0>(setTuple), std::get<1>(setTuple));
+      database->setSignalTarget(std::get<0>(setTuple), std::get<1>(setTuple));
     }
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
     jsoncons::json root;
     jsoncons::json error;
 
-    root["action"] = "set";
+    root["action"] = "setTargetValue";
     root.insert_or_assign("requestId", request["requestId"]);
 
     error["number"] = "401";
@@ -106,25 +106,25 @@ std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
     return ss.str();
   } catch (noPathFoundonTree &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
-    return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set",
+    return JsonResponses::pathNotFound(request["requestId"].as<string>(), "setTargetValue",
                                        path.to_string());
   } catch (outOfBoundException &outofboundExp) {
     logger->Log(LogLevel::ERROR, string(outofboundExp.what()));
     return JsonResponses::valueOutOfBounds(request["requestId"].as<string>(),
-                                           "set", outofboundExp.what());
+                                           "setTargetValue", outofboundExp.what());
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
-    return JsonResponses::noAccess(request["requestId"].as<string>(), "set",
+    return JsonResponses::noAccess(request["requestId"].as<string>(), "setTargetValue",
                                    nopermission.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
-        request["requestId"].as<string>(), "set",
+        request["requestId"].as<string>(), "setTargetValue",
         string("Unhandled error: ") + e.what());
   }
 
   jsoncons::json answer;
-  answer["action"] = "set";
+  answer["action"] = "setTargetValue";
   answer.insert_or_assign("requestId", request["requestId"]);
   answer["ts"] = JsonResponses::getTimeStamp();
 
