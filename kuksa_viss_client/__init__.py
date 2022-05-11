@@ -133,11 +133,39 @@ class KuksaClientThread(threading.Thread):
 
         return self._sendReceiveMsg(req, timeout)
 
+    # Set value to a given path
+    def setTargetValue(self, path, value, timeout = 1):
+        if 'nan' == value:
+            print(path + " has an invalid value " + str(value))
+            return
+        req = {}
+        req["action"]= "setTargetValue"
+        req["path"] = path
+        try:
+            jsonValue = json.loads(value)
+            if isinstance(jsonValue, list):
+                req["value"] = [] 
+                for v in jsonValue:
+                    req["value"].append(str(v))
+            else:
+                req["value"] = str(value)
+        except json.decoder.JSONDecodeError:
+            req["value"] = str(value)
+
+        return self._sendReceiveMsg(req, timeout)
+
 
     # Get value to a given path
     def getValue(self, path, timeout = 5):
         req = {}
         req["action"]= "get"
+        req["path"] = path
+        return self._sendReceiveMsg(req, timeout)
+
+    # Get value to a given path
+    def getTargetValue(self, path, timeout = 5):
+        req = {}
+        req["action"]= "getTargetValue"
         req["path"] = path
         return self._sendReceiveMsg(req, timeout)
 

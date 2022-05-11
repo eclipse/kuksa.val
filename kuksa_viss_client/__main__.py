@@ -117,6 +117,13 @@ class TestClient(Cmd):
     ap_getValue = argparse.ArgumentParser()
     ap_getValue.add_argument("Path", help="Path to be read", completer_method=path_completer)
 
+    ap_setTargetValue = argparse.ArgumentParser()
+    ap_setTargetValue.add_argument("Path", help="Path whose target value to be set", completer_method=path_completer)
+    ap_setTargetValue.add_argument("Value", help="Value to be set")
+
+    ap_getTargetValue = argparse.ArgumentParser()
+    ap_getTargetValue.add_argument("Path", help="Path whose target value to be read", completer_method=path_completer)
+
     ap_subscribe = argparse.ArgumentParser()
     ap_subscribe.add_argument("Path", help="Path to be subscribed", completer_method=path_completer)
 
@@ -175,11 +182,29 @@ class TestClient(Cmd):
         self.pathCompletionItems = []
 
     @with_category(VISS_COMMANDS)
+    @with_argparser(ap_setTargetValue)
+    def do_setTargetValue(self, args):
+        """Set the value of a path"""
+        if self.checkConnection():
+            resp = self.commThread.setTargetValue(args.Path, args.Value)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
+
+    @with_category(VISS_COMMANDS)
     @with_argparser(ap_getValue)
     def do_getValue(self, args):
         """Get the value of a path"""
         if self.checkConnection():
             resp = self.commThread.getValue(args.Path)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
+
+    @with_category(VISS_COMMANDS)
+    @with_argparser(ap_getTargetValue)
+    def do_getTargetValue(self, args):
+        """Get the value of a path"""
+        if self.checkConnection():
+            resp = self.commThread.getTargetValue(args.Path)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
