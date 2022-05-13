@@ -1,6 +1,5 @@
 # KUKSA.VAL
 ![kuksa.val Logo](./doc/pictures/logo.png)
-
 This is KUKSA.val, the KUKSA **V**ehicle **A**bstration **L**ayer.
 
 [![Gitter](https://badges.gitter.im/kuksa-val.svg)](https://gitter.im/kuksa-val)
