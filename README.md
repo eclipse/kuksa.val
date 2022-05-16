@@ -5,7 +5,10 @@ This is KUKSA.val, the KUKSA **V**ehicle **A**bstration **L**ayer.
 
 [![Gitter](https://badges.gitter.im/kuksa-val.svg)](https://gitter.im/kuksa-val)
 [![License](https://img.shields.io/badge/License-EPL%202.0-blue.svg)](https://opensource.org/licenses/EPL-2.0)
-[![Build Status](https://ci.eclipse.org/kuksa/buildStatus/icon?job=kuksa.val%2Fmaster)](https://ci.eclipse.org/kuksa/job/kuksa.val/job/master/)
+
+![Build Status AMD64](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_val_docker_amd64.yml/badge.svg)
+![Build Status ARM64](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_val_docker_arm64.yml/badge.svg)
+[![Build Status](https://kuksaval.northeurope.cloudapp.azure.com/buildStatus/icon?job=kuksaval-upstream%2Fmaster&subject=LegacyCI)](https://kuksaval.northeurope.cloudapp.azure.com/job/kuksaval-upstream/job/master/)
 [![codecov](https://codecov.io/gh/eclipse/kuksa.val/branch/master/graph/badge.svg?token=M4FT175771)](https://codecov.io/gh/eclipse/kuksa.val)
 
 
