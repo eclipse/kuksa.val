@@ -541,7 +541,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["ts"] = 11111111;
 
-  JsonResponses::malFormedRequest(requestId, "get", "Unhandled error: std::exception", jsonMalformedReq);
+  JsonResponses::malFormedRequest(requestId, "set", "Unhandled error: std::exception", jsonMalformedReq);
 
   // expectations
 
@@ -628,6 +628,170 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   jsonSignalValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
 
   BOOST_TEST(res == jsonSignalValue);
+}
+
+///////////////////////////
+// Test SET Target Value handling
+
+BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_InvalidPath_Shall_ReturnError)
+{
+  kuksa::kuksaChannel channel;
+
+  jsoncons::json jsonSetRequestForSignal;
+  jsoncons::json jsonPathNotFound;
+
+  string requestId = "1";
+  int requestValue = 123;
+  std::string path{"Vehicle.OBD.DTC1"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
+  
+  // setup
+  //We need permission first, (otherwise get 403 before checking for invalid path)
+  std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
+
+  channel.set_permissions(perm);
+
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
+
+  jsonSetRequestForSignal["action"] = "setTargetValue";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["value"] = requestValue;
+  jsonSetRequestForSignal["requestId"] = requestId;
+
+  JsonResponses::pathNotFound(requestId, "setTargetValue", vsspath.getVSSGen1Path(), jsonPathNotFound);
+
+  // expectations
+
+  // validate that at least one log event was processed
+  MOCK_EXPECT(logMock->Log).at_least( 1 );
+  
+  jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
+  MOCK_EXPECT(dbMock->pathExists)
+    .with(vsspath).returns(false);
+
+  // run UUT
+  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonPathNotFound["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
+  BOOST_TEST(res == jsonPathNotFound);
+}
+
+BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Sensor_Shall_ReturnError)
+{
+  kuksa::kuksaChannel channel;
+
+  jsoncons::json jsonSetRequestForSignal;
+  jsoncons::json jsonNoAccess;
+
+  string requestId = "1";
+  int requestValue = 123;
+  std::string path{"Vehicle.Acceleration.Lateral"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
+  
+  // setup
+  //We need permission first, (otherwise get 403 before checking for invalid path)
+  std::string perm = "{\"Vehicle.*\" : \"wr\"}";
+
+  channel.set_permissions(perm);
+
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
+
+  jsonSetRequestForSignal["action"] = "setTargetValue";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["value"] = requestValue;
+  jsonSetRequestForSignal["requestId"] = requestId;
+
+  // expectations
+  JsonResponses::noAccess(requestId, "setTargetValue", "Can not set target value for " + vsspath.getVSSGen1Path() + 
+                                                              ". Only actor leaves have target values.", jsonNoAccess);
+
+  // validate that at least one log event was processed
+  MOCK_EXPECT(logMock->Log).at_least( 1 );
+  MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(dbMock->pathIsTargetable)
+    .with(vsspath).returns(false);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(true);
+  
+  jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
+
+  // run UUT
+  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonNoAccess["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
+  BOOST_TEST(res == jsonNoAccess);
+}
+
+BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Actor_Shall_Work)
+{
+  kuksa::kuksaChannel channel;
+
+  jsoncons::json jsonSetRequestForSignal;
+  jsoncons::json jsonGetResponseForSignal;
+
+  string requestId = "1";
+  int requestValue = 123;
+  std::string path{"Vehicle.Acceleration.Lateral"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
+  
+  // setup
+  //We need permission first, (otherwise get 403 before checking for invalid path)
+  std::string perm = "{\"Vehicle.*\" : \"wr\"}";
+
+  channel.set_permissions(perm);
+
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
+
+  jsonSetRequestForSignal["action"] = "setTargetValue";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["value"] = requestValue;
+  jsonSetRequestForSignal["requestId"] = requestId;
+
+  // expectations
+  jsonGetResponseForSignal["action"] = "setTargetValue";
+  jsonGetResponseForSignal["requestId"] = requestId;
+
+  // validate that at least one log event was processed
+  MOCK_EXPECT(logMock->Log).at_least( 1 );
+  MOCK_EXPECT(dbMock->setSignalTarget).with(vsspath, 123).returns(jsonGetResponseForSignal);
+  MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(dbMock->pathIsTargetable)
+    .with(vsspath).returns(true);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(true);
+  
+  jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
+
+  // run UUT
+  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonGetResponseForSignal["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
+  BOOST_TEST(res == jsonGetResponseForSignal);
 }
 
 ///////////////////////////

@@ -241,7 +241,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
 
     if (action == "get") {
         response = processGet2(channel, root);
-    }
+    } 
     else if (action == "set") {
         response = processSet2(channel, root);
     }

@@ -41,6 +41,13 @@ string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
 
   string path = request["path"].as<string>();
   string request_id = request["requestId"].as<string>();
+  std::string attribute;
+  if (request.contains("attribute")) {
+    attribute = request["attribute"].as_string();
+  } else {
+    attribute = "value";
+  }
+
 
   logger->Log(
       LogLevel::VERBOSE,
@@ -50,7 +57,7 @@ string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
 
   boost::uuids::uuid subId;;
   try {
-    subId = subHandler->subscribe(channel, database, path);
+    subId = subHandler->subscribe(channel, database, path, attribute);
   } catch (noPathFoundonTree &noPathFound) {
     logger->Log(LogLevel::ERROR, string(noPathFound.what()));
     return JsonResponses::pathNotFound(request_id, "subscribe", path);

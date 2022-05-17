@@ -84,9 +84,10 @@ class TestClient(Cmd):
 
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
-    def subscribeCallback(self, path, resp):
-        self.subscribeFileDesc[path].write(resp + "\n")
-        self.subscribeFileDesc[path].flush()
+    def subscribeCallback(self, path, attr, resp):
+        print(path, attr)
+        self.subscribeFileDesc[(path,attr)].write(resp + "\n")
+        self.subscribeFileDesc[(path,attr)].flush()
 
     def subscriptionIdCompleter(self, text, line, begidx, endidx):
         self.pathCompletionItems = []
@@ -113,12 +114,22 @@ class TestClient(Cmd):
     ap_setValue = argparse.ArgumentParser()
     ap_setValue.add_argument("Path", help="Path to be set", completer_method=path_completer)
     ap_setValue.add_argument("Value", help="Value to be set")
+    ap_setValue.add_argument("Attribute", help="Attribute to be set", default="value", nargs=(0,1))
 
     ap_getValue = argparse.ArgumentParser()
     ap_getValue.add_argument("Path", help="Path to be read", completer_method=path_completer)
+    ap_getValue.add_argument("Attribute", help="Attribute to be get", default="value", nargs=(0,1))
+
+    ap_setTargetValue = argparse.ArgumentParser()
+    ap_setTargetValue.add_argument("Path", help="Path whose target value to be set", completer_method=path_completer)
+    ap_setTargetValue.add_argument("Value", help="Value to be set")
+
+    ap_getTargetValue = argparse.ArgumentParser()
+    ap_getTargetValue.add_argument("Path", help="Path whose target value to be read", completer_method=path_completer)
 
     ap_subscribe = argparse.ArgumentParser()
     ap_subscribe.add_argument("Path", help="Path to be subscribed", completer_method=path_completer)
+    ap_subscribe.add_argument("Attribute", help="Attribute to be subscribed", default="value", completer_method=path_completer, nargs=(0,1))
 
     ap_unsubscribe = argparse.ArgumentParser()
     ap_unsubscribe.add_argument("SubscribeId", help="Corresponding subscription Id", completer_method=subscriptionIdCompleter)
@@ -170,7 +181,16 @@ class TestClient(Cmd):
     def do_setValue(self, args):
         """Set the value of a path"""
         if self.checkConnection():
-            resp = self.commThread.setValue(args.Path, args.Value)
+            resp = self.commThread.setValue(args.Path, args.Value, args.Attribute)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
+
+    @with_category(VISS_COMMANDS)
+    @with_argparser(ap_setTargetValue)
+    def do_setTargetValue(self, args):
+        """Set the value of a path"""
+        if self.checkConnection():
+            resp = self.commThread.setValue(args.Path, args.Value, "targetValue")
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -179,7 +199,16 @@ class TestClient(Cmd):
     def do_getValue(self, args):
         """Get the value of a path"""
         if self.checkConnection():
-            resp = self.commThread.getValue(args.Path)
+            resp = self.commThread.getValue(args.Path, args.Attribute)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
+
+    @with_category(VISS_COMMANDS)
+    @with_argparser(ap_getTargetValue)
+    def do_getTargetValue(self, args):
+        """Get the value of a path"""
+        if self.checkConnection():
+            resp = self.commThread.getValue(args.Path, "targetValue")
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -188,12 +217,12 @@ class TestClient(Cmd):
     def do_subscribe(self, args):
         """Subscribe the value of a path"""
         if self.checkConnection():
-            resp = self.commThread.subscribe(args.Path, lambda msg: self.subscribeCallback(args.Path, msg))
+            resp = self.commThread.subscribe(args.Path, lambda msg: self.subscribeCallback(args.Path, args.Attribute, msg), args.Attribute)
             resJson =  json.loads(resp) 
             if "subscriptionId" in resJson:
-                fileName = os.getcwd() + "/log_"+args.Path.replace("/", ".")+"_"+str(time.time())
-                self.subscribeFileDesc[args.Path] = open(fileName, "w")
-                self.subscribeIdToPath[resJson["subscriptionId"]] = args.Path
+                fileName = os.getcwd() + "/log_"+args.Path.replace("/", ".")+"_"+args.Attribute+"_"+str(time.time())
+                self.subscribeFileDesc[(args.Path, args.Attribute)] = open(fileName, "w")
+                self.subscribeIdToPath[resJson["subscriptionId"]] = (args.Path, args.Attribute)
                 print("Subscription log available at " + fileName)
                 print("Execute tail -f " + fileName + " on another Terminal instance")
                 from shutil import which
@@ -210,10 +239,10 @@ class TestClient(Cmd):
             resp = self.commThread.unsubscribe(args.SubscribeId)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
             if args.SubscribeId in self.subscribeIdToPath.keys():
-                path = self.subscribeIdToPath[args.SubscribeId]
+                (path,attr) = self.subscribeIdToPath[args.SubscribeId]
                 if path in self.subscribeFileDesc:
-                    self.subscribeFileDesc[path].close()
-                    del(self.subscribeFileDesc[path])
+                    self.subscribeFileDesc[(path,attr)].close()
+                    del(self.subscribeFileDesc[(path,attr)])
                 del(self.subscribeIdToPath[args.SubscribeId])
             self.pathCompletionItems = []
 

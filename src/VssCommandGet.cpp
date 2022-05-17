@@ -51,8 +51,15 @@ std::string VssCommandProcessor::processGet2(kuksa::kuksaChannel &channel,
 
   string requestId = request["requestId"].as_string();
 
+  std::string attribute;
+  if (request.contains("attribute")) {
+    attribute = request["attribute"].as_string();
+  } else {
+    attribute = "value";
+  }
+
   logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId +
-                                     " for path: " + path.to_string());
+                                     " for path: " + path.to_string() + ", attribute: " + attribute);
 
   jsoncons::json answer;
   jsoncons::json datapoints = jsoncons::json::array();
@@ -66,8 +73,13 @@ std::string VssCommandProcessor::processGet2(kuksa::kuksaChannel &channel,
         msg << "Insufficient read access to " << pathStr;
         logger->Log(LogLevel::WARNING, msg.str());
         return JsonResponses::noAccess(requestId, "get", msg.str());
+      } else if (! database->pathIsAttributable(path, attribute)) {
+        stringstream msg;
+        msg << "Can not get " << path.to_string() << ", " << attribute << ".";
+        logger->Log(LogLevel::WARNING,msg.str());
+        return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
       } else {
-        datapoints.push_back(database->getSignal(vssPath));
+        datapoints.push_back(database->getSignal(vssPath, attribute));
       }
     }
     if (vssPaths.size() < 1) {

@@ -58,11 +58,33 @@ struct UUIDHasher
   }
 };
 using subscriptions_t = std::unordered_map<SubscriptionId, SubConnId, UUIDHasher>;
+using subscription_keys_t = struct subscription_keys {
+  std::string path;
+  std::string attribute;
+
+  // constructor
+  subscription_keys(std::string path, std::string attr)
+  {
+      this->path = path;
+      this->attribute = attr;
+  }
+
+  // Equal operator
+  bool operator==(const subscription_keys &p) const {
+      return this->path == p.path && this->attribute == p.attribute;
+  }
+};
+
+struct SubscriptionKeyHasher {
+  std::size_t operator() (const subscription_keys_t& key) const {
+    return (std::hash<std::string>()(key.path) ^ std::hash<std::string>()(key.attribute));
+  }
+};
 
 
 class SubscriptionHandler : public ISubscriptionHandler {
  private:
-  std::unordered_map<VSSPath, subscriptions_t> subscriptions;
+  std::unordered_map<subscription_keys_t, subscriptions_t, SubscriptionKeyHasher> subscriptions;
 
   std::shared_ptr<ILogger> logger;
   std::shared_ptr<IServer> server;
@@ -88,10 +110,10 @@ class SubscriptionHandler : public ISubscriptionHandler {
   }
   SubscriptionId subscribe(kuksa::kuksaChannel& channel,
                            std::shared_ptr<IVssDatabase> db,
-                           const std::string &path);
+                           const std::string &path, const std::string& attr);
   int unsubscribe(SubscriptionId subscribeID);
   int unsubscribeAll(ConnectionId connectionID);
-  int publishForVSSPath(const VSSPath path, const jsoncons::json &value);
+  int publishForVSSPath(const VSSPath path, const std::string& attr, const jsoncons::json &value);
 
 
   std::shared_ptr<IServer> getServer();

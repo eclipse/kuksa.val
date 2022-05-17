@@ -34,8 +34,12 @@ static const char* SCHEMA_GET=R"(
             "enum": [ "get", "getMetaData" ],
             "description": "The identifier for the get request"
         },
+        "attribute": {
+            "enum": [ "targetValue", "value" ],
+            "description": "The attributes to be fetched for the get request"
+        },
         "path": {
-             "$ref": "viss#/definitions/path"
+            "$ref": "viss#/definitions/path"
         },
         "requestId": {
             "$ref": "viss#/definitions/requestId"
@@ -51,17 +55,18 @@ static const char* SCHEMA_SET=R"(
     "title": "Set Request",
     "description": "Enables the client to set one or more values once.",
     "type": "object",
-    "required": ["action", "path", "value", "requestId"],
+    "required": ["action", "path", "requestId"],
     "properties": {
         "action": {
             "enum": [ "set" ],
             "description": "The identifier for the set request"
         },
+        "attribute": {
+            "enum": [ "targetValue", "value" ],
+            "description": "The attributes to be fetched for the get request"
+        },
         "path": {
             "$ref": "viss#/definitions/path"
-        },
-        "value": {
-            "$ref": "viss#/definitions/value"
         },
         "requestId": {
             "$ref": "viss#/definitions/requestId"

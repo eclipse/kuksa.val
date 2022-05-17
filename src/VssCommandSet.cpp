@@ -27,7 +27,7 @@
 #include <boost/algorithm/string.hpp>
 
 
-/** Implements the Websocket get request according to GEN2, with GEN1 backwards
+/** Implements the Websocket set request according to GEN2, with GEN1 backwards
  * compatibility **/
 std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
                                              jsoncons::json &request) {
@@ -42,28 +42,33 @@ std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
-        requestValidator->tryExtractRequestId(request) , "get", string("Unhandled error: ") + e.what());
+        requestValidator->tryExtractRequestId(request) , "set", string("Unhandled error: ") + e.what());
   }
 
   VSSPath path = VSSPath::fromVSS(request["path"].as_string());
   
   string requestId = request["requestId"].as_string();
 
+  std::string attribute;
+  if (request.contains("attribute")) {
+    attribute = request["attribute"].as_string();
+  } else {
+    attribute = "value";
+  }
   logger->Log(LogLevel::VERBOSE, "Set request with id " + requestId +
-                                     " for path: " + path.to_string());
+                                     " for path: " + path.to_string() + " with attribute: " + attribute);
 
   //unpack any multiset or filters here later as in
   //list of setPairs=expand(VSSPath, filters)
 
   std::vector<std::tuple<VSSPath,jsoncons::json>> setPairs;
-  setPairs.push_back(std::make_tuple(path, (jsoncons::json&)request["value"]));
+  setPairs.push_back(std::make_tuple(path, (jsoncons::json&)request[attribute]));
 
   //Check Access rights  & types first. Will only proceed to set, if all paths in set are valid
   //(set all or none)
   for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
     if (! database->pathExists(std::get<0>(setTuple) )) {
       stringstream msg;
-      msg << "Path " << std::get<0>(setTuple).to_string() << " does not exist";
       logger->Log(LogLevel::WARNING,msg.str());
       return JsonResponses::pathNotFound(request["requestId"].as<string>(), "set", std::get<0>(setTuple).to_string());
     }
@@ -79,12 +84,18 @@ std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
       logger->Log(LogLevel::WARNING,msg.str());
       return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
     }
+    if (! database->pathIsAttributable(std::get<0>(setTuple), attribute)) {
+      stringstream msg;
+      msg << "Can not set path:" << std::get<0>(setTuple).to_string() << " with attribute:" << attribute << ".";
+      logger->Log(LogLevel::WARNING,msg.str());
+      return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
+    }
   }
 
   //If all preliminary checks successful, we are setting everything
   try {
     for ( std::tuple<VSSPath,jsoncons::json> setTuple : setPairs) {
-      database->setSignal(std::get<0>(setTuple), std::get<1>(setTuple));
+      database->setSignal(std::get<0>(setTuple), attribute, std::get<1>(setTuple));
     }
   } catch (genException &e) {
     logger->Log(LogLevel::ERROR, string(e.what()));
@@ -119,7 +130,7 @@ std::string VssCommandProcessor::processSet2(kuksa::kuksaChannel &channel,
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
-        request["requestId"].as<string>(), "get",
+        request["requestId"].as<string>(), "set",
         string("Unhandled error: ") + e.what());
   }
 

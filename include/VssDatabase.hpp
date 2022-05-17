@@ -47,6 +47,7 @@ class VssDatabase : public IVssDatabase {
   bool pathExists(const VSSPath &path) override;
   bool pathIsWritable(const VSSPath &path) override;
   bool pathIsReadable(const VSSPath &path) override;
+  bool pathIsAttributable(const VSSPath &path, const std::string &attr) override;
 
   std::list<VSSPath> getLeafPaths(const VSSPath& path) override;
 
@@ -66,8 +67,8 @@ class VssDatabase : public IVssDatabase {
   void updateMetaData(kuksa::kuksaChannel& channel, const VSSPath& path, const jsoncons::json& newTree) override;
   jsoncons::json getMetaData(const VSSPath& path) override;
   
-  jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) override; //gen2 version
-  jsoncons::json getSignal(const VSSPath &path) override; //Gen2 version
+  jsoncons::json setSignal(const VSSPath &path, const std::string& attr, jsoncons::json &value) override; //gen2 version
+  jsoncons::json getSignal(const VSSPath &path, const std::string& attr) override; //Gen2 version
 
   void applyDefaultValues(jsoncons::json &tree, VSSPath currentPath);
 

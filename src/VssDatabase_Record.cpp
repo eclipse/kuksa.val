@@ -60,18 +60,18 @@ void VssDatabase_Record::logger_init()
     logging::core::get() -> add_sink(sink);
 }
 
-jsoncons::json VssDatabase_Record::setSignal(const VSSPath &path, jsoncons::json &value)
+jsoncons::json VssDatabase_Record::setSignal(const VSSPath &path, const std::string& attr, jsoncons::json &value)
 {
     std::string json_val;
     value.dump_pretty(json_val);
-    BOOST_LOG(lg) << "set;" << path.to_string() << ";" + json_val;
-    return VssDatabase::setSignal(path,value);
+    BOOST_LOG(lg) << "set;" << attr << ";" << path.to_string() << ";" + json_val;
+    return VssDatabase::setSignal(path, attr, value);
 }
 
-jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path)
+jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path, const std::string& attr)
 {
     if(logMode_ == "recordSetAndGet")
-        BOOST_LOG(lg) << "get;" << path.to_string();
+        BOOST_LOG(lg) << "get;" << attr << ";" << path.to_string();
 
-    return VssDatabase::getSignal(path);
+    return VssDatabase::getSignal(path, attr);
 }
