@@ -133,13 +133,15 @@ bool VssDatabase::pathIsWritable(const VSSPath &path) {
   return false;
 }
 
-// Check if a path is "targettable"  _in principle_, i.e. whether it is an actor. For actor target value can be set.
+// Check if a path is "attributable"  _in principle_, i.e. whether a particular attribute can be set on a particular path.
 // This does _not_ check whether a user is authorized, and it will return false in case
 // the VSSPath references multiple destinations
 bool VssDatabase::pathIsAttributable(const VSSPath &path, const std::string& attr) {
   jsoncons::json res = jsonpath::json_query(data_tree__, path.getJSONPath(),jsonpath::result_type::value);
-  if (res.size() != 1) { //either no match, or multiple matches
+  if (res.size() < 1) { // either no match,
     return false;
+  } else if (res.size() > 1) { // multiple matches - Allow them to enable get using wildcards
+    return true;
   }
 
   if (attr == "targetValue") {

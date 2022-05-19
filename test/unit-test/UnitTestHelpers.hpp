@@ -23,9 +23,15 @@
 
 //Verifies a timestamp exists and is of type string.
 static inline void verify_timestamp(const jsoncons::json &result) {
-  std::string timestampKeyWord = "ts";
+  std::string timestampKeyWord;
+  if (result.contains("value")) {
+    timestampKeyWord = "ts-value";
+  } else {
+    timestampKeyWord = "ts";
+  }  
   BOOST_TEST(result.contains(timestampKeyWord));
   BOOST_TEST(result[timestampKeyWord].is_string());
+
   BOOST_CHECK_NO_THROW(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()));
   BOOST_TEST(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()) > boost::posix_time::from_iso_extended_string(JsonResponses::getTimeStampZero()));
   BOOST_TEST(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()) <= boost::posix_time::from_iso_extended_string(JsonResponses::getTimeStamp()));
@@ -33,7 +39,12 @@ static inline void verify_timestamp(const jsoncons::json &result) {
 
 //Verifies a timestamp exists and is of type string.
 static inline void verify_timestampZero(const jsoncons::json &result) {
-  std::string timestampKeyWord = "ts";
+  std::string timestampKeyWord;
+  if (result.contains("value")) {
+    timestampKeyWord = "ts-value";
+  } else {
+    timestampKeyWord = "ts";
+  }
   BOOST_TEST(result.contains(timestampKeyWord));
   BOOST_TEST(result[timestampKeyWord].is_string());
   BOOST_CHECK_NO_THROW(boost::posix_time::from_iso_extended_string(result[timestampKeyWord].as_string()));
@@ -43,14 +54,26 @@ static inline void verify_timestampZero(const jsoncons::json &result) {
 
 //Verifies a timestamp exists and is of type string and erase the item for easy comparison
 static inline void verify_and_erase_timestamp(jsoncons::json &result) { 
+  std::string timestampKeyWord;
+  if (result.contains("value")) {
+    timestampKeyWord = "ts-value";
+  } else {
+    timestampKeyWord = "ts";
+  }
   verify_timestamp(result);
-  result.erase("ts");
+  result.erase(timestampKeyWord);
 }
 
 //Verifies a timestamp exists and is of type string and erase the item for easy comparison
 static inline void verify_and_erase_timestampZero(jsoncons::json &result) { 
+  std::string timestampKeyWord;
+  if (result.contains("value")) {
+    timestampKeyWord = "ts-value";
+  } else {
+    timestampKeyWord = "ts";
+  }
   verify_timestampZero(result);
-  result.erase("ts");
+  result.erase(timestampKeyWord);
 }
 
 static inline jsoncons::json packDataInJson(const VSSPath& path, const std::string& value) { 

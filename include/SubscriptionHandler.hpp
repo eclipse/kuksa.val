@@ -63,8 +63,7 @@ using subscription_keys_t = struct subscription_keys {
   std::string attribute;
 
   // constructor
-  subscription_keys(std::string path, std::string attr)
-  {
+  subscription_keys(std::string path, std::string attr) {
       this->path = path;
       this->attribute = attr;
   }
@@ -77,7 +76,7 @@ using subscription_keys_t = struct subscription_keys {
 
 struct SubscriptionKeyHasher {
   std::size_t operator() (const subscription_keys_t& key) const {
-    return (std::hash<std::string>()(key.path) ^ std::hash<std::string>()(key.attribute));
+    return (std::hash<VSSPath>()(VSSPath::fromVSS(key.path)) ^ std::hash<std::string>()(key.attribute));
   }
 };
 

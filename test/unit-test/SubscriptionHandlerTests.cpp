@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
   // verify
 
   SubscriptionId res;
-  BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath.getVSSPath()));
+  BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath.getVSSPath(), "value"));
 
   BOOST_TEST(res.version() == 4);
 }
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
   for (unsigned index = 0; index < paths; index++) {
     SubscriptionId res;
 
-    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath()));
+    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath(), "value"));
     BOOST_TEST(res.version() == 4);
 
     // check that the value is different from previously returned
@@ -213,7 +213,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
   for (auto &ch : channels) {
     SubscriptionId res;
 
-    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath.getVSSPath()));
+    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath.getVSSPath(), "value"));
     BOOST_TEST(res.version() == 4);
 
     // check that the value is different from previously returned
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
   for (auto &ch : channels) {
     SubscriptionId res;
 
-    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath()));
+    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath(), "value"));
     BOOST_TEST(res.version() == 4);
 
     // check that the value is different from previously returned
@@ -331,7 +331,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
   for (unsigned index = 0; index < paths; index++) {
     SubscriptionId res;
 
-    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath()));
+    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath(), "value"));
     BOOST_TEST(res.version() == 4);
 
     // check that the value is different from previously returned
@@ -389,7 +389,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
   for (auto &ch : channels) {
     SubscriptionId res;
 
-    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath.getVSSPath()));
+    BOOST_CHECK_NO_THROW(res = subHandler->subscribe(ch, dbMock, vsspath.getVSSPath(), "value"));
     BOOST_TEST(res.version() == 4);
 
     // check that the value is different from previously returned
@@ -448,7 +448,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
   for (unsigned index = 0; index < paths; index++) {
     SubscriptionId subId;
 
-    BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath()));
+    BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(channel, dbMock, vsspath[index].getVSSPath(), "value"));
 
     BOOST_TEST(subId.version() == 4);
     resMap[index] = subId;
@@ -480,7 +480,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
       .with(channel.connectionid(), jsonVerify)
       .returns(true);
 
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], data) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", data) == 0);
     usleep(10000); // allow for subthread handler to run
   }
 }
@@ -537,7 +537,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     for (unsigned index = 0; index < paths; index++) {
       SubscriptionId subId;
 
-      BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath()));
+      BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath(), "value"));
 
       BOOST_TEST(subId.version() == 4);
       resMap[subId] = index;
@@ -576,7 +576,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -667,7 +667,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     for (unsigned index = 0; index < paths; index++) {
       SubscriptionId subId;
 
-      BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath()));
+      BOOST_CHECK_NO_THROW(subId = subHandler->subscribe(ch, dbMock, vsspath[index].getVSSPath(), "value"));
 
       BOOST_TEST(subId.version() == 4);
       resMap[subId] = index;
@@ -685,7 +685,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -709,7 +709,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT to verify if removed channel is not called anymore
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -718,7 +718,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpdatedAndClientUnsubscribeAll_Shall_NotifyOnlySubscribedClient) {
   unsigned index = 0;
   VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
-  BOOST_TEST(subHandler->publishForVSSPath(vsspath, packDataInJson(vsspath, std::to_string(index))) == 0);
+  BOOST_TEST(subHandler->publishForVSSPath(vsspath, "value", packDataInJson(vsspath, std::to_string(index))) == 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

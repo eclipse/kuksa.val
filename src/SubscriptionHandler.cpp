@@ -71,7 +71,7 @@ SubscriptionId SubscriptionHandler::subscribe(kuksa::kuksaChannel& channel,
     throw noPermissionException(msg.str());
   }
 
-  subscription_keys_t subsKey = subscription_keys_t(vssPath.to_string(), attr);
+  subscription_keys_t subsKey = subscription_keys_t(vssPath.getVSSPath(), attr);
   auto existingsubscription = subscriptions.find(subsKey);
   if (existingsubscription != subscriptions.end()) {
     logger->Log(LogLevel::VERBOSE, string("SubscriptionHandler::subscribe: "
@@ -149,7 +149,7 @@ int SubscriptionHandler::publishForVSSPath(const VSSPath path, const std::string
   logger->Log(LogLevel::VERBOSE, ss.str());
 
   std::unique_lock<std::mutex> lock(accessMutex);
-  subscription_keys_t subsKey = subscription_keys_t(path.to_string(), attr);
+  subscription_keys_t subsKey = subscription_keys_t(path.getVSSPath(), attr);
   auto handle = subscriptions.find(subsKey);
   if (handle == subscriptions.end()) {
     // no subscriptions for path
