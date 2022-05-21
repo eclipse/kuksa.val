@@ -72,8 +72,6 @@ SubscriptionId SubscriptionHandler::subscribe(kuksa::kuksaChannel& channel,
   }
 
   subscription_keys_t subsKey = subscription_keys_t(vssPath.getVSSPath(), attr);
-  auto existingsubscription = subscriptions.find(subsKey);
- 
   logger->Log(LogLevel::VERBOSE,
               string("SubscriptionHandler::subscribe: Subscribing to ") +
                   vssPath.getVSSPath());
