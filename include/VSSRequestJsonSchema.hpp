@@ -91,6 +91,10 @@ static const char* SCHEMA_SUBSCRIBE=R"(
         "path": {
             "$ref": "viss#/definitions/path"
         },
+        "attribute": {
+            "enum": [ "targetValue", "value" ],
+            "description": "The attributes to be fetched for the get request"
+        },
         "filters": {
             "$ref": "viss#/definitions/filters"
         },

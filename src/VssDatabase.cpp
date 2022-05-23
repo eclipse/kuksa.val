@@ -441,7 +441,7 @@ jsoncons::json VssDatabase::setSignal(const VSSPath &path, const std::string& at
         resJson.insert_or_assign(attr, value);
         resJson.insert_or_assign("ts-"+attr, JsonResponses::getTimeStamp());
         datapoint.insert_or_assign(attr, value);
-        datapoint.insert_or_assign("ts-"+attr, JsonResponses::getTimeStamp());
+        datapoint.insert_or_assign("ts", JsonResponses::getTimeStamp());
         data.insert_or_assign("dp", datapoint);
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
@@ -473,9 +473,9 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& at
       datapoint[attr] = "---";
     }
     if (result.contains("ts-"+attr)) {
-      datapoint["ts-"+attr] = result["ts-"+attr].as<string>();
+      datapoint["ts"] = result["ts-"+attr].as<string>();
     } else {
-      datapoint["ts-"+attr] = JsonResponses::getTimeStampZero();
+      datapoint["ts"] = JsonResponses::getTimeStampZero();
     }
     answer.insert_or_assign("dp", datapoint);
     return answer;

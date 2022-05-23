@@ -75,7 +75,7 @@ std::string VssCommandProcessor::processGet2(kuksa::kuksaChannel &channel,
         return JsonResponses::noAccess(requestId, "get", msg.str());
       } else if (! database->pathIsAttributable(path, attribute)) {
         stringstream msg;
-        msg << "Can not get " << path.to_string() << ", " << attribute << ".";
+        msg << "Can not get " << path.to_string() << " with attribute " << attribute << ".";
         logger->Log(LogLevel::WARNING,msg.str());
         return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
       } else {
