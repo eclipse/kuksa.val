@@ -323,6 +323,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   channel.set_connectionid(1);
 
   jsonGetRequestForSignal["action"] = "get";
+  jsonGetRequestForSignal["attribute"] = "value";
   jsonGetRequestForSignal["path"] = path;
   jsonGetRequestForSignal["requestId"] = requestId;
 
@@ -459,9 +460,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
   jsoncons::json value="100";
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
       .once()
-      .with(mock::any, mock::any)
+      .with(mock::any, "value", mock::any)
       .returns(true);
-  db->setSignal(vss_path,value);
+  db->setSignal(vss_path, "value", value);
   
 
   jsonGetRequestForSignal["action"] = "get";

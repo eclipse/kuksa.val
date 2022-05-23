@@ -159,9 +159,13 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
     .once()
     .with(mock::any, mock::equal(path2))
     .returns(true);
+  MOCK_EXPECT(dbMock->pathIsAttributable)
+    .once()
+    .with(path2, "value")
+    .returns(true);  
   MOCK_EXPECT(dbMock->getSignal)
     .once()
-    .with(path2)
+    .with(path2, "value")
     .throws(std::exception());
 
   // run UUT
@@ -213,7 +217,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
     .returns(false);
 
   MOCK_EXPECT(dbMock->getSignal)
-    .with(path2)
+    .with(path2, "value")
     .throws(noPermissionException("Insufficient read access to " + path));
 
   // run UUT
@@ -273,9 +277,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
     .once()
     .with(mock::any, mock::equal(path2))
     .returns(true);
-
+  MOCK_EXPECT(dbMock->pathIsAttributable)
+    .once()
+    .with(path2, "value")
+    .returns(true); 
   MOCK_EXPECT(dbMock->getSignal)
-    .with(path2)
+    .with(path2, "value")
     .returns(jsonSignalData);
 
   // run UUT
@@ -438,8 +445,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
     .with(mock::any, mock::equal(vsspath))
     .returns(true);
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
+  MOCK_EXPECT(dbMock->pathIsAttributable)
+    .once()
+    .with(vsspath, "value")
+    .returns(true); 
   MOCK_EXPECT(dbMock->setSignal)
-    .with(vsspath, jsonValue)
+    .with(vsspath, "value", jsonValue)
     .throws(outOfBoundException(""));
 
   // run UUT
@@ -496,7 +507,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->setSignal)
-    .with(vsspath, jsonValue)
+    .with(vsspath, "value", jsonValue)
     .throws(noPermissionException(""));
 
   // run UUT
@@ -541,7 +552,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
   jsonSignalValue["requestId"] = requestId;
   jsonSignalValue["ts"] = 11111111;
 
-  JsonResponses::malFormedRequest(requestId, "get", "Unhandled error: std::exception", jsonMalformedReq);
+  JsonResponses::malFormedRequest(requestId, "set", "Unhandled error: std::exception", jsonMalformedReq);
 
   // expectations
 
@@ -554,9 +565,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
     .returns(true);
   jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
-  
+  MOCK_EXPECT(dbMock->pathIsAttributable)
+    .once()
+    .with(vsspath, "value")
+    .returns(true); 
   MOCK_EXPECT(dbMock->setSignal)
-    .with(vsspath, jsonValue)
+    .with(vsspath, "value", jsonValue)
     .throws(std::exception());
 
   // run UUT
@@ -614,8 +628,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
     .with(mock::any, mock::equal(vsspath))
     .returns(true);
   MOCK_EXPECT(dbMock->pathIsWritable).with(vsspath).returns(true);
+  MOCK_EXPECT(dbMock->pathIsAttributable)
+    .once()
+    .with(vsspath, "value")
+    .returns(true); 
   MOCK_EXPECT(dbMock->setSignal)
-    .with(vsspath, mock::any).returns(jsonSignalValue);
+    .with(vsspath, "value", mock::any).returns(jsonSignalValue);
 
   // run UUT
   auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
@@ -628,6 +646,175 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   jsonSignalValue["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
 
   BOOST_TEST(res == jsonSignalValue);
+}
+
+///////////////////////////
+// Test SET Target Value handling
+
+BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_InvalidPath_Shall_ReturnError)
+{
+  kuksa::kuksaChannel channel;
+
+  jsoncons::json jsonSetRequestForSignal;
+  jsoncons::json jsonPathNotFound;
+
+  string requestId = "1";
+  int requestValue = 123;
+  std::string path{"Vehicle.OBD.DTC1"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
+  
+  // setup
+  //We need permission first, (otherwise get 403 before checking for invalid path)
+  std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
+
+  channel.set_permissions(perm);
+
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["value"] = requestValue;
+  jsonSetRequestForSignal["requestId"] = requestId;
+
+  JsonResponses::pathNotFound(requestId, "set", vsspath.getVSSGen1Path(), jsonPathNotFound);
+
+  // expectations
+
+  // validate that at least one log event was processed
+  MOCK_EXPECT(logMock->Log).at_least( 1 );
+  
+  jsoncons::json jsonValue = jsonSetRequestForSignal["value"];
+  MOCK_EXPECT(dbMock->pathExists)
+    .with(vsspath).returns(false);
+
+  // run UUT
+  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonPathNotFound["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
+  BOOST_TEST(res == jsonPathNotFound);
+}
+
+BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Sensor_Shall_ReturnError)
+{
+  kuksa::kuksaChannel channel;
+
+  jsoncons::json jsonSetRequestForSignal;
+  jsoncons::json jsonNoAccess;
+
+  string requestId = "1";
+  int requestValue = 123;
+  std::string path{"Vehicle.Acceleration.Lateral"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
+  
+  // setup
+  //We need permission first, (otherwise get 403 before checking for invalid path)
+  std::string perm = "{\"Vehicle.*\" : \"wr\"}";
+
+  channel.set_permissions(perm);
+
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["attribute"] = "targetValue";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["targetValue"] = requestValue;
+  jsonSetRequestForSignal["requestId"] = requestId;
+
+  // expectations
+  JsonResponses::noAccess(requestId, "set", "Can not set Vehicle.Acceleration.Lateral. Only sensor or actor leaves can be set.", jsonNoAccess);
+
+  // validate that at least one log event was processed
+  MOCK_EXPECT(logMock->Log).at_least( 1 );
+  MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(dbMock->pathIsWritable)
+    .with(vsspath).returns(false);
+  MOCK_EXPECT(dbMock->pathIsAttributable)
+    .with(vsspath, "targetValue").returns(false);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(true);
+  
+  jsoncons::json jsonValue = jsonSetRequestForSignal["targetValue"];
+
+  // run UUT
+  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonNoAccess["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
+  BOOST_TEST(res == jsonNoAccess);
+}
+
+BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Actor_Shall_Work)
+{
+  kuksa::kuksaChannel channel;
+
+  jsoncons::json jsonSetRequestForSignal;
+  jsoncons::json jsonGetResponseForSignal;
+
+  string requestId = "1";
+  int requestValue = 123;
+  std::string path{"Vehicle.Acceleration.Lateral"};
+  VSSPath vsspath = VSSPath::fromVSSGen1(path);
+  
+  // setup
+  //We need permission first, (otherwise get 403 before checking for invalid path)
+  std::string perm = "{\"Vehicle.*\" : \"wr\"}";
+
+  channel.set_permissions(perm);
+
+  channel.set_authorized(true);
+  channel.set_connectionid(1);
+
+  jsonSetRequestForSignal["action"] = "set";
+  jsonSetRequestForSignal["attribute"] = "targetValue";
+  jsonSetRequestForSignal["path"] = path;
+  jsonSetRequestForSignal["targetValue"] = requestValue;
+  jsonSetRequestForSignal["requestId"] = requestId;
+
+  // expectations
+  jsonGetResponseForSignal["action"] = "set";
+  jsonGetResponseForSignal["requestId"] = requestId;
+
+  // validate that at least one log event was processed
+  MOCK_EXPECT(logMock->Log).at_least( 1 );
+  MOCK_EXPECT(dbMock->setSignal).with(vsspath, "targetValue", 123).returns(jsonGetResponseForSignal);
+  MOCK_EXPECT(dbMock->pathExists).with(vsspath).returns(true);
+  MOCK_EXPECT(dbMock->pathIsWritable)
+    .with(vsspath).returns(true);
+  MOCK_EXPECT(dbMock->pathIsAttributable)
+    .with(vsspath, "targetValue").returns(true);
+  MOCK_EXPECT(accCheckMock->checkWriteAccess)
+    .once()
+    .with(mock::any, mock::equal(vsspath))
+    .returns(true);
+  
+  jsoncons::json jsonValue = jsonSetRequestForSignal["targetValue"];
+
+  // run UUT
+  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
+  auto res = json::parse(resStr);
+
+  // verify
+
+  BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res["ts"].is_string());
+  jsonGetResponseForSignal["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response
+
+  BOOST_TEST(res == jsonGetResponseForSignal);
 }
 
 ///////////////////////////
@@ -664,7 +851,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(subsHndlMock->subscribe)
-    .with(mock::any, dbMock, path)
+    .with(mock::any, dbMock, path, "value")
     .returns(subscriptionId);
 
   // run UUT
@@ -714,7 +901,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(subsHndlMock->subscribe)
-    .with(mock::any, dbMock, path)
+    .with(mock::any, dbMock, path, "value")
     .throws(noPathFoundonTree(path));
 
   // run UUT
@@ -757,7 +944,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(subsHndlMock->subscribe)
-    .with(mock::any, dbMock, path)
+    .with(mock::any, dbMock, path, "value")
     .throws(noPermissionException(""));
 
   // run UUT
@@ -800,7 +987,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(subsHndlMock->subscribe)
-    .with(mock::any, dbMock, path)
+    .with(mock::any, dbMock, path, "value")
     .throws(noPathFoundonTree(path));
 
   // run UUT
@@ -844,7 +1031,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(subsHndlMock->subscribe)
-    .with(mock::any, dbMock, path)
+    .with(mock::any, dbMock, path, "value")
     .throws(genException(path));
 
   // run UUT
@@ -887,7 +1074,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
   MOCK_EXPECT(logMock->Log).at_least( 1 );
 
   MOCK_EXPECT(subsHndlMock->subscribe)
-    .with(mock::any, dbMock, path)
+    .with(mock::any, dbMock, path, "value")
     .throws(std::exception());
 
   // run UUT

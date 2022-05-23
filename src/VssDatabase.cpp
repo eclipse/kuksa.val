@@ -133,6 +133,28 @@ bool VssDatabase::pathIsWritable(const VSSPath &path) {
   return false;
 }
 
+// Check if a path is "attributable"  _in principle_, i.e. whether a particular attribute can be set on a particular path.
+// This does _not_ check whether a user is authorized, and it will return false in case
+// the VSSPath references multiple destinations
+bool VssDatabase::pathIsAttributable(const VSSPath &path, const std::string& attr) {
+  jsoncons::json res = jsonpath::json_query(data_tree__, path.getJSONPath(),jsonpath::result_type::value);
+  if (res.size() < 1) { // either no match,
+    return false;
+  } else if (res.size() > 1) { // multiple matches - Allow them to enable get using wildcards
+    return true;
+  }
+
+  if (attr == "targetValue") {
+    if (res[0].contains("type") && (res[0]["type"].as<string>() == "actuator" )) {
+      return true; //only actors can have target values/setpoints
+    }
+  } if (attr == "value") {
+      return true;
+  }
+  //else it is either another type (branch/sensor), or a broken part (no type at all) of the tree, and thus not writable
+  return false;
+}
+
 // Check if a path is readable _in principle_, i.e. whether it is an actor, sensor or attribute.
 // This does _not_ check whether a user is authorized, and it will return false in case
 // the VSSPath references multiple destinations
@@ -401,9 +423,8 @@ jsoncons::json VssDatabase::getMetaData(const VSSPath& path) {
   return result;
 }
 
-
 // Set signal value of given path
-jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &value) {
+jsoncons::json VssDatabase::setSignal(const VSSPath &path, const std::string& attr, jsoncons::json &value) {
   jsoncons::json data;
   jsoncons::json datapoint;
   
@@ -417,15 +438,14 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
       jsoncons::json resJson = res[0];
       if (resJson.contains("datatype")) {
         checkAndSanitizeType(resJson, value);
-        resJson.insert_or_assign("value", value);
-        resJson.insert_or_assign("ts", JsonResponses::getTimeStamp());
-        datapoint.insert_or_assign("value", value);
+        resJson.insert_or_assign(attr, value);
+        resJson.insert_or_assign("ts-"+attr, JsonResponses::getTimeStamp());
+        datapoint.insert_or_assign(attr, value);
         datapoint.insert_or_assign("ts", JsonResponses::getTimeStamp());
         data.insert_or_assign("dp", datapoint);
-
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
-          subHandler_->publishForVSSPath(path, data);
+          subHandler_->publishForVSSPath(path, attr, data);
         }
       }
       else {
@@ -436,9 +456,8 @@ jsoncons::json  VssDatabase::setSignal(const VSSPath &path, jsoncons::json &valu
   return data;
 }
 
-
 // Returns signal in JSON format
-jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
+jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& attr) {
     jsoncons::json resArray;
     {
       std::lock_guard<std::mutex> lock_guard(rwMutex_);
@@ -448,13 +467,13 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path) {
     jsoncons::json datapoint;
     answer.insert_or_assign("path", path.to_string());
     jsoncons::json result = resArray[0];
-    if (result.contains("value")) {
-      datapoint.insert_or_assign("value", result["value"]);
+    if (result.contains(attr)) {
+      datapoint.insert_or_assign(attr, result[attr]);
     } else {
-      datapoint["value"] = "---";
+      datapoint[attr] = "---";
     }
-    if (result.contains("ts")) {
-      datapoint["ts"] = result["ts"].as<string>();
+    if (result.contains("ts-"+attr)) {
+      datapoint["ts"] = result["ts-"+attr].as<string>();
     } else {
       datapoint["ts"] = JsonResponses::getTimeStampZero();
     }

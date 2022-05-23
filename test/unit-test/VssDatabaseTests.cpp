@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
 
   verify_and_erase_timestampZero(returnJson["dp"]);
 
@@ -213,7 +213,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
 
   verify_and_erase_timestampZero(returnJson["dp"]);
 
@@ -233,14 +233,14 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
     .at_least(1)
-    .with(mock::any, mock::any)
+    .with(mock::any, "value", mock::any)
     .returns(0);
 
   // verify
 
-  BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
+  BOOST_CHECK_NO_THROW(db->setSignal(signalPath, "value", setValue));
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
   BOOST_TEST(returnJson["dp"]["value"].as<int>() == 10);
 }
 
@@ -255,11 +255,11 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   setValue = 10;
 
   // verify
-  MOCK_EXPECT(subHandlerMock->publishForVSSPath).with(mock::any, mock::any).returns(0);
+  MOCK_EXPECT(subHandlerMock->publishForVSSPath).with(mock::any, "value", mock::any).returns(0);
 
-  BOOST_CHECK_NO_THROW(db->setSignal(signalPath, setValue));
+  BOOST_CHECK_NO_THROW(db->setSignal(signalPath, "value", setValue));
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
   BOOST_TEST(returnJson["dp"]["value"].as<int>() == 10);
 }
 

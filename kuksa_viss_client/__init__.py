@@ -113,42 +113,44 @@ class KuksaClientThread(threading.Thread):
         return self._sendReceiveMsg(req, timeout)
 
     # Set value to a given path
-    def setValue(self, path, value, timeout = 1):
+    def setValue(self, path, value, attribute="value", timeout = 1):
         if 'nan' == value:
             print(path + " has an invalid value " + str(value))
             return
         req = {}
         req["action"]= "set"
         req["path"] = path
+        req["attribute"] = attribute
         try:
             jsonValue = json.loads(value)
             if isinstance(jsonValue, list):
-                req["value"] = [] 
+                req[attribute] = [] 
                 for v in jsonValue:
-                    req["value"].append(str(v))
+                    req[attribute].append(str(v))
             else:
-                req["value"] = str(value)
+                req[attribute] = str(value)
         except json.decoder.JSONDecodeError:
-            req["value"] = str(value)
+            req[attribute] = str(value)
 
         return self._sendReceiveMsg(req, timeout)
 
-
     # Get value to a given path
-    def getValue(self, path, timeout = 5):
+    def getValue(self, path, attribute="value", timeout = 5):
         req = {}
-        req["action"]= "get"
+        req["action"] = "get"
         req["path"] = path
+        req["attribute"] = attribute
         return self._sendReceiveMsg(req, timeout)
 
     # Subscribe value changes of to a given path.
     # The given callback function will be called then, if the given path is updated:
     #   updateMessage = await webSocket.recv()
     #   callback(updateMessage)
-    def subscribe(self, path, callback, timeout = 5):
+    def subscribe(self, path, callback, attribute = "value", timeout = 5):
         req = {}
         req["action"]= "subscribe"
         req["path"] = path
+        req["attribute"] = attribute
         res = self._sendReceiveMsg(req, timeout)
         resJson =  json.loads(res) 
         if "subscriptionId" in resJson:
@@ -193,7 +195,11 @@ class KuksaClientThread(threading.Thread):
                         await asyncio.sleep(0.01)
             else:
                 if "subscriptionId" in resJson and resJson["subscriptionId"] in self.subscriptionCallbacks:
-                    self.subscriptionCallbacks[resJson["subscriptionId"]](message)
+                    try:
+                        self.subscriptionCallbacks[resJson["subscriptionId"]](message)
+                    except Exception as e:
+                        print(e)
+
 
     async def _sender_handler(self, webSocket):
         while self.run:

@@ -31,12 +31,13 @@ class IVssDatabase {
     virtual void updateMetaData(kuksa::kuksaChannel& channel, const VSSPath& path, const jsoncons::json& value) = 0;
     virtual jsoncons::json getMetaData(const VSSPath &path) = 0;
   
-    virtual jsoncons::json setSignal(const VSSPath &path, jsoncons::json &value) = 0; //gen2 version
-    virtual jsoncons::json getSignal(const VSSPath& path) = 0;
+    virtual jsoncons::json setSignal(const VSSPath &path, const std::string& attr, jsoncons::json &value) = 0; //gen2 version
+    virtual jsoncons::json getSignal(const VSSPath& path, const std::string& attr) = 0;
 
     virtual bool pathExists(const VSSPath &path) = 0;
     virtual bool pathIsWritable(const VSSPath &path) = 0;
     virtual bool pathIsReadable(const VSSPath &path) = 0;
+    virtual bool pathIsAttributable(const VSSPath &path, const std::string &attr) = 0;
 
     virtual std::list<VSSPath> getLeafPaths(const VSSPath& path) = 0;
 

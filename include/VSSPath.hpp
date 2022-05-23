@@ -37,7 +37,7 @@ class VSSPath {
         static VSSPath fromVSS(std::string vss); //Auto decide for Gen1 or Gen2
         inline bool operator==(const VSSPath& other) { return (vsspath == other.vsspath); };
 
-        inline bool operator< (const VSSPath& other){
+        inline bool operator< (const VSSPath& other) {
           return vsspath < other.vsspath;
         }
 
