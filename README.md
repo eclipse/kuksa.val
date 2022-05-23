@@ -25,7 +25,7 @@ This repository contains several components
 | [![License](https://img.shields.io/badge/License-EPL%202.0-blue.svg)](https://opensource.org/licenses/EPL-2.0) | [Testclient](./kuksa_viss_client)   | Command line tool to interactively explore and modify the VSS data points and data structure        |
 | [![License](https://img.shields.io/badge/License-EPL%202.0-blue.svg)](https://opensource.org/licenses/EPL-2.0) | [Examples](./kuksa_apps) | Multiple example apps for different programming languages and frameworks
 | [![License](https://img.shields.io/badge/License-EPL%202.0-blue.svg)](https://opensource.org/licenses/EPL-2.0) | [Feeders](./kuksa_feeders) | Multiple feeders to gathering vehicle data and transforming it to VSS suitable for kuksa-val-server
-
+| [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) | [kuksa-databroker](./kuksa_databroker) | Efficient in-vehicle signal broker written in RUST
 
 
 

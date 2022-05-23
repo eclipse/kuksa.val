@@ -88,3 +88,12 @@ TabWidth:        8
 UseTab:          Never
 ...
 
+---
+Language: Proto
+BasedOnStyle:  Google
+ColumnLimit:     120
+IndentWidth:     4
+UseTab:          Never
+AlignConsecutiveAssignments: true
+---
+

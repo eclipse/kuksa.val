@@ -1,4 +1,4 @@
-name: unittests
+name: kuksa_val_unittests
 
 on:
   push:
