@@ -7,4 +7,6 @@ runs:
   args:
     - -a 
     - out
+    - -b
+    - kuksa-val-server/build
 
