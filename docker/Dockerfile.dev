@@ -32,8 +32,8 @@ RUN ./b2 -j 6 install
 
 
 ADD . /kuksa.val
-RUN  rm -rf /kuksa.val/build  && mkdir  /kuksa.val/build 
-WORKDIR /kuksa.val/build
+RUN  rm -rf /kuksa.val/kuksa-val-server/build  && mkdir  /kuksa.val/kuksa-val-server/build 
+WORKDIR /kuksa.val/kuksa-val-server/build
 RUN cmake .. -DBUILD_UNIT_TEST=ON -DCMAKE_BUILD_TYPE=Coverage
 RUN make -j8
 

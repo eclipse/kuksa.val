@@ -39,8 +39,8 @@ RUN make -j 6
 RUN make install
 
 ADD . /kuksa.val
-RUN  rm -rf /kuksa.val/build  && mkdir  /kuksa.val/build 
-WORKDIR /kuksa.val/build
+RUN  rm -rf /kuksa.val/kuksa-val-server/build  && mkdir  /kuksa.val/kuksa-val-server/build 
+WORKDIR /kuksa.val/kuksa-val-server/build
 RUN cmake ..
 RUN make -j 4
 RUN ls
