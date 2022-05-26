@@ -44,7 +44,7 @@ WORKDIR /kuksa.val/kuksa-val-server/build
 RUN cmake ..
 RUN make -j 4
 RUN ls
-RUN /kuksa.val/docker/collect-deployment-artifacts.sh
+RUN /kuksa.val/kuksa-val-server/docker/collect-deployment-artifacts.sh
 
 
 FROM alpine:3.11
