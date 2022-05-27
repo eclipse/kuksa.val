@@ -1,13 +1,15 @@
-name: kuksa_feeders_docker
+name: kuksa_val_docker
 
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-    paths:
-    - ".github/workflows/kuksa_feeders_docker.yml"
-    - "kuksa_feeders/**"
+    paths-ignore:
+    - ".github/workflows/kuksa_databroker_build.yml"
+    - "kuksa_databroker/**"
+    - "Cargo.*"
+    - "Cross.toml"
     
 jobs:
   checkrights:
@@ -15,20 +17,22 @@ jobs:
     secrets: inherit
 
   build:
-    runs-on: self-hosted
+    runs-on: [ self-hosted ]
     needs: checkrights
+
 
     steps:
     - uses: actions/checkout@v2
       with: 
         submodules: recursive
-        
+
     - name: Docker meta
       id: meta
       uses: docker/metadata-action@v3.5.0
       with:
         # list of Docker images to use as base name for tags
-        images: ${{ needs.checkrights.outputs.registry }}/${{ env.IMAGE_NAME }}
+        images: |
+          kuksa-val
         # generate Docker tags based on the following events/attributes
         tags: |
           type=ref,event=branch
@@ -36,7 +40,7 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
-      
+
     - name: Log in to the Container registry
       if: needs.checkrights.outputs.have_secrets == 'true'
       uses: docker/login-action@v2
@@ -44,29 +48,29 @@ jobs:
           registry: ${{ needs.checkrights.outputs.have_secrets }}
           username: kuksa-bot
           password: ${{ secrets.PUSH_CONTAINER_TOKEN }}
-                  
-    - name: Build and push KUKSA gps feeder container image
+
+    - name: Build kuksa-val docker and push to ghcr.io
       if: needs.checkrights.outputs.have_secrets == 'true'
       uses: docker/build-push-action@v2
       with:
         platforms: |
           linux/amd64
           linux/arm64
-        context: kuksa_feeders/gps2val
+        file: ./kuksa-val-server/docker/Dockerfile
+        context: .
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        
-      
-    - name: Build and push ephemereal KUKSA gps feeder container image
+
+    - name: Build ephemereal kuksa-val docker and push to ttl.sh
       if: needs.checkrights.outputs.have_secrets == 'false'
       uses: docker/build-push-action@v2
       with:
         platforms: |
           linux/amd64
           linux/arm64
-        context: kuksa_feeders/gps2val
+        file: ./kuksa-val-server/docker/Dockerfile
+        context: .
         push: true
-        tags: "ttl.sh/kuksa.val.feeders/gps:8h"
+        tags: "ttl.sh/kuksa.val/kuksa-server:8h"
         labels: ${{ steps.meta.outputs.labels }}
-        

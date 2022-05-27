@@ -1,0 +1,35 @@
+on:
+  workflow_call:
+    secrets:
+      PUSH_CONTAINER_TOKEN:
+        required: false
+    outputs:
+      registry:
+        description: "Registry to push to"
+        value: ${{ jobs.check_push_rights.outputs.registry }}
+      have_secrets:
+        description: "In possession of ghcr.io tokens?"
+        value: ${{ jobs.check_push_rights.outputs.have_secrets }}
+
+
+jobs:
+  check_push_rights:
+    runs-on: self-hosted
+    outputs:
+      have_secrets: ${{ steps.check-secrets.outputs.have_secrets }}
+      registry: ${{ steps.check-secrets.outputs.registry }}
+
+    steps:
+    #Check we have access to secrets. Forks fo not
+    - name: check for secrets needed to run demo
+      id: check-secrets
+      run: |
+          if [ ! -z "${{ secrets.PUSH_CONTAINER_TOKEN }}" ]; then
+            echo "Running from base repo. Will push to ghcr.io"
+            echo "::set-output name=have_secrets::true"
+            echo "::set-output name=registry::ghcr.io"
+          else
+            echo "No secrets for pushing. Will push ephemeral images to ttl.sh"
+            echo "::set-output name=have_secrets::false"
+            echo "::set-output name=registry::ttl.sh"
+          fi

@@ -2,11 +2,11 @@ name: unittests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ disabled ]
     tags:
       - '0.*'
   pull_request:
-    branches: [ master ]
+    branches: [ disabled ]
     
 jobs:
   buildAndTest:
