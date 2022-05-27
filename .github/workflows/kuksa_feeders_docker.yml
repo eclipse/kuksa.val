@@ -31,37 +31,24 @@ jobs:
           type=sha
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+
     - name: build kuksa gps feeder docker for amd64
       uses: docker/build-push-action@v2
       with:
-        platforms: linux/amd64
+        platforms: |
+          linux/amd64
+          linux/arm64
         context: kuksa_feeders/gps2val
         push: false
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        outputs: type=docker,dest=/tmp/kuksa_gps_feeder_amd64.tar # multi-platform images cannot be exported with the docker export type`
+        #outputs: type=docker,dest=/tmp/kuksa_gps_feeder_amd64.tar # multi-platform images cannot be exported with the docker export type`
+        outputs: type=oci,dest=/tmp/kuksa_gps_feeder # multi-platform images cannot be exported with the docker export type`
         cache-from: type=gha, scope=${{ github.workflow }}
         cache-to: type=gha, scope=${{ github.workflow }}
-    - name: build kuksa gps feeder docker for arm64
-      uses: docker/build-push-action@v2
+
+    - name: Upload artifact 
+      uses: actions/upload-artifact@v3
       with:
-        platforms: linux/arm64
-        context: kuksa_feeders/gps2val
-        push: false
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        outputs: type=docker,dest=/tmp/kuksa_gps_feeder_arm64.tar # multi-platform images cannot be exported with the docker export type`
-        cache-from: type=gha, scope=${{ github.workflow }}
-        cache-to: type=gha, scope=${{ github.workflow }}
-    - name: Upload AMD64 artifact 
-      uses: actions/upload-artifact@v2
-      with:
-        name: kuksa_gps_feeder_amd64
-        path: /tmp/kuksa_gps_feeder_amd64.tar
-    - name: Upload ARM64 artifact 
-      uses: actions/upload-artifact@v2
-      with:
-        name: kuksa_gps_feeder_arm64
-        path: /tmp/kuksa_gps_feeder_arm64.tar
+        name: kuksa_gps_feeder_container
+        path: /tmp/kuksa_gps_feeder
