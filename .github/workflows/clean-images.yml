@@ -1,0 +1,24 @@
+#Upon close of PR delete images from ghcr.io registry‚
+name: clean_images
+
+on: 
+  pull_request:
+    types: [closed]
+ 
+env:
+  REGISTRY: ghcr.io
+  GPSIMAGE_NAME: ${{ github.repository }}/gps
+
+jobs:
+  build:
+    runs-on: self-hosted
+    
+    steps:    
+    - name: Delete ephemereal GPS images from registry
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      with:
+         owner: eclipse
+         name: kuksa.val.feeders/gps
+         token: ${{ secrets.PUSH_CONTAINER_TOKEN }}
+         tag: pr-${{github.event.pull_request.number}}
+         

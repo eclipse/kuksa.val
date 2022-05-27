@@ -12,7 +12,7 @@
 mkdir /deploy
 cp /kuksa.val/kuksa-val-server/build/src/kuksa-val-server /deploy
 
-cp /kuksa.val/docker/startkuksaval.sh /deploy
+cp /kuksa.val/kuksa-val-server/docker/startkuksaval.sh /deploy
 
 ldd /kuksa.val/kuksa-val-server/build/src/kuksa-val-server | grep "=>" | awk '{print $3}' |   xargs -I '{}' cp -v '{}' /deploy
 
