@@ -11,8 +11,8 @@
 	"name": "KUKSA.val",
 	"build": {
 		"dockerfile": "Dockerfile",
-		// Update 'VARIANT' to pick an Ubuntu version: focal, bionic
-		"args": { "VARIANT": "focal" }
+		// Update 'VARIANT' to pick an Ubuntu/Debian version: focal, bionic
+		"args": { "VARIANT": "bullseye" }
 	},
 	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
 

@@ -21,6 +21,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
                             cmake \
                             libmosquitto-dev \
                             gcovr \
-                            python3-pip
+                            python3-pip \
+                            gdb
 
 
