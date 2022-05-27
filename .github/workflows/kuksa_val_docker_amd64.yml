@@ -2,9 +2,9 @@ name: kuksa_val_docker amd64
 
 on:
   push:
-    branches: [ master ]
+    branches: [ disabled ]
   pull_request:
-    branches: [ master ]
+    branches: [ disabled ]
     
 jobs:
   build:
