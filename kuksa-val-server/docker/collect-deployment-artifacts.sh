@@ -10,15 +10,15 @@
 # Helper script to collect executables, config and libraries needed for minimal docker
 
 mkdir /deploy
-cp /kuksa.val/build/src/kuksa-val-server /deploy
+cp /kuksa.val/kuksa-val-server/build/src/kuksa-val-server /deploy
 
 cp /kuksa.val/docker/startkuksaval.sh /deploy
 
-ldd /kuksa.val/build/src/kuksa-val-server | grep "=>" | awk '{print $3}' |   xargs -I '{}' cp -v '{}' /deploy
+ldd /kuksa.val/kuksa-val-server/build/src/kuksa-val-server | grep "=>" | awk '{print $3}' |   xargs -I '{}' cp -v '{}' /deploy
 
 mkdir /deploy/exampleconfig
 mkdir /deploy/exampleconfig/certs
 
-cp /kuksa.val/build/src/config.ini  /deploy/exampleconfig/config.ini
-cp /kuksa.val/build/src/vss_release_2.2.json  /deploy/exampleconfig/vss.json
+cp /kuksa.val/kuksa-val-server/build/src/config.ini  /deploy/exampleconfig/config.ini
+cp /kuksa.val/kuksa-val-server/build/src/vss_release_2.2.json  /deploy/exampleconfig/vss.json
 cp -r  /kuksa.val/kuksa_certificates/* /deploy/exampleconfig/certs/
