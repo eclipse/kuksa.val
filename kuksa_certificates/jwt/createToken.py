@@ -19,10 +19,7 @@ def createJWTToken(input, key):
 
     print("Writing signed key to {}".format(input+".token"))
     with open(input+".token",'w') as output:
-        output.write(encoded.decode('utf-8'))
-
-
-
+        output.write(encoded)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("files", help="Read JWT payload from these files", nargs='+')
