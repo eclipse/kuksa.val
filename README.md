@@ -10,8 +10,8 @@ KUKSA.val provides in-vehicle software components for working with in-vehicle si
 
 [![Gitter](https://badges.gitter.im/kuksa-val.svg)](https://gitter.im/kuksa-val)
 
-![Build Status AMD64](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_val_docker_amd64.yml/badge.svg)
-![Build Status ARM64](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_val_docker_arm64.yml/badge.svg)
+![Build kuksa-val-server](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_val_docker.yml/badge.svg)
+
 [![Build Status](https://kuksaval.northeurope.cloudapp.azure.com/buildStatus/icon?job=kuksaval-upstream%2Fmaster&subject=kuksa-val-server%20legacy%20CI)](https://kuksaval.northeurope.cloudapp.azure.com/job/kuksaval-upstream/job/master/)
 [![codecov](https://codecov.io/gh/eclipse/kuksa.val/branch/master/graph/badge.svg?token=M4FT175771)](https://codecov.io/gh/eclipse/kuksa.val)
 
