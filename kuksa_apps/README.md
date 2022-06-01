@@ -8,4 +8,5 @@ Name | Description
 [dapr state_store](./dapr/state_store) | Store data to dapr `statestore` component
 [web client](./web-client) | A static webpage, which virsualize `kuksa.val` data
 [node red](./node-red) | Examples of `kuksa.val` clients using node-red flows, either via MQTT or via Websocket
+[kanto](./kanto) | Data bridge between `kuksa.val` and [Eclipse Kanto](https://github.com/eclipse-kanto/kanto)
 

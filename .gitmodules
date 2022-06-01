@@ -7,3 +7,6 @@
 [submodule "3rd-party-libs/turtle"]
 	path = kuksa-val-server/3rd-party-libs/turtle
 	url = https://github.com/mat007/turtle.git
+[submodule "kuksa_apps/kanto/ditto-clients-python"]
+	path = kuksa_apps/kanto/ditto-clients-python
+	url = https://github.com/eclipse/ditto-clients-python.git
