@@ -1,6 +1,6 @@
 #
 # ******************************************************************************
-# Copyright (c) 2018-2022 Robert Bosch GmbH and others.
+# Copyright (c) 2018 Robert Bosch GmbH and others.
 #
 # All rights reserved. This program and the accompanying materials
 # are made available under the terms of the Eclipse Public License v2.0
@@ -175,36 +175,16 @@ if(BUILD_EXE)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../config_grpc_client.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
   install( TARGETS ${SERVER_EXE_NAME} DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../kuksa_certificates/jwt/jwt.key.pub DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../kuksa_certificates/Server.pem DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../kuksa_certificates/Server.key DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../kuksa_certificates/Client.pem DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../kuksa_certificates/Client.key DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../kuksa_certificates/CA.pem DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.0.json DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.1.json DESTINATION bin/${SERVER_EXE_NAME})
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.2.json DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/jwt/jwt.key.pub DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.pem DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Server.key DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Client.pem DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/Client.key DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../kuksa_certificates/CA.pem DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../data/vss-core/vss_release_2.0.json DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../data/vss-core/vss_release_2.1.json DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../data/vss-core/vss_release_2.2.json DESTINATION bin/${SERVER_EXE_NAME})
 
-
-  #GRPC client
-  
-  add_executable(${GRPC_CLIENT_EXE_NAME} "${GRPC_CLIENT_EXE_NAME}.cpp")
-
-  if (ENABLE_COVERAGE)
-    add_coverage(${GRPC_CLIENT_EXE_NAME})
-  endif()
-
-  # using static library to simplify existing packaging and maintainance
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${SERVER_LIB_STATIC_NAME})
-
-  # link executable dependencies
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE Threads::Threads)
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
-  target_include_directories(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIR})
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_LIBRARY})
-  target_link_options(${GRPC_CLIENT_EXE_NAME} PRIVATE "-ldl")
-  message(STATUS "Build target files for grpc client")
 
   # CPack
   INCLUDE(InstallRequiredSystemLibraries)
@@ -215,7 +195,7 @@ if(BUILD_EXE)
   set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
   set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
   set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
-  SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md")
+  SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../README.md")
   SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/../../LICENSE")
   SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
 
@@ -223,7 +203,7 @@ if(BUILD_EXE)
   SET(CPACK_STRIP_FILES "bin/${SERVER_EXE_NAME}")
   SET(CPACK_SOURCE_STRIP_FILES "")
 
-  SET(CPACK_PACKAGE_EXECUTABLES "${SERVER_EXE_NAME}" "Kuksa.VAL VSS server")
+  SET(CPACK_PACKAGE_EXECUTABLES "${SERVER_EXE_NAME}" "W3C VSS server")
 
   # Debian specifics
   SET(DEPENDENCY_LIBRARY_LIST
