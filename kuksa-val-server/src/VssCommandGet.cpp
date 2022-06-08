@@ -26,7 +26,7 @@
 
 /** Implements the Websocket get request accroding to GEN2, with GEN1 backwards
  * compatibility **/
-std::string VssCommandProcessor::processGet2(kuksa::kuksaChannel &channel,
+std::string VssCommandProcessor::processGet2(KuksaChannel &channel,
                                              jsoncons::json &request) {
   std::string pathStr= request["path"].as_string();
   VSSPath path = VSSPath::fromVSS(pathStr);
@@ -59,7 +59,7 @@ std::string VssCommandProcessor::processGet2(kuksa::kuksaChannel &channel,
   }
 
   logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId +
-                                     " for path: " + path.to_string() + ", attribute: " + attribute);
+                                     " for path: " + path.to_string() + " with attribute: " + attribute);
 
   jsoncons::json answer;
   jsoncons::json datapoints = jsoncons::json::array();

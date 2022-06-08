@@ -41,10 +41,6 @@ class VssDatabase;
 class WsServer;
 class ILogger;
 
-
-using SubConnId = uint64_t;
-using SubscriptionId = boost::uuids::uuid;
-
 // Subscription ID: Client ID
 struct UUIDHasher
 {
@@ -57,7 +53,7 @@ struct UUIDHasher
     return (uuid_hasher(k));
   }
 };
-using subscriptions_t = std::unordered_map<SubscriptionId, SubConnId, UUIDHasher>;
+using subscriptions_t = std::unordered_map<SubscriptionId, ConnectionId, UUIDHasher>;
 using subscription_keys_t = struct subscription_keys {
   std::string path;
   std::string attribute;
@@ -84,6 +80,7 @@ struct SubscriptionKeyHasher {
 class SubscriptionHandler : public ISubscriptionHandler {
  private:
   std::unordered_map<subscription_keys_t, subscriptions_t, SubscriptionKeyHasher> subscriptions;
+  std::unordered_map<subscription_keys_t, subscriptions_t, SubscriptionKeyHasher> grpcSubscriptions;
 
   std::shared_ptr<ILogger> logger;
   std::shared_ptr<IServer> server;
@@ -107,7 +104,7 @@ class SubscriptionHandler : public ISubscriptionHandler {
   void addPublisher(std::shared_ptr<IPublisher> publisher){
     publishers_.push_back(publisher);
   }
-  SubscriptionId subscribe(kuksa::kuksaChannel& channel,
+  SubscriptionId subscribe(KuksaChannel& channel,
                            std::shared_ptr<IVssDatabase> db,
                            const std::string &path, const std::string& attr);
   int unsubscribe(SubscriptionId subscribeID);

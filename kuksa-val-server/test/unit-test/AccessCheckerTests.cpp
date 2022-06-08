@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "IAuthenticatorMock.hpp"
 #include "exception.hpp"
 #include "kuksa.pb.h"
@@ -50,7 +50,7 @@ namespace {
 BOOST_FIXTURE_TEST_SUITE(AccessCheckerTests, TestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathAuthorized_Shall_ReturnTrue) {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   jsoncons::json permissions;
   
   // setup
@@ -63,16 +63,16 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathAuthorized_Shall_Retur
   std::string channelPermissions;
   permissions.dump_pretty(channelPermissions);
  
-  channel.set_connectionid(11);
-  channel.set_authorized(true);
-  channel.set_permissions(channelPermissions);
+  channel.setConnID(11);
+  channel.setAuthorized(true);
+  channel.setPermissions(channelPermissions);
 
   // verify
   BOOST_TEST(accChecker->checkReadAccess(channel, path) == true);
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotAuthorized_Shall_ReturnFalse) {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   jsoncons::json permissions;
   
   // setup
@@ -85,16 +85,16 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotAuthorized_Shall_Re
   std::string channelPermissions;
   permissions.dump_pretty(channelPermissions);
  
-  channel.set_connectionid(11);
-  channel.set_authorized(true);
-  channel.set_permissions(channelPermissions);
+  channel.setConnID(11);
+  channel.setAuthorized(true);
+  channel.setPermissions(channelPermissions);
 
   // verify
   BOOST_TEST(accChecker->checkReadAccess(channel, path) == false);
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotExistent_Shall_ReturnFalse) {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   jsoncons::json permissions;
   
   // setup
@@ -107,16 +107,16 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_ReadPathNotExistent_Shall_Retu
   std::string channelPermissions;
   permissions.dump_pretty(channelPermissions);
  
-  channel.set_connectionid(11);
-  channel.set_authorized(true);
-  channel.set_permissions(channelPermissions);
+  channel.setConnID(11);
+  channel.setAuthorized(true);
+  channel.setPermissions(channelPermissions);
 
   // verify
   BOOST_TEST(accChecker->checkReadAccess(channel, path) == false);
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathAuthorized_Shall_ReturnTrue) {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   jsoncons::json permissions;
   
   // setup
@@ -129,16 +129,16 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathAuthorized_Shall_Retu
   std::string channelPermissions;
   permissions.dump_pretty(channelPermissions);
  
-  channel.set_connectionid(11);
-  channel.set_authorized(true);
-  channel.set_permissions(channelPermissions);
+  channel.setConnID(11);
+  channel.setAuthorized(true);
+  channel.setPermissions(channelPermissions);
 
   // verify
   BOOST_TEST(accChecker->checkWriteAccess(channel, path) == true);
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotAuthorized_Shall_ReturnFalse) {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   jsoncons::json permissions;
 
   // setup
@@ -151,16 +151,16 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotAuthorized_Shall_R
   std::string channelPermissions;
   permissions.dump_pretty(channelPermissions);
  
-  channel.set_connectionid(11);
-  channel.set_authorized(true);
-  channel.set_permissions(channelPermissions);
+  channel.setConnID(11);
+  channel.setAuthorized(true);
+  channel.setPermissions(channelPermissions);
 
   // verify
   BOOST_TEST(accChecker->checkWriteAccess(channel, path) == false);
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotExistent_Shall_ReturnFalse) {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   jsoncons::json permissions;
 
   // setup
@@ -173,9 +173,9 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotExistent_Shall_Ret
   std::string channelPermissions;
   permissions.dump_pretty(channelPermissions);
  
-  channel.set_connectionid(11);
-  channel.set_authorized(true);
-  channel.set_permissions(channelPermissions);
+  channel.setConnID(11);
+  channel.setAuthorized(true);
+  channel.setPermissions(channelPermissions);
 
   // verify
 
@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_WritePathNotExistent_Shall_Ret
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsValid_Shall_ReturnTrue) {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   jsoncons::json jsonPaths, permissions;
   std::string paths;
 
@@ -197,9 +197,9 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsValid_Shal
   std::string channelPermissions;
   permissions.dump_pretty(channelPermissions);
  
-  channel.set_connectionid(11);
-  channel.set_authorized(true);
-  channel.set_permissions(channelPermissions);
+  channel.setConnID(11);
+  channel.setAuthorized(true);
+  channel.setPermissions(channelPermissions);
 
   paths = "[{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Vertical']\",\"value\":1},"
            "{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Longitudinal']\",\"value\":2}"
@@ -213,7 +213,7 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsValid_Shal
 }
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsNotValid_Shall_ReturnFalse) {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   jsoncons::json jsonPaths, permissions;
   std::string paths;
 
@@ -225,9 +225,9 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsNotValid_S
   std::string channelPermissions;
   permissions.dump_pretty(channelPermissions);
  
-  channel.set_connectionid(11);
-  channel.set_authorized(true);
-  channel.set_permissions(channelPermissions);
+  channel.setConnID(11);
+  channel.setAuthorized(true);
+  channel.setPermissions(channelPermissions);
 
   paths = "[{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Vertical']\",\"value\":1},"
            "{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Longitudinal']\",\"value\":2}"
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsNotValid_S
 
 
 BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsNotHaveWritePerm_Shall_ReturnFalse) {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   jsoncons::json jsonPaths, permissions;
   std::string paths;
 
@@ -254,9 +254,9 @@ BOOST_AUTO_TEST_CASE(Given_AuthorizedChannel_When_PathWriteForAllPathsNotHaveWri
   std::string channelPermissions;
   permissions.dump_pretty(channelPermissions);
  
-  channel.set_connectionid(11);
-  channel.set_authorized(true);
-  channel.set_permissions(channelPermissions);
+  channel.setConnID(11);
+  channel.setAuthorized(true);
+  channel.setPermissions(channelPermissions);
 
   paths = "[{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Vertical']\",\"value\":1},"
            "{\"path\":\"$['Vehicle']['children']['Acceleration']['children']['Longitudinal']\",\"value\":2}"

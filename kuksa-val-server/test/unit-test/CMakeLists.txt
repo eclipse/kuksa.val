@@ -63,7 +63,6 @@ if(BUILD_UNIT_TEST)
     KuksavalUnitTest.cpp
     UpdateVSSTreeTest.cpp
     UpdateMetadataTest.cpp
-    kuksa_grpc_client_mock.cpp
   )
 
   # declares a test with our executable

@@ -63,8 +63,8 @@ class VssDatabase : public IVssDatabase {
 
 
   void updateJsonTree(jsoncons::json& sourceTree, const jsoncons::json& jsonTree);
-  void updateJsonTree(kuksa::kuksaChannel& channel, jsoncons::json& value) override;
-  void updateMetaData(kuksa::kuksaChannel& channel, const VSSPath& path, const jsoncons::json& newTree) override;
+  void updateJsonTree(KuksaChannel& channel, jsoncons::json& value) override;
+  void updateMetaData(KuksaChannel& channel, const VSSPath& path, const jsoncons::json& newTree) override;
   jsoncons::json getMetaData(const VSSPath& path) override;
   
   jsoncons::json setSignal(const VSSPath &path, const std::string& attr, jsoncons::json &value) override; //gen2 version

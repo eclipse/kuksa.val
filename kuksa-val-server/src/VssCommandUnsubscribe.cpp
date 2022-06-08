@@ -23,7 +23,7 @@
 #include "VssCommandProcessor.hpp"
 #include "exception.hpp"
 
-string VssCommandProcessor::processUnsubscribe(kuksa::kuksaChannel &channel,
+string VssCommandProcessor::processUnsubscribe(KuksaChannel &channel,
                                                jsoncons::json &request) {
   try {
     requestValidator->validateUnsubscribe(request);

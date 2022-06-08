@@ -10,70 +10,78 @@ syntax = "proto3";
 
 package kuksa;
 
+option go_package = "/kuksa_grpc_proto";
+
+
 // The connecting service definition.
-service viss_client {
-  rpc GetMetaData (getMetaDataRequest) returns (metaData) {}
-  rpc AuthorizeChannel (authorizeRequest) returns (authStatus) {}
-  rpc GetValue (getRequest) returns (value) {}
-  rpc SetValue (setRequest) returns (setStatus) {}
+service kuksa_grpc_if {
+  rpc get (GetRequest) returns (GetResponse) {}
+  rpc set (SetRequest) returns (SetResponse) {}
+  rpc subscribe (stream SubscribeRequest) returns (stream SubscribeResponse) {}
+  rpc authorize (AuthRequest) returns (AuthResponse) {}
 }
 
-message metaData {
-  string value_ = 1;
+message AuthRequest {
+  string token = 1;
 }
 
-message authStatus {
-  string status_ = 1;
-  kuksaChannel channel_ = 2;
+message GetRequest {
+  RequestType type = 1;
+  repeated string path = 2;
 }
 
-message value {
-  string value_ = 1;
+message GetResponse {
+  repeated Value values = 1;
+  Status status = 2;
 }
 
-message setStatus {
-  string status_ = 1;
+message SetRequest {
+  RequestType type = 1;
+  repeated Value values = 2;
 }
 
-
-message getMetaDataRequest {
-  string path_ = 1;
-  string reqID_ = 2;
+message SetResponse {
+  Status status = 1;
 }
 
-message authorizeRequest {
-  string token_ = 1;
-  string reqID_ = 2;
-  kuksaChannel channel_=3;
+message AuthResponse {
+  string connectionId = 1;
+  Status status = 2;
 }
 
-message getRequest {
-  string path_ = 1;
-  string reqID_ = 2;
-  kuksaChannel channel_=3;
+message SubscribeRequest {
+  RequestType type = 1;
+  string path = 2;
+  bool start = 3;
 }
 
-message setRequest {
-  string path_ = 1;
-  string reqID_ = 2;
-  kuksaChannel channel_=3;
-  string value_ = 4;
+message SubscribeResponse {
+  Value values = 1;
 }
 
-message kuksaChannel{
-  enum Type {
-    UNKNOWN_TYPE = 0;
-    WEBSOCKET_PLAIN = 1;
-    WEBSOCKET_SSL = 2;
-    HTTP_PLAIN = 3;
-    HTTP_SSL = 4;
-    GRPC = 5;
-  };
-  uint64 connectionID = 1;
-  bool authorized = 2;
-  bool modifyTree = 3;
-  bytes authToken = 4;
-  string permissions = 5;
-  Type typeOfConnection = 6;
+message Value {
+  string path =  1;
+  oneof val {
+    uint32 valueUint32 = 2;
+    int32 valueInt32 = 3;
+    uint64 valueUint64 = 4;
+    int64 valueInt64 = 5;
+    bool valueBool = 6;
+    float valueFloat = 7;
+    double valueDouble = 8;
+    string valueString = 9;
+  }
+  string timestamp=10; // TODO: Change to uint64
 }
 
+message Status {
+  uint32 statusCode = 1;
+  string statusDescription = 2;
+}
+
+enum RequestType {
+  UNKNOWN_TYPE = 0;
+  CURRENT_VALUE = 1;
+  TARGET_VALUE = 2;
+  METADATA = 3;
+};

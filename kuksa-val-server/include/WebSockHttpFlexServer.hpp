@@ -15,7 +15,7 @@
 #define __WEBSOCKHTTPFLEXSERVER_H__
 
 #include "IServer.hpp"
-#include "kuksa.pb.h"
+#include "KuksaChannel.hpp"
 
 #include <boost/asio/ssl/context.hpp>
 #include <vector>
@@ -63,7 +63,7 @@ class WebSockHttpFlexServer : public IServer {
      * @param channel Connection identifier
      * @return Response JSON message for client
      */
-    std::string HandleRequest(const std::string &req_json, kuksa::kuksaChannel &channel);
+    std::string HandleRequest(const std::string &req_json, KuksaChannel &channel);
   public:
     WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil,
                           std::shared_ptr<IRestHandler> rest2jsonUtil);

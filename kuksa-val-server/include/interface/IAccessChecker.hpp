@@ -18,15 +18,15 @@
 #include <jsoncons/json.hpp>
 
 #include "VSSPath.hpp"
-#include "kuksa.pb.h"
+#include "KuksaChannel.hpp"
 
 class IAccessChecker {
 public:
   virtual ~IAccessChecker() {}
 
-  virtual bool checkPathWriteAccess(kuksa::kuksaChannel &channel, const jsoncons::json &paths) = 0;
-  virtual bool checkReadAccess(kuksa::kuksaChannel &channel, const VSSPath &path) = 0;
-  virtual bool checkWriteAccess(kuksa::kuksaChannel &channel, const VSSPath &path) = 0;
+  virtual bool checkPathWriteAccess(KuksaChannel &channel, const jsoncons::json &paths) = 0;
+  virtual bool checkReadAccess(KuksaChannel &channel, const VSSPath &path) = 0;
+  virtual bool checkWriteAccess(KuksaChannel &channel, const VSSPath &path) = 0;
 
 
 };

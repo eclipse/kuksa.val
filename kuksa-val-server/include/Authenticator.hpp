@@ -29,17 +29,17 @@ class Authenticator : public IAuthenticator {
   string algorithm = "RS256";
   std::shared_ptr<ILogger> logger;
 
-  int validateToken(kuksa::kuksaChannel& channel, string authToken);
+  int validateToken(KuksaChannel& channel, string authToken);
 
  public:
   Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretkey, string algorithm);
 
-  int validate(kuksa::kuksaChannel &channel,
+  int validate(KuksaChannel &channel,
                string authToken);
 
   void updatePubKey(string key);
-  bool isStillValid(kuksa::kuksaChannel &channel);
-  void resolvePermissions(kuksa::kuksaChannel &channel);
+  bool isStillValid(KuksaChannel &channel);
+  void resolvePermissions(KuksaChannel &channel);
 
   static string getPublicKeyFromFile(string fileName, std::shared_ptr<ILogger> logger);
 };

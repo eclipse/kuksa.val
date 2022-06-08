@@ -21,7 +21,7 @@
 #include "VssCommandProcessor.hpp"
 #include "exception.hpp"
 
-string VssCommandProcessor::processSubscribe(kuksa::kuksaChannel &channel,
+string VssCommandProcessor::processSubscribe(KuksaChannel &channel,
                                              jsoncons::json &request) {
   try {
     requestValidator->validateSubscribe(request);

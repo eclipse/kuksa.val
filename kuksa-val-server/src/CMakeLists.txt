@@ -186,26 +186,6 @@ if(BUILD_EXE)
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.2.json DESTINATION bin/${SERVER_EXE_NAME})
 
 
-  #GRPC client
-  
-  add_executable(${GRPC_CLIENT_EXE_NAME} "${GRPC_CLIENT_EXE_NAME}.cpp")
-
-  if (ENABLE_COVERAGE)
-    add_coverage(${GRPC_CLIENT_EXE_NAME})
-  endif()
-
-  # using static library to simplify existing packaging and maintainance
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${SERVER_LIB_STATIC_NAME})
-
-  # link executable dependencies
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE Threads::Threads)
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${Boost_LIBRARIES})
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
-  target_include_directories(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_INCLUDE_DIR})
-  target_link_libraries(${GRPC_CLIENT_EXE_NAME} PRIVATE ${MOSQUITTO_LIBRARY})
-  target_link_options(${GRPC_CLIENT_EXE_NAME} PRIVATE "-ldl")
-  message(STATUS "Build target files for grpc client")
-
   # CPack
   INCLUDE(InstallRequiredSystemLibraries)
 
