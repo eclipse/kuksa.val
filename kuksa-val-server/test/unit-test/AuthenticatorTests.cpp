@@ -26,7 +26,7 @@
 #include <chrono>
 #include <algorithm>
 
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "ILoggerMock.hpp"
 #include "JsonResponses.hpp"
 #include "exception.hpp"
@@ -104,7 +104,7 @@ BOOST_FIXTURE_TEST_SUITE(AuthenticatorTests, TestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(Given_GoodToken_When_Validate_Shall_ValidateTokenSuccessfully)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   // expectations
 
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(Given_GoodToken_When_Validate_Shall_ValidateTokenSuccessful
 
 BOOST_AUTO_TEST_CASE(Given_BadToken_When_Validate_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   // expectations
 

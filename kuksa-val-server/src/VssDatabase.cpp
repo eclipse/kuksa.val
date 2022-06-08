@@ -26,7 +26,7 @@
 #include "IAccessChecker.hpp"
 #include "ISubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "JsonResponses.hpp"
 
 using namespace std;
@@ -284,8 +284,8 @@ void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::jso
 
 }
 
-void VssDatabase::updateJsonTree(kuksa::kuksaChannel& channel,  jsoncons::json& jsonTree){
-  if (! channel.modifytree()) {
+void VssDatabase::updateJsonTree(KuksaChannel& channel,  jsoncons::json& jsonTree){
+  if (! channel.authorizedToModifyTree()) {
      stringstream msg;
      msg << "do not have write access for updating json tree or is invalid";
      throw noPermissionException(msg.str());
@@ -299,8 +299,8 @@ void VssDatabase::updateJsonTree(kuksa::kuksaChannel& channel,  jsoncons::json& 
 
 // update a metadata in tree, which will only do one-level-deep shallow merge/update.
 // If deep merge/update are expected, use `updateJsonTree` instead.
-void VssDatabase::updateMetaData(kuksa::kuksaChannel& channel, const VSSPath& path, const jsoncons::json& metadata){
-  if (! channel.modifytree()) {
+void VssDatabase::updateMetaData(KuksaChannel& channel, const VSSPath& path, const jsoncons::json& metadata){
+  if (! channel.authorizedToModifyTree()) {
      stringstream msg;
      msg << "do not have write access for updating MetaData or is invalid";
      throw noPermissionException(msg.str());

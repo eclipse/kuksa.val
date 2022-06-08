@@ -19,7 +19,7 @@
 #include <jsoncons/json.hpp>
 #include <boost/filesystem.hpp>
 
-#include "kuksa.pb.h"
+#include "KuksaChannel.hpp"
 #include "VSSPath.hpp"
 
 class IVssDatabase {
@@ -27,8 +27,8 @@ class IVssDatabase {
     virtual ~IVssDatabase() {}
 
     virtual void initJsonTree(const boost::filesystem::path &fileName) = 0;
-    virtual void updateJsonTree(kuksa::kuksaChannel& channel, jsoncons::json& value) = 0;
-    virtual void updateMetaData(kuksa::kuksaChannel& channel, const VSSPath& path, const jsoncons::json& value) = 0;
+    virtual void updateJsonTree(KuksaChannel& channel, jsoncons::json& value) = 0;
+    virtual void updateMetaData(KuksaChannel& channel, const VSSPath& path, const jsoncons::json& value) = 0;
     virtual jsoncons::json getMetaData(const VSSPath &path) = 0;
   
     virtual jsoncons::json setSignal(const VSSPath &path, const std::string& attr, jsoncons::json &value) = 0; //gen2 version

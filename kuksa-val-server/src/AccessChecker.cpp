@@ -19,20 +19,19 @@
 #include <regex>
 
 #include "IAuthenticator.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 
 using namespace std;
 using namespace jsoncons;
-//using jsoncons::json;
 
 AccessChecker::AccessChecker(std::shared_ptr<IAuthenticator> vdator) {
   tokenValidator = vdator;
 }
 
-bool AccessChecker::checkSignalAccess(const kuksa::kuksaChannel& channel, const string& path, const string& requiredPermission){
+bool AccessChecker::checkSignalAccess(const KuksaChannel& channel, const string& path, const string& requiredPermission){
   json permissions;
-  if(!channel.permissions().empty()){
-    permissions = json::parse(channel.permissions());
+  if(!channel.getPermissions().empty()){
+    permissions = json::parse(channel.getPermissions().as_string());
   }
   else{
     permissions = json::parse("{}");
@@ -54,20 +53,20 @@ bool AccessChecker::checkSignalAccess(const kuksa::kuksaChannel& channel, const 
 }
 
 
-// check the permissions json in WsChannel if path has read access
-bool AccessChecker::checkReadAccess(kuksa::kuksaChannel &channel, const VSSPath &path) {
+// check the permissions json in KuksaChannel if path has read access
+bool AccessChecker::checkReadAccess(KuksaChannel &channel, const VSSPath &path) {
   return checkSignalAccess(channel, path.getVSSGen1Path(), "r");
 }
 
-// check the permissions json in WsChannel if path has read access
-bool AccessChecker::checkWriteAccess(kuksa::kuksaChannel &channel, const VSSPath &path) {
+// check the permissions json in KuksaChannel if path has read access
+bool AccessChecker::checkWriteAccess(KuksaChannel &channel, const VSSPath &path) {
   return checkSignalAccess(channel, path.getVSSGen1Path(), "w");
 }
 
 
 // Checks if all the paths have write access.If even 1 path in the list does not
 // have write access, this method returns false.
-bool AccessChecker::checkPathWriteAccess(kuksa::kuksaChannel &channel, const json &paths) {
+bool AccessChecker::checkPathWriteAccess(KuksaChannel &channel, const json &paths) {
   for (size_t i = 0; i < paths.size(); i++) {
     json item = paths[i];
     string jPath = item["path"].as<string>();

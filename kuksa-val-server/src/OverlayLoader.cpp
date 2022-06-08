@@ -50,8 +50,8 @@ void applyOverlays(std::shared_ptr<ILogger> log,
                    const std::vector<boost::filesystem::path> overlayfiles,
                    std::shared_ptr<IVssDatabase> db) {
   // Mock a channel with permissions to change VSS tree
-  auto mockChannel = std::make_shared<kuksa::kuksaChannel>();
-  mockChannel->set_modifytree(true);
+  auto mockChannel = std::make_shared<KuksaChannel>();
+  mockChannel->enableModifyTree();
 
   for (auto const &p : overlayfiles) {
     log->Log(LogLevel::INFO, "Loading overlay \"" + p.generic_string() + "\"");

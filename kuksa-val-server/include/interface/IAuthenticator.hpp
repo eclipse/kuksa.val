@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 
-#include "kuksa.pb.h"
+#include "KuksaChannel.hpp"
 
 using namespace std;
 
@@ -27,11 +27,11 @@ class IAuthenticator {
 public:
   virtual ~IAuthenticator() {}
 
-  virtual int validate(kuksa::kuksaChannel &channel,
+  virtual int validate(KuksaChannel &channel,
                        string authToken) = 0;
   virtual void updatePubKey(string key) = 0;
-  virtual bool isStillValid(kuksa::kuksaChannel &channel) = 0;
-  virtual void resolvePermissions(kuksa::kuksaChannel &channel) = 0;
+  virtual bool isStillValid(KuksaChannel &channel) = 0;
+  virtual void resolvePermissions(KuksaChannel &channel) = 0;
 };
 
 #endif

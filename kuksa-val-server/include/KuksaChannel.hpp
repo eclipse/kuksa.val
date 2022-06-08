@@ -11,8 +11,8 @@
  *      Robert Bosch GmbH - initial API and functionality
  * *****************************************************************************
  */
-#ifndef __WSCHANNEL_H__
-#define __WSCHANNEL_H__
+#ifndef __KUKSA_CHANNEL_H__
+#define __KUKSA_CHANNEL_H__
 
 #include <stdint.h>
 #include <jsoncons/json.hpp>
@@ -22,7 +22,7 @@ using namespace std;
 using namespace jsoncons;
 using jsoncons::json;
 
-class WsChannel {
+class KuksaChannel {
  public:
   enum class Type {
     WEBSOCKET_PLAIN,

@@ -26,7 +26,6 @@
 #include <chrono>
 #include <algorithm>
 
-#include "WsChannel.hpp"
 #include "ILoggerMock.hpp"
 #include "JsonResponses.hpp"
 #include "exception.hpp"
