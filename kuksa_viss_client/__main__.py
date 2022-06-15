@@ -16,7 +16,7 @@ from pygments import highlight, lexers, formatters
 from cmd2 import Cmd, with_argparser, with_category, Cmd2ArgumentParser, CompletionItem
 from cmd2.utils import CompletionError, basic_complete
 import functools, subprocess
-DEFAULT_SERVER_ADDR = "127.0.0.1"
+DEFAULT_SERVER_ADDR = "172.17.0.1"
 DEFAULT_SERVER_PORT = 8090
 DEFAULT_SERVER_PROTOCOL = "ws"
 
@@ -305,12 +305,10 @@ class TestClient(Cmd):
             print("Websocket disconnected!!")
 
     def checkConnection(self):
-        try: 
-            if None == self.commThread or not self.commThread.wsConnected: 
-                self.connect()
-            return self.commThread.wsConnected
-        except AttributeError:
-            return False
+        if None == self.commThread or not self.commThread.checkConnection(): 
+            self.connect()
+        return self.commThread.checkConnection()
+
 
     def connect(self, insecure=False):
         """Connect to the VISS Server"""
@@ -328,10 +326,10 @@ class TestClient(Cmd):
 
         waitForConnection = threading.Condition()
         waitForConnection.acquire()
-        waitForConnection.wait_for(lambda: self.commThread.wsConnected==True, timeout=1)
+        waitForConnection.wait_for(lambda: self.commThread.checkConnection()==True, timeout=1)
         waitForConnection.release()
 
-        if self.commThread.wsConnected:
+        if self.commThread.checkConnection():
             print("Websocket connected!!")
         else:
             print("Websocket could not be connected!!")
