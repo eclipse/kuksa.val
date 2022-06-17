@@ -20,8 +20,12 @@ DEFAULT_SERVER_ADDR = "172.17.0.1"
 DEFAULT_SERVER_PORT = 8090
 DEFAULT_SERVER_PROTOCOL = "ws"
 
+from grpc.tools import command
+# Generate the NBI Stubs
+command.build_package_protos("../kuksa-val-server/protos/")
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-#sys.path.append(scriptDir)
+sys.path.append(os.path.join(scriptDir, "../kuksa-val-server/protos/"))
+
 sys.path.append(os.path.join(scriptDir, ".."))
 from kuksa_viss_client import KuksaClientThread
 from kuksa_viss_client._metadata import *
@@ -302,7 +306,6 @@ class TestClient(Cmd):
             if self.commThread != None:
                 self.commThread.stop()
                 self.commThread = None
-            print("Websocket disconnected!!")
 
     def checkConnection(self):
         if None == self.commThread or not self.commThread.checkConnection(): 
@@ -330,9 +333,9 @@ class TestClient(Cmd):
         waitForConnection.release()
 
         if self.commThread.checkConnection():
-            print("Websocket connected!!")
+            pass
         else:
-            print("Websocket could not be connected!!")
+            print("Websocket could not be connected or the gRPC channel could not be created!!")
             self.commThread.stop()
             self.commThread = None
 
