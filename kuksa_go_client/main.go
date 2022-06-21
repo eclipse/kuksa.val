@@ -30,9 +30,24 @@ func main() {
 		log.Fatalf("Authorization Error: %v", err)
 	}
 
+	// Set and Get the attribute targetValue
+	err = kuksaClientComm.SetAttrValueFromKuksaValServer("Vehicle.Body.Trunk.IsOpen", "true", "targetValue")
+	if err != nil {
+		log.Printf("Set Attribute Error: %v", err)
+	} else {
+		log.Printf("Vehicle.Body.Trunk.IsOpen Set: True")
+	}
+
+	var value string
+	value, err = kuksaClientComm.GetAttrValueFromKuksaValServer("Vehicle.Body.Trunk.IsOpen", "targetValue")
+	if err != nil {
+		log.Printf("Get Attribute Error: %v", err)
+	} else {
+		log.Printf("Vehicle.Body.Trunk.IsOpen: " + value)
+	}
+
 	// Get Value of Vehicle.Speed1
 	// This datapoint does not exist in the VSS and should result in an error
-	var value string
 	value, err = kuksaClientComm.GetValueFromKuksaValServer("Vehicle.Speed1")
 	if err != nil {
 		log.Printf("Get Error: %v", err)
