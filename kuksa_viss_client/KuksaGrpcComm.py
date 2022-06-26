@@ -73,8 +73,11 @@ class KuksaGrpcComm:
         req.type = self.AttrDict[attribute]
         req.path.append(path)
         self.sendMsgQueue.put(("get", req, recvQueue))
-        resp = recvQueue.get(timeout=timeout)
-        respJson = MessageToJson(resp)
+        try:
+            resp = recvQueue.get(timeout=timeout)
+            respJson = MessageToJson(resp)
+        except queue.Empty:
+            respJson = json.dumps({"error": "Timeout"})
         return respJson        
 
     # Function to implement set
@@ -94,8 +97,11 @@ class KuksaGrpcComm:
         req.values.append(val)
 
         self.sendMsgQueue.put(("set", req, recvQueue))
-        resp = recvQueue.get(timeout=timeout)
-        respJson = MessageToJson(resp)
+        try:
+            resp = recvQueue.get(timeout=timeout)
+            respJson = MessageToJson(resp)
+        except queue.Empty:
+            respJson = json.dumps({"error": "Timeout"})
         return respJson
 
     # Function for authorization
@@ -112,9 +118,12 @@ class KuksaGrpcComm:
         req = kuksa_pb2.AuthRequest()
         req.token = token
         self.sendMsgQueue.put(("authorize", req, recvQueue))
-        resp = recvQueue.get(timeout=timeout)
-        respJson = MessageToJson(resp)
-        self.grpcConnectionAuthToken = resp.connectionId
+        try: 
+            resp = recvQueue.get(timeout=timeout)
+            self.grpcConnectionAuthToken = resp.connectionId
+            respJson = MessageToJson(resp)
+        except queue.Empty:
+            respJson = json.dumps({"error": "Timeout"})
         return respJson
 
 
