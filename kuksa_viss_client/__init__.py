@@ -38,7 +38,7 @@ class KuksaClientThread(threading.Thread):
 
         self.subscriptionCallbacks = {}
         self.sendMsgQueue = queue.Queue()
-        self.recvMsgQueue = queue.Queue()
+        self.recvMsgQueues = {}
 
     def stop(self):
         self.wsConnected = False
@@ -49,6 +49,10 @@ class KuksaClientThread(threading.Thread):
         req["requestId"] = str(uuid.uuid4())
         jsonDump = json.dumps(req)
         sent = False
+
+        # Register the receive queue before sending
+        recvQueue = queue.Queue(maxsize=1)
+        self.recvMsgQueues[req["requestId"]] = recvQueue
         while not sent:
             try:
                 self.sendMsgQueue.put_nowait(jsonDump)
@@ -56,20 +60,15 @@ class KuksaClientThread(threading.Thread):
             except queue.Full:
                 time.sleep(0.01)
 
-        timeToWait = 0
-        while True:
-            try:
-                res =self.recvMsgQueue.get_nowait()
-                resJson =  json.loads(res) 
-                if "requestId" in res and str(req["requestId"]) == str(resJson["requestId"]):
-                    return res
-            except queue.Empty:
-                time.sleep(0.01)
-                timeToWait+=0.01
-                if timeToWait > timeout:
-                    req["error"] =  "timeout"
-                    return json.dumps(req, indent=2) 
-            
+        # Wait on the receive queue
+        try: 
+            res = recvQueue.get(timeout=timeout)
+            resJson =  json.loads(res) 
+            if "requestId" in res and str(req["requestId"]) == str(resJson["requestId"]):
+                return res
+        except queue.Empty:
+            req["error"] =  "timeout"
+            return json.dumps(req, indent=2) 
 
     # Do authorization by passing a jwt token or a token file
     def authorize(self, token=None, timeout = 2):
@@ -186,13 +185,11 @@ class KuksaClientThread(threading.Thread):
             message = await webSocket.recv()
             resJson = json.loads(message) 
             if "requestId" in resJson:
-                sent = False
-                while not sent:
-                    try:
-                        self.recvMsgQueue.put_nowait(message)
-                        sent = True
-                    except queue.Full:
-                        await asyncio.sleep(0.01)
+                try:
+                    self.recvMsgQueues[resJson["requestId"]].put(message)
+                    del(self.recvMsgQueues[resJson["requestId"]])
+                except:
+                    del(self.recvMsgQueues[resJson["requestId"]])
             else:
                 if "subscriptionId" in resJson and resJson["subscriptionId"] in self.subscriptionCallbacks:
                     try:

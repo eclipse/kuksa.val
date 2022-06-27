@@ -11,7 +11,7 @@
 import argparse, json, sys
 from re import sub
 from typing import Dict, List
-import queue, time, os
+import queue, time, os, threading
 from pygments import highlight, lexers, formatters
 from cmd2 import Cmd, with_argparser, with_category, Cmd2ArgumentParser, CompletionItem
 from cmd2.utils import CompletionError, basic_complete
@@ -47,6 +47,8 @@ class TestClient(Cmd):
         return childVssTree
 
     def path_completer(self, text, line, begidx, endidx):
+        if not self.checkConnection():
+            return
         if len(self.pathCompletionItems) == 0:
             tree = json.loads(self.getMetaData("*"))
                 
@@ -144,7 +146,6 @@ class TestClient(Cmd):
     jsonfile_completer_method = functools.partial(Cmd.path_complete,
         path_filter=lambda path: (os.path.isdir(path) or path.endswith(".json")))
     ap_updateVSSTree.add_argument("Json", help="Json tree to update VSS", completer_method=jsonfile_completer_method)
-
 
     # Constructor
     def __init__(self):
@@ -297,9 +298,12 @@ class TestClient(Cmd):
             print("Websocket disconnected!!")
 
     def checkConnection(self):
-        if None == self.commThread or not self.commThread.wsConnected: 
-            self.connect()
-        return self.commThread.wsConnected
+        try: 
+            if None == self.commThread or not self.commThread.wsConnected: 
+                self.connect()
+            return self.commThread.wsConnected
+        except AttributeError:
+            return False
 
     def connect(self, insecure=False):
         """Connect to the VISS Server"""
@@ -314,13 +318,10 @@ class TestClient(Cmd):
         self.commThread = KuksaClientThread(config)
         self.commThread.start()
 
-        pollIndex = 10
-        while(pollIndex > 0):
-            if self.commThread.wsConnected == True:
-                pollIndex = 0
-            else:
-                time.sleep(0.1)
-            pollIndex -= 1
+        waitForConnection = threading.Condition()
+        waitForConnection.acquire()
+        waitForConnection.wait_for(lambda: self.commThread.wsConnected==True, timeout=1)
+        waitForConnection.release()
 
         if self.commThread.wsConnected:
             print("Websocket connected!!")
