@@ -20,7 +20,7 @@
 #include <string>
 
 #include "exception.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 
 #include "JsonResponses.hpp"
 #include "visconf.hpp"
@@ -56,7 +56,7 @@ VssCommandProcessor::~VssCommandProcessor() {
 }
 
 
-string VssCommandProcessor::processUpdateVSSTree(kuksa::kuksaChannel& channel, jsoncons::json &request){
+string VssCommandProcessor::processUpdateVSSTree(KuksaChannel& channel, jsoncons::json &request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateVSSTree");
   
   try {
@@ -144,7 +144,7 @@ string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
   return ss.str();
 }
 
-string VssCommandProcessor::processUpdateMetaData(kuksa::kuksaChannel& channel, jsoncons::json& request){
+string VssCommandProcessor::processUpdateMetaData(KuksaChannel& channel, jsoncons::json& request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateMetaData");
   VSSPath path=VSSPath::fromVSS(request["path"].as_string());
 
@@ -196,7 +196,7 @@ string VssCommandProcessor::processUpdateMetaData(kuksa::kuksaChannel& channel, 
   
 }
 
-string VssCommandProcessor::processAuthorize(kuksa::kuksaChannel &channel,
+string VssCommandProcessor::processAuthorize(KuksaChannel &channel,
                                              const string & request_id,
                                              const string & token) {
   int ttl = tokenValidator->validate(channel, token);
@@ -231,7 +231,7 @@ string VssCommandProcessor::processAuthorize(kuksa::kuksaChannel &channel,
 }
 
 string VssCommandProcessor::processQuery(const string &req_json,
-                                         kuksa::kuksaChannel &channel) {
+                                         KuksaChannel &channel) {
   jsoncons::json root;
   string response;
   try {

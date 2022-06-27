@@ -15,7 +15,7 @@
 #define __ACCESSCHECKER_H__
 
 #include "IAccessChecker.hpp"
-#include "kuksa.pb.h"
+#include "KuksaChannel.hpp"
 
 class IAuthenticator;
 
@@ -23,16 +23,16 @@ class IAuthenticator;
 class AccessChecker : public IAccessChecker {
  private:
   std::shared_ptr<IAuthenticator> tokenValidator;
-  bool checkSignalAccess(const kuksa::kuksaChannel& channel, const std::string& path, const std::string& requiredPermission);
+  bool checkSignalAccess(const KuksaChannel& channel, const std::string& path, const std::string& requiredPermission);
 
  public:
   AccessChecker(std::shared_ptr<IAuthenticator> vdator);
   
-  bool checkReadAccess(kuksa::kuksaChannel &channel, const VSSPath &path) override;
+  bool checkReadAccess(KuksaChannel &channel, const VSSPath &path) override;
 
-  bool checkWriteAccess(kuksa::kuksaChannel &channel, const VSSPath &path) override;
+  bool checkWriteAccess(KuksaChannel &channel, const VSSPath &path) override;
 
-  bool checkPathWriteAccess(kuksa::kuksaChannel &channel, const jsoncons::json &paths) override;
+  bool checkPathWriteAccess(KuksaChannel &channel, const jsoncons::json &paths) override;
 };
 
 #endif

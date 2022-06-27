@@ -26,8 +26,6 @@
 #include "IAuthenticatorMock.hpp"
 #include "ILoggerMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
-#include "WsChannel.hpp"
-
 #include "exception.hpp"
 
 #include "VSSPath.hpp"

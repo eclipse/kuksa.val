@@ -30,7 +30,7 @@
 #include "IAuthenticatorMock.hpp"
 #include "ILoggerMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "kuksa.pb.h"
 
 #include "exception.hpp"
@@ -91,10 +91,10 @@ BOOST_FIXTURE_TEST_SUITE(UpdateMetadataTests, TestSuiteFixture);
 
 /* Adding to VSS tree */
 BOOST_AUTO_TEST_CASE(update_metadata_change) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_modifytree(true);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.enableModifyTree();
+  channel.setConnID(1);
 
   std::string updateMetadataRequestString = R"(
     {
@@ -177,10 +177,10 @@ BOOST_AUTO_TEST_CASE(update_metadata_change) {
 }
 
 BOOST_AUTO_TEST_CASE(update_metadata_brokenrequest) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_modifytree(true);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.enableModifyTree();
+  channel.setConnID(1);
 
   std::string updateMetadataRequestString = R"(
     {

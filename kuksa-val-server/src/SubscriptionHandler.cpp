@@ -26,7 +26,7 @@
 #include "ILogger.hpp"
 #include "JsonResponses.hpp"
 #include "VssDatabase.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "exception.hpp"
 #include "visconf.hpp"
 
@@ -48,7 +48,7 @@ SubscriptionHandler::SubscriptionHandler(
 
 SubscriptionHandler::~SubscriptionHandler() { stopThread(); }
 
-SubscriptionId SubscriptionHandler::subscribe(kuksa::kuksaChannel& channel,
+SubscriptionId SubscriptionHandler::subscribe(KuksaChannel& channel,
                                               std::shared_ptr<IVssDatabase> db,
                                               const string& path, const std::string& attr) {
   // generate subscribe ID "randomly".
@@ -77,7 +77,7 @@ SubscriptionId SubscriptionHandler::subscribe(kuksa::kuksaChannel& channel,
                   vssPath.getVSSPath());
 
   std::unique_lock<std::mutex> lock(accessMutex);                
-  subscriptions[subsKey][subId] = channel.connectionid();
+  subscriptions[subsKey][subId] = channel.getConnID();
   return subId;
 }
 

@@ -44,10 +44,10 @@
 
 #include "IRestHandler.hpp"
 #include "IVssCommandProcessor.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "ILogger.hpp"
 
-using RequestHandler = std::function<std::string(const std::string &, kuksa::kuksaChannel &)>;
+using RequestHandler = std::function<std::string(const std::string &, KuksaChannel &)>;
 using Listeners = std::vector<std::pair<ObserverType,std::shared_ptr<IVssCommandProcessor>>>;
 using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
 namespace ssl = boost::asio::ssl;               // from <boost/asio/ssl.hpp>
@@ -63,7 +63,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
 
 /**
  * @class ConnectionHandler
- * @brief Helper class to handle connection between \ref kuksa::kuksaChannel and actual sessions
+ * @brief Helper class to handle connection between \ref KuksaChannel and actual sessions
  */
   class ConnectionHandler {
     // Allow access to connection information from this file implementation details
@@ -76,13 +76,13 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       std::mutex mSslHttp_;
 
       std::unordered_map<const PlainWebsocketSession *,
-                         std::shared_ptr<kuksa::kuksaChannel>> connPlainWebSock_;
+                         std::shared_ptr<KuksaChannel>> connPlainWebSock_;
       std::unordered_map<const SslWebsocketSession *,
-                         std::shared_ptr<kuksa::kuksaChannel>> connSslWebSock_;
+                         std::shared_ptr<KuksaChannel>> connSslWebSock_;
       std::unordered_map<const PlainHttpSession *,
-                         std::shared_ptr<kuksa::kuksaChannel>> connPlainHttp_;
+                         std::shared_ptr<KuksaChannel>> connPlainHttp_;
       std::unordered_map<const SslHttpSession *,
-                         std::shared_ptr<kuksa::kuksaChannel>> connSslHttp_;
+                         std::shared_ptr<KuksaChannel>> connSslHttp_;
 
     public:
       ConnectionHandler() = default;
@@ -91,14 +91,14 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       /**
        * @brief Add new client for plain Web-Socket session
        * @param session New session to add
-       * @return \ref kuksa::kuksaChannel with new connection information
+       * @return \ref KuksaChannel with new connection information
        */
-      kuksa::kuksaChannel& AddClient(const PlainWebsocketSession * session) {
-        auto newChannel = std::make_shared<kuksa::kuksaChannel>();
+      KuksaChannel& AddClient(const PlainWebsocketSession * session) {
+        auto newChannel = std::make_shared<KuksaChannel>();
         std::lock_guard<std::mutex> lock(mPlainWebSock_);
 
-        newChannel->set_connectionid(reinterpret_cast<uint64_t>(session));
-        newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_WEBSOCKET_PLAIN);
+        newChannel->setConnID(reinterpret_cast<uint64_t>(session));
+        newChannel->setType(KuksaChannel::Type::WEBSOCKET_PLAIN);
         connPlainWebSock_[session] = newChannel;
         return *newChannel;
       }
@@ -106,14 +106,14 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       /**
        * @brief Add new client for SSL Web-Socket session
        * @param session New session to add
-       * @return \ref kuksa::kuksaChannel with new connection information
+       * @return \ref KuksaChannel with new connection information
        */
-      kuksa::kuksaChannel& AddClient(const SslWebsocketSession * session) {
-        auto newChannel = std::make_shared<kuksa::kuksaChannel>();
+      KuksaChannel& AddClient(const SslWebsocketSession * session) {
+        auto newChannel = std::make_shared<KuksaChannel>();
         std::lock_guard<std::mutex> lock(mSslWebSock_);
 
-        newChannel->set_connectionid(reinterpret_cast<uint64_t>(session));
-        newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_WEBSOCKET_SSL);
+        newChannel->setConnID(reinterpret_cast<uint64_t>(session));
+        newChannel->setType(KuksaChannel::Type::WEBSOCKET_SSL);
         connSslWebSock_[session] = newChannel;
 
         return *newChannel;
@@ -122,14 +122,14 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       /**
        * @brief Add new client for plain HTTP session
        * @param session New session to add
-       * @return \ref kuksa::kuksaChannel with new connection information
+       * @return \ref KuksaChannel with new connection information
        */
-      kuksa::kuksaChannel& AddClient(const PlainHttpSession * session) {
-        auto newChannel = std::make_shared<kuksa::kuksaChannel>();
+      KuksaChannel& AddClient(const PlainHttpSession * session) {
+        auto newChannel = std::make_shared<KuksaChannel>();
         std::lock_guard<std::mutex> lock(mPlainHttp_);
 
-        newChannel->set_connectionid(reinterpret_cast<uint64_t>(session));
-        newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_HTTP_PLAIN);
+        newChannel->setConnID(reinterpret_cast<uint64_t>(session));
+        newChannel->setType(KuksaChannel::Type::HTTP_PLAIN);
         connPlainHttp_[session] = newChannel;
 
         return *newChannel;
@@ -138,14 +138,14 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       /**
        * @brief Add new client for SSL HTTP session
        * @param session New session to add
-       * @return \ref kuksa::kuksaChannel with new connection information
+       * @return \ref KuksaChannel with new connection information
        */
-      kuksa::kuksaChannel& AddClient(const SslHttpSession * session) {
-        auto newChannel = std::make_shared<kuksa::kuksaChannel>();
+      KuksaChannel& AddClient(const SslHttpSession * session) {
+        auto newChannel = std::make_shared<KuksaChannel>();
         std::lock_guard<std::mutex> lock(mSslHttp_);
 
-        newChannel->set_connectionid(reinterpret_cast<uint64_t>(session));
-        newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_HTTP_SSL);
+        newChannel->setConnID(reinterpret_cast<uint64_t>(session));
+        newChannel->setType(KuksaChannel::Type::HTTP_SSL);
         connSslHttp_[session] = newChannel;
 
         return *newChannel;
@@ -253,7 +253,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       boost::asio::io_context::executor_type> strand_;
       boost::asio::steady_timer timer_;
       RequestHandler requestHandler_;
-      kuksa::kuksaChannel channel;
+      KuksaChannel channel;
       std::list<std::string> writeQueue_;
     public:
       // Construct the session
@@ -762,7 +762,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       boost::asio::io_context::executor_type> strand_;
       boost::beast::flat_buffer bufferRead_;
       RequestHandler requestHandler_;
-      kuksa::kuksaChannel channel;
+      KuksaChannel channel;
 
     public:
       // Construct the session
@@ -1350,13 +1350,13 @@ void WebSockHttpFlexServer::Initialize(std::string host,
                 std::placeholders::_2));
 }
 
-std::string WebSockHttpFlexServer::HandleRequest(const std::string &req_json, kuksa::kuksaChannel &channel) {
+std::string WebSockHttpFlexServer::HandleRequest(const std::string &req_json, KuksaChannel &channel) {
   std::string response;
-  auto const type = channel.typeofconnection();
+  auto const type = channel.getType();
   ObserverType handlerType;
 
-  if ((type == kuksa::kuksaChannel_Type_WEBSOCKET_PLAIN) ||
-      (type == kuksa::kuksaChannel_Type_WEBSOCKET_SSL ))
+  if ((type == KuksaChannel::Type::WEBSOCKET_PLAIN) ||
+      (type == KuksaChannel::Type::WEBSOCKET_SSL))
   {
     handlerType = ObserverType::WEBSOCKET;
   }
