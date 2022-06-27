@@ -16,7 +16,7 @@ from pygments import highlight, lexers, formatters
 from cmd2 import Cmd, with_argparser, with_category, Cmd2ArgumentParser, CompletionItem
 from cmd2.utils import CompletionError, basic_complete
 import functools, subprocess
-DEFAULT_SERVER_ADDR = "172.17.0.1"
+DEFAULT_SERVER_ADDR = "127.0.0.1"
 DEFAULT_SERVER_PORT = 8090
 DEFAULT_SERVER_PROTOCOL = "ws"
 
