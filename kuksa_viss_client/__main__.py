@@ -117,7 +117,7 @@ class TestClient(Cmd):
     ap_setServerAddr = argparse.ArgumentParser()
     ap_setServerAddr.add_argument('IP', help='VISS Server IP Address', default=DEFAULT_SERVER_ADDR)
     ap_setServerAddr.add_argument('Port', type=int, help='VISS Server Port', default=DEFAULT_SERVER_PORT)
-    ap_setServerAddr.add_argument('-p', "--protocol", help='VISS Server Communication Protocol', default=DEFAULT_SERVER_PROTOCOL)
+    ap_setServerAddr.add_argument('-p', "--protocol", help='VISS Server Communication Protocol (ws or grpc)', default=DEFAULT_SERVER_PROTOCOL)
 
     ap_setValue = argparse.ArgumentParser()
     ap_setValue.add_argument("Path", help="Path to be set", completer_method=path_completer)
@@ -355,7 +355,7 @@ class TestClient(Cmd):
             self.serverProtocol = args.protocol
             print("Setting Server Address to " + args.IP + ":" + str(args.Port) + " with protocol " + args.protocol)
         except ValueError:
-            print("Please give a valid server Address/Protocol")
+            print("Please give a valid server Address/Protocol. Only ws and grpc are supported!!")
 
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_getServerAddr)
