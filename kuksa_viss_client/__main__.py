@@ -312,7 +312,6 @@ class TestClient(Cmd):
             self.connect()
         return self.commThread.checkConnection()
 
-
     def connect(self, insecure=False):
         """Connect to the VISS Server"""
         if hasattr(self, "commThread"):

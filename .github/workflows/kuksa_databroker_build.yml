@@ -201,9 +201,9 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
-      - name: Temporarily save container image
+      - name: Save container image (multiarch)
         uses: actions/upload-artifact@v3
         with:
-          name: Container image (multiarch)
+          name: databroker-oci-multiarch.tar
           path: ${{github.workspace}}/databroker-oci-multiarch.tar
           retention-days: 1
