@@ -134,8 +134,8 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         boost::uuids::string_generator gen;
         auto iter = metadata.find("connectionid");
         if (iter != metadata.end()) {
-            auto connId = gen(std::string(iter->second.data()));
-            logger->Log(LogLevel::ERROR, std::string(iter->second.data()));
+            std::string connIdString(iter->second.begin(), iter->second.end());
+            auto connId = gen(connIdString);
             grpcSession session = grpcSession(context->peer(), connId);
             kc = &grpcSessionMap[session];
         }
@@ -143,6 +143,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         // Do Nothing
         // Most probably KuksaChannel does not exist for this session.
         // This will result in authorization error later.
+        std::cout << e.what() << std::endl;
       }
       return kc;
     }
@@ -176,14 +177,14 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
       KuksaChannel* kc = authChecker(context); 
       if (kc == NULL) {
         reply->mutable_status()->set_statuscode(404);
-        reply->mutable_status()->set_statusdescription("No Authorization!!");
+        reply->mutable_status()->set_statusdescription("No Authorization.");
         return Status::OK;
       }
 
       // Return if no paths are given
       if (request->path().size() == 0) {
         reply->mutable_status()->set_statuscode(400);
-        reply->mutable_status()->set_statusdescription("No valid path found!!");
+        reply->mutable_status()->set_statusdescription("No valid path found.");
         return Status::OK;
       }
 
@@ -242,7 +243,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
       KuksaChannel* kc = authChecker(context); 
       if (kc == NULL) {
         reply->mutable_status()->set_statuscode(404);
-        reply->mutable_status()->set_statusdescription("No Authorization!!");
+        reply->mutable_status()->set_statusdescription("No Authorization!.");
         return Status::OK;
       }
 
@@ -287,7 +288,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
           reply->mutable_status()->set_statusdescription("One or more paths could not be resolved. Try individual requests.");
         } else if (!singleFailure) {
           reply->mutable_status()->set_statuscode(200);
-          reply->mutable_status()->set_statusdescription("Set request successfully processed");
+          reply->mutable_status()->set_statusdescription("Set request successfully processed.");
         }
       }
       return Status::OK;
@@ -322,7 +323,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
       // Populate the response
       if (!resJson.contains("error")) { // Success case
         reply->mutable_status()->set_statuscode(200);
-        reply->mutable_status()->set_statusdescription("Authorization Successful!!");
+        reply->mutable_status()->set_statusdescription("Authorization Successful.");
         reply->set_connectionid(resJson["requestId"].as_string());
       } else { // Failure case
         uint32_t code = resJson["error"]["number"].as_uint();

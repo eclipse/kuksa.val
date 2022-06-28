@@ -67,18 +67,18 @@ class KuksaGrpcComm:
         # Create Get Request
         req = kuksa_pb2.GetRequest()
         if attribute in self.AttrDict.keys():
-            pass
+            req.type = self.AttrDict[attribute]
+            req.path.append(path)
+            self.sendMsgQueue.put(("get", req, recvQueue))
+            try:
+                resp = recvQueue.get(timeout=timeout)
+                respJson = MessageToJson(resp)
+            except queue.Empty:
+                respJson = json.dumps({"error": "Timeout"})
         else:
-            attribute = "value"
-        req.type = self.AttrDict[attribute]
-        req.path.append(path)
-        self.sendMsgQueue.put(("get", req, recvQueue))
-        try:
-            resp = recvQueue.get(timeout=timeout)
-            respJson = MessageToJson(resp)
-        except queue.Empty:
-            respJson = json.dumps({"error": "Timeout"})
-        return respJson        
+            respJson = json.dumps({"error": "Invalid Attribute"})
+    
+        return respJson 
 
     # Function to implement set
     def setValue(self, path, value, attribute="value", timeout = 5):
@@ -87,21 +87,21 @@ class KuksaGrpcComm:
         # Create Set Request
         req = kuksa_pb2.SetRequest()
         if attribute in self.AttrDict.keys():
-            pass
-        else:
-            attribute = "value"
-        req.type = self.AttrDict[attribute]
-        val = kuksa_pb2.Value()
-        val.path = path
-        val.valueString = value
-        req.values.append(val)
+            req.type = self.AttrDict[attribute]
+            val = kuksa_pb2.Value()
+            val.path = path
+            val.valueString = value
+            req.values.append(val)
 
-        self.sendMsgQueue.put(("set", req, recvQueue))
-        try:
-            resp = recvQueue.get(timeout=timeout)
-            respJson = MessageToJson(resp)
-        except queue.Empty:
-            respJson = json.dumps({"error": "Timeout"})
+            self.sendMsgQueue.put(("set", req, recvQueue))
+            try:
+                resp = recvQueue.get(timeout=timeout)
+                respJson = MessageToJson(resp)
+            except queue.Empty:
+                respJson = json.dumps({"error": "Timeout"})
+        else:
+            respJson = json.dumps({"error": "Invalid Attribute"})
+
         return respJson
 
     # Function for authorization
@@ -145,6 +145,7 @@ class KuksaGrpcComm:
 
             try:
                 md = (("connectionid", self.grpcConnectionAuthToken),)
+                print(md)
                 if call == "get":
                     respObj = await clientStub.get(requestObj, metadata=md)
                 elif call == "set":
