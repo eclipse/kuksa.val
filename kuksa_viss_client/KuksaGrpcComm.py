@@ -58,7 +58,7 @@ class KuksaGrpcComm:
     # Function to stop the communication
     def stop(self):
         self.run = False
-        print("gRPC channel disconnected!!")
+        print("gRPC channel disconnected.")
 
     # Function to implement get
     def getValue(self, path, attribute="value", timeout = 5):
@@ -152,7 +152,7 @@ class KuksaGrpcComm:
                 elif call == "authorize":
                     respObj = await clientStub.authorize(requestObj, metadata=md)        
                 else:
-                    raise Exception("Not Implemented!!")
+                    raise Exception("Not Implemented.")
                 responseQueue.put(respObj)
             except Exception as e:
                 print("gRPCHandler Exception: " + str(e))
@@ -165,7 +165,7 @@ class KuksaGrpcComm:
         if self.insecure:
             # Insecure mode
             async with grpc.aio.insecure_channel(serverAddr) as channel:
-                print("gRPC channel connected!!")
+                print("gRPC channel connected.")
                 # Use the gRPC stubs
                 clientStub = kuksa_pb2_grpc.kuksa_grpc_ifStub(channel)
                 await self._grpcHandler(clientStub)
@@ -183,7 +183,7 @@ class KuksaGrpcComm:
 
             creds = grpc.ssl_channel_credentials(root_certificates=caCert, private_key=clientKey, certificate_chain=clientCert)
             async with grpc.aio.secure_channel(serverAddr, creds) as channel:
-                print("Secure gRPC channel created!!")
+                print("Secure gRPC channel created.")
                 # Use the gRPC Stubs
                 clientStub = kuksa_pb2_grpc.kuksa_grpc_ifStub(channel)
                 await self._grpcHandler(clientStub)

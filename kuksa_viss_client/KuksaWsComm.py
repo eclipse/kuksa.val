@@ -106,7 +106,7 @@ class KuksaWsComm:
     def stop(self):
         self.wsConnected = False
         self.run = False
-        print("Server disconnected!!")
+        print("Server disconnected.")
 
     # Function to authorize against the kuksa.val server
     def authorize(self, token=None, timeout=2):
@@ -233,7 +233,7 @@ class KuksaWsComm:
             try:
                 print("connect to wss://"+self.serverIP+":"+str(self.serverPort))
                 async with websockets.connect("wss://"+self.serverIP+":"+str(self.serverPort), ssl=context) as ws:
-                    print("Websocket connected securely!!")
+                    print("Websocket connected securely.")
                     await self._msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))
@@ -242,7 +242,7 @@ class KuksaWsComm:
             try:
                 print("connect to ws://"+self.serverIP+":"+str(self.serverPort))
                 async with websockets.connect("ws://"+self.serverIP+":"+str(self.serverPort)) as ws:
-                    print("Websocket connected!!")
+                    print("Websocket connected.")
                     await self._msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))

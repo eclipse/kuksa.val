@@ -334,7 +334,7 @@ class TestClient(Cmd):
         if self.commThread.checkConnection():
             pass
         else:
-            print("Websocket could not be connected or the gRPC channel could not be created!!")
+            print("Error: Websocket could not be connected or the gRPC channel could not be created.")
             self.commThread.stop()
             self.commThread = None
 
@@ -355,7 +355,7 @@ class TestClient(Cmd):
             self.serverProtocol = args.protocol
             print("Setting Server Address to " + args.IP + ":" + str(args.Port) + " with protocol " + args.protocol)
         except ValueError:
-            print("Please give a valid server Address/Protocol. Only ws and grpc are supported!!")
+            print("Error: Please give a valid server Address/Protocol. Only ws and grpc are supported.")
 
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_getServerAddr)
