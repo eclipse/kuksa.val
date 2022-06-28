@@ -192,7 +192,14 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         // TODO
       } else {
         req_json["action"] = "get";
-        req_json["attribute"] = AttributeStringMap.find(request->type())->second;
+        auto iter = AttributeStringMap.find(request->type());
+        std::string attr;
+        if (iter != AttributeStringMap.end()) {
+          attr = iter->second;
+        } else {
+          attr = "value";
+        }
+        req_json["attribute"] = attr;
         bool singleFailure = false;
 
         for (int i=0; i < request->path().size(); i++) {
@@ -213,7 +220,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
               singleFailure = true;
             } else { // Success Case
               auto val = reply->add_values();
-              val->set_valuestring(resJson["data"]["dp"]["value"].as_string());
+              val->set_valuestring(resJson["data"]["dp"][attr].as_string());
               val->set_path(resJson["data"]["path"].as_string());
               val->set_timestamp(resJson["data"]["dp"]["ts"].as_string());
             }
@@ -252,14 +259,21 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         // Setting Metadata is not supported
       } else {
         req_json["action"] = "set";
-        req_json["attribute"] = AttributeStringMap.find(request->type())->second;
+        auto iter = AttributeStringMap.find(request->type());
+        std::string attr;
+        if (iter != AttributeStringMap.end()) {
+          attr = iter->second;
+        } else {
+          attr = "value";
+        }
+        req_json["attribute"] = attr;
         bool singleFailure = false;
 
         for (int i=0; i < request->values().size(); i++) {
           auto val = request->values()[i];
           req_json["requestId"] = boost::uuids::to_string(boost::uuids::random_generator()());
           req_json["path"] = val.path();
-          req_json["value"] = val.valuestring();
+          req_json[attr] = val.valuestring();
 
           logger->Log(LogLevel::INFO,req_json.to_string());
 
