@@ -145,7 +145,6 @@ class KuksaGrpcComm:
 
             try:
                 md = (("connectionid", self.grpcConnectionAuthToken),)
-                print(md)
                 if call == "get":
                     respObj = await clientStub.get(requestObj, metadata=md)
                 elif call == "set":
