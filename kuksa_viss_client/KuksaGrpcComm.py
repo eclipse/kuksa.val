@@ -60,6 +60,26 @@ class KuksaGrpcComm:
         self.run = False
         print("gRPC channel disconnected.")
 
+    # Function to implement fetching of metadata
+    def getMetaData(self, path, timeout = 5):
+        recvQueue = queue.Queue(maxsize=1)
+        # Create Get Request
+        req = kuksa_pb2.GetRequest()
+        req.type = kuksa_pb2.RequestType.METADATA
+        req.path.append(path)
+        self.sendMsgQueue.put(("get", req, recvQueue))
+        finalrespJson = {}
+        try:
+            resp = recvQueue.get(timeout=timeout)
+            respJson = MessageToJson(resp)
+            resp = json.loads(respJson)
+            finalrespJson["metadata"] = json.loads(resp["values"][0]["valueString"])
+            finalrespJson = json.dumps(finalrespJson, indent=4)
+        except queue.Empty:
+            finalrespJson = json.dumps({"error": "Timeout"})
+    
+        return finalrespJson 
+
     # Function to implement get
     def getValue(self, path, attribute="value", timeout = 5):
         recvQueue = queue.Queue(maxsize=1)

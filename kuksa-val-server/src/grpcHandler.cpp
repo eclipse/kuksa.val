@@ -175,7 +175,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
 
       // Check if authorized and get the corresponding KuksaChannel
       KuksaChannel* kc = authChecker(context); 
-      if (kc == NULL) {
+      if ((kc == NULL) && (request->type() != kuksa::RequestType::METADATA)){
         reply->mutable_status()->set_statuscode(404);
         reply->mutable_status()->set_statusdescription("No Authorization.");
         return Status::OK;
@@ -188,54 +188,63 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         return Status::OK;
       }
 
+      req_json["action"] = "get";
       if (request->type() == kuksa::RequestType::METADATA) {
-        // TODO
-      } else {
-        req_json["action"] = "get";
-        auto iter = AttributeStringMap.find(request->type());
-        std::string attr;
-        if (iter != AttributeStringMap.end()) {
-          attr = iter->second;
-        } else {
-          attr = "value";
-        }
+        req_json["action"] = "getMetaData";
+      }
+
+      auto iter = AttributeStringMap.find(request->type());
+      std::string attr;
+      if (iter != AttributeStringMap.end()) {
+        attr = iter->second;
         req_json["attribute"] = attr;
-        bool singleFailure = false;
+      } else {
+        attr = "value";
+      }
 
-        for (int i=0; i < request->path().size(); i++) {
-          req_json["requestId"] = boost::uuids::to_string(boost::uuids::random_generator()());
-          req_json["path"] = request->path()[i];
-          logger->Log(LogLevel::INFO,req_json.to_string());
+      bool singleFailure = false;
 
-          try {
-            auto Processor = handler.getGrpcProcessor();
-            auto result = Processor->processGet2(*kc, req_json);
-            logger->Log(LogLevel::INFO,result);
-            auto resJson = json::parse(result);
-            if (resJson.contains("error")) { // Failure Case
-              uint32_t code = resJson["error"]["number"].as_uint();
-              std::string reason = resJson["error"]["reason"].as_string() + " " + resJson["error"]["message"].as_string();
-              reply->mutable_status()->set_statuscode(code);
-              reply->mutable_status()->set_statusdescription(reason);
-              singleFailure = true;
-            } else { // Success Case
-              auto val = reply->add_values();
-              val->set_valuestring(resJson["data"]["dp"][attr].as_string());
-              val->set_path(resJson["data"]["path"].as_string());
-              val->set_timestamp(resJson["data"]["dp"]["ts"].as_string());
-            }
-          } catch (std::exception &e) {
-            singleFailure = true;
+      for (int i=0; i < request->path().size(); i++) {
+        req_json["requestId"] = boost::uuids::to_string(boost::uuids::random_generator()());
+        req_json["path"] = request->path()[i];
+
+        try {
+          auto Processor = handler.getGrpcProcessor();
+          std::string result;
+          if (request->type() != kuksa::RequestType::METADATA) { 
+            result = Processor->processGet2(*kc, req_json);
+          } else {
+            result = Processor->processGetMetaData(req_json);
           }
+          auto resJson = json::parse(result);
+          logger->Log(LogLevel::INFO,resJson.as_string());
+          if (resJson.contains("error")) { // Failure Case
+            uint32_t code = resJson["error"]["number"].as_uint();
+            std::string reason = resJson["error"]["reason"].as_string() + " " + resJson["error"]["message"].as_string();
+            reply->mutable_status()->set_statuscode(code);
+            reply->mutable_status()->set_statusdescription(reason);
+            singleFailure = true;
+          } else { // Success Case
+            auto val = reply->add_values();
+            if (request->type() != kuksa::RequestType::METADATA) {
+              val->set_valuestring(resJson["data"]["dp"][attr].as_string());
+              val->set_timestamp(resJson["data"]["dp"]["ts"].as_string());
+            } else {
+              val->set_valuestring(resJson["metadata"].as_string());
+            }
+            val->set_path(resJson["data"]["path"].as_string());
+          }
+        } catch (std::exception &e) {
+          singleFailure = true;
         }
+      }
 
-        if (singleFailure && request->path().size() > 1) {
-          reply->mutable_status()->set_statuscode(400);
-          reply->mutable_status()->set_statusdescription("One or more paths could not be resolved. Try individual requests.");
-        } else if (!singleFailure) {
-          reply->mutable_status()->set_statuscode(200);
-          reply->mutable_status()->set_statusdescription("Get request successfully processed");
-        }
+      if (singleFailure && request->path().size() > 1) {
+        reply->mutable_status()->set_statuscode(400);
+        reply->mutable_status()->set_statusdescription("One or more paths could not be resolved. Try individual requests.");
+      } else if (!singleFailure) {
+        reply->mutable_status()->set_statuscode(200);
+        reply->mutable_status()->set_statusdescription("Get request successfully processed");
       }
       return Status::OK;
     }
@@ -275,12 +284,9 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
           req_json["path"] = val.path();
           req_json[attr] = val.valuestring();
 
-          logger->Log(LogLevel::INFO,req_json.to_string());
-
           try {
             auto Processor = handler.getGrpcProcessor();
             auto result = Processor->processSet2(*kc, req_json);
-            logger->Log(LogLevel::INFO,result);
             auto resJson = json::parse(result);
             if (resJson.contains("error")) { // Failure Case
               uint32_t code = resJson["error"]["number"].as_uint();
