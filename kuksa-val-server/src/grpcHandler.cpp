@@ -113,7 +113,6 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
 
       auto Processor = handler.getGrpcProcessor();
       auto response = Processor->processAuthorize(*newChannel, boost::uuids::to_string(uuid), token);
-      logger->Log(LogLevel::INFO, response);
       auto resJson = json::parse(response);
 
       if (!resJson.contains("error")) { // Success case
@@ -143,7 +142,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         // Do Nothing
         // Most probably KuksaChannel does not exist for this session.
         // This will result in authorization error later.
-        std::cout << e.what() << std::endl;
+        logger->Log(LogLevel::ERROR,e.what());
       }
       return kc;
     }
@@ -170,7 +169,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     Status get(ServerContext* context, const kuksa::GetRequest* request, kuksa::GetResponse* reply) override { 
       jsoncons::json req_json;
       stringstream msg;
-      msg << "gRPC get invoked with type " << kuksa::RequestType_Name(request->type()) << " by " << context->peer() << std::endl; 
+      msg << "gRPC get invoked with type " << kuksa::RequestType_Name(request->type()) << " by " << context->peer(); 
       logger->Log(LogLevel::INFO,msg.str());
 
       // Check if authorized and get the corresponding KuksaChannel
@@ -217,7 +216,6 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
             result = Processor->processGetMetaData(req_json);
           }
           auto resJson = json::parse(result);
-          logger->Log(LogLevel::INFO,resJson.as_string());
           if (resJson.contains("error")) { // Failure Case
             uint32_t code = resJson["error"]["number"].as<unsigned int>(); 
             std::string reason = resJson["error"]["reason"].as_string() + " " + resJson["error"]["message"].as_string();
@@ -252,7 +250,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     Status set(ServerContext* context, const kuksa::SetRequest* request, kuksa::SetResponse* reply) override {                                       
       jsoncons::json req_json;
       stringstream msg;
-      msg << "gRPC set invoked with type " << kuksa::RequestType_Name(request->type()) << " by " << context->peer() << std::endl; 
+      msg << "gRPC set invoked with type " << kuksa::RequestType_Name(request->type()) << " by " << context->peer(); 
       logger->Log(LogLevel::INFO,msg.str());
 
       // Check if authorized and get the corresponding KuksaChannel
@@ -316,7 +314,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
 
     Status subscribe(ServerContext* context, ::grpc::ServerReaderWriter<::kuksa::SubscribeResponse, ::kuksa::SubscribeRequest>* stream) {
       stringstream msg;
-      msg << "gRPC subscribe invoked" << " by " << context->peer() << std::endl; 
+      msg << "gRPC subscribe invoked" << " by " << context->peer(); 
       logger->Log(LogLevel::INFO,msg.str());
 
       // Check if authorized and get the corresponding KuksaChannel
@@ -334,7 +332,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
 
     Status authorize(ServerContext* context, const kuksa::AuthRequest* request, kuksa::AuthResponse* reply) override {                                       
       stringstream msg;
-      msg << "gRPC authorize invoked with token " << request->token() << std::endl; 
+      msg << "gRPC authorize invoked with token " << request->token(); 
       logger->Log(LogLevel::INFO,msg.str());
       logger->Log(LogLevel::INFO,context->peer());
 
