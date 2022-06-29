@@ -219,7 +219,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
           auto resJson = json::parse(result);
           logger->Log(LogLevel::INFO,resJson.as_string());
           if (resJson.contains("error")) { // Failure Case
-            uint32_t code = resJson["error"]["number"].as_uint();
+            uint32_t code = resJson["error"]["number"].as<unsigned int>(); 
             std::string reason = resJson["error"]["reason"].as_string() + " " + resJson["error"]["message"].as_string();
             reply->mutable_status()->set_statuscode(code);
             reply->mutable_status()->set_statusdescription(reason);
@@ -289,7 +289,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
             auto result = Processor->processSet2(*kc, req_json);
             auto resJson = json::parse(result);
             if (resJson.contains("error")) { // Failure Case
-              uint32_t code = resJson["error"]["number"].as_uint();
+              uint32_t code = resJson["error"]["number"].as<unsigned int>();
               std::string reason = resJson["error"]["reason"].as_string() + " " + resJson["error"]["message"].as_string();
               reply->mutable_status()->set_statuscode(code);
               reply->mutable_status()->set_statusdescription(reason);
@@ -346,7 +346,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         reply->mutable_status()->set_statusdescription("Authorization Successful.");
         reply->set_connectionid(resJson["requestId"].as_string());
       } else { // Failure case
-        uint32_t code = resJson["error"]["number"].as_uint();
+        uint32_t code = resJson["error"]["number"].as<unsigned int>();
         std::string reason = resJson["error"]["reason"].as_string() + " " + resJson["error"]["message"].as_string();
         reply->mutable_status()->set_statuscode(code);
         reply->mutable_status()->set_statusdescription(reason);
