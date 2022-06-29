@@ -68,7 +68,7 @@ jsoncons::json VssDatabase_Record::setSignal(const VSSPath &path, const std::str
     return VssDatabase::setSignal(path, attr, value);
 }
 
-jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path, const std::string& attr)
+jsoncons::json VssDatabase_Record::getSignal(const VSSPath &path, const std::string& attr, bool as_string)
 {
     if(logMode_ == "recordSetAndGet")
         BOOST_LOG(lg) << "get;" << attr << ";" << path.to_string();

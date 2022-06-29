@@ -79,7 +79,8 @@ std::string VssCommandProcessor::processGet2(KuksaChannel &channel,
         logger->Log(LogLevel::WARNING,msg.str());
         return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
       } else {
-        datapoints.push_back(database->getSignal(vssPath, attribute));
+        bool as_string = channel.getType() != KuksaChannel::Type::GRPC;
+        datapoints.push_back(database->getSignal(vssPath, attribute, as_string));
       }
     }
     if (vssPaths.size() < 1) {

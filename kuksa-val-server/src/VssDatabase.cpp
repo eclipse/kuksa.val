@@ -457,7 +457,7 @@ jsoncons::json VssDatabase::setSignal(const VSSPath &path, const std::string& at
 }
 
 // Returns signal in JSON format
-jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& attr) {
+jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& attr, bool as_string) {
     jsoncons::json resArray;
     {
       std::lock_guard<std::mutex> lock_guard(rwMutex_);
@@ -468,9 +468,14 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& at
     answer.insert_or_assign("path", path.to_string());
     jsoncons::json result = resArray[0];
     if (result.contains(attr)) {
-      datapoint.insert_or_assign(attr, result[attr]);
+      if (as_string) {
+        datapoint.insert_or_assign(attr, result[attr].as<string>());
+      }
+      else {
+        datapoint.insert_or_assign(attr, result[attr]);
+      }
     } else {
-      datapoint[attr] = "---";
+      datapoint[attr] = "---"; //Todo return error/nothing and handle this correctly
     }
     if (result.contains("ts-"+attr)) {
       datapoint["ts"] = result["ts-"+attr].as<string>();
