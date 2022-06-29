@@ -18,9 +18,14 @@ from cmd2.utils import CompletionError, basic_complete
 import functools, subprocess
 DEFAULT_SERVER_ADDR = "127.0.0.1"
 DEFAULT_SERVER_PORT = 8090
+DEFAULT_SERVER_PROTOCOL = "ws"
 
+from grpc.tools import command
+# Generate the NBI Stubs
+command.build_package_protos("../kuksa-val-server/protos/")
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-#sys.path.append(scriptDir)
+sys.path.append(os.path.join(scriptDir, "../kuksa-val-server/protos/"))
+
 sys.path.append(os.path.join(scriptDir, ".."))
 from kuksa_viss_client import KuksaClientThread
 from kuksa_viss_client._metadata import *
@@ -111,16 +116,17 @@ class TestClient(Cmd):
     ap_authorize.add_argument('Token', help='JWT(or the file storing the token) for authorizing the client.', completer_method=tokenfile_completer_method)
     ap_setServerAddr = argparse.ArgumentParser()
     ap_setServerAddr.add_argument('IP', help='VISS Server IP Address', default=DEFAULT_SERVER_ADDR)
-    ap_setServerAddr.add_argument('Port', type=int, help='VISS Server Websocket Port', default=DEFAULT_SERVER_PORT)
+    ap_setServerAddr.add_argument('Port', type=int, help='VISS Server Port', default=DEFAULT_SERVER_PORT)
+    ap_setServerAddr.add_argument('-p', "--protocol", help='VISS Server Communication Protocol (ws or grpc)', default=DEFAULT_SERVER_PROTOCOL)
 
     ap_setValue = argparse.ArgumentParser()
     ap_setValue.add_argument("Path", help="Path to be set", completer_method=path_completer)
     ap_setValue.add_argument("Value", help="Value to be set")
-    ap_setValue.add_argument("Attribute", help="Attribute to be set", default="value", nargs=(0,1))
+    ap_setValue.add_argument("-a", "--attribute", help="Attribute to be set", default="value")
 
     ap_getValue = argparse.ArgumentParser()
     ap_getValue.add_argument("Path", help="Path to be read", completer_method=path_completer)
-    ap_getValue.add_argument("Attribute", help="Attribute to be get", default="value", nargs=(0,1))
+    ap_getValue.add_argument("-a", "--attribute", help="Attribute to be get", default="value")
 
     ap_setTargetValue = argparse.ArgumentParser()
     ap_setTargetValue.add_argument("Path", help="Path whose target value to be set", completer_method=path_completer)
@@ -131,7 +137,7 @@ class TestClient(Cmd):
 
     ap_subscribe = argparse.ArgumentParser()
     ap_subscribe.add_argument("Path", help="Path to be subscribed", completer_method=path_completer)
-    ap_subscribe.add_argument("Attribute", help="Attribute to be subscribed", default="value", completer_method=path_completer, nargs=(0,1))
+    ap_subscribe.add_argument("-a", "--attribute", help="Attribute to be subscribed", default="value")
 
     ap_unsubscribe = argparse.ArgumentParser()
     ap_unsubscribe.add_argument("SubscribeId", help="Corresponding subscription Id", completer_method=subscriptionIdCompleter)
@@ -155,6 +161,10 @@ class TestClient(Cmd):
         self.max_completion_items = 20
         self.serverIP = DEFAULT_SERVER_ADDR
         self.serverPort = DEFAULT_SERVER_PORT
+        self.serverProtocol = DEFAULT_SERVER_PROTOCOL
+        # Supported set of protocols
+        self.supportedProtocols = ["ws", "grpc"]
+        
         self.vssTree = {}
         self.pathCompletionItems = []
         self.subscribeFileDesc = {}
@@ -182,7 +192,7 @@ class TestClient(Cmd):
     def do_setValue(self, args):
         """Set the value of a path"""
         if self.checkConnection():
-            resp = self.commThread.setValue(args.Path, args.Value, args.Attribute)
+            resp = self.commThread.setValue(args.Path, args.Value, args.attribute)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -200,7 +210,7 @@ class TestClient(Cmd):
     def do_getValue(self, args):
         """Get the value of a path"""
         if self.checkConnection():
-            resp = self.commThread.getValue(args.Path, args.Attribute)
+            resp = self.commThread.getValue(args.Path, args.attribute)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -218,12 +228,13 @@ class TestClient(Cmd):
     def do_subscribe(self, args):
         """Subscribe the value of a path"""
         if self.checkConnection():
-            resp = self.commThread.subscribe(args.Path, lambda msg: self.subscribeCallback(args.Path, args.Attribute, msg), args.Attribute)
+            
+            resp = self.commThread.subscribe(args.Path, lambda msg: self.subscribeCallback(args.Path, args.attribute, msg), args.attribute)
             resJson =  json.loads(resp) 
             if "subscriptionId" in resJson:
-                fileName = os.getcwd() + "/log_"+args.Path.replace("/", ".")+"_"+args.Attribute+"_"+str(time.time())
-                self.subscribeFileDesc[(args.Path, args.Attribute)] = open(fileName, "w")
-                self.subscribeIdToPath[resJson["subscriptionId"]] = (args.Path, args.Attribute)
+                fileName = os.getcwd() + "/log_"+args.Path.replace("/", ".")+"_"+args.attribute+"_"+str(time.time())
+                self.subscribeFileDesc[(args.Path, args.attribute)] = open(fileName, "w")
+                self.subscribeIdToPath[resJson["subscriptionId"]] = (args.Path, args.attribute)
                 print("Subscription log available at " + fileName)
                 print("Execute tail -f " + fileName + " on another Terminal instance")
                 from shutil import which
@@ -295,15 +306,11 @@ class TestClient(Cmd):
             if self.commThread != None:
                 self.commThread.stop()
                 self.commThread = None
-            print("Websocket disconnected!!")
 
     def checkConnection(self):
-        try: 
-            if None == self.commThread or not self.commThread.wsConnected: 
-                self.connect()
-            return self.commThread.wsConnected
-        except AttributeError:
-            return False
+        if None == self.commThread or not self.commThread.checkConnection(): 
+            self.connect()
+        return self.commThread.checkConnection()
 
     def connect(self, insecure=False):
         """Connect to the VISS Server"""
@@ -313,20 +320,21 @@ class TestClient(Cmd):
                 self.commThread = None
         config = {'ip':self.serverIP,
         'port': self.serverPort,
-        'insecure' : insecure
+        'insecure' : insecure,
+        'protocol': self.serverProtocol
         }
         self.commThread = KuksaClientThread(config)
         self.commThread.start()
 
         waitForConnection = threading.Condition()
         waitForConnection.acquire()
-        waitForConnection.wait_for(lambda: self.commThread.wsConnected==True, timeout=1)
+        waitForConnection.wait_for(lambda: self.commThread.checkConnection()==True, timeout=1)
         waitForConnection.release()
 
-        if self.commThread.wsConnected:
-            print("Websocket connected!!")
+        if self.commThread.checkConnection():
+            pass
         else:
-            print("Websocket could not be connected!!")
+            print("Error: Websocket could not be connected or the gRPC channel could not be created.")
             self.commThread.stop()
             self.commThread = None
 
@@ -342,9 +350,12 @@ class TestClient(Cmd):
         try:
             self.serverIP = args.IP
             self.serverPort = args.Port
-            print("Setting Server Address to " + args.IP + ":" + str(args.Port))
+            if args.protocol not in self.supportedProtocols:
+                raise ValueError
+            self.serverProtocol = args.protocol
+            print("Setting Server Address to " + args.IP + ":" + str(args.Port) + " with protocol " + args.protocol)
         except ValueError:
-            print("Please give a valid server Address")
+            print("Error: Please give a valid server Address/Protocol. Only ws and grpc are supported.")
 
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_getServerAddr)
