@@ -2018,7 +2018,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
     "requestId": "8756",
     "data":{
         "path": "Vehicle.OBD.Speed",
-        "dp":{"value": "345"}
+        "dp":{"value": "345.0"}
     }
     })");
 
