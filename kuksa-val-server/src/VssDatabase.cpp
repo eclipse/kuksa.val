@@ -176,6 +176,34 @@ bool VssDatabase::checkPathValid(const VSSPath & path){
     return !getLeafPaths(path).empty();
 }
 
+//return the VSS datatype of a path. If the path is not found, throw
+//an exception
+string VssDatabase::getDatatypeForPath(const VSSPath &path) {
+  if ( !pathExists(path)) {
+     throw noPathFoundonTree(path.to_string());
+  }
+  if ( !pathIsReadable(path)) { //"readable" implies sensor, actuator or attribute, those have datatypes
+    stringstream ss;
+    ss << path.to_string() + " does not contain a datatype because it is not a sensor/actuator/attribute.";
+    throw genException(ss.str());
+  }
+  jsoncons::json resArray;
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    resArray = jsonpath::json_query(data_tree__, path.getJSONPath());
+  }
+  jsoncons::json datapoint;
+  jsoncons::json result = resArray[0];
+  if (result.contains("datatype")) {
+    return result["datatype"].as<string>();
+  }
+  else {
+    stringstream ss;
+    ss << path.to_string() + " does not contain a datatype.";
+    throw genException(ss.str());
+  }
+}
+
 // Tokenizes path with '.' as separator.
 vector<string> getPathTokens(string path) {
   vector<string> tokens;

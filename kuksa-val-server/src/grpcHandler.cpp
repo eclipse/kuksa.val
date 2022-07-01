@@ -22,6 +22,8 @@
 
 #include "kuksa.grpc.pb.h"
 #include "ILogger.hpp"
+#include "IVssDatabase.hpp"
+
 
 using namespace std;
 using grpc::Channel;
@@ -92,6 +94,8 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
 
   private:
     std::shared_ptr<ILogger> logger;
+    std::shared_ptr<IVssDatabase> database;
+
     std::unordered_map<grpcSession_t, KuksaChannel, GrpcSessionHasher> grpcSessionMap;
 
     /* Internal helper function to authorize the session
@@ -162,8 +166,9 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     }
   public: 
 
-    RequestServiceImpl(std::shared_ptr<ILogger> _logger) {
+    RequestServiceImpl(std::shared_ptr<ILogger> _logger,     std::shared_ptr<IVssDatabase> _database) {
       logger = _logger;
+      database = _database;
     }
 
     Status get(ServerContext* context, const kuksa::GetRequest* request, kuksa::GetResponse* reply) override { 
@@ -225,6 +230,17 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
           } else { // Success Case
             auto val = reply->add_values();
             if (request->type() != kuksa::RequestType::METADATA) {
+              try {
+                string datatype = database->getDatatypeForPath(VSSPath::fromVSS(request->path()[i]));
+                stringstream ss;
+                ss << "Datatype for " << request->path()[i] << " is " << datatype;
+                logger->Log(LogLevel::INFO,ss.str());
+              }
+              catch (std::exception &e) {
+                stringstream ss;
+                ss << "Error getting datatype for " << request->path()[i] << ": " << e.what() ;
+                logger->Log(LogLevel::WARNING,ss.str());
+              }
               val->set_valuestring(resJson["data"]["dp"][attr].as_string());
               val->set_timestamp(resJson["data"]["dp"]["ts"].as_string());
             } else {
@@ -353,9 +369,9 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     }  
 };
 
-void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::shared_ptr<ILogger> logger_, std::string certPath, bool allowInsecureConn) {
+void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::shared_ptr<IVssDatabase> database, std::shared_ptr<ILogger> logger_, std::string certPath, bool allowInsecureConn) {
   string server_address("0.0.0.0:50051");
-  RequestServiceImpl service(logger_);
+  RequestServiceImpl service(logger_, database);
 
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -393,6 +409,7 @@ void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std:
   // Finally assemble the server
   handler.grpcServer = builder.BuildAndStart();
   handler.grpcProcessor = Processor;
+  handler.grpcDatabase = database;
   handler.logger_=logger_;
   handler.logger_->Log(LogLevel::INFO, "Kuksa viss gRPC server Version 1.0.0");
   handler.logger_->Log(LogLevel::INFO, "gRPC Server listening on " + string(server_address));

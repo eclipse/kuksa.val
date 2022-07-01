@@ -274,7 +274,7 @@ int main(int argc, const char *argv[]) {
         insecureConn = variables["insecure"].as<bool>();
       }
       std::thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
-      std::thread grpc(grpcHandler::RunServer, cmdProcessor, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
+      std::thread grpc(grpcHandler::RunServer, cmdProcessor, database, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
       http.join();
       grpc.join();
       
