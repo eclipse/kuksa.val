@@ -483,5 +483,38 @@ BOOST_AUTO_TEST_CASE(applyDefaultValues_Recurse) {
 }
 
 
+/** getDataTypeTests **/
+BOOST_AUTO_TEST_CASE(getDataTypeForSensor) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle.Speed";
+  std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
+  BOOST_TEST(dt == "int32");
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForAttribute) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/VehicleIdentification/VIN";
+  std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
+  BOOST_TEST(dt == "string");
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForActuator) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/Cabin/Door/Row1/Right/IsLocked";
+  std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
+  BOOST_TEST(dt == "boolean");
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForBranch) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/Body";
+  BOOST_CHECK_THROW(db->getDatatypeForPath(VSSPath::fromVSS(path)), genException);
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForNonExistingPath) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/FluxCapacitor/Charge";
+  BOOST_CHECK_THROW(db->getDatatypeForPath(VSSPath::fromVSS(path)), noPathFoundonTree);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
