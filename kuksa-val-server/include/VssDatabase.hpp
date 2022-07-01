@@ -68,7 +68,7 @@ class VssDatabase : public IVssDatabase {
   jsoncons::json getMetaData(const VSSPath& path) override;
   
   jsoncons::json setSignal(const VSSPath &path, const std::string& attr, jsoncons::json &value) override; //gen2 version
-  jsoncons::json getSignal(const VSSPath &path, const std::string& attr) override; //Gen2 version
+  jsoncons::json getSignal(const VSSPath &path, const std::string& attr, bool as_string=false) override; //Gen2 version
 
   void applyDefaultValues(jsoncons::json &tree, VSSPath currentPath);
 

@@ -94,6 +94,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 
   channel.setAuthorized(false);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -139,6 +140,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
   channel.setAuthorized(false);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_PLAIN);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -165,7 +168,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
     .returns(true);  
   MOCK_EXPECT(dbMock->getSignal)
     .once()
-    .with(path2, "value")
+    .with(path2, "value", true)
     .throws(std::exception());
 
   // run UUT
@@ -196,6 +199,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
   channel.setAuthorized(false);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -217,7 +221,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
     .returns(false);
 
   MOCK_EXPECT(dbMock->getSignal)
-    .with(path2, "value")
+    .with(path2, "value", true)
     .throws(noPermissionException("Insufficient read access to " + path));
 
   // run UUT
@@ -250,6 +254,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -282,7 +287,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
     .with(path2, "value")
     .returns(true); 
   MOCK_EXPECT(dbMock->getSignal)
-    .with(path2, "value")
+    .with(path2, "value", true)
     .returns(jsonSignalData);
 
   // run UUT
@@ -312,6 +317,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -369,6 +376,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -421,6 +430,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -483,6 +494,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -542,6 +555,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
   channel.setPermissions(perm);
   channel.setAuthorized(true);
   channel.setConnID(1);
+    channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -605,6 +619,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   channel.setPermissions(perm);
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -671,6 +686,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_InvalidPath_Shall_Retur
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -721,6 +737,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Sensor_Shall_ReturnErro
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["attribute"] = "targetValue";
@@ -778,6 +795,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Actor_Shall_Work)
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["attribute"] = "targetValue";
@@ -835,6 +853,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -882,6 +901,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -931,6 +951,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -974,6 +995,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -1018,6 +1040,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -1061,6 +1084,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -1107,6 +1131,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
   jsonUnsubscribeRequestForSignal["subscriptionId"] = boost::uuids::to_string(subscriptionId);
@@ -1152,6 +1177,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
   jsonUnsubscribeRequestForSignal["subscriptionId"] = boost::uuids::to_string(subscriptionId);
@@ -1200,6 +1226,7 @@ BOOST_AUTO_TEST_CASE(Given_MalformedUUD_In_Unsubscribe)
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
   jsonUnsubscribeRequestForSignal["subscriptionId"] = "definitely-not-an-uuid";
@@ -1252,6 +1279,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonGetMetaRequest["action"] = "getMetaData";
   jsonGetMetaRequest["requestId"] = requestId;
@@ -1303,6 +1331,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
 
   channel.setAuthorized(false);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonAuthRequest["action"] = "authorize";
   jsonAuthRequest["requestId"] = requestId;
@@ -1351,6 +1380,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 
   channel.setAuthorized(true);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonAuthRequest["action"] = "authorize";
   jsonAuthRequest["requestId"] = requestId;

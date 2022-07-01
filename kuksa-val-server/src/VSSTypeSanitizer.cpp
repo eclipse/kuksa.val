@@ -65,6 +65,7 @@ void checkNumTypes(jsoncons::json &meta, jsoncons::json &val )
         msg << "Value " << cval << " is out of bounds. Allowed maximum is " <<  meta["max"].as<double>();
         throw outOfBoundException(msg.str());
     }
+    val=val.as<T>();
 }
 
 void checkBoolType(jsoncons::json &val ) {
