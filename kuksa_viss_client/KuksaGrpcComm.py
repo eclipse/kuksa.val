@@ -57,7 +57,6 @@ class KuksaGrpcComm:
         print
         if "error" not in md:
             dt = [dt.value for dt in jsonpath_ng.parse("$..datatype").find(md)]
-            print(dt)
             if len(dt) == 1:
                 datatype = dt[0]
                 return datatype
@@ -141,6 +140,8 @@ class KuksaGrpcComm:
             elif dt=="double":
                 val.valueDouble = float(value)
             elif dt=="boolean":
+                if value in ["False", "false", "F", "f"]:
+                    value = 0
                 val.valueBool = bool(value)
             else:
                 val.valueString = str(value)

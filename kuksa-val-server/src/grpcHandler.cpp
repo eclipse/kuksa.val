@@ -230,8 +230,9 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
           } else { // Success Case
             auto val = reply->add_values();
             if (request->type() != kuksa::RequestType::METADATA) {
+              string datatype;
               try {
-                string datatype = database->getDatatypeForPath(VSSPath::fromVSS(request->path()[i]));
+                datatype = database->getDatatypeForPath(VSSPath::fromVSS(request->path()[i]));
                 stringstream ss;
                 ss << "Datatype for " << request->path()[i] << " is " << datatype;
                 logger->Log(LogLevel::INFO,ss.str());
@@ -241,7 +242,24 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
                 ss << "Error getting datatype for " << request->path()[i] << ": " << e.what() ;
                 logger->Log(LogLevel::WARNING,ss.str());
               }
-              val->set_valuestring(resJson["data"]["dp"][attr].as_string());
+
+              if ((datatype=="uint8") || (datatype=="uint16") || (datatype=="uint32")) {
+                val->set_valueuint32(resJson["data"]["dp"][attr].as<unsigned int>());
+              } else if ((datatype=="int8") || (datatype=="int16") || (datatype=="int32")) {
+                val->set_valueint32(resJson["data"]["dp"][attr].as<int>());
+              } else if (datatype=="uint64") {
+                val->set_valueuint64(resJson["data"]["dp"][attr].as<unsigned int>());
+              } else if (datatype=="int64") {
+                val->set_valueint64(resJson["data"]["dp"][attr].as<int>());
+              } else if (datatype=="float") {
+                val->set_valuefloat(resJson["data"]["dp"][attr].as_double());
+              } else if (datatype=="double") {
+                val->set_valuedouble(resJson["data"]["dp"][attr].as_double());
+              } else if (datatype=="boolean") {
+                val->set_valuebool(resJson["data"]["dp"][attr].as_bool());
+              } else { // Treat as a string
+                val->set_valuestring(resJson["data"]["dp"][attr].as_string());
+              }
               val->set_timestamp(resJson["data"]["dp"]["ts"].as_string());
             } else {
               val->set_valuestring(resJson["metadata"].as_string());
@@ -296,9 +314,28 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
           auto val = request->values()[i];
           req_json["requestId"] = boost::uuids::to_string(boost::uuids::random_generator()());
           req_json["path"] = val.path();
-          req_json[attr] = val.valuestring();
 
           try {
+            std::string datatype = database->getDatatypeForPath(VSSPath::fromVSS(val.path()));
+
+            if ((datatype=="uint8") || (datatype=="uint16") || (datatype=="uint32")) {
+              req_json[attr] = val.valueuint32();
+            } else if ((datatype=="int8") || (datatype=="int16") || (datatype=="int32")) {
+              req_json[attr] = val.valueint32();
+            } else if (datatype=="uint64") {
+              req_json[attr] = val.valueuint64();
+            } else if (datatype=="int64") {
+              req_json[attr] = val.valueint64();
+            } else if (datatype=="float") {
+              req_json[attr] = val.valuefloat();
+            } else if (datatype=="double") {
+              req_json[attr] = val.valuedouble();
+            } else if (datatype=="boolean") {
+              req_json[attr] = val.valuebool();
+            } else { // Treat as a string
+              req_json[attr] = val.valuestring();
+            }
+
             auto Processor = handler.getGrpcProcessor();
             auto result = Processor->processSet2(*kc, req_json);
             auto resJson = json::parse(result);
