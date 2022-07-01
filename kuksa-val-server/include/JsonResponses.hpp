@@ -63,6 +63,10 @@ namespace JsonResponses {
 
   std::string getTimeStamp();
 
+  void addTimeStampToJSON(jsoncons::json& jsontarget, const std::string suffix="");
+
+  void convertJSONTimeStampToISO8601(jsoncons::json& jsontarget);
+
   std::string getTimeStampZero();
 }
 

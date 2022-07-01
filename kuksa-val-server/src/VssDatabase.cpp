@@ -16,6 +16,7 @@
 #include <regex>
 #include <stdexcept>
 #include <fstream>
+#include <ctime>
 #include <boost/algorithm/string.hpp>
 #include "jsonpath/json_query.hpp"
 #include "jsoncons_ext/jsonpatch/jsonpatch.hpp"
@@ -467,9 +468,12 @@ jsoncons::json VssDatabase::setSignal(const VSSPath &path, const std::string& at
       if (resJson.contains("datatype")) {
         checkAndSanitizeType(resJson, value);
         resJson.insert_or_assign(attr, value);
-        resJson.insert_or_assign("ts-"+attr, JsonResponses::getTimeStamp());
+        JsonResponses::addTimeStampToJSON(resJson, "-"+attr);
+        
         datapoint.insert_or_assign(attr, value);
-        datapoint.insert_or_assign("ts", JsonResponses::getTimeStamp());
+        datapoint.insert_or_assign("ts_s-"+attr,  resJson["ts_s-"+attr]);
+        datapoint.insert_or_assign("ts_ns-"+attr, resJson["ts_ns-"+attr]);
+
         data.insert_or_assign("dp", datapoint);
         {
           jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
@@ -505,10 +509,12 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& at
     } else {
       datapoint[attr] = "---"; //Todo return error/nothing and handle this correctly
     }
-    if (result.contains("ts-"+attr)) {
-      datapoint["ts"] = result["ts-"+attr].as<string>();
+    if (result.contains("ts_s-"+attr) && result.contains("ts_ns-"+attr)) {
+      datapoint["ts_s"] = result["ts_s-"+attr].as<uint64_t>();
+      datapoint["ts_ns"] = result["ts_ns-"+attr].as<uint32_t>();
     } else {
-      datapoint["ts"] = JsonResponses::getTimeStampZero();
+      datapoint["ts_s"] = 0;
+      datapoint["ts_ns"] = 0;
     }
     answer.insert_or_assign("dp", datapoint);
     return answer;
