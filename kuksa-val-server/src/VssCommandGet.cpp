@@ -82,7 +82,6 @@ std::string VssCommandProcessor::processGet2(KuksaChannel &channel,
       } else {
         bool as_string = channel.getType() != KuksaChannel::Type::GRPC;
         current_dp = database->getSignal(vssPath, attribute, as_string);
-        JsonResponses::convertJSONTimeStampToISO8601(current_dp["dp"]);
         datapoints.push_back(current_dp);
       }
     }

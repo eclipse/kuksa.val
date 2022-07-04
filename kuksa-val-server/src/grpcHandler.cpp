@@ -236,21 +236,20 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
                 stringstream ss;
                 ss << "Datatype for " << request->path()[i] << " is " << datatype;
                 logger->Log(LogLevel::INFO,ss.str());
-              }
-              catch (std::exception &e) {
+              } catch (std::exception &e) {
                 stringstream ss;
                 ss << "Error getting datatype for " << request->path()[i] << ": " << e.what() ;
                 logger->Log(LogLevel::WARNING,ss.str());
               }
 
               if ((datatype=="uint8") || (datatype=="uint16") || (datatype=="uint32")) {
-                val->set_valueuint32(resJson["data"]["dp"][attr].as<unsigned int>());
+                val->set_valueuint32(resJson["data"]["dp"][attr].as<uint32_t>());
               } else if ((datatype=="int8") || (datatype=="int16") || (datatype=="int32")) {
-                val->set_valueint32(resJson["data"]["dp"][attr].as<int>());
+                val->set_valueint32(resJson["data"]["dp"][attr].as<int32_t>());
               } else if (datatype=="uint64") {
-                val->set_valueuint64(resJson["data"]["dp"][attr].as<unsigned int>());
+                val->set_valueuint64(resJson["data"]["dp"][attr].as<uint64_t>());
               } else if (datatype=="int64") {
-                val->set_valueint64(resJson["data"]["dp"][attr].as<int>());
+                val->set_valueint64(resJson["data"]["dp"][attr].as<int64_t>());
               } else if (datatype=="float") {
                 val->set_valuefloat(resJson["data"]["dp"][attr].as_double());
               } else if (datatype=="double") {
@@ -260,14 +259,17 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
               } else { // Treat as a string
                 val->set_valuestring(resJson["data"]["dp"][attr].as_string());
               }
-              val->set_timestamp(resJson["data"]["dp"]["ts"].as_string());
+              val->set_path(resJson["data"]["path"].as_string());
+
+              val->mutable_timestamp()->set_seconds(resJson["data"]["dp"]["ts_s"].as<uint64_t>());
+              val->mutable_timestamp()->set_nanos(resJson["data"]["dp"]["ts_ns"].as<uint32_t>());
             } else {
               val->set_valuestring(resJson["metadata"].as_string());
             }
-            val->set_path(resJson["data"]["path"].as_string());
           }
         } catch (std::exception &e) {
           singleFailure = true;
+          logger->Log(LogLevel::ERROR, e.what());
         }
       }
 
@@ -351,6 +353,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
             }
           } catch (std::exception &e) {
             singleFailure = true;
+            logger->Log(LogLevel::ERROR, e.what());
           }
         }
 

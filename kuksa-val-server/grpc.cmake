@@ -70,7 +70,8 @@ function(protobuf_gen)
         COMMAND ${_PROTOBUF_PROTOC}
         ARGS --grpc_out "generate_mock_code=true:${ARG_OUTPUT}"
           --cpp_out "${ARG_OUTPUT}"
-          -I "${ARG_PROTO_PATH}"
+          -I "${ARG_PROTO_PATH}" 
+          -I "${PROTOBUF_INCLUDE_DIR}" 
           --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
           "${ARG_PROTO}"
         DEPENDS "${ARG_PROTO}"

@@ -516,6 +516,11 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& at
       datapoint["ts_s"] = 0;
       datapoint["ts_ns"] = 0;
     }
+
+    if (as_string) {
+      JsonResponses::convertJSONTimeStampToISO8601(datapoint["dp"]);
+    }
+
     answer.insert_or_assign("dp", datapoint);
     return answer;
 

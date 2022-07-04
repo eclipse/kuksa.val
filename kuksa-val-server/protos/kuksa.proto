@@ -9,6 +9,8 @@
 syntax = "proto3";
 
 package kuksa;
+import "google/protobuf/timestamp.proto";
+
 
 option go_package = "/kuksa_grpc_proto";
 
@@ -71,7 +73,7 @@ message Value {
     double valueDouble = 8;
     string valueString = 9;
   }
-  string timestamp=10; // TODO: Change to uint64
+  google.protobuf.Timestamp timestamp=10; 
 }
 
 message Status {
