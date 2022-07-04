@@ -191,10 +191,19 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value", false));
 
-  verify_and_erase_timestampZero(returnJson["dp"]);
+  std::string t = returnJson.to_string();
 
+  //false mans timestamp as _s and _ns
+  BOOST_TEST(returnJson["dp"].contains("ts_s"));
+  BOOST_TEST(returnJson["dp"].contains("ts_ns"));
+  BOOST_TEST(returnJson["dp"]["ts_s"].as<uint64_t>()==0);
+  BOOST_TEST(returnJson["dp"]["ts_ns"].as<uint32_t>()==0);
+
+  returnJson["dp"].erase("ts_s");
+  returnJson["dp"].erase("ts_ns");
+  
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -212,7 +221,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value", true));
 
   verify_and_erase_timestampZero(returnJson["dp"]);
 

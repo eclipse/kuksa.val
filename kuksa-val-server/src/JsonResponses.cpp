@@ -149,7 +149,9 @@ std::string getTimeStamp() {
  * used  when values that have never been set are queried This makes sure to
  * habe a syntactically compliant timestamp
  */
-std::string getTimeStampZero() { return "1981-01-01T00:00:00.0000000000Z"; }
+std::string getTimeStampZero() { 
+  return "1970-01-01T00:00:00.0Z"; 
+}
 
 /** This adds tv_s and tv_ns timestamps to a jsoncons object in the attributes
  *  ts_s<suffix> and ts_ns<suffix>
