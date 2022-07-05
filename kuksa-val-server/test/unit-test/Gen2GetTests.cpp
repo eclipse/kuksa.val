@@ -104,6 +104,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   // setup
   channel.setAuthorized(false);
   channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_PLAIN);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -136,6 +137,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
+
+  std::string out = res.to_string();
   verify_and_erase_timestampZero(res["data"]["dp"]);
 
   BOOST_TEST(res == expectedJson);

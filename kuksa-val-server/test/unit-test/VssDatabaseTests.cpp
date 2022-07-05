@@ -191,10 +191,19 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value", false));
 
-  verify_and_erase_timestampZero(returnJson["dp"]);
+  std::string t = returnJson.to_string();
 
+  //false mans timestamp as _s and _ns
+  BOOST_TEST(returnJson["dp"].contains("ts_s"));
+  BOOST_TEST(returnJson["dp"].contains("ts_ns"));
+  BOOST_TEST(returnJson["dp"]["ts_s"].as<uint64_t>()==0);
+  BOOST_TEST(returnJson["dp"]["ts_ns"].as<uint32_t>()==0);
+
+  returnJson["dp"].erase("ts_s");
+  returnJson["dp"].erase("ts_ns");
+  
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -212,7 +221,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
+  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value", true));
 
   verify_and_erase_timestampZero(returnJson["dp"]);
 
@@ -483,5 +492,38 @@ BOOST_AUTO_TEST_CASE(applyDefaultValues_Recurse) {
 }
 
 
+/** getDataTypeTests **/
+BOOST_AUTO_TEST_CASE(getDataTypeForSensor) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle.Speed";
+  std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
+  BOOST_TEST(dt == "int32");
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForAttribute) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/VehicleIdentification/VIN";
+  std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
+  BOOST_TEST(dt == "string");
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForActuator) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/Cabin/Door/Row1/Right/IsLocked";
+  std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
+  BOOST_TEST(dt == "boolean");
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForBranch) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/Body";
+  BOOST_CHECK_THROW(db->getDatatypeForPath(VSSPath::fromVSS(path)), genException);
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForNonExistingPath) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/FluxCapacitor/Charge";
+  BOOST_CHECK_THROW(db->getDatatypeForPath(VSSPath::fromVSS(path)), noPathFoundonTree);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

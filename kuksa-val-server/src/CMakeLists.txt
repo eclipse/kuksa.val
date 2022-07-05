@@ -35,6 +35,7 @@ get_filename_component(kuksa_proto_path "${kuksa_proto}" PATH)
 file(MAKE_DIRECTORY ${proto_gen_dir})
 protobuf_gen(PROTO ${kuksa_proto}
     PROTO_PATH ${kuksa_proto_path}
+    PROTO_INC ${_PROTO_INC}
     OUTPUT ${proto_gen_dir}
 )
 include_directories("${proto_gen_dir}")

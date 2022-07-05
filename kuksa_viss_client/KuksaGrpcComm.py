@@ -14,6 +14,7 @@ from http import client
 import queue, os
 import grpc, asyncio, json
 from google.protobuf.json_format import MessageToJson
+import jsonpath_ng
 
 import kuksa_pb2
 import kuksa_pb2_grpc
@@ -47,6 +48,21 @@ class KuksaGrpcComm:
         }
 
         self.grpcConnectionAuthToken = None
+
+    # Get datatype of a path
+    def getDataType(self, path):
+
+        mdJson = self.getMetaData(path)
+        md = json.loads(mdJson)
+        print
+        if "error" not in md:
+            dt = [dt.value for dt in jsonpath_ng.parse("$..datatype").find(md)]
+            if len(dt) == 1:
+                datatype = dt[0]
+                return datatype
+        else:
+            return None
+
 
     # Function to check connection status
     def checkConnection(self):
@@ -97,7 +113,6 @@ class KuksaGrpcComm:
                 respJson = json.dumps({"error": "Timeout"})
         else:
             respJson = json.dumps({"error": "Invalid Attribute"})
-    
         return respJson 
 
     # Function to implement set
@@ -107,10 +122,30 @@ class KuksaGrpcComm:
         # Create Set Request
         req = kuksa_pb2.SetRequest()
         if attribute in self.AttrDict.keys():
+            dt = self.getDataType(path)
             req.type = self.AttrDict[attribute]
             val = kuksa_pb2.Value()
             val.path = path
-            val.valueString = value
+
+            if dt=="int8" or dt=="int16" or dt=="int32":
+                val.valueInt32 = int(value)
+            elif dt=="uint8" or dt=="uint16" or dt=="uint32": 
+                val.valueUint32 = int(value)
+            elif dt=="uint64":
+                val.valueUint64 = int(value)
+            elif dt=="int64":
+                val.valueInt64 = int(value)
+            elif dt=="float":
+                val.valueFloat= float(value)
+            elif dt=="double":
+                val.valueDouble = float(value)
+            elif dt=="boolean":
+                if value in ["False", "false", "F", "f"]:
+                    value = 0
+                val.valueBool = bool(value)
+            else:
+                val.valueString = str(value)
+
             req.values.append(val)
 
             self.sendMsgQueue.put(("set", req, recvQueue))

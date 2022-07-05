@@ -63,6 +63,7 @@ std::string VssCommandProcessor::processGet2(KuksaChannel &channel,
 
   jsoncons::json answer;
   jsoncons::json datapoints = jsoncons::json::array();
+  jsoncons::json current_dp;
 
   try {
     list<VSSPath> vssPaths = database->getLeafPaths(path);
@@ -80,7 +81,8 @@ std::string VssCommandProcessor::processGet2(KuksaChannel &channel,
         return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
       } else {
         bool as_string = channel.getType() != KuksaChannel::Type::GRPC;
-        datapoints.push_back(database->getSignal(vssPath, attribute, as_string));
+        current_dp = database->getSignal(vssPath, attribute, as_string);
+        datapoints.push_back(current_dp);
       }
     }
     if (vssPaths.size() < 1) {

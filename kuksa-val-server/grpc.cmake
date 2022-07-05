@@ -25,6 +25,8 @@ if(Protobuf_FOUND AND gRPC_FOUND)
     set(_REFLECTION gRPC::grpc++_reflection)
     set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
 
+    set(_PROTO_INC "${PROTOBUF_INCLUDE_DIR}" )
+
 else()
     ### grpc repository and submodule fetch
     include(FetchContent)
@@ -47,6 +49,8 @@ else()
     set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
     set(_REFLECTION grpc++_reflection)
     set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+    file(COPY "${CMAKE_BINARY_DIR}/_deps/grpc-src/third_party/protobuf/src/google" DESTINATION "${CMAKE_BINARY_DIR}/_deps/grpc-build/third_party/protobuf/")
+    set(_PROTO_INC "./" )
 endif()
 
 
@@ -55,10 +59,9 @@ endif()
 #
 function(protobuf_gen)
     set(options)
-    set(single_value OUTPUT PROTO PROTO_PATH)
+    set(single_value OUTPUT PROTO PROTO_PATH PROTO_INC)
     set(multi_value)
     cmake_parse_arguments(ARG "${options}" "${single_value}" "${multi_value}" "${ARGN}")
-
     get_filename_component(filename ${ARG_PROTO} NAME_WE)
     set(PROTO_SRCS "${ARG_OUTPUT}/${filename}.pb.cc")
     set(PROTO_HDRS "${ARG_OUTPUT}/${filename}.pb.h")
@@ -70,7 +73,8 @@ function(protobuf_gen)
         COMMAND ${_PROTOBUF_PROTOC}
         ARGS --grpc_out "generate_mock_code=true:${ARG_OUTPUT}"
           --cpp_out "${ARG_OUTPUT}"
-          -I "${ARG_PROTO_PATH}"
+          -I "${ARG_PROTO_PATH}" 
+          -I "${ARG_PROTO_INC}" 
           --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
           "${ARG_PROTO}"
         DEPENDS "${ARG_PROTO}"

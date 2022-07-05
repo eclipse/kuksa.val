@@ -22,6 +22,8 @@
 
 #include "kuksa.grpc.pb.h"
 #include "ILogger.hpp"
+#include "IVssDatabase.hpp"
+
 
 using namespace std;
 using grpc::Channel;
@@ -92,6 +94,8 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
 
   private:
     std::shared_ptr<ILogger> logger;
+    std::shared_ptr<IVssDatabase> database;
+
     std::unordered_map<grpcSession_t, KuksaChannel, GrpcSessionHasher> grpcSessionMap;
 
     /* Internal helper function to authorize the session
@@ -162,8 +166,9 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     }
   public: 
 
-    RequestServiceImpl(std::shared_ptr<ILogger> _logger) {
+    RequestServiceImpl(std::shared_ptr<ILogger> _logger,     std::shared_ptr<IVssDatabase> _database) {
       logger = _logger;
+      database = _database;
     }
 
     Status get(ServerContext* context, const kuksa::GetRequest* request, kuksa::GetResponse* reply) override { 
@@ -225,15 +230,46 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
           } else { // Success Case
             auto val = reply->add_values();
             if (request->type() != kuksa::RequestType::METADATA) {
-              val->set_valuestring(resJson["data"]["dp"][attr].as_string());
-              val->set_timestamp(resJson["data"]["dp"]["ts"].as_string());
+              string datatype;
+              try {
+                datatype = database->getDatatypeForPath(VSSPath::fromVSS(request->path()[i]));
+                stringstream ss;
+                ss << "Datatype for " << request->path()[i] << " is " << datatype;
+                logger->Log(LogLevel::INFO,ss.str());
+              } catch (std::exception &e) {
+                stringstream ss;
+                ss << "Error getting datatype for " << request->path()[i] << ": " << e.what() ;
+                logger->Log(LogLevel::WARNING,ss.str());
+              }
+
+              if ((datatype=="uint8") || (datatype=="uint16") || (datatype=="uint32")) {
+                val->set_valueuint32(resJson["data"]["dp"][attr].as<uint32_t>());
+              } else if ((datatype=="int8") || (datatype=="int16") || (datatype=="int32")) {
+                val->set_valueint32(resJson["data"]["dp"][attr].as<int32_t>());
+              } else if (datatype=="uint64") {
+                val->set_valueuint64(resJson["data"]["dp"][attr].as<uint64_t>());
+              } else if (datatype=="int64") {
+                val->set_valueint64(resJson["data"]["dp"][attr].as<int64_t>());
+              } else if (datatype=="float") {
+                val->set_valuefloat(resJson["data"]["dp"][attr].as_double());
+              } else if (datatype=="double") {
+                val->set_valuedouble(resJson["data"]["dp"][attr].as_double());
+              } else if (datatype=="boolean") {
+                val->set_valuebool(resJson["data"]["dp"][attr].as_bool());
+              } else { // Treat as a string
+                val->set_valuestring(resJson["data"]["dp"][attr].as_string());
+              }
+              val->set_path(resJson["data"]["path"].as_string());
+
+              val->mutable_timestamp()->set_seconds(resJson["data"]["dp"]["ts_s"].as<uint64_t>());
+              val->mutable_timestamp()->set_nanos(resJson["data"]["dp"]["ts_ns"].as<uint32_t>());
             } else {
               val->set_valuestring(resJson["metadata"].as_string());
             }
-            val->set_path(resJson["data"]["path"].as_string());
           }
         } catch (std::exception &e) {
           singleFailure = true;
+          logger->Log(LogLevel::ERROR, e.what());
         }
       }
 
@@ -280,9 +316,28 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
           auto val = request->values()[i];
           req_json["requestId"] = boost::uuids::to_string(boost::uuids::random_generator()());
           req_json["path"] = val.path();
-          req_json[attr] = val.valuestring();
 
           try {
+            std::string datatype = database->getDatatypeForPath(VSSPath::fromVSS(val.path()));
+
+            if ((datatype=="uint8") || (datatype=="uint16") || (datatype=="uint32")) {
+              req_json[attr] = val.valueuint32();
+            } else if ((datatype=="int8") || (datatype=="int16") || (datatype=="int32")) {
+              req_json[attr] = val.valueint32();
+            } else if (datatype=="uint64") {
+              req_json[attr] = val.valueuint64();
+            } else if (datatype=="int64") {
+              req_json[attr] = val.valueint64();
+            } else if (datatype=="float") {
+              req_json[attr] = val.valuefloat();
+            } else if (datatype=="double") {
+              req_json[attr] = val.valuedouble();
+            } else if (datatype=="boolean") {
+              req_json[attr] = val.valuebool();
+            } else { // Treat as a string
+              req_json[attr] = val.valuestring();
+            }
+
             auto Processor = handler.getGrpcProcessor();
             auto result = Processor->processSet2(*kc, req_json);
             auto resJson = json::parse(result);
@@ -298,6 +353,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
             }
           } catch (std::exception &e) {
             singleFailure = true;
+            logger->Log(LogLevel::ERROR, e.what());
           }
         }
 
@@ -353,9 +409,9 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     }  
 };
 
-void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::shared_ptr<ILogger> logger_, std::string certPath, bool allowInsecureConn) {
+void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::shared_ptr<IVssDatabase> database, std::shared_ptr<ILogger> logger_, std::string certPath, bool allowInsecureConn) {
   string server_address("0.0.0.0:50051");
-  RequestServiceImpl service(logger_);
+  RequestServiceImpl service(logger_, database);
 
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -393,6 +449,7 @@ void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor, std:
   // Finally assemble the server
   handler.grpcServer = builder.BuildAndStart();
   handler.grpcProcessor = Processor;
+  handler.grpcDatabase = database;
   handler.logger_=logger_;
   handler.logger_->Log(LogLevel::INFO, "Kuksa viss gRPC server Version 1.0.0");
   handler.logger_->Log(LogLevel::INFO, "gRPC Server listening on " + string(server_address));

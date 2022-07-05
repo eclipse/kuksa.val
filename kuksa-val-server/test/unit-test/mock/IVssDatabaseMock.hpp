@@ -31,6 +31,7 @@ MOCK_BASE_CLASS( IVssDatabaseMock, IVssDatabase )
   MOCK_METHOD(pathIsReadable, 1)
   MOCK_METHOD(pathIsAttributable, 2)
   MOCK_METHOD(getLeafPaths,1)
+  MOCK_METHOD(getDatatypeForPath,1)
   MOCK_METHOD(checkAndSanitizeType,2)
 };
   
