@@ -77,7 +77,7 @@ SubscriptionId SubscriptionHandler::subscribe(KuksaChannel& channel,
                   vssPath.getVSSPath());
 
   std::unique_lock<std::mutex> lock(accessMutex);                
-  subscriptions[subsKey][subId] = channel.getConnID();
+  subscriptions[subsKey][subId] = channel;
   return subId;
 }
 
@@ -104,17 +104,17 @@ int SubscriptionHandler::unsubscribe(SubscriptionId subscribeID) {
   return -1;
 }
 
-int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
+int SubscriptionHandler::unsubscribeAll(KuksaChannel channel) {
   logger->Log(LogLevel::VERBOSE,
               string("SubscriptionHandler::unsubscribeAll: Unsubscribing all "
-                     "for connectionId ") +
-                  std::to_string(connectionID));
+                     "for channel ") +
+                  std::to_string(channel.getConnID()));
 
   std::unique_lock<std::mutex> lock(accessMutex);
   for (auto& subs : subscriptions) {
     auto condition =
-        [connectionID](const std::pair<SubscriptionId, ConnectionId>& pair) {
-          return (pair.second == (connectionID));
+        [channel](const std::pair<SubscriptionId, KuksaChannel>& pair) {
+          return (pair.second == channel);
         };
 
     auto found =
@@ -123,7 +123,7 @@ int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
     if (found != std::end(subs.second)) {
       subs.second.erase(found);
       logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::unsubscribeAll: Unsubscribing " +
-                  subs.first.path + " for "+std::to_string(connectionID) );
+                  subs.first.path + " for "+std::to_string(channel.getConnID()) );
     }
   }
   return 0;
@@ -152,7 +152,7 @@ int SubscriptionHandler::publishForVSSPath(const VSSPath path, const std::string
 
   for (auto subID : handle->second) {
     std::lock_guard<std::mutex> lock(subMutex);
-    tuple<SubscriptionId, ConnectionId, json> newSub;
+    tuple<SubscriptionId, KuksaChannel, json> newSub;
     logger->Log(
         LogLevel::VERBOSE,
         "SubscriptionHandler::publishForVSSPath: new "+ attr + " set at path " +
@@ -174,21 +174,23 @@ void* SubscriptionHandler::subThreadRunner() {
       auto newSub = buffer.front();
       buffer.pop();
 
-      auto connId = std::get<1>(newSub);
+      auto channel = std::get<1>(newSub);
       jsoncons::json data = std::get<2>(newSub);
 
       jsoncons::json answer;
       answer["action"] = "subscription";
       answer["subscriptionId"] = boost::uuids::to_string(std::get<0>(newSub));
+
+      JsonResponses::convertJSONTimeStampToISO8601(data["dp"]);
       answer.insert_or_assign("data", data);
 
       stringstream ss;
       ss << pretty_print(answer);
       string message = ss.str();
 
-      bool connectionexist=getServer()->SendToConnection(connId, message);
+      bool connectionexist=getServer()->SendToConnection(channel.getConnID(), message);
       if(!connectionexist) {
-        this->unsubscribeAll(connId);
+        this->unsubscribeAll(channel);
       }
     } else {
       std::unique_lock<std::mutex> lock(subMutex);

@@ -54,5 +54,9 @@ class KuksaChannel {
   string getAuthToken() const { return authToken; }
   json getPermissions() const { return permissions; }
   Type getType() const { return typeOfConnection; }
+
+  friend bool operator==(const KuksaChannel  &lh, const KuksaChannel  &rh) {
+    return lh.getConnID() == rh.getConnID();
+  }
 };
 #endif

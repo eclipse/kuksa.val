@@ -53,7 +53,7 @@ struct UUIDHasher
     return (uuid_hasher(k));
   }
 };
-using subscriptions_t = std::unordered_map<SubscriptionId, ConnectionId, UUIDHasher>;
+using subscriptions_t = std::unordered_map<SubscriptionId, KuksaChannel, UUIDHasher>;
 using subscription_keys_t = struct subscription_keys {
   std::string path;
   std::string attribute;
@@ -92,7 +92,7 @@ class SubscriptionHandler : public ISubscriptionHandler {
   std::condition_variable c;
   std::thread subThread;
   bool threadRun;
-  std::queue<std::tuple<SubscriptionId, ConnectionId, jsoncons::json>> buffer;
+  std::queue<std::tuple<SubscriptionId, KuksaChannel, jsoncons::json>> buffer;
 
  public:
   SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
@@ -108,7 +108,7 @@ class SubscriptionHandler : public ISubscriptionHandler {
                            std::shared_ptr<IVssDatabase> db,
                            const std::string &path, const std::string& attr);
   int unsubscribe(SubscriptionId subscribeID);
-  int unsubscribeAll(ConnectionId connectionID);
+  int unsubscribeAll(KuksaChannel channel);
   int publishForVSSPath(const VSSPath path, const std::string& attr, const jsoncons::json &value);
 
 
