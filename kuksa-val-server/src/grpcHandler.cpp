@@ -97,6 +97,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     std::shared_ptr<IVssDatabase> database;
 
     std::unordered_map<grpcSession_t, KuksaChannel, GrpcSessionHasher> grpcSessionMap;
+    mutable std::mutex grpcSessionMapAccess;
 
     /* Internal helper function to authorize the session
      *  Will create and assign a KuksaChannel object to the session.
@@ -121,6 +122,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
 
       if (!resJson.contains("error")) { // Success case
         grpcSession_t session = grpcSession(peer, uuid);
+        std::unique_lock<std::mutex> lock(grpcSessionMapAccess); 
         grpcSessionMap[session] = *newChannel;
       }
       return resJson;
@@ -140,6 +142,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
             std::string connIdString(iter->second.begin(), iter->second.end());
             auto connId = gen(connIdString);
             grpcSession session = grpcSession(context->peer(), connId);
+            std::unique_lock<std::mutex> lock(grpcSessionMapAccess); 
             kc = &grpcSessionMap[session];
         }
       } catch (std::exception &e) {
@@ -154,14 +157,14 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     /* Internal function to handle subscribe read streams
      * 
      */
-    static void subscribeReadStreamHandling(::grpc::ServerReaderWriter<::kuksa::SubscribeResponse, ::kuksa::SubscribeRequest>* stream) {
+    static void subscribeReadStreamHandling(::grpc::ServerReaderWriter<::kuksa::SubscribeResponse, ::kuksa::SubscribeRequest>* stream, KuksaChannel* kc) {
       
     }
 
     /* Internal function to handle subscribe write streams
      * 
      */
-    static void subscribeWriteStreamHandling(::grpc::ServerReaderWriter<::kuksa::SubscribeResponse, ::kuksa::SubscribeRequest>* stream) {
+    static void subscribeWriteStreamHandling(::grpc::ServerReaderWriter<::kuksa::SubscribeResponse, ::kuksa::SubscribeRequest>* stream, KuksaChannel* kc) {
       
     }
   public: 
@@ -379,8 +382,8 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         return Status::OK;
       }
 
-      thread readStreamThread (subscribeReadStreamHandling, stream);
-      thread writeStreamThread (subscribeWriteStreamHandling, stream);
+      thread readStreamThread (subscribeReadStreamHandling, stream, kc);
+      thread writeStreamThread (subscribeWriteStreamHandling, stream, kc);
       writeStreamThread.join();
       readStreamThread.join();
       return Status::OK;
