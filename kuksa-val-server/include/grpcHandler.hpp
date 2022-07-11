@@ -12,6 +12,9 @@
  * *****************************************************************************
  */
 
+#ifndef __GRPC_HANDLER_H__
+#define __GRPC_HANDLER_H__
+
 #include <iostream>
 #include <memory>
 #include <string>
@@ -24,6 +27,9 @@
 #include <grpcpp/health_check_service_interface.h>
 
 #include "VssCommandProcessor.hpp"
+#include "kuksa.grpc.pb.h"
+#include "SubscriptionHandler.hpp"
+
 
 class grpcHandler{
     private:
@@ -46,3 +52,5 @@ class grpcHandler{
           return this->grpcServer;
         }
 };
+
+#endif

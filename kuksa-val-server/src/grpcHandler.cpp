@@ -15,15 +15,13 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/functional/hash.hpp>
-#include <thread>
 
 #include "grpcHandler.hpp"
 #include "KuksaChannel.hpp"
 
-#include "kuksa.grpc.pb.h"
 #include "ILogger.hpp"
 #include "IVssDatabase.hpp"
-
+#include "SubscriptionHandler.hpp"
 
 using namespace std;
 using grpc::Channel;
@@ -32,7 +30,10 @@ using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
+using grpc::ServerReaderWriter;
 using kuksa::kuksa_grpc_if;
+using kuksa::SubscribeRequest;
+using kuksa::SubscribeResponse;
 
 grpcHandler handler;
 
@@ -113,7 +114,10 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
       req_json["token"] = token;
       
       auto newChannel = std::make_shared<KuksaChannel>();
+      auto grpcSubs = std::make_shared<gRPCSubscriptionMap_t>();
+
       newChannel->setConnID(0);   // Connection ID is used only for websocket connections.
+      newChannel->grpcSubsMap = grpcSubs;
       newChannel->setType(KuksaChannel::Type::GRPC);
 
       auto Processor = handler.getGrpcProcessor();
@@ -152,20 +156,6 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         logger->Log(LogLevel::ERROR,e.what());
       }
       return kc;
-    }
-
-    /* Internal function to handle subscribe read streams
-     * 
-     */
-    static void subscribeReadStreamHandling(::grpc::ServerReaderWriter<::kuksa::SubscribeResponse, ::kuksa::SubscribeRequest>* stream, KuksaChannel* kc) {
-      
-    }
-
-    /* Internal function to handle subscribe write streams
-     * 
-     */
-    static void subscribeWriteStreamHandling(::grpc::ServerReaderWriter<::kuksa::SubscribeResponse, ::kuksa::SubscribeRequest>* stream, KuksaChannel* kc) {
-      
     }
   public: 
 
@@ -371,7 +361,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
       return Status::OK;
     }
 
-    Status subscribe(ServerContext* context, ::grpc::ServerReaderWriter<::kuksa::SubscribeResponse, ::kuksa::SubscribeRequest>* stream) {
+    Status subscribe(ServerContext* context, ServerReaderWriter<SubscribeResponse, SubscribeRequest>* stream) override {
       stringstream msg;
       msg << "gRPC subscribe invoked" << " by " << context->peer(); 
       logger->Log(LogLevel::INFO,msg.str());
@@ -382,10 +372,104 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         return Status::OK;
       }
 
-      thread readStreamThread (subscribeReadStreamHandling, stream, kc);
-      thread writeStreamThread (subscribeWriteStreamHandling, stream, kc);
-      writeStreamThread.join();
-      readStreamThread.join();
+      jsoncons::json req_json, resp_json;
+      int validSubs=0;
+      std::unordered_map<subscription_keys_t, std::string, SubscriptionKeyHasher> currentSubs;
+      SubscribeRequest request;
+      SubscribeResponse response;
+
+      // Keep reading from the stream till it terminates
+      while (stream->Read(&request)) {
+        auto Processor = handler.getGrpcProcessor();
+        // Create appropriate subscribe request
+        auto uuid = boost::uuids::random_generator()();
+        req_json["requestId"] = boost::uuids::to_string(uuid);
+
+        bool subscribe = request.start();
+        if (subscribe) { // Send a subscribe request
+          req_json["action"] = "subscribe";
+          auto path = request.path();
+          req_json["path"] = path;
+          auto iter = AttributeStringMap.find(request.type());
+          std::string attr;
+          if (iter != AttributeStringMap.end()) {
+            attr = iter->second;
+            req_json["attribute"] = attr;
+          } else {
+            attr = "value"; // By default attribute is value
+          }
+
+          try {
+            auto result = Processor->processSubscribe(*kc, req_json);
+            logger->Log(LogLevel::ERROR, result); //TODO: Remove
+            resp_json = json::parse(result);
+            if (resp_json.contains("error")) { // Failure Case
+              uint32_t code = resp_json["error"]["number"].as<unsigned int>();
+              std::string reason = resp_json["error"]["reason"].as_string() + " " + resp_json["error"]["message"].as_string();
+              response.mutable_status()->set_statuscode(code);
+              response.mutable_status()->set_statusdescription(reason);
+              stream->Write(response);
+            } else { // Success Case
+              response.mutable_status()->set_statuscode(200);
+              response.mutable_status()->set_statusdescription("Subscribe request successfully processed");
+              stream->Write(response);
+              validSubs += 1;
+              
+              subscription_keys_t key = subscription_keys_t(path, attr);
+              currentSubs[key] = resp_json["subscriptionId"].as_string();
+              auto subsMap = (kc->grpcSubsMap).get();
+              auto id = boost::uuids::string_generator()(resp_json["subscriptionId"].as_string());
+              (*subsMap)[id] = stream;
+            }
+          } catch (std::exception &e) {
+            logger->Log(LogLevel::ERROR, e.what());
+          }
+        } else {  // Send a unsubscribe request
+          req_json["action"] = "unsubscribe";
+
+          std::string path = request.path();
+          auto iter = AttributeStringMap.find(request.type());
+          std::string attr;
+          if (iter != AttributeStringMap.end()) {
+            attr = iter->second;
+          } else {
+            attr = "value"; // By default attribute is value
+          }
+
+          // Check if the path to unsubscribe exists
+          subscription_keys_t key = subscription_keys_t(request.path(), attr);
+          if(currentSubs.find(key) != currentSubs.end()) { // Path is currently subscribed
+            req_json["subscriptionId"] = currentSubs[key];
+            auto result = Processor->processUnsubscribe(*kc, req_json);
+            resp_json = json::parse(result);
+            logger->Log(LogLevel::ERROR, result); //TODO: Remove
+            if (resp_json.contains("error")) { // Failure Case
+              uint32_t code = resp_json["error"]["number"].as<unsigned int>();
+              std::string reason = resp_json["error"]["reason"].as_string() + " " + resp_json["error"]["message"].as_string();
+              response.mutable_status()->set_statuscode(code);
+              response.mutable_status()->set_statusdescription(reason);
+              stream->Write(response);
+            } else { // Success Case
+              currentSubs.erase(key);
+              validSubs -= 1;
+              auto subsMap = (kc->grpcSubsMap).get();
+              subsMap->erase(boost::uuids::string_generator()(currentSubs[key]));
+
+              response.mutable_status()->set_statuscode(200);
+              response.mutable_status()->set_statusdescription("Unsubscribe request successfully processed");
+              stream->Write(response);
+            }
+          } else {  // Path is not subscribed. So unsubscribe wont work.
+            response.mutable_status()->set_statuscode(400);
+            response.mutable_status()->set_statusdescription("Subscribe request error. No valid subscription existed");
+            stream->Write(response);
+          }
+        }
+       
+
+        if (validSubs<=0)
+          break;
+      }
       return Status::OK;
     }
 

@@ -76,12 +76,9 @@ struct SubscriptionKeyHasher {
   }
 };
 
-
 class SubscriptionHandler : public ISubscriptionHandler {
  private:
   std::unordered_map<subscription_keys_t, subscriptions_t, SubscriptionKeyHasher> subscriptions;
-  std::unordered_map<subscription_keys_t, subscriptions_t, SubscriptionKeyHasher> grpcSubscriptions;
-
   std::shared_ptr<ILogger> logger;
   std::shared_ptr<IServer> server;
   std::vector<std::shared_ptr<IPublisher>> publishers_;

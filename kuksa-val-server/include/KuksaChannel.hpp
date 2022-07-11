@@ -17,10 +17,28 @@
 #include <stdint.h>
 #include <jsoncons/json.hpp>
 #include <string>
+#include <boost/uuid/uuid_io.hpp>  
+#include <boost/functional/hash.hpp>
+#include "kuksa.grpc.pb.h"
 
 using namespace std;
 using namespace jsoncons;
 using jsoncons::json;
+
+struct gRPCUUIDHasher
+{
+  std::size_t operator()(const boost::uuids::uuid& k) const
+  {
+    using std::size_t;
+
+    boost::hash<boost::uuids::uuid> uuid_hasher;
+
+    return (uuid_hasher(k));
+  }
+};
+
+using gRPCSubscriptionMap_t = std::unordered_map<boost::uuids::uuid, grpc::ServerReaderWriter<::kuksa::SubscribeResponse, ::kuksa::SubscribeRequest>*, gRPCUUIDHasher>;
+
 
 class KuksaChannel {
  public:
@@ -38,7 +56,7 @@ class KuksaChannel {
   string authToken;
   json permissions;
   Type typeOfConnection;
-
+  
  public:
 
   void setConnID(uint64_t conID) { connectionID = conID; }
@@ -54,6 +72,7 @@ class KuksaChannel {
   string getAuthToken() const { return authToken; }
   json getPermissions() const { return permissions; }
   Type getType() const { return typeOfConnection; }
+  std::shared_ptr<gRPCSubscriptionMap_t> grpcSubsMap;
 
   friend bool operator==(const KuksaChannel  &lh, const KuksaChannel  &rh) {
     return lh.getConnID() == rh.getConnID();
