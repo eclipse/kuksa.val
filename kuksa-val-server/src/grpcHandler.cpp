@@ -450,10 +450,11 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
               response.mutable_status()->set_statusdescription(reason);
               stream->Write(response);
             } else { // Success Case
-              currentSubs.erase(key);
+              
               validSubs -= 1;
               auto subsMap = (kc->grpcSubsMap).get();
               subsMap->erase(boost::uuids::string_generator()(currentSubs[key]));
+              currentSubs.erase(key);
 
               response.mutable_status()->set_statuscode(200);
               response.mutable_status()->set_statusdescription("Unsubscribe request successfully processed");
