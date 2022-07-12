@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
     .at_least(1)
-    .with(mock::any, "value", mock::any)
+    .with(mock::any, "int32", "value", mock::any)
     .returns(0);
 
   // verify
@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   setValue = 10;
 
   // verify
-  MOCK_EXPECT(subHandlerMock->publishForVSSPath).with(mock::any, "value", mock::any).returns(0);
+  MOCK_EXPECT(subHandlerMock->publishForVSSPath).with(mock::any, "int32", "value", mock::any).returns(0);
 
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, "value", setValue));
 

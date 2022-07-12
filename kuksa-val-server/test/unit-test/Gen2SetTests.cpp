@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
   // Notify subscribers
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
       .once()
-      .with(mock::any, "value", mock::any)
+      .with(mock::any, "float","value", mock::any)
       .returns(true);
 
   // run UUT
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Array) {
   // Notify subscribers
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
       .once()
-      .with(mock::any, "value", mock::any)
+      .with(mock::any, "string[]", "value", mock::any)
       .returns(true);
 
   // run UUT

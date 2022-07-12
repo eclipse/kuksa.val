@@ -484,7 +484,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
       .with(channel.getConnID(), jsonVerify)
       .returns(true);
 
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", data) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "float", "value", data) == 0);
     usleep(10000); // allow for subthread handler to run
   }
 }
@@ -580,7 +580,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "string", "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   sleep(1); // allow for subthread handler to run
@@ -689,7 +689,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "double" ,"value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -713,7 +713,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT to verify if removed channel is not called anymore
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "string", "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -722,7 +722,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpdatedAndClientUnsubscribeAll_Shall_NotifyOnlySubscribedClient) {
   unsigned index = 0;
   VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
-  BOOST_TEST(subHandler->publishForVSSPath(vsspath, "value", packDataInJson(vsspath, std::to_string(index))) == 0);
+  BOOST_TEST(subHandler->publishForVSSPath(vsspath, "int16", "value", packDataInJson(vsspath, std::to_string(index))) == 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

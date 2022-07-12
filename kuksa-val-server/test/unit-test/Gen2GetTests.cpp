@@ -463,7 +463,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
   jsoncons::json value="100";
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
       .once()
-      .with(mock::any, "value", mock::any)
+      .with(mock::any, "int32", "value", mock::any)
       .returns(true);
   db->setSignal(vss_path, "value", value);
   
