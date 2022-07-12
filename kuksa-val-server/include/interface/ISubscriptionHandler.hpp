@@ -40,7 +40,7 @@ class ISubscriptionHandler {
                                      const std::string &path, const std::string& attr) = 0;
     virtual int unsubscribe(SubscriptionId subscribeID) = 0;
     virtual int unsubscribeAll(KuksaChannel channel) = 0;
-    virtual int publishForVSSPath(const VSSPath path, const std::string& attr, const jsoncons::json &value) = 0;
+    virtual int publishForVSSPath(const VSSPath path, const std::string& vssdatatype, const std::string& attr, const jsoncons::json &value) = 0;
 
     virtual std::shared_ptr<IServer> getServer() = 0;
     virtual int startThread() = 0;

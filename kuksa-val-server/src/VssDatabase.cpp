@@ -475,7 +475,7 @@ jsoncons::json VssDatabase::setSignal(const VSSPath &path, const std::string& at
         datapoint.insert_or_assign("ts_s",  resJson["ts_s-"+attr]);
         datapoint.insert_or_assign("ts_ns", resJson["ts_ns-"+attr]);
         data.insert_or_assign("dp", datapoint);
-        subHandler_->publishForVSSPath(path, attr, data);
+        subHandler_->publishForVSSPath(path, resJson["datatype"].as<std::string>(), attr, data);
       }
       else {
         throw genException(path.getVSSPath()+ "is invalid for set"); //Todo better error message. (Does not propagate);

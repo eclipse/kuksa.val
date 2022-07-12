@@ -22,6 +22,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "jsoncons/json.hpp"
+
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
@@ -32,6 +34,9 @@
 
 
 class grpcHandler{
+    public:
+      static void grpc_send_object_to_stream(std::shared_ptr<ILogger> logger, const std::string& vssdatatype, const jsoncons::json& data, grpc::ServerReaderWriter<kuksa::SubscribeResponse, kuksa::SubscribeRequest>* stream );
+      static void grpc_fill_value(std::shared_ptr<ILogger> logger, const std::string& vssdatatype, const jsoncons::json& data, kuksa::Value* grpcvalue, const std::string& attr = "value");
     private:
         std::shared_ptr<grpc::Server> grpcServer;
         std::shared_ptr<VssCommandProcessor> grpcProcessor;

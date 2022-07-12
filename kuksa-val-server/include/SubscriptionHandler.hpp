@@ -89,7 +89,8 @@ class SubscriptionHandler : public ISubscriptionHandler {
   std::condition_variable c;
   std::thread subThread;
   bool threadRun;
-  std::queue<std::tuple<SubscriptionId, KuksaChannel, jsoncons::json>> buffer;
+  //Tuple is UUID, channel object, vss datatye and jsoncons object for value
+  std::queue<std::tuple<SubscriptionId, KuksaChannel, std::string, jsoncons::json>> buffer;
 
  public:
   SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
@@ -106,7 +107,7 @@ class SubscriptionHandler : public ISubscriptionHandler {
                            const std::string &path, const std::string& attr);
   int unsubscribe(SubscriptionId subscribeID);
   int unsubscribeAll(KuksaChannel channel);
-  int publishForVSSPath(const VSSPath path, const std::string& attr, const jsoncons::json &value);
+  int publishForVSSPath(const VSSPath path, const std::string& vssdatatype, const std::string& attr, const jsoncons::json &value);
 
 
   std::shared_ptr<IServer> getServer();
