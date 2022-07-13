@@ -96,7 +96,7 @@ class KuksaWsComm:
             res = recvQueue.get(timeout=timeout)
             resJson =  json.loads(res) 
             if "requestId" in res and str(req["requestId"]) == str(resJson["requestId"]):
-                return res
+                return json.dumps(resJson, indent=2)
         except queue.Empty:
             req["error"] =  "timeout"
             return json.dumps(req, indent=2)
