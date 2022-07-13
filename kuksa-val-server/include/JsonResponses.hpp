@@ -19,7 +19,7 @@
 #include <jsoncons/json.hpp>
 
 namespace JsonResponses {
-  std::string malFormedRequest(std::string request_id,
+  jsoncons::json malFormedRequest(std::string request_id,
                                const std::string action,
                                std::string message);
 

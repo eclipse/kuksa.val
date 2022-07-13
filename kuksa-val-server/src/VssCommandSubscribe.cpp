@@ -21,7 +21,7 @@
 #include "VssCommandProcessor.hpp"
 #include "exception.hpp"
 
-string VssCommandProcessor::processSubscribe(KuksaChannel &channel,
+jsoncons::json VssCommandProcessor::processSubscribe(KuksaChannel &channel,
                                              jsoncons::json &request) {
   try {
     requestValidator->validateSubscribe(request);
@@ -82,8 +82,5 @@ string VssCommandProcessor::processSubscribe(KuksaChannel &channel,
   answer["requestId"] = request_id;
   answer["subscriptionId"] = boost::uuids::to_string(subId);
   answer["ts"] = JsonResponses::getTimeStamp();
-
-  std::stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
 }

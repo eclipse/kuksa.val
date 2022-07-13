@@ -159,10 +159,9 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     newChannel->setType(KuksaChannel::Type::GRPC);
 
     auto Processor = handler.getGrpcProcessor();
-    auto response = Processor->processAuthorize(
+    auto resJson = Processor->processAuthorize(
         *newChannel, boost::uuids::to_string(uuid), token);
-    auto resJson = json::parse(response);
-
+    
     if (!resJson.contains("error")) {  // Success case
       grpcSession_t session = grpcSession(peer, uuid);
       std::unique_lock<std::mutex> lock(grpcSessionMapAccess);
@@ -252,12 +251,13 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
       try {
         auto Processor = handler.getGrpcProcessor();
         std::string result;
+        jsoncons::json resJson;
         if (request->type() != kuksa::RequestType::METADATA) {
-          result = Processor->processGet2(*kc, req_json);
+          resJson = Processor->processGet(*kc, req_json);
         } else {
-          result = Processor->processGetMetaData(req_json);
+          resJson = Processor->processGetMetaData(req_json);
         }
-        auto resJson = json::parse(result);
+        
         if (resJson.contains("error")) {  // Failure Case
           uint32_t code = resJson["error"]["number"].as<unsigned int>();
           std::string reason = resJson["error"]["reason"].as_string() + " " +
@@ -373,8 +373,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
           }
 
           auto Processor = handler.getGrpcProcessor();
-          auto result = Processor->processSet2(*kc, req_json);
-          auto resJson = json::parse(result);
+          auto resJson = Processor->processSet(*kc, req_json);
           if (resJson.contains("error")) {  // Failure Case
             uint32_t code = resJson["error"]["number"].as<unsigned int>();
             std::string reason = resJson["error"]["reason"].as_string() + " " +
@@ -450,9 +449,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         }
 
         try {
-          auto result = Processor->processSubscribe(*kc, req_json);
-          logger->Log(LogLevel::ERROR, result);  // TODO: Remove
-          resp_json = json::parse(result);
+          resp_json = Processor->processSubscribe(*kc, req_json);
           if (resp_json.contains("error")) {  // Failure Case
             uint32_t code = resp_json["error"]["number"].as<unsigned int>();
             std::string reason = resp_json["error"]["reason"].as_string() +
@@ -495,9 +492,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         if (currentSubs.find(key) !=
             currentSubs.end()) {  // Path is currently subscribed
           req_json["subscriptionId"] = currentSubs[key];
-          auto result = Processor->processUnsubscribe(*kc, req_json);
-          resp_json = json::parse(result);
-          logger->Log(LogLevel::ERROR, result);  // TODO: Remove
+          resp_json = Processor->processUnsubscribe(*kc, req_json);
           if (resp_json.contains("error")) {     // Failure Case
             uint32_t code = resp_json["error"]["number"].as<unsigned int>();
             std::string reason = resp_json["error"]["reason"].as_string() +

@@ -23,7 +23,7 @@
 #include "VssCommandProcessor.hpp"
 #include "exception.hpp"
 
-string VssCommandProcessor::processUnsubscribe(KuksaChannel &channel,
+jsoncons::json VssCommandProcessor::processUnsubscribe(KuksaChannel &channel,
                                                jsoncons::json &request) {
   try {
     requestValidator->validateUnsubscribe(request);
@@ -80,9 +80,6 @@ string VssCommandProcessor::processUnsubscribe(KuksaChannel &channel,
 
     root["error"] = error;
     root["ts"] = JsonResponses::getTimeStamp();
-
-    std::stringstream ss;
-    ss << pretty_print(root);
-    return ss.str();
+    return root;
   }
 }

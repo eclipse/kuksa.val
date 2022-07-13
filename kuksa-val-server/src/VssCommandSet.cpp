@@ -29,7 +29,7 @@
 
 /** Implements the Websocket set request according to GEN2, with GEN1 backwards
  * compatibility **/
-std::string VssCommandProcessor::processSet2(KuksaChannel &channel,
+jsoncons::json VssCommandProcessor::processSet(KuksaChannel &channel,
                                              jsoncons::json &request) {
   try {
     requestValidator->validateSet(request);
@@ -138,8 +138,5 @@ std::string VssCommandProcessor::processSet2(KuksaChannel &channel,
   answer["action"] = "set";
   answer.insert_or_assign("requestId", request["requestId"]);
   answer["ts"] = JsonResponses::getTimeStamp();
-
-  std::stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
 }

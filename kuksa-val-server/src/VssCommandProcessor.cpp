@@ -56,7 +56,7 @@ VssCommandProcessor::~VssCommandProcessor() {
 }
 
 
-string VssCommandProcessor::processUpdateVSSTree(KuksaChannel& channel, jsoncons::json &request){
+jsoncons::json VssCommandProcessor::processUpdateVSSTree(KuksaChannel& channel, jsoncons::json &request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateVSSTree");
   
   try {
@@ -90,8 +90,7 @@ string VssCommandProcessor::processUpdateVSSTree(KuksaChannel& channel, jsoncons
 
     answer["error"] = error;
 
-    ss << pretty_print(answer);
-    return ss.str();
+    return answer;
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::ERROR, string(nopermission.what()));
     return JsonResponses::noAccess(request["requestId"].as<std::string>(), "updateVSSTree", nopermission.what());
@@ -100,11 +99,10 @@ string VssCommandProcessor::processUpdateVSSTree(KuksaChannel& channel, jsoncons
     return JsonResponses::malFormedRequest(request["requestId"].as<std::string>(), "get", string("Unhandled error: ") + e.what());
   }
 
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
 }
 
-string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
+jsoncons::json VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
   VSSPath path=VSSPath::fromVSS(request["path"].as_string());
 
   try {
@@ -137,14 +135,10 @@ string VssCommandProcessor::processGetMetaData(jsoncons::json &request) {
   } else {
     result["metadata"] = st;
   }
-
-  std::stringstream ss;
-  ss << pretty_print(result);
-
-  return ss.str();
+  return result;
 }
 
-string VssCommandProcessor::processUpdateMetaData(KuksaChannel& channel, jsoncons::json& request){
+jsoncons::json VssCommandProcessor::processUpdateMetaData(KuksaChannel& channel, jsoncons::json& request){
   logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processUpdateMetaData");
   VSSPath path=VSSPath::fromVSS(request["path"].as_string());
 
@@ -181,8 +175,7 @@ string VssCommandProcessor::processUpdateMetaData(KuksaChannel& channel, jsoncon
 
     answer["error"] = error;
 
-    ss << pretty_print(answer);
-    return ss.str();
+    return answer;
   } catch (noPermissionException &nopermission) {
     logger->Log(LogLevel::WARNING, string(nopermission.what()));
     return JsonResponses::noAccess(request["requestId"].as<string>(), "updateMetaData", nopermission.what());
@@ -191,12 +184,11 @@ string VssCommandProcessor::processUpdateMetaData(KuksaChannel& channel, jsoncon
     return JsonResponses::malFormedRequest(request["requestId"].as<string>(), "get", string("Unhandled error: ") + e.what());
   } 
 
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
   
 }
 
-string VssCommandProcessor::processAuthorize(KuksaChannel &channel,
+jsoncons::json VssCommandProcessor::processAuthorize(KuksaChannel &channel,
                                              const string & request_id,
                                              const string & token) {
   int ttl = tokenValidator->validate(channel, token);
@@ -213,10 +205,7 @@ string VssCommandProcessor::processAuthorize(KuksaChannel &channel,
     result["error"] = error;
     result["ts"] = JsonResponses::getTimeStamp();
 
-    std::stringstream ss;
-    ss << pretty_print(result);
-    return ss.str();
-
+    return result;
   } else {
     jsoncons::json result;
     result["action"] = "authorize";
@@ -224,49 +213,46 @@ string VssCommandProcessor::processAuthorize(KuksaChannel &channel,
     result["TTL"] = ttl;
     result["ts"] = JsonResponses::getTimeStamp();
 
-    std::stringstream ss;
-    ss << pretty_print(result);
-    return ss.str();
+    return result;
   }
 }
 
-string VssCommandProcessor::processQuery(const string &req_json,
+jsoncons::json VssCommandProcessor::processQuery(const string &req_json,
                                          KuksaChannel &channel) {
   jsoncons::json root;
-  string response;
+  jsoncons::json jresponse;
   try {
     root = jsoncons::json::parse(req_json);
     string action = root["action"].as<string>();
     logger->Log(LogLevel::VERBOSE, "Receive action: " + action);
 
     if (action == "get") {
-        response = processGet2(channel, root);
+        jresponse = processGet(channel, root);
     } 
     else if (action == "set") {
-        response = processSet2(channel, root);
+        jresponse = processSet(channel, root);
     }
     else if (action == "getMetaData") {
-        response = processGetMetaData(root);
+        jresponse = processGetMetaData(root);
     }
     else if (action == "updateMetaData") {
-        response = processUpdateMetaData(channel, root);
+        jresponse = processUpdateMetaData(channel, root);
     }
     else if (action == "authorize") {
       string token = root["tokens"].as<string>();
-      //string request_id = root["requestId"].as<int>();
       string request_id = root["requestId"].as<string>();
       logger->Log(LogLevel::VERBOSE, "VssCommandProcessor::processQuery: authorize query with token = "
            + token + " with request id " + request_id);
 
-      response = processAuthorize(channel, request_id, token);
+      jresponse = processAuthorize(channel, request_id, token);
     } 
     else if (action == "unsubscribe") {
-      response = processUnsubscribe(channel, root);
+      jresponse = processUnsubscribe(channel, root);
     } 
     else if (action == "subscribe") {
-      response = processSubscribe(channel, root);
+      jresponse = processSubscribe(channel, root);
     } else if (action == "updateVSSTree") {
-      response = processUpdateVSSTree(channel,root);
+      jresponse = processUpdateVSSTree(channel,root);
     } else {
       logger->Log(LogLevel::WARNING, "VssCommandProcessor::processQuery: Unknown action " + action);
       return JsonResponses::malFormedRequest("Unknown action requested", root.get_value_or<std::string>("requestId", "UNKNOWN"));
@@ -281,7 +267,7 @@ string VssCommandProcessor::processQuery(const string &req_json,
     logger->Log(LogLevel::WARNING, "JSON not an object error");
     return JsonResponses::malFormedRequest(e.what());
   }
-  return response;
+  return jresponse;
 }
 
 

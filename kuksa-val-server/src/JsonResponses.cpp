@@ -27,14 +27,11 @@ void malFormedRequest(std::string request_id, const std::string action,
   jsonResponse["error"] = error;
   jsonResponse["ts"] = getTimeStamp();
 }
-std::string malFormedRequest(std::string request_id, const std::string action,
+jsoncons::json malFormedRequest(std::string request_id, const std::string action,
                              std::string message) {
   jsoncons::json answer;
   malFormedRequest(request_id, action, message, answer);
-
-  std::stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
 }
 
 void malFormedRequest(std::string message, jsoncons::json& jsonResponse,
