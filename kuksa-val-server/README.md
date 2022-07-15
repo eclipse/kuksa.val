@@ -16,7 +16,7 @@ See [Supported Protocol](../doc/protocol/README.md) for a detailled overview of 
  - Built-in MQTT publisher
  - [Python viss client](../kuksa_viss_client) to interactively explore and modify the VISS data points and data structure
  - Multiple [example apps](../kuksa_apps) in different programming languages to communicate with different frameworks 
- - Multiple [feeders](../kuksa_feeders) to provide vehicle data for the `kuksa.val` server
+ - Multiple [feeders](../kuksa-feeders) to provide vehicle data for the `kuksa.val` server
  - Support most of data types, which is specified in [COVESA VSS data model](https://covesa.github.io/vehicle_signal_specification/rule_set/data_entry/data_types/).
 
 
@@ -136,7 +136,7 @@ The jwt tokens for testing can also be found under [kuksa_certificates/jwt](../k
 
 You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa_viss_client` can be found [here](../kuksa_viss_client). 
 
-Additionally, you can use the [example apps](../kuksa_apps) and [feeders](../kuksa_feeders) to handle vehicle data, interacting with `kuksa-val-server`.
+Additionally, you can use the [example apps](../kuksa_apps) and [feeders](../kuksa-feeders) to handle vehicle data, interacting with `kuksa-val-server`.
 
 ## Using kuksa.val with a gRPC Client
 Aditionally theres exists a experimental gRPC server. The easist way to test the server is the kuksa_viss_grpc_client.
