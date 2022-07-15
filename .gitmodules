@@ -7,3 +7,6 @@
 [submodule "3rd-party-libs/turtle"]
 	path = kuksa-val-server/3rd-party-libs/turtle
 	url = https://github.com/mat007/turtle.git
+[submodule "kuksa-feeders"]
+	path = kuksa-feeders
+	url = https://github.com/eclipse/kuksa.val.feeders.git

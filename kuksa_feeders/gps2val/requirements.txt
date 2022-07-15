@@ -1,2 +1,0 @@
-kuksa-viss-client
-gps

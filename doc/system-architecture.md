@@ -17,7 +17,7 @@ The following picture shows different kinds of possible KUKSA.val feeders
 
 ![Feeder options](./pictures/sysarch_feeders.svg)
 
-We assume running KUKSA.val on a vehicle computer. Some signals might originate in an embedded ECU only connected via CAN (e.g. ECU 1). Published data is received by the vehicle computer and can be mapped to the VSS data model by a feeder. The [DBC Feeder](../kuksa_feeders/dbc2val/) included in KUKSA.val allows mapping of data from a CAN bus based on a DBC description and some mapping rules.
+We assume running KUKSA.val on a vehicle computer. Some signals might originate in an embedded ECU only connected via CAN (e.g. ECU 1). Published data is received by the vehicle computer and can be mapped to the VSS data model by a feeder. The [DBC Feeder](../kuksa-feeders/dbc2val/) included in KUKSA.val allows mapping of data from a CAN bus based on a DBC description and some mapping rules.
 
 Other ECUs with Ethernet connectivity might publish data as SOME/IP services. Following the pattern of the CAN feeder, a SOME/IP feeder mapping data to the VSS model can be created.
 
