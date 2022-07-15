@@ -358,7 +358,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 		"path": "Vehicle.Speed",
 		"requestId": "8756"
 	})");
-    string response = commandProc->processQuery(get_request,channel);
+    jsoncons::json response = commandProc->processQuery(get_request,channel);
 
 //---------------------  Uint8 SET/GET TEST ------------------------------------
     json test_value_Uint8_boundary_low;
@@ -1007,9 +1007,8 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
                 "value" : "2345.0"
 	})");
 
-   string set_response = commandProc->processQuery(set_request,channel);
-   json set_response_json = json::parse(set_response);
-
+   auto set_response_json = commandProc->processQuery(set_request,channel);
+   
    json set_response_expected = json::parse(R"({
     "action": "set",
     "requestId": "8750"
@@ -1029,7 +1028,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(get_request,channel);
+   auto response_json = commandProc->processQuery(get_request,channel);
 
    json expected = json::parse(R"({
     "action": "get",
@@ -1039,8 +1038,6 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1066,7 +1063,7 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
     "action": "get",
@@ -1077,93 +1074,11 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
     }
     })");
 
-   json response_json = json::parse(response);
-
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
 }
-
-/* Multiset currently not supported. May be reintorduced in Gen2 */
-
-/*
-BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
-{
-   WsChannel channel;
-   channel.setConnID(1234);
-   string authReq(R"({
-		"action": "authorize",
-		"requestId": "87568"
-	})");
-   json authReqJson = json::parse(authReq);
-   authReqJson["tokens"] = AUTH_JWT;
-   commandProc->processQuery(authReqJson.as_string(),channel);
-
-   string set_request(R"({
-		"action": "set",
-		"path": "Vehicle.Chassis.Axle.*.Wheel.*.Tire.Temperature",
-		"requestId": "8750",
-                "value" : [{"Row1.Wheel.Right.Tire.Temperature":35}, {"Row1.Wheel.Left.Tire.Temperature":50}, {"Row2.Wheel.Right.Tire.Temperature":65}, {"Row2.Wheel.Left.Tire.Temperature":80}]
-	})");
-
-   string set_response = commandProc->processQuery(set_request,channel);
-   json set_response_json = json::parse(set_response);
-
-   json set_response_expected = json::parse(R"({
-    "action": "set",
-    "requestId": "8750"
-     }
-     )");
-
-
-   BOOST_TEST(set_response_json.contains("ts") == true);
-   // remove timestamp to match
-   set_response_json.erase("ts");
-
-   BOOST_TEST(set_response_json == set_response_expected);
-
-
-   string get_request(R"({
-		"action": "get",
-		"path": "Vehicle.Chassis.Axle.*.Wheel.*.Tire.Temperature",
-		"requestId": "8756"
-	})");
-
-   string response = commandProc->processQuery(get_request,channel);
-
-
-
-   json expected = json::parse(R"({
-    "action": "get",
-    "requestId": "8756",
-    "value": [
-        {
-            "Vehicle.Chassis.Axle.Row2.Wheel.Right.Tire.Temperature": 65
-        },
-        {
-            "Vehicle.Chassis.Axle.Row2.Wheel.Left.Tire.Temperature": 80
-        },
-        {
-            "Vehicle.Chassis.Axle.Row1.Wheel.Right.Tire.Temperature": 35
-        },
-        {
-            "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.Temperature": 50
-        }
-      ]
-    }
-    )");
-
-
-   json response_json = json::parse(response);
-
-   BOOST_TEST(response_json.contains("ts") == true);
-
-   // remove timestamp to match
-   response_json.erase("ts");
-   BOOST_TEST(response_json == expected);
-}
-*/
 
 
 BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
@@ -1183,15 +1098,13 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
                          "action":"get",
                          "error":{"message":"I can not find Signal.*.RPM1 in my db","number":"404","reason":"Path not found"},
                          "requestId":"8756"
                          })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1234,7 +1147,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
     "action": "get",
@@ -1244,8 +1157,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1288,7 +1199,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
     "action": "get",
@@ -1314,8 +1225,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
         {"path": "Vehicle.VehicleIdentification.vehicleinteriorType", "dp":{"value": "---"}}
         ]
     })");
-
-  json response_json = json::parse(response);
 
   verify_and_erase_timestamp(response_json);
   for (auto &  dataRes : response_json["data"].array_range()) {
@@ -1359,7 +1268,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
                    "action":"get",
@@ -1385,8 +1294,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
                         {"path": "Vehicle.VehicleIdentification.vehicleinteriorType", "dp":{"value": "---"}}
                         ]
         })");
-
-  json response_json = json::parse(response);
  
   verify_and_erase_timestamp(response_json);
   for (auto &  dataRes : response_json["data"].array_range()) {
@@ -1401,18 +1308,18 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
 /*
     Token looks like this.
 
-  {
-  "sub": "Example JWT",
-  "iss": "Eclipse kuksa",
+{
+  "sub": "kuksa.val",
+  "iss": "Eclipse KUKSA Dev",
   "admin": true,
   "iat": 1516239022,
-  "exp": 1609372800,
-  "kuksa-vss": {
-    "Vehicle.OBD.EngineSpeed": "r"
+  "exp": 1767225599,
+  "kuksa-vss":  {
+     "Vehicle.OBD.Speed": "r"
   }
 }
 */
-   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJyIn19.VDr_UU_efYVaotMSRs-Ga7xf1a7ArEb0oTfJixTR4ah9aXnXYNHL-f4N4YZQ1A4mX3YhdcxifgV2kE1XwXE0XBoYjydy9g8pZhPm-fMF3z9zTeWRhPBSSHYLgcJQRINChtipmn1RIQxeeEqDX3E0n4utb0HfNXcEDTOKSeP4sFygjiDyEJYl_zn1JoMWfV8HJ9beYgVybKyMRLkM7FsGqT-aUOVfdxhH3nQSGFleI-nzFh6fFIaVbNdZo9u4moeIcaoeZJLJEe2410-xTtByxp_fN0OTxntHbloLSRLjY8MxC1hu1Uhbxs5GKPfJDV7ZhhbULzqqiRMSGn13ELJO-yPEnaHV8NZ8V9U6My-rBkEGgVcwCsbyDu-i7hAP8fepFCpyYfmZkypXxrZQHj8idJ16SXHNzNLL4Q7uiXSwc9oPSRI8FcbEwk-Ul7sD-X7kUqfFukO49NGUdobc-JhVzsJl-eofwe0H0Rq3hme6Rj1kFjitLYU2SyZjUsYrrGpYrghahh7MfSjf2lqNi159wfYtZtopoBrbPmAJ3HnzWXYM2ai0kroELRCaHz4adodMtem4qTBGJoYgG7hAg1OxvnbOdYOD7yZ46-RxBGgaoWuxAnQRHsnGs4j0SaXRTVWvTBHg21tI6AHo4wwyfUD4pGEaxB3M3bEH9m2hWl4HZpk";
+   string AUTH_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJrdWtzYS52YWwiLCJpc3MiOiJFY2xpcHNlIEtVS1NBIERldiIsImFkbWluIjp0cnVlLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTc2NzIyNTU5OSwia3Vrc2EtdnNzIjp7IlZlaGljbGUuT0JELlNwZWVkIjoiciJ9fQ.UOuS6SrOaejHSweCVbs3CzcAXih9pI9gwJpwCbTGGXIHkiUk-o3aAdmooWcZ-eDWASIKXi6JVpaPwHQSTJzwmGJojG__fCm_pS6m494zmmMvydDqapz4WBbDY_o4VGEHMkaONnTzOK8uufkb7ejvhAWWn5d5n981n7OdCiWkDSf7VjhsbY11VC7KFXh62mHOIOE7inrqYQpu3EqCInnZyBomWxH90-a5FRBuoDo7FM0102C8GgoyZGsN6MEC_cSBiTQQgFUvEK_E4z_zVEH4SntufhZNhW0yS0cXEMz8xqaAeC1EckGypBRAhtUjlq6ixfqBs2C1RWWaZcBQiaYkB52BtSqAaJOkQBdKJG11w_-KkOYGjWdjcJLjZjdsXWgmyY7L4aqSnn0TtGk5Yt2MX-x3W6dDeEKOnlJtEFi8IpTCuhIlh6XAphZQuqhfTR6bVvW9R9o96iITW3dQiBcSu-t5hlHZslUem0IfxIGUqiNdkf1Q9PzbDStbvwmaXYwDyuQyNm8rz3rXzwsxkF9ooQSCI3-ECfr8AalmUtUGM2KAT5uO29M4EOWFvABvtNLUu8OMQQNkQt47r2tKSeaJrqrO7VAMRujRfCgqBSkazDzA5OMuTnuJhbo9p_m88-5dFlfCnRqaahySe26OndOZRdhHtl2srRYIUhbyhKtL8tg";
 
 
    KuksaChannel channel;
@@ -1423,23 +1330,21 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   string response=commandProc_auth->processQuery(authReqJson.as_string(),channel);
+   auto response_json = commandProc_auth->processQuery(authReqJson.as_string(),channel);
    
    string request(R"({
 		"action": "get",
-		"path": "Vehicle.OBD.Speed",
+		"path": "Vehicle.Speed",
 		"requestId": "8756"
 	})");
 
-   response = commandProc_auth->processQuery(request,channel);
-
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"Insufficient read access to Vehicle.OBD.Speed","number":"403","reason":"Forbidden"},
+                   "error":{"message":"Insufficient read access to Vehicle.Speed","number":"403","reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
-   json response_json = json::parse(response);
+   response_json = commandProc_auth->processQuery(request,channel);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1479,15 +1384,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
    json expected = json::parse(R"({
                    "action":"get",
                    "error":{"message":"Insufficient read access to Vehicle/OBD/EngineSpeed","number":"403","reason":"Forbidden"},
                    "requestId":"8756"
         })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1528,7 +1431,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action": "get",
@@ -1538,8 +1441,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1582,7 +1483,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action": "get",
@@ -1592,8 +1493,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1635,7 +1534,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action": "get",
@@ -1645,8 +1544,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1688,15 +1585,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
    json expected = json::parse(R"({
                    "action":"get",
                    "error":{"message":"Insufficient read access to Vehicle.OBD.EngineSpeed","number":"403","reason":"Forbidden"},
                    "requestId":"8756"
         })");
-
-   json response_json = json::parse(response);
    
    verify_and_erase_timestamp(response_json);
 
@@ -1737,15 +1632,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_wildcard_req
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"get",
     "error":{"message":"Insufficient read access to Vehicle.OBD.*","number":"403","reason":"Forbidden"},
     "requestId":"8756"
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1786,15 +1679,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_branch_path_
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"get",
     "error":{"message":"Insufficient read access to Vehicle.OBD","number":"403","reason":"Forbidden"},
     "requestId":"8756"
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1835,7 +1726,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action": "get",
@@ -1845,8 +1736,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1891,14 +1780,12 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"set",
     "requestId":"8756"
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1940,15 +1827,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"set",
     "error":{"message":"No write access to Vehicle.OBD.EngineSpeed","number":"403","reason":"Forbidden"},
     "requestId":"8756"
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1990,14 +1875,12 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"set",
     "requestId":"8756"
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -2011,7 +1894,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 		"requestId": "8756"
 	})");
 
-   string get_response = commandProc->processQuery(get_request,channel);
+   auto get_response_json = commandProc->processQuery(get_request,channel);
 
   json get_expected = json::parse(R"({
     "action": "get",
@@ -2021,8 +1904,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
         "dp":{"value": "345.0"}
     }
     })");
-
-   json get_response_json = json::parse(get_response);
 
    verify_and_erase_timestamp(get_response_json);
    verify_and_erase_timestamp(get_response_json["data"]["dp"]);
@@ -2066,14 +1947,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
-/*
-  json expected = json::parse(R"({
-    "action":"set",
-    "requestId":"8756"
-    })");
-    */
    //Current (12/2020) in server is, that "branch" node permission does not grant the right to modify
    //childs. So we test accordingly 
    json expected = json::parse(R"({
@@ -2082,9 +1957,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
     "requestId":"8756"
     })");
     
-
-   json response_json = json::parse(response);
-
    verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
@@ -2097,7 +1969,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 		"requestId": "8757"
 	})");
    
-   string get_response = commandProc_auth->processQuery(get_request,channel);
+   auto get_response_json = commandProc_auth->processQuery(get_request,channel);
   // because only write access in the token.
   // Also: Current (12/2020) in server is, that "branch" node permission does not grant the right to modify
   // childs. So we test accordingly 
@@ -2107,8 +1979,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
     "error":{"message":"Insufficient read access to Vehicle.OBD.Speed","number":"403","reason":"Forbidden"},
     "requestId": "8757"
     })");
-
-   json get_response_json = json::parse(get_response);
 
    verify_and_erase_timestamp(get_response_json);
 
@@ -2155,8 +2025,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
 		"requestId": "8778"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
-   json response_json = json::parse(response);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
      "action":"subscribe",
@@ -2184,8 +2053,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
    json temp_unsubreq = json::parse(request_unsub);
    temp_unsubreq["subscriptionId"] = subID;
 
-   string unsub_response = commandProc->processQuery(temp_unsubreq.as_string(),channel);
-   json unsub_response_json = json::parse(unsub_response);
+   auto unsub_response_json = commandProc->processQuery(temp_unsubreq.as_string(),channel);
 
    BOOST_TEST(unsub_response_json.contains("subscriptionId") == true);
 
@@ -2231,8 +2099,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   string response=commandProc->processQuery(authReqJson.as_string(),channel);
-   json response_json=json::parse(response);
+   auto response_json=commandProc->processQuery(authReqJson.as_string(),channel);
    BOOST_TEST(response_json.contains("action") == true);
    BOOST_TEST(response_json["action"].as<std::string>() == "authorize");
 
@@ -2243,8 +2110,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
 		"requestId": "8778"
 	})");
 
-   response = commandProc->processQuery(request,channel);
-   response_json = json::parse(response);
+   response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
      "action":"subscribe",
@@ -2272,8 +2138,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
    json temp_unsubreq = json::parse(request_unsub);
    temp_unsubreq["subscriptionId"] = subID;
 
-   string unsub_response = commandProc->processQuery(temp_unsubreq.as_string(),channel);
-   json unsub_response_json = json::parse(unsub_response);
+   auto unsub_response_json = commandProc->processQuery(temp_unsubreq.as_string(),channel);
 
    // assert subid.
    BOOST_TEST(unsub_response_json.contains("subscriptionId") == true);
@@ -2330,8 +2195,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission)
 		"requestId": "8778"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
-   json response_json = json::parse(response);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
    json expected = json::parse(R"({
                    "action":"subscribe",
@@ -2381,8 +2245,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath)
 		"requestId": "8778"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
-   json response_json = json::parse(response);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
    json expected = json::parse(R"({
                    "action":"subscribe",
@@ -2429,7 +2292,7 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
                    "requestId": "8778"
                    })");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
    
     json expected = json::parse(R"({
                                 "action": "subscribe",
@@ -2437,7 +2300,6 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
                                 })");
 
 
-    json response_json = json::parse(response);
     json request_json = json::parse(request);
     BOOST_TEST(response_json.contains("subscriptionId") == true);
     response_json.erase("subscriptionId");
@@ -2473,7 +2335,7 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   string res=commandProc_auth->processQuery(authReqJson.as_string(),channel);
+   auto res=commandProc_auth->processQuery(authReqJson.as_string(),channel);
 
     string request(R"({
                    "action": "subscribe",
@@ -2481,15 +2343,13 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
                    "requestId": "4243"
                    })");
 
-    string response = commandProc_auth->processQuery(request,channel);
+    auto response_json = commandProc_auth->processQuery(request,channel);
   
     json expected = json::parse(R"({
                                 "action": "subscribe",
                                 "requestId": "4243"
                                 })");
 
-
-    json response_json = json::parse(response);
     json request_json = json::parse(request);
     // TEST response for parameters
     BOOST_TEST(response_json.contains("subscriptionId") == true);
@@ -2540,8 +2400,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard)
                    "requestId": "878787"
                    })");
 
-    string response = commandProc->processQuery(request,channel);
-    json response_json = json::parse(response);
+    auto response_json = commandProc->processQuery(request,channel);
 
     json expected = json::parse(R"({
                                 "action":"subscribe",

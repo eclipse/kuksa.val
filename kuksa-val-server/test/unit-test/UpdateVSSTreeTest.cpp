@@ -171,8 +171,7 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_add) {
       jsoncons::json::parse(getMetadataResponseString);
 
   // run updateVSSTree
-  auto resStr = processor->processQuery(updateRequest.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(updateRequest.as_string(), channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));
@@ -182,8 +181,7 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_add) {
   BOOST_TEST(res == expectedupdateVSSTreeAnswer);
 
   // verify metadata
-  resStr = processor->processQuery(getMetadataRequestString, channel);
-  res = json::parse(resStr);
+  res = processor->processQuery(getMetadataRequestString, channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));
@@ -268,16 +266,13 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_apply_default) {
       jsoncons::json::parse(getValueResponseString);
 
   // run updateVSSTree
-  auto resStr = processor->processQuery(updateRequest.as_string(), channel);
-  auto res = json::parse(resStr);
-
+  auto res = processor->processQuery(updateRequest.as_string(), channel);
 
   verify_and_erase_timestamp(res);
   BOOST_TEST(res == expectedupdateVSSTreeAnswer);
 
   // verify metadata
-  resStr = processor->processQuery(getValueString, channel);
-  res = json::parse(resStr);
+  res = processor->processQuery(getValueString, channel);
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
@@ -358,8 +353,7 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_override) {
       jsoncons::json::parse(getMetadataResponseString);
 
   // run updateVSSTree
-  auto resStr = processor->processQuery(updateRequest.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(updateRequest.as_string(), channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));
@@ -369,8 +363,7 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_override) {
   BOOST_TEST(res == expectedupdateVSSTreeAnswer);
 
   // verify metadata
-  resStr = processor->processQuery(getMetadataRequestString, channel);
-  res = json::parse(resStr);
+  res = processor->processQuery(getMetadataRequestString, channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));
@@ -410,8 +403,7 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_brokenrequest) {
       jsoncons::json::parse(expectedupdateVSSTreeAnswerString);
 
   // run updateVSSTree
-  auto resStr = processor->processQuery(brokenUpdateVSSTreeRequest, channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(brokenUpdateVSSTreeRequest, channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));
