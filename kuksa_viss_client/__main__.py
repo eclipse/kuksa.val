@@ -46,6 +46,12 @@ class TestClient(Cmd):
                 childVssTree = childVssTree[path]
             elif 'children' in childVssTree and path in childVssTree['children']:
                 childVssTree = childVssTree['children'][path]
+            else: 
+                # This else-branch is reached when one of the path components is invalid
+                # In that case stop parsing further and return an empty tree
+                # Autocompletion can't help here.
+                childVssTree={}
+                break
 
         if 'children' in childVssTree:
                 childVssTree = childVssTree['children']
@@ -87,7 +93,6 @@ class TestClient(Cmd):
 
                 if 'children' in child:
                     self.pathCompletionItems.append(CompletionItem(prefix + key+seperator, "Children of branch "+prefix+key))
-
 
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
