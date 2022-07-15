@@ -64,9 +64,7 @@ jsoncons::json VssCommandProcessor::processUnsubscribe(KuksaChannel &channel,
     answer["subscriptionId"] = boost::uuids::to_string(subscribeID);
     answer["ts"] = JsonResponses::getTimeStamp();
 
-    std::stringstream ss;
-    ss << pretty_print(answer);
-    return ss.str();
+    return answer;
 
   } else {
     jsoncons::json root;
