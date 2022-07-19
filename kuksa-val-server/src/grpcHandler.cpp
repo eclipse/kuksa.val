@@ -47,9 +47,12 @@ void grpcHandler::grpc_send_object_to_stream(
   resp.mutable_status()->set_statuscode(200);
   grpcHandler::grpc_fill_value(logger, vssdatatype, data,
                                resp.mutable_values());
-  // resp.mutable_values()->set_valuefloat(0.0);
-  stream->Write(resp);
-  logger->Log(LogLevel::VERBOSE, "Sending");
+  try { 
+    stream->Write(resp);
+  }
+  catch (std::exception& e) {
+    logger->Log(LogLevel::WARNING, "Error pushing data to GRPC subscriber: "+string(e.what()));
+  }
 }
 
 void grpcHandler::grpc_fill_value(std::shared_ptr<ILogger> logger,
@@ -131,6 +134,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
  private:
   std::shared_ptr<ILogger> logger;
   std::shared_ptr<IVssDatabase> database;
+  std::shared_ptr<ISubscriptionHandler> subhandler;
 
   std::unordered_map<grpcSession_t, KuksaChannel, GrpcSessionHasher>
       grpcSessionMap;
@@ -198,9 +202,10 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
 
  public:
   RequestServiceImpl(std::shared_ptr<ILogger> _logger,
-                     std::shared_ptr<IVssDatabase> _database) {
+                     std::shared_ptr<IVssDatabase> _database,  std::shared_ptr<ISubscriptionHandler> _subhandler) {
     logger = _logger;
     database = _database;
+    subhandler = _subhandler;
   }
 
   Status get(ServerContext* context, const kuksa::GetRequest* request,
@@ -426,8 +431,10 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
       return Status::OK;
     }
 
+    logger->Log(LogLevel::VERBOSE, "valid Subs is: "+std::to_string(kc->grpcSubsMap->size()));
+
+
     jsoncons::json req_json, resp_json;
-    int validSubs = 0;
     std::unordered_map<subscription_keys_t, std::string, SubscriptionKeyHasher>
         currentSubs;
 
@@ -467,7 +474,6 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
             response.mutable_status()->set_statusdescription(
                 "Subscribe request successfully processed");
             stream->Write(response);
-            validSubs += 1;
 
             subscription_keys_t key = subscription_keys_t(path, attr);
             currentSubs[key] = resp_json["subscriptionId"].as_string();
@@ -480,6 +486,8 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
           logger->Log(LogLevel::ERROR, e.what());
         }
       } else {  // Send a unsubscribe request
+        logger->Log(LogLevel::VERBOSE, "Unsubscribe VALID Subs is: "+std::to_string(kc->grpcSubsMap->size()));
+
         req_json["action"] = "unsubscribe";
 
         std::string path = request.path();
@@ -506,8 +514,6 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
             response.mutable_status()->set_statusdescription(reason);
             stream->Write(response);
           } else {  // Success Case
-
-            validSubs -= 1;
             auto subsMap = (kc->grpcSubsMap).get();
             subsMap->erase(boost::uuids::string_generator()(currentSubs[key]));
             currentSubs.erase(key);
@@ -525,8 +531,20 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         }
       }
 
-      if (validSubs <= 0) break;
+      if (kc->grpcSubsMap->size() <= 0) {
+        logger->Log(LogLevel::VERBOSE, "Last valid subscription gone");
+        break;
+      }
     }
+
+    //We need to clean up any remaining subscriptions (in case the channel was not closed
+    //orderly by unsubscribing the last remaingin subscription, but rather by a client 
+    //error/shutdown or network disconnection)
+    logger->Log(LogLevel::VERBOSE, "GRPC bidirectional channel closed");
+      logger->Log(LogLevel::VERBOSE, "On close VALID Subs is: "+std::to_string(kc->grpcSubsMap->size()));
+
+    subhandler->unsubscribeAll(*kc);
+    kc->grpcSubsMap->clear();
     return Status::OK;
   }
 
@@ -558,10 +576,11 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
 
 void grpcHandler::RunServer(std::shared_ptr<VssCommandProcessor> Processor,
                             std::shared_ptr<IVssDatabase> database,
+                            std::shared_ptr<ISubscriptionHandler> subhandler_,
                             std::shared_ptr<ILogger> logger_,
                             std::string certPath, bool allowInsecureConn) {
   string server_address("0.0.0.0:50051");
-  RequestServiceImpl service(logger_, database);
+  RequestServiceImpl service(logger_, database, subhandler_);
 
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();

@@ -198,7 +198,7 @@ void* SubscriptionHandler::subThreadRunner() {
         // check for subscriptionID in channel
         auto handle = channel.grpcSubsMap->find(std::get<0>(newSub));
         if (handle == channel.grpcSubsMap->end()) {
-          logger->Log(LogLevel::WARNING, "No subscription for path");
+          logger->Log(LogLevel::WARNING, "Subscription thread: No subscription for requested path in GRPC");
           continue;
         }
         grpcHandler::grpc_send_object_to_stream(logger, vssdatatype, answer,

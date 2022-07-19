@@ -45,7 +45,7 @@ class grpcHandler{
        public:
         grpcHandler();
         virtual ~grpcHandler();
-        static void RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::shared_ptr<IVssDatabase> database, std::shared_ptr<ILogger> logger_, std::string certPath, bool allowInsecureConn);   
+        static void RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::shared_ptr<IVssDatabase> database, std::shared_ptr<ISubscriptionHandler> _subhandler, std::shared_ptr<ILogger> logger_, std::string certPath, bool allowInsecureConn);   
         static void read (const std::string& filename, std::string& data); 
         std::shared_ptr<ILogger> getLogger() {
           return this->logger_;
