@@ -290,7 +290,6 @@ class KuksaGrpcComm:
 
                         call = clientStub.subscribe(iterator(cv, requestObj), metadata=md)
                         async for resp in call:        
-                            print(resp)                    
                             if resp.HasField("values"):
                                 callback(MessageToJson(resp))  
                             else:
