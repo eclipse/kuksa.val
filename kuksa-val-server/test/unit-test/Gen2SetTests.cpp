@@ -123,9 +123,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -172,9 +171,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Array) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -210,9 +208,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -245,9 +242,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -292,10 +288,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -341,10 +335,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -390,10 +382,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -426,8 +416,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
     .returns(false);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
   verify_and_erase_timestamp(res);

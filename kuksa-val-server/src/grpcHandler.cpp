@@ -410,6 +410,9 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
                    ServerReaderWriter<SubscribeResponse, SubscribeRequest>*
                        stream) override {
     stringstream msg;
+    SubscribeRequest request;
+    SubscribeResponse response;
+
     msg << "gRPC subscribe invoked"
         << " by " << context->peer();
     logger->Log(LogLevel::INFO, msg.str());
@@ -417,6 +420,9 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     // Check if authorized and get the corresponding KuksaChannel
     KuksaChannel* kc = authChecker(context);
     if (kc == NULL) {
+      response.mutable_status()->set_statuscode(404);
+      response.mutable_status()->set_statusdescription("No Authorization!.");
+      stream->Write(response);
       return Status::OK;
     }
 
@@ -424,8 +430,6 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     int validSubs = 0;
     std::unordered_map<subscription_keys_t, std::string, SubscriptionKeyHasher>
         currentSubs;
-    SubscribeRequest request;
-    SubscribeResponse response;
 
     // Keep reading from the stream till it terminates
     while (stream->Read(&request)) {

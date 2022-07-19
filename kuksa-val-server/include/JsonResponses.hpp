@@ -28,13 +28,13 @@ namespace JsonResponses {
                         std::string message,
                         jsoncons::json& jsonResponse);
 
-  std::string malFormedRequest(std::string message, std::string requestId="UNKNOWN");
+  jsoncons::json malFormedRequest(std::string message, std::string requestId="UNKNOWN");
   
   void malFormedRequest(std::string message,
                         jsoncons::json& jsonResponse, std::string requesId="UNKNOWN");
 
   /** A API call requested a non-existant path */
-  std::string pathNotFound(std::string request_id,
+  jsoncons::json pathNotFound(std::string request_id,
                            const std::string action,
                            const std::string path);
 
@@ -43,7 +43,7 @@ namespace JsonResponses {
                     const std::string path,
                     jsoncons::json& jsonResponse);
 
-  std::string noAccess(std::string request_id,
+  jsoncons::json noAccess(std::string request_id,
                        const std::string action,
                        std::string message);
 
@@ -52,7 +52,7 @@ namespace JsonResponses {
                 std::string message,
                 jsoncons::json& jsonResponse);
 
-  std::string valueOutOfBounds(std::string request_id,
+  jsoncons::json valueOutOfBounds(std::string request_id,
                                const std::string action,
                                const std::string message);
 

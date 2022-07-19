@@ -131,9 +131,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
@@ -172,9 +171,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON) {
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
@@ -207,9 +205,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Invalid_JSON_NoRequestID) {
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
 
@@ -237,9 +234,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_NonExistingPath) {
   JsonResponses::pathNotFound(requestId, "get", path, jsonPathNotFound);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   BOOST_TEST(res == jsonPathNotFound);
 }
@@ -298,9 +294,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
@@ -366,9 +361,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
@@ -400,9 +394,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_NonExisting) {
   JsonResponses::pathNotFound(requestId, "get", path, jsonPathNotFound);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   BOOST_TEST(res == jsonPathNotFound);
 }
@@ -432,8 +425,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_noPermissionException) {
     .returns(false);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -493,9 +485,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
   verify_and_erase_timestamp(res["data"]["dp"]);
@@ -510,8 +501,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
       .once()
       .with(mock::any, vss_path)
       .returns(true);
-  resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  res = json::parse(resStr);
+  res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   verify_and_erase_timestamp(res);
   verify_and_erase_timestamp(res["data"]["dp"]);

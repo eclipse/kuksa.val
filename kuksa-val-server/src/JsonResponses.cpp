@@ -45,13 +45,10 @@ void malFormedRequest(std::string message, jsoncons::json& jsonResponse,
   jsonResponse["requestId"] = requestId;
   jsonResponse["ts"] = getTimeStamp();
 }
-std::string malFormedRequest(std::string message, std::string requestId) {
+jsoncons::json malFormedRequest(std::string message, std::string requestId) {
   jsoncons::json answer;
   malFormedRequest(message, answer, requestId);
-
-  std::stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
 }
 
 /** A API call requested a non-existant path */
@@ -66,14 +63,11 @@ void pathNotFound(std::string request_id, const std::string action,
   jsonResponse["error"] = error;
   jsonResponse["ts"] = getTimeStamp();
 }
-std::string pathNotFound(std::string request_id, const std::string action,
+jsoncons::json pathNotFound(std::string request_id, const std::string action,
                          const std::string path) {
   jsoncons::json answer;
   pathNotFound(request_id, action, path, answer);
-
-  std::stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
 }
 
 void noAccess(std::string request_id, const std::string action,
@@ -87,14 +81,11 @@ void noAccess(std::string request_id, const std::string action,
   jsonResponse["error"] = error;
   jsonResponse["ts"] = getTimeStamp();
 }
-std::string noAccess(std::string request_id, const std::string action,
+jsoncons::json noAccess(std::string request_id, const std::string action,
                      std::string message) {
   jsoncons::json answer;
   noAccess(request_id, action, message, answer);
-
-  std::stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
 }
 
 void valueOutOfBounds(std::string request_id, const std::string action,
@@ -108,14 +99,11 @@ void valueOutOfBounds(std::string request_id, const std::string action,
   jsonResponse["error"] = error;
   jsonResponse["ts"] = getTimeStamp();
 }
-std::string valueOutOfBounds(std::string request_id, const std::string action,
+jsoncons::json valueOutOfBounds(std::string request_id, const std::string action,
                              const std::string message) {
   jsoncons::json answer;
   valueOutOfBounds(request_id, action, message, answer);
-
-  std::stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
 }
 
 /** Return an extended ISO8601 UTC timestamp according to W3C guidelines

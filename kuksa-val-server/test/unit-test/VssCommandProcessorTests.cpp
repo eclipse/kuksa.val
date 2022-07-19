@@ -113,8 +113,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
     .returns(std::list<VSSPath>());
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  jsoncons::json res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -172,8 +171,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
     .throws(std::exception());
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -225,8 +223,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
     .throws(noPermissionException("Insufficient read access to " + path));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -291,8 +288,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
     .returns(jsonSignalData);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
   verify_and_erase_timestamp(res);
@@ -341,8 +337,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
     .returns(std::list<VSSPath>{});
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -396,8 +391,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
     .with(vsspath).returns(false);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -465,8 +459,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
     .throws(outOfBoundException(""));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -524,8 +517,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
     .throws(noPermissionException(""));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -588,8 +580,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
     .throws(std::exception());
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -651,8 +642,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
     .with(vsspath, "value", mock::any).returns(jsonSignalValue);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -705,8 +695,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_InvalidPath_Shall_Retur
     .with(vsspath).returns(false);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -763,8 +752,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Sensor_Shall_ReturnErro
   jsoncons::json jsonValue = jsonSetRequestForSignal["targetValue"];
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -823,8 +811,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Actor_Shall_Work)
   jsoncons::json jsonValue = jsonSetRequestForSignal["targetValue"];
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -874,8 +861,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
     .returns(subscriptionId);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
 
@@ -925,8 +912,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
     .throws(noPathFoundonTree(path));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
 
@@ -969,8 +956,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
     .throws(noPermissionException(""));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -1013,8 +999,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
     .throws(noPathFoundonTree(path));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1058,8 +1044,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
     .throws(genException(path));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
 
@@ -1102,8 +1088,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
     .throws(std::exception());
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
 
@@ -1152,8 +1138,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
     .returns(0);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1201,8 +1187,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
     .returns(1);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1250,8 +1236,8 @@ BOOST_AUTO_TEST_CASE(Given_MalformedUUD_In_Unsubscribe)
     .returns(1);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1302,8 +1288,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
     .returns(jsonMetadata);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetMetaRequest.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetMetaRequest.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1354,8 +1340,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
     .returns(ttl);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonAuthRequest.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonAuthRequest.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1406,8 +1392,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
     .returns(ttl);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonAuthRequest.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonAuthRequest.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1443,8 +1429,8 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   //////////////////////
   // check empty request
-  auto resStr = processor->processQuery(jsonRequest.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonRequest.as_string(), channel);
+
 
   BOOST_TEST(res.contains("ts"));
   BOOST_TEST(res["ts"].is_string());
@@ -1455,9 +1441,8 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   //////////////////////
   /// check request with only get action
   jsonRequest["action"] = "get";
-  resStr = processor->processQuery(jsonRequest.as_string(), channel);
-  res = json::parse(resStr);
-
+  res = processor->processQuery(jsonRequest.as_string(), channel);
+  
   jsonValueErr["message"] = "Key not found: 'path'";
   jsonExpected["error"] = jsonValueErr;
 
@@ -1470,8 +1455,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   //////////////////////
   /// check request with added path
   jsonRequest["path"] = path;
-  resStr = processor->processQuery(jsonRequest.as_string(), channel);
-  res = json::parse(resStr);
+  res = processor->processQuery(jsonRequest.as_string(), channel);
 
   jsonValueErr["message"] = "Schema error: #: Required property \"requestId\" not found";
 
@@ -1490,8 +1474,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonRequest["requestId"] = 1;
   jsonRequest["action"] = "nothing";
 
-  resStr = processor->processQuery(jsonRequest.as_string(), channel);
-  res = json::parse(resStr);
+  res = processor->processQuery(jsonRequest.as_string(), channel);
 
   jsonValueErr["message"] = "Unknown action requested";
   jsonExpected["error"] = jsonValueErr;
@@ -1508,8 +1491,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   //////////////////////
   /// check random string as request
-  resStr = processor->processQuery("random string P{ }", channel);
-  res = json::parse(resStr);
+  res = processor->processQuery("random string P{ }", channel);
 
   jsonValueErr["message"] = "";
   jsonExpected["error"] = jsonValueErr;
@@ -1525,8 +1507,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   //////////////////////
   /// check empty JSON
-  resStr = processor->processQuery("{ }", channel);
-  res = json::parse(resStr);
+  res = processor->processQuery("{ }", channel);
 
   jsonValueErr["message"] = "";
   jsonExpected["error"] = jsonValueErr;
@@ -1540,13 +1521,12 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   //////////////////////
   /// check malformed JSON
-  resStr = processor->processQuery("{ \"action\": asdasd, }", channel);
-  res = json::parse(resStr);
+  res = processor->processQuery("{ \"action\": asdasd, }", channel);
 
   jsonValueErr["message"] = "";
   jsonExpected["error"] = jsonValueErr;
 
-   BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res.contains("ts"));
   BOOST_TEST(res["ts"].is_string());
   jsonExpected["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
 
