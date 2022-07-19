@@ -97,7 +97,6 @@ class TestClient(Cmd):
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
     def subscribeCallback(self, path, attr, resp):
-        print(path, attr)
         self.subscribeFileDesc[(path,attr)].write(resp + "\n")
         self.subscribeFileDesc[(path,attr)].flush()
 
