@@ -47,18 +47,18 @@ void grpcHandler::grpc_send_object_to_stream(
   resp.mutable_status()->set_statuscode(200);
   grpcHandler::grpc_fill_value(logger, vssdatatype, data,
                                resp.mutable_values());
-  try { 
+  try {
     stream->Write(resp);
-  }
-  catch (std::exception& e) {
-    logger->Log(LogLevel::WARNING, "Error pushing data to GRPC subscriber: "+string(e.what()));
+  } catch (std::exception& e) {
+    logger->Log(LogLevel::WARNING,
+                "Error pushing data to GRPC subscriber: " + string(e.what()));
   }
 }
 
-void grpcHandler::grpc_fill_value(std::shared_ptr<ILogger> logger,
-                                  const std::string& vssdatatype,
-                                  const jsoncons::json& data,
-                                  kuksa::Value* grpcvalue, const std::string& attr) {
+void grpcHandler::grpc_fill_value(
+    [[maybe_unused]] std::shared_ptr<ILogger> logger,
+    const std::string& vssdatatype, const jsoncons::json& data,
+    kuksa::Value* grpcvalue, const std::string& attr) {
   if ((vssdatatype == "uint8") || (vssdatatype == "uint16") ||
       (vssdatatype == "uint32")) {
     grpcvalue->set_valueuint32(data["data"]["dp"][attr].as<uint32_t>());
@@ -136,9 +136,21 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
   std::shared_ptr<IVssDatabase> database;
   std::shared_ptr<ISubscriptionHandler> subhandler;
 
+  // We need to maps to store session information (KUKSA Channels).
+  //  The generic one grpcSessionMap identifes the remote peer and can be
+  // used for simple RPCs
   std::unordered_map<grpcSession_t, KuksaChannel, GrpcSessionHasher>
       grpcSessionMap;
+  // when going into bidirectional streaming mode, as done bei subscription,
+  // every call to that RPC gets a different GRPC context. Upon end of that
+  // context any subscriptions from this context (tracked in KuksaChannel) need
+  // to be cleared, but NOT subscriptions from other context, therefore we
+  // need a KuksaChannel for each subscription context
+  std::unordered_map<uint64_t, std::shared_ptr<KuksaChannel>>
+      grpcSubscribeSessionMap;
+
   mutable std::mutex grpcSessionMapAccess;
+  mutable std::mutex grpcSubscribeSessionMapAccess;
 
   /* Internal helper function to authorize the session
    *  Will create and assign a KuksaChannel object to the session.
@@ -165,7 +177,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     auto Processor = handler.getGrpcProcessor();
     auto resJson = Processor->processAuthorize(
         *newChannel, boost::uuids::to_string(uuid), token);
-    
+
     if (!resJson.contains("error")) {  // Success case
       grpcSession_t session = grpcSession(peer, uuid);
       std::unique_lock<std::mutex> lock(grpcSessionMapAccess);
@@ -200,9 +212,38 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     return kc;
   }
 
+  KuksaChannel* getKuksaChannelForSubscriptionContext(ServerContext* context) {
+    KuksaChannel* kc = NULL;
+    uint64_t key = (uint64_t)context;
+    std::unique_lock<std::mutex> lock(grpcSubscribeSessionMapAccess);
+    // check in our map
+    std::unordered_map<uint64_t, std::shared_ptr<KuksaChannel>>::const_iterator
+        got = grpcSubscribeSessionMap.find(key);
+
+    if (got != grpcSubscribeSessionMap.end()) {  // found
+      return got->second.get();
+    }
+
+    // need to create from base
+    kc = authChecker(context);
+    if (kc == NULL) {  // never authorized
+      return kc;
+    }
+
+    // create new subscribe session Channel
+    std::shared_ptr<KuksaChannel> newChannel = std::make_shared<KuksaChannel>();
+    (*newChannel) = *kc;
+    newChannel->setConnID(key);
+    newChannel->grpcSubsMap = std::make_shared<gRPCSubscriptionMap_t>();
+    grpcSubscribeSessionMap[key] = newChannel;
+
+    return newChannel.get();
+  }
+
  public:
   RequestServiceImpl(std::shared_ptr<ILogger> _logger,
-                     std::shared_ptr<IVssDatabase> _database,  std::shared_ptr<ISubscriptionHandler> _subhandler) {
+                     std::shared_ptr<IVssDatabase> _database,
+                     std::shared_ptr<ISubscriptionHandler> _subhandler) {
     logger = _logger;
     database = _database;
     subhandler = _subhandler;
@@ -262,7 +303,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         } else {
           resJson = Processor->processGetMetaData(req_json);
         }
-        
+
         if (resJson.contains("error")) {  // Failure Case
           uint32_t code = resJson["error"]["number"].as<unsigned int>();
           std::string reason = resJson["error"]["reason"].as_string() + " " +
@@ -287,7 +328,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
               logger->Log(LogLevel::WARNING, ss.str());
             }
 
-            grpcHandler::grpc_fill_value(logger, datatype, resJson,val , attr);
+            grpcHandler::grpc_fill_value(logger, datatype, resJson, val, attr);
 
             val->mutable_timestamp()->set_seconds(
                 resJson["data"]["dp"]["ts_s"].as<uint64_t>());
@@ -423,16 +464,13 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
     logger->Log(LogLevel::INFO, msg.str());
 
     // Check if authorized and get the corresponding KuksaChannel
-    KuksaChannel* kc = authChecker(context);
+    KuksaChannel* kc = getKuksaChannelForSubscriptionContext(context);
     if (kc == NULL) {
       response.mutable_status()->set_statuscode(404);
       response.mutable_status()->set_statusdescription("No Authorization!.");
       stream->Write(response);
       return Status::OK;
     }
-
-    logger->Log(LogLevel::VERBOSE, "valid Subs is: "+std::to_string(kc->grpcSubsMap->size()));
-
 
     jsoncons::json req_json, resp_json;
     std::unordered_map<subscription_keys_t, std::string, SubscriptionKeyHasher>
@@ -485,9 +523,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
         } catch (std::exception& e) {
           logger->Log(LogLevel::ERROR, e.what());
         }
-      } else {  // Send a unsubscribe request
-        logger->Log(LogLevel::VERBOSE, "Unsubscribe VALID Subs is: "+std::to_string(kc->grpcSubsMap->size()));
-
+      } else {  // Send a unsubscribe request∏
         req_json["action"] = "unsubscribe";
 
         std::string path = request.path();
@@ -505,7 +541,7 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
             currentSubs.end()) {  // Path is currently subscribed
           req_json["subscriptionId"] = currentSubs[key];
           resp_json = Processor->processUnsubscribe(*kc, req_json);
-          if (resp_json.contains("error")) {     // Failure Case
+          if (resp_json.contains("error")) {  // Failure Case
             uint32_t code = resp_json["error"]["number"].as<unsigned int>();
             std::string reason = resp_json["error"]["reason"].as_string() +
                                  " " +
@@ -537,11 +573,12 @@ class RequestServiceImpl final : public kuksa_grpc_if::Service {
       }
     }
 
-    //We need to clean up any remaining subscriptions (in case the channel was not closed
-    //orderly by unsubscribing the last remaingin subscription, but rather by a client 
-    //error/shutdown or network disconnection)
+    // We need to clean up any remaining subscriptions (in case the channel was
+    // not closed orderly by unsubscribing the last remaingin subscription, but
+    // rather by a client error/shutdown or network disconnection)
     logger->Log(LogLevel::VERBOSE, "GRPC bidirectional channel closed");
-      logger->Log(LogLevel::VERBOSE, "On close VALID Subs is: "+std::to_string(kc->grpcSubsMap->size()));
+    // logger->Log(LogLevel::VERBOSE, "On close VALID Subs is:
+    // "+std::to_string(kc->grpcSubsMap->size()));
 
     subhandler->unsubscribeAll(*kc);
     kc->grpcSubsMap->clear();

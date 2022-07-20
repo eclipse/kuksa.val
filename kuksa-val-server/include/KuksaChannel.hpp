@@ -74,6 +74,10 @@ class KuksaChannel {
   Type getType() const { return typeOfConnection; }
   std::shared_ptr<gRPCSubscriptionMap_t> grpcSubsMap;
 
+  KuksaChannel ( const KuksaChannel & ) = default;
+  KuksaChannel (  ) = default;
+  KuksaChannel& operator= (const KuksaChannel& kc) = default;
+
   friend bool operator==(const KuksaChannel  &lh, const KuksaChannel  &rh) {
     return lh.getConnID() == rh.getConnID();
   }
