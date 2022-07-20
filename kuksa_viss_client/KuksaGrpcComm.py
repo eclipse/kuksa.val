@@ -284,7 +284,6 @@ class KuksaGrpcComm:
                             requestObj.start = False
                             async with cv:
                                 await cv.wait()
-                            print (requestObj)
                             yield requestObj
                             return
 
