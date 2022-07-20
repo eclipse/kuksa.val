@@ -26,7 +26,7 @@
 
 /** Implements the Websocket get request accroding to GEN2, with GEN1 backwards
  * compatibility **/
-std::string VssCommandProcessor::processGet2(KuksaChannel &channel,
+jsoncons::json VssCommandProcessor::processGet(KuksaChannel &channel,
                                              jsoncons::json &request) {
   std::string pathStr= request["path"].as_string();
   VSSPath path = VSSPath::fromVSS(pathStr);
@@ -102,7 +102,6 @@ std::string VssCommandProcessor::processGet2(KuksaChannel &channel,
   answer["action"] = "get";
   answer["requestId"] = requestId;
   answer["ts"] = JsonResponses::getTimeStamp();
-  stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
+
 }

@@ -1351,7 +1351,7 @@ void WebSockHttpFlexServer::Initialize(std::string host,
 }
 
 std::string WebSockHttpFlexServer::HandleRequest(const std::string &req_json, KuksaChannel &channel) {
-  std::string response;
+  jsoncons::json response;
   auto const type = channel.getType();
   ObserverType handlerType;
 
@@ -1373,7 +1373,7 @@ std::string WebSockHttpFlexServer::HandleRequest(const std::string &req_json, Ku
     }
   }
 
-  return response;
+  return response.as<std::string>();
 }
 
 void WebSockHttpFlexServer::AddListener(ObserverType type,

@@ -53,7 +53,7 @@ struct UUIDHasher
     return (uuid_hasher(k));
   }
 };
-using subscriptions_t = std::unordered_map<SubscriptionId, ConnectionId, UUIDHasher>;
+using subscriptions_t = std::unordered_map<SubscriptionId, KuksaChannel, UUIDHasher>;
 using subscription_keys_t = struct subscription_keys {
   std::string path;
   std::string attribute;
@@ -76,12 +76,9 @@ struct SubscriptionKeyHasher {
   }
 };
 
-
 class SubscriptionHandler : public ISubscriptionHandler {
  private:
   std::unordered_map<subscription_keys_t, subscriptions_t, SubscriptionKeyHasher> subscriptions;
-  std::unordered_map<subscription_keys_t, subscriptions_t, SubscriptionKeyHasher> grpcSubscriptions;
-
   std::shared_ptr<ILogger> logger;
   std::shared_ptr<IServer> server;
   std::vector<std::shared_ptr<IPublisher>> publishers_;
@@ -92,7 +89,8 @@ class SubscriptionHandler : public ISubscriptionHandler {
   std::condition_variable c;
   std::thread subThread;
   bool threadRun;
-  std::queue<std::tuple<SubscriptionId, ConnectionId, jsoncons::json>> buffer;
+  //Tuple is UUID, channel object, vss datatye and jsoncons object for value
+  std::queue<std::tuple<SubscriptionId, KuksaChannel, std::string, jsoncons::json>> buffer;
 
  public:
   SubscriptionHandler(std::shared_ptr<ILogger> loggerUtil,
@@ -108,8 +106,8 @@ class SubscriptionHandler : public ISubscriptionHandler {
                            std::shared_ptr<IVssDatabase> db,
                            const std::string &path, const std::string& attr);
   int unsubscribe(SubscriptionId subscribeID);
-  int unsubscribeAll(ConnectionId connectionID);
-  int publishForVSSPath(const VSSPath path, const std::string& attr, const jsoncons::json &value);
+  int unsubscribeAll(KuksaChannel channel);
+  int publishForVSSPath(const VSSPath path, const std::string& vssdatatype, const std::string& attr, const jsoncons::json &value);
 
 
   std::shared_ptr<IServer> getServer();

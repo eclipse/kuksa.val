@@ -152,8 +152,7 @@ BOOST_AUTO_TEST_CASE(update_metadata_change) {
 
 
   // run updateVSSTree
-  auto resStr = processor->processQuery(updateMetadataRequestString, channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(updateMetadataRequestString, channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));
@@ -164,8 +163,7 @@ BOOST_AUTO_TEST_CASE(update_metadata_change) {
 
 
   // verify metadata
-  resStr = processor->processQuery(getMetadataRequestString, channel);
-  res = json::parse(resStr);
+  res = processor->processQuery(getMetadataRequestString, channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));
@@ -203,11 +201,8 @@ BOOST_AUTO_TEST_CASE(update_metadata_brokenrequest) {
   }
   )");
  
-
-
   // run updateVSSTree
-  auto resStr = processor->processQuery(updateMetadataRequestString, channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(updateMetadataRequestString, channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));

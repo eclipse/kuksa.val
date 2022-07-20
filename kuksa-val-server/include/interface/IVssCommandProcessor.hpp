@@ -36,7 +36,7 @@ class IVssCommandProcessor {
      * @param channel Active channel information on which \a req_json was received
      * @return JSON formated response string
      */
-    virtual std::string processQuery(const std::string &req_json,
+    virtual jsoncons::json processQuery(const std::string &req_json,
                                      KuksaChannel& channel) = 0;
 };
 

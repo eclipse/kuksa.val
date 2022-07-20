@@ -16,8 +16,8 @@
 #include <unistd.h>  // usleep
 #include <string>
 
-#include <boost/uuid/uuid_generators.hpp> 
-#include <boost/uuid/uuid_io.hpp>         
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include <jsonpath/json_query.hpp>
 
@@ -25,10 +25,12 @@
 #include "Authenticator.hpp"
 #include "ILogger.hpp"
 #include "JsonResponses.hpp"
-#include "VssDatabase.hpp"
 #include "KuksaChannel.hpp"
+#include "VssDatabase.hpp"
 #include "exception.hpp"
 #include "visconf.hpp"
+
+#include "grpcHandler.hpp"
 
 using namespace std;
 using namespace jsoncons::jsonpath;
@@ -50,7 +52,8 @@ SubscriptionHandler::~SubscriptionHandler() { stopThread(); }
 
 SubscriptionId SubscriptionHandler::subscribe(KuksaChannel& channel,
                                               std::shared_ptr<IVssDatabase> db,
-                                              const string& path, const std::string& attr) {
+                                              const string& path,
+                                              const std::string& attr) {
   // generate subscribe ID "randomly".
   SubscriptionId subId = boost::uuids::random_generator()();
 
@@ -76,13 +79,13 @@ SubscriptionId SubscriptionHandler::subscribe(KuksaChannel& channel,
               string("SubscriptionHandler::subscribe: Subscribing to ") +
                   vssPath.getVSSPath());
 
-  std::unique_lock<std::mutex> lock(accessMutex);                
-  subscriptions[subsKey][subId] = channel.getConnID();
+  std::unique_lock<std::mutex> lock(accessMutex);
+  subscriptions[subsKey][subId] = channel;
   return subId;
 }
 
 int SubscriptionHandler::unsubscribe(SubscriptionId subscribeID) {
-  bool found_subscription=false;
+  bool found_subscription = false;
   logger->Log(LogLevel::VERBOSE,
               string("SubscriptionHandler::unsubscribe: Unsubscribe on ") +
                   boost::uuids::to_string(subscribeID));
@@ -96,25 +99,24 @@ int SubscriptionHandler::unsubscribe(SubscriptionId subscribeID) {
           string("SubscriptionHandler::unsubscribe: Unsubscribing path ") +
               sub.first.path);
       subsforpath->erase(subid);
-      found_subscription=true;
+      found_subscription = true;
     }
   }
-  if (found_subscription)
-    return 0;
+  if (found_subscription) return 0;
   return -1;
 }
 
-int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
+int SubscriptionHandler::unsubscribeAll(KuksaChannel channel) {
   logger->Log(LogLevel::VERBOSE,
               string("SubscriptionHandler::unsubscribeAll: Unsubscribing all "
-                     "for connectionId ") +
-                  std::to_string(connectionID));
+                     "for channel ") +
+                  std::to_string(channel.getConnID()));
 
   std::unique_lock<std::mutex> lock(accessMutex);
   for (auto& subs : subscriptions) {
     auto condition =
-        [connectionID](const std::pair<SubscriptionId, ConnectionId>& pair) {
-          return (pair.second == (connectionID));
+        [channel](const std::pair<SubscriptionId, KuksaChannel>& pair) {
+          return (pair.second == channel);
         };
 
     auto found =
@@ -122,8 +124,10 @@ int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
 
     if (found != std::end(subs.second)) {
       subs.second.erase(found);
-      logger->Log(LogLevel::VERBOSE, "SubscriptionHandler::unsubscribeAll: Unsubscribing " +
-                  subs.first.path + " for "+std::to_string(connectionID) );
+      logger->Log(LogLevel::VERBOSE,
+                  "SubscriptionHandler::unsubscribeAll: Unsubscribing " +
+                      subs.first.path + " for " +
+                      std::to_string(channel.getConnID()));
     }
   }
   return 0;
@@ -131,7 +135,9 @@ int SubscriptionHandler::unsubscribeAll(ConnectionId connectionID) {
 
 std::shared_ptr<IServer> SubscriptionHandler::getServer() { return server; }
 
-int SubscriptionHandler::publishForVSSPath(const VSSPath path, const std::string& attr,
+int SubscriptionHandler::publishForVSSPath(const VSSPath path,
+                                           const std::string& vssdatatype,
+                                           const std::string& attr,
                                            const jsoncons::json& data) {
   // Publish MQTT
   for (auto& publisher : publishers_) {
@@ -152,12 +158,12 @@ int SubscriptionHandler::publishForVSSPath(const VSSPath path, const std::string
 
   for (auto subID : handle->second) {
     std::lock_guard<std::mutex> lock(subMutex);
-    tuple<SubscriptionId, ConnectionId, json> newSub;
-    logger->Log(
-        LogLevel::VERBOSE,
-        "SubscriptionHandler::publishForVSSPath: new "+ attr + " set at path " +
-            boost::uuids::to_string(subID.first) + ": " + ss.str());
-    newSub = std::make_tuple(subID.first, subID.second, data);
+    tuple<SubscriptionId, KuksaChannel, std::string, json> newSub;
+    logger->Log(LogLevel::VERBOSE,
+                "SubscriptionHandler::publishForVSSPath: new " + attr +
+                    " set at path " + boost::uuids::to_string(subID.first) +
+                    ": " + ss.str());
+    newSub = std::make_tuple(subID.first, subID.second, vssdatatype, data);
     buffer.push(newSub);
     c.notify_one();
   }
@@ -174,22 +180,37 @@ void* SubscriptionHandler::subThreadRunner() {
       auto newSub = buffer.front();
       buffer.pop();
 
-      auto connId = std::get<1>(newSub);
-      jsoncons::json data = std::get<2>(newSub);
+      KuksaChannel channel = std::get<1>(newSub);
+      std::string vssdatatype = std::get<2>(newSub);
+      jsoncons::json data = std::get<3>(newSub);
 
       jsoncons::json answer;
       answer["action"] = "subscription";
       answer["subscriptionId"] = boost::uuids::to_string(std::get<0>(newSub));
+
+      JsonResponses::convertJSONTimeStampToISO8601(data["dp"]);
       answer.insert_or_assign("data", data);
 
       stringstream ss;
       ss << pretty_print(answer);
       string message = ss.str();
-
-      bool connectionexist=getServer()->SendToConnection(connId, message);
-      if(!connectionexist) {
-        this->unsubscribeAll(connId);
+      if (channel.getType() == KuksaChannel::Type::GRPC) {
+        // check for subscriptionID in channel
+        auto handle = channel.grpcSubsMap->find(std::get<0>(newSub));
+        if (handle == channel.grpcSubsMap->end()) {
+          logger->Log(LogLevel::WARNING, "Subscription thread: No subscription for requested path in GRPC");
+          continue;
+        }
+        grpcHandler::grpc_send_object_to_stream(logger, vssdatatype, answer,
+                                                handle->second);
+      } else {  // WEBSOCKET
+        bool connectionexist =
+            getServer()->SendToConnection(channel.getConnID(), message);
+        if (!connectionexist) {
+          this->unsubscribeAll(channel);
+        }
       }
+
     } else {
       std::unique_lock<std::mutex> lock(subMutex);
       c.wait(lock);

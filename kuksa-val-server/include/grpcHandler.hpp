@@ -12,6 +12,9 @@
  * *****************************************************************************
  */
 
+#ifndef __GRPC_HANDLER_H__
+#define __GRPC_HANDLER_H__
+
 #include <iostream>
 #include <memory>
 #include <string>
@@ -19,13 +22,21 @@
 #include <fstream>
 #include <sstream>
 
+#include "jsoncons/json.hpp"
+
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
 
 #include "VssCommandProcessor.hpp"
+#include "kuksa.grpc.pb.h"
+#include "SubscriptionHandler.hpp"
+
 
 class grpcHandler{
+    public:
+      static void grpc_send_object_to_stream(std::shared_ptr<ILogger> logger, const std::string& vssdatatype, const jsoncons::json& data, grpc::ServerReaderWriter<kuksa::SubscribeResponse, kuksa::SubscribeRequest>* stream );
+      static void grpc_fill_value(std::shared_ptr<ILogger> logger, const std::string& vssdatatype, const jsoncons::json& data, kuksa::Value* grpcvalue, const std::string& attr = "value");
     private:
         std::shared_ptr<grpc::Server> grpcServer;
         std::shared_ptr<VssCommandProcessor> grpcProcessor;
@@ -34,7 +45,7 @@ class grpcHandler{
        public:
         grpcHandler();
         virtual ~grpcHandler();
-        static void RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::shared_ptr<IVssDatabase> database, std::shared_ptr<ILogger> logger_, std::string certPath, bool allowInsecureConn);   
+        static void RunServer(std::shared_ptr<VssCommandProcessor> Processor, std::shared_ptr<IVssDatabase> database, std::shared_ptr<ISubscriptionHandler> _subhandler, std::shared_ptr<ILogger> logger_, std::string certPath, bool allowInsecureConn);   
         static void read (const std::string& filename, std::string& data); 
         std::shared_ptr<ILogger> getLogger() {
           return this->logger_;
@@ -46,3 +57,5 @@ class grpcHandler{
           return this->grpcServer;
         }
 };
+
+#endif

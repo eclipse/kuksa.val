@@ -10,6 +10,9 @@
  * *****************************************************************************
  */
 
+#ifndef __OVERLAY_LOADER__H__
+#define __OVERLAY_LOADER__H__
+
 #include <vector>
 #include <boost/filesystem.hpp>
 
@@ -26,3 +29,5 @@ std::vector<boost::filesystem::path> gatherOverlays(std::shared_ptr<ILogger> log
  *  structure in database
  */
 void applyOverlays(std::shared_ptr<ILogger> log, const std::vector<boost::filesystem::path> overlayfiles, std::shared_ptr<IVssDatabase> db);
+
+#endif

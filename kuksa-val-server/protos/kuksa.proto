@@ -59,6 +59,7 @@ message SubscribeRequest {
 
 message SubscribeResponse {
   Value values = 1;
+  Status status = 2;
 }
 
 message Value {
