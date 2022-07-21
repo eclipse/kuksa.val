@@ -21,12 +21,12 @@ DEFAULT_SERVER_PORT = 8090
 DEFAULT_SERVER_PROTOCOL = "ws"
 
 from grpc.tools import command
-# Generate the NBI Stubs
-command.build_package_protos("../kuksa-val-server/protos/")
+# Generate the proto Stubs
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, "../kuksa-val-server/protos/"))
+command.build_package_protos(os.path.join(scriptDir, "kuksa.proto"))
 
 sys.path.append(os.path.join(scriptDir, ".."))
+
 from kuksa_viss_client import KuksaClientThread
 from kuksa_viss_client._metadata import *
 import kuksa_certificates
