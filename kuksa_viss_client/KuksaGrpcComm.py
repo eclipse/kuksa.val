@@ -18,8 +18,8 @@ from google.protobuf.json_format import MessageToJson
 import jsonpath_ng
 import uuid, time, threading
 
-import kuksa_pb2
-import kuksa_pb2_grpc
+from . import kuksa_pb2
+from . import kuksa_pb2_grpc
 
 class KuksaGrpcComm:
 
