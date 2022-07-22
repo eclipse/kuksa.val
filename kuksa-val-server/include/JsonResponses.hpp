@@ -61,6 +61,11 @@ namespace JsonResponses {
                         const std::string message,
                         jsoncons::json& jsonResponse);
 
+  void notSetResponse(std::string message, jsoncons::json& jsonResponse,
+                      std::string requestId);
+
+  jsoncons::json notSetResponse(std::string request_id, std::string message);
+
   std::string getTimeStamp();
 
   void addTimeStampToJSON(jsoncons::json& jsontarget, const std::string suffix="");

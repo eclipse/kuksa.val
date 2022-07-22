@@ -93,6 +93,9 @@ jsoncons::json VssCommandProcessor::processGet(KuksaChannel &channel,
     } else {
       answer["data"] = datapoints;
     }
+  } catch (notSetException &e) {
+    logger->Log(LogLevel::ERROR, string(e.what()));
+    return JsonResponses::notSetResponse(requestId, e.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(

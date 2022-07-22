@@ -504,7 +504,7 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& at
         datapoint.insert_or_assign(attr, result[attr]);
       }
     } else {
-      datapoint[attr] = "---"; //Todo return error/nothing and handle this correctly
+      throw notSetException("Attribute " + attr + " on " + path.getVSSPath() + " has not been set yet.");
     }
     if (result.contains("ts_s-"+attr) && result.contains("ts_ns-"+attr)) {
       datapoint["ts_s"] = result["ts_s-"+attr].as<uint64_t>();
