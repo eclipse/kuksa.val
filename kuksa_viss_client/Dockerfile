@@ -23,5 +23,6 @@ FROM python:3.8-alpine
 RUN apk add --no-cache libstdc++
 COPY --from=build /kuksa_viss_client /kuksa_viss_client
 ENV PYTHONUNBUFFERED=yes
+ENV GRPC_ENABLE_FORK_SUPPORT=false
 WORKDIR /kuksa_viss_client
 CMD ["/usr/local/bin/python", "-m", "kuksa_viss_client"]
