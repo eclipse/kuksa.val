@@ -16,8 +16,8 @@ import asyncio
 scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, ".."))
 from kuksa_viss_client._metadata import *
-from KuksaWsComm import KuksaWsComm
-from KuksaGrpcComm import KuksaGrpcComm
+from .KuksaWsComm import KuksaWsComm
+from .KuksaGrpcComm import KuksaGrpcComm
 
 class KuksaClientThread(threading.Thread):
 
