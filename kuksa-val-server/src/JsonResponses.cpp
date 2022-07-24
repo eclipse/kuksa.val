@@ -56,8 +56,8 @@ void notSetResponse(std::string message, jsoncons::json& jsonResponse,
                       std::string requestId) {
   jsoncons::json error;
 
-  error["number"] = "400";
-  error["reason"] = "Value not set";
+  error["number"] = "404";
+  error["reason"] = "unavailable_data";
   error["message"] = message;
   jsonResponse["error"] = error;
   jsonResponse["requestId"] = requestId;
