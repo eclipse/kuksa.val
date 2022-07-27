@@ -111,16 +111,12 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
   jsonGetRequestForSignal["requestId"] = requestId;
 
   std::string expectedJsonString{R"(
-    {
-        "action": "get", 
-        "requestId": "1", 
-        "data": {
-            "path": "Vehicle/Speed", 
-            "dp": {
-                "value": "---"
-            }
-        }
-    }
+    {"action":"get",
+     "error":{"message":"Attribute value on Vehicle/Speed has not been set yet.",
+     "number":"404",
+     "reason":"unavailable_data"},
+     "requestId":"1"
+     }
   )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
@@ -136,9 +132,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Sensor) {
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
-
-  std::string out = res.to_string();
-  verify_and_erase_timestampZero(res["data"]["dp"]);
 
   BOOST_TEST(res == expectedJson);
 }
@@ -259,37 +252,19 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
   jsonGetRequestForSignal["requestId"] = requestId;
 
   std::string expectedJsonString{R"(
-    {
-        "action": "get", 
-        "requestId": "1", 
-        "data": [
-            {"path": "Vehicle/VehicleIdentification/ACRISSCode","dp": {"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/Brand", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/Model", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/VIN", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/WMI", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/Year", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/bodyType", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/dateVehicleFirstRegistered", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/knownVehicleDamages", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/meetsEmissionStandard", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/productionDate", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/purchaseDate", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleConfiguration", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleModelDate", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleSeatingCapacity", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleSpecialUsage", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleinteriorColor", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleinteriorType", "dp":{"value": "---"}}
-        ]
-    }
+    {"action":"get",
+     "error":{"message":"Attribute value on Vehicle/VehicleIdentification/ACRISSCode has not been set yet.",
+     "number":"404",
+     "reason":"unavailable_data"},
+     "requestId":"1"
+     }
   )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // it needs to check all elements in subtree. Expect one example explicitely,
   // and allow for others
   MOCK_EXPECT(accCheckMock->checkReadAccess)
-      .exactly(18)
+      .exactly(1)
       .with(mock::any, mock::any)
       .returns(true);
 
@@ -299,9 +274,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
-  for (auto &  dataRes : res["data"].array_range()) {
-    verify_and_erase_timestampZero(dataRes["dp"]);
-  }
 
   BOOST_TEST(res == expectedJson);
 }
@@ -326,37 +298,19 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
   jsonGetRequestForSignal["requestId"] = requestId;
 
   std::string expectedJsonString{R"(
-    {
-        "action": "get", 
-        "requestId": "1", 
-        "data": [
-            {"path": "Vehicle/VehicleIdentification/ACRISSCode","dp": {"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/Brand", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/Model", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/VIN", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/WMI", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/Year", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/bodyType", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/dateVehicleFirstRegistered", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/knownVehicleDamages", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/meetsEmissionStandard", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/productionDate", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/purchaseDate", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleConfiguration", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleModelDate", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleSeatingCapacity", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleSpecialUsage", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleinteriorColor", "dp":{"value": "---"}},
-            {"path": "Vehicle/VehicleIdentification/vehicleinteriorType", "dp":{"value": "---"}}
-        ]
-    }
+    {"action":"get",
+     "error":{"message":"Attribute value on Vehicle/VehicleIdentification/ACRISSCode has not been set yet.",
+     "number":"404",
+     "reason":"unavailable_data"},
+     "requestId":"1"
+     }
   )"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // it needs to check all elements in subtree. Expect one example explicitely,
   // and allow for others
   MOCK_EXPECT(accCheckMock->checkReadAccess)
-      .exactly(18)
+      .exactly(1)
       .with(mock::any, mock::any)
       .returns(true);
 
@@ -366,10 +320,6 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
 
   // Does result have a timestamp?
   verify_and_erase_timestamp(res);
-  for (auto &  dataRes : res["data"].array_range()) {
-    verify_and_erase_timestampZero(dataRes["dp"]);
-  }
-
   BOOST_TEST(res == expectedJson);
 }
 
