@@ -1202,35 +1202,15 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
    auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
-    "action": "get",
-    "requestId": "8756",
-    "data":[
-        {"path": "Vehicle.VehicleIdentification.ACRISSCode", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.Brand", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.Model", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.VIN", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.WMI", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.Year", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.bodyType", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.dateVehicleFirstRegistered", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.knownVehicleDamages", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.meetsEmissionStandard", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.productionDate", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.purchaseDate", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleConfiguration", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleModelDate", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleSeatingCapacity", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleSpecialUsage", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleinteriorColor", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleinteriorType", "dp":{"value": "---"}}
-        ]
+    "action":"get",
+     "error":{"message":"Attribute value on Vehicle/VehicleIdentification/ACRISSCode has not been set yet.",
+      "number":"404",
+      "reason":"unavailable_data"
+      },
+     "requestId":"8756"
     })");
 
   verify_and_erase_timestamp(response_json);
-  for (auto &  dataRes : response_json["data"].array_range()) {
-    verify_and_erase_timestampZero(dataRes["dp"]);
-  }
-
   BOOST_TEST(response_json == expected);
 }
 
@@ -1271,35 +1251,15 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
    auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
-                   "action":"get",
-                   "requestId":"8756",
-                   "data":[
-                        {"path": "Vehicle.VehicleIdentification.ACRISSCode", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.Brand", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.Model", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.VIN", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.WMI", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.Year", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.bodyType", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.dateVehicleFirstRegistered", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.knownVehicleDamages", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.meetsEmissionStandard", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.productionDate", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.purchaseDate", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleConfiguration", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleModelDate", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleSeatingCapacity", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleSpecialUsage", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleinteriorColor", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleinteriorType", "dp":{"value": "---"}}
-                        ]
-        })");
+                       "action":"get",
+                           "error":{"message":"Attribute value on Vehicle/VehicleIdentification/ACRISSCode has not been set yet.",
+                           "number":"404",
+                           "reason":"unavailable_data"
+                        },
+                        "requestId":"8756"
+                        })");
  
   verify_and_erase_timestamp(response_json);
-  for (auto &  dataRes : response_json["data"].array_range()) {
-    verify_and_erase_timestampZero(dataRes["dp"]);
-  }
-
   BOOST_TEST(response_json == expected);
 }
 

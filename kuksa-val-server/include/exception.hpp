@@ -75,4 +75,15 @@ class notValidException : public std::exception {
   virtual const char* what() const throw() { return message.c_str(); }
 };
 
+// value not set before get
+class notSetException : public std::exception {
+ private:
+  std::string message;
+
+ public:
+  notSetException(std::string msg) { message = msg; }
+
+  virtual const char* what() const throw() { return message.c_str(); }
+};
+
 #endif

@@ -51,6 +51,25 @@ jsoncons::json malFormedRequest(std::string message, std::string requestId) {
   return answer;
 }
 
+// JSON Reponse to not set error
+void notSetResponse(std::string message, jsoncons::json& jsonResponse,
+                      std::string requestId) {
+  jsoncons::json error;
+
+  error["number"] = "404";
+  error["reason"] = "unavailable_data";
+  error["message"] = message;
+  jsonResponse["error"] = error;
+  jsonResponse["requestId"] = requestId;
+  jsonResponse["ts"] = getTimeStamp();
+  jsonResponse["action"] = "get";
+}
+jsoncons::json notSetResponse(std::string request_id, std::string message) {
+  jsoncons::json answer;
+  notSetResponse(message, answer, request_id);
+  return answer;
+}
+
 /** A API call requested a non-existant path */
 void pathNotFound(std::string request_id, const std::string action,
                   const std::string path, jsoncons::json& jsonResponse) {
