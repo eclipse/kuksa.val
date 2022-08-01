@@ -19,7 +19,7 @@ This repository contains several components
 
 | License | Component      | Description |
 | --------| -------------- | ----------- |
-| [![License](https://img.shields.io/badge/License-EPL%202.0-blue.svg)](https://opensource.org/licenses/EPL-2.0) | [kuksa-val-server](kuksa-val-server) | Feature rich in-vehicle data server written in C++ providing authorized access to VSS data using W3C VISS websocket protocol or GRPC       |
+| [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0) | [kuksa-val-server](kuksa-val-server) | Feature rich in-vehicle data server written in C++ providing authorized access to VSS data using W3C VISS websocket protocol or GRPC       |
 | [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0) | [Python SDK](./kuksa_viss_client)   | Python library for easy interaction with kuksa-val-server  
 | [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0) | [GO SDK](./kuksa_go_client)   | GOlang libraryfor easy interaction with kuksa-val-server  
 | [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0) | [Testclient](./kuksa_viss_client)   | Command line tool to interactively explore and modify the VSS data points and data structure        |
