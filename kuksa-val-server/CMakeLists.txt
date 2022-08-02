@@ -109,7 +109,6 @@ endif()
 add_subdirectory(src)
 enable_testing()
 include(CTest)
-add_subdirectory(test)
 add_subdirectory(test/unit-test)
 
 
