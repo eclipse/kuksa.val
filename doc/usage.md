@@ -16,16 +16,16 @@ OPTIONS:
                                         easily (e.g. test and production 
                                         setup).Sample of configuration file 
                                         parameters looks like:
-                                        vss = vss_release_2.2.json
+                                        vss = vss_release_2.1.json
                                         cert-path = . 
                                         log-level = ALL
                                         
   --vss arg                             [mandatory] Path to VSS data file 
                                         describing VSS data tree structure 
                                         which `kuksa-val-server` shall handle. 
-                                        Sample 'vss_release_2.2json' file can 
+                                        Sample 'vss_release_2.1.json' file can 
                                         be found under [data](./data/vss-core/v
-                                        ss_release_2.2.json)
+                                        ss_release_2.1.json)
   --overlays arg                        Path to a directory cotaiing additional
                                         VSS models. All json files will be 
                                         applied on top of the main vss file 
@@ -84,10 +84,9 @@ MQTT Options:
                                         format with `.`) to be published to 
                                         mqtt broker, using ";" to seperate 
                                         multiple path and "*" as wildcard
-```
-
+```                                      
 
 Server demo certificates are located in [../kuksa_certificates](../kuksa_certificates) directory of git repo. Certificates from 'kuksa_certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
 For authorizing client, file 'jwt.key.pub' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.key.pub' file, see [KUKSA.VAL JWT authorization](./jwt.md) for more details.
 
-Default configuration shall provide both Web-Socket and REST API connectivity.
+Default configuration shall provide both Web-Socket and GRPC API connectivity.

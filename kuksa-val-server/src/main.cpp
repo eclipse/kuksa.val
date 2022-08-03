@@ -117,7 +117,7 @@ int main(int argc, const char *argv[]) {
     ("overlays", program_options::value<boost::filesystem::path>(), "Path to a directory cotaiing additional VSS models. All json files will be applied on top of the main vss file given by the -vss parameter in alphanumerical order")
     ("cert-path", program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
       "[mandatory] Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. ")
-    ("insecure", program_options::bool_switch()->default_value(false), "By default, `kuksa-val-server` shall accept only SSL (TLS) secured connections. If provided, `kuksa-val-server` shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.")
+    ("insecure", program_options::bool_switch()->default_value(false), "By default, `kuksa-val-server` shall accept only SSL (TLS) secured connections. If provided, `kuksa-val-server` shall also accept plain un-secured connections for Web-Socket and GRPC API connections, and also shall not fail connections due to self-signed certificates.")
     ("use-keycloak", "Use KeyCloak for permission management")
     ("address", program_options::value<string>()->default_value("127.0.0.1"),
       "If provided, `kuksa-val-server` shall use different server address than default _'localhost'_")
