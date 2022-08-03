@@ -38,7 +38,6 @@
 #include "AccessChecker.hpp"
 #include "Authenticator.hpp"
 #include "BasicLogger.hpp"
-#include "RestV1ApiHandler.hpp"
 #include "SubscriptionHandler.hpp"
 #include "VssCommandProcessor.hpp"
 #include "VssDatabase.hpp"
@@ -82,16 +81,14 @@ static void print_usage(const char *prog_name,
   cerr << desc << std::endl;
 }
 
-void httpRunServer(boost::program_options::variables_map variables, std::shared_ptr<WebSockHttpFlexServer> httpServer, std::string docRoot, std::shared_ptr<VssCommandProcessor> cmdProcessor){
+void httpRunServer(boost::program_options::variables_map variables, std::shared_ptr<WebSockHttpFlexServer> httpServer, std::shared_ptr<VssCommandProcessor> cmdProcessor){
 
     auto port = variables["port"].as<int>();
     auto insecure = variables[("insecure")].as<bool>();
     httpServer->AddListener(ObserverType::ALL, cmdProcessor);
     httpServer->Initialize(variables["address"].as<string>(), port,
-                           std::move(docRoot),
                            variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
     httpServer->Start();
-
 }
 
 int main(int argc, const char *argv[]) {
@@ -210,20 +207,13 @@ int main(int argc, const char *argv[]) {
     // initialize pseudo random number generator
     std::srand(std::time(nullptr));
 
-    // define doc root path for server..
-    // for now also add 'v1' to designate version 1 of REST API as default
-    // in future, we can add/update REST API with new versions but also support
-    // older by having API versioning through URIs
-    std::string docRoot{"/vss/api/v1/"};
 
     auto pubKeyFile =
         variables["cert-path"].as<boost::filesystem::path>() / "jwt.key.pub";
     string jwtPubkey =
         Authenticator::getPublicKeyFromFile(pubKeyFile.string(), logger);
-    auto rest2JsonConverter =
-        std::make_shared<RestV1ApiHandler>(logger, docRoot);
     auto httpServer = std::make_shared<WebSockHttpFlexServer>(
-        logger, std::move(rest2JsonConverter));
+        logger);
 
     auto tokenValidator =
         std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
@@ -281,7 +271,7 @@ int main(int argc, const char *argv[]) {
       if(variables.count("insecure")){
         insecureConn = variables["insecure"].as<bool>();
       }
-      std::thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
+      std::thread http(httpRunServer, variables, httpServer, cmdProcessor);
       std::thread grpc(grpcHandler::RunServer, cmdProcessor, database, subHandler, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
       http.join();
       grpc.join();

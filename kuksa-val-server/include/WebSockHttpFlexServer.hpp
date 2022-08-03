@@ -31,7 +31,6 @@
 #include <mutex>
 #include <memory>
 
-class IRestHandler;
 class ILogger;
 
 /**
@@ -45,10 +44,8 @@ class WebSockHttpFlexServer : public IServer {
     std::vector<std::pair<ObserverType,std::shared_ptr<IVssCommandProcessor>>> listeners_;
     std::mutex mutex_;
     std::shared_ptr<ILogger> logger_;
-    std::shared_ptr<IRestHandler> restHandler_;
 
     bool isInitialized = false;
-    std::string docRoot_;
 
     const uint8_t NumOfThreads = 1;
     boost::asio::io_context ioc_;
@@ -73,21 +70,18 @@ class WebSockHttpFlexServer : public IServer {
      */
     std::string HandleRequest(const std::string &req_json, KuksaChannel &channel);
   public:
-    WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil,
-                          std::shared_ptr<IRestHandler> rest2jsonUtil);
+    WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil);
     ~WebSockHttpFlexServer();
 
     /**
      * @brief Initialize Boost.Beast server
      * @param host Hostname for server connection
      * @param port Port where to wait for server connections
-     * @param docRoot URL path that is handled
      * @param certPath Directory path where 'Server.pem' and 'Server.key' are located
      * @param allowInsecure If true, plain connections are allowed, otherwise SSL is mandatory
      */
     void Initialize(std::string host,
                     int port,
-                    std::string && docRoot,
                     std::string certPath,
                     bool allowInsecure = false);
     /**

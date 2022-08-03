@@ -50,7 +50,6 @@
 
 #include "WebSockHttpFlexServer.hpp"
 
-#include "IRestHandler.hpp"
 #include "IVssCommandProcessor.hpp"
 #include "KuksaChannel.hpp"
 #include "ILogger.hpp"
@@ -208,7 +207,6 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
   bool allowInsecureConns = false;
 
   std::shared_ptr<ILogger> logger;
-  std::shared_ptr<IRestHandler> restHandler;
 
   const unsigned DEFAULT_TIMEOUT_VALUE   = std::numeric_limits<unsigned int>::max();   // in seconds
   const unsigned WEBSOCKET_TIMEOUT_VALUE = DEFAULT_TIMEOUT_VALUE;
@@ -760,7 +758,6 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
           }
       };
 
-      std::string const& doc_root_;
       http::request<http::string_body> req_;
       queue queue_;
 
@@ -776,10 +773,8 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       // Construct the session
       HttpSession(boost::asio::io_context& ioc,
                   boost::beast::flat_buffer buffer,
-                  std::string const& doc_root,
                   RequestHandler requestHandler)
-        : doc_root_(doc_root)
-        , queue_(*this)
+        : queue_(*this)
         , timer_(ioc,
             (std::chrono::steady_clock::time_point::max)())
         , strand_(ioc.get_executor())
@@ -849,82 +844,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
               std::move(req_), requestHandler_);
         }
 
-        // Otherwise handle pure HTTP connection
-        std::string jsonRequest;
-
-        // if we got correct JSON request back, send it to handler
-        auto res = restHandler->GetJson(std::string(req_.method_string()),
-                                        std::string(req_.target()),
-                                        jsonRequest);
-
-        // regex for extracting HTTP status code from error response
-        const std::regex getErrNumber("\"number\":\\ +(\\d+)");
-        std::smatch sm;
-        std::string response;
-
-        // HTTP response object
-        http::response<http::string_body> httpResponse{
-          std::piecewise_construct,
-          std::make_tuple(""),
-          std::make_tuple(http::status::ok, req_.version())};
-
-        // HTTP 'OPTIONS' method is handled differently to support CORS pre-flight checks from browsers
-        if (req_.method_string().compare("OPTIONS") != 0) {
-          // if all ok, process further generated JSON request
-          if (res) {
-            response = requestHandler_(jsonRequest, channel);
-
-            // check if error was returned so we can set correct HTTP response status
-            std::regex_search (response, sm, getErrNumber);
-            if (sm.size()) {
-              // set error response
-              httpResponse.result(std::stoi(sm.str(1)));
-            }
-            httpResponse.body() = response;
-          }
-          // if getting of JSON request failed, set error HTTP response
-          else {
-            // check if there was error so we can set correct HTTP response status
-            std::regex_search (jsonRequest, sm, getErrNumber);
-            if (sm.size()) {
-              // set error response
-              httpResponse.result(std::stoi(sm.str(1)));
-            }
-            httpResponse.body() = jsonRequest;
-          }
-        }
-        // handle HTTP 'OPTIONS' method
-        else {
-          // if all ok, prepare OPTIONS response
-          if (res) {
-            auto jsonReq = jsoncons::json::parse(jsonRequest);
-            httpResponse.set(http::field::access_control_allow_methods, jsonReq["methods"].as_string());
-            httpResponse.set(http::field::access_control_allow_headers, jsonReq["headers"].as_string());
-            httpResponse.set(http::field::access_control_max_age, jsonReq["max-age"].as_string());
-          }
-          else {
-            // handle error
-            httpResponse.body() = jsonRequest;
-            // check if there was error so we can set correct HTTP response status
-            std::regex_search (jsonRequest, sm, getErrNumber);
-            if (sm.size()) {
-              // set error response
-              httpResponse.result(std::stoi(sm.str(1)));
-            }
-          }
-        }
-        httpResponse.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-        httpResponse.set(http::field::content_type, "application/json");
-
-        // allow cross-domain calls with setting below header
-        // TODO: evaluate this header for production level SW
-        httpResponse.set(http::field::access_control_allow_origin, "*");
-
-        httpResponse.keep_alive(req_.keep_alive());
-        httpResponse.prepare_payload();
-
-        // add response object in transmit queue
-        queue_(std::move(httpResponse));
+        // Otherwise ignore request
 
         // If we aren't at the queue limit, try to pipeline another request
         if(! queue_.is_full())
@@ -966,12 +886,10 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       // Create the http_session
       PlainHttpSession(tcp::socket socket,
                        boost::beast::flat_buffer buffer,
-                       std::string const& doc_root,
                        RequestHandler requestHandler)
         : HttpSession<PlainHttpSession>(
             socket.get_executor().target<boost::asio::io_context::executor_type>()->context(),
             std::move(buffer),
-            doc_root,
             requestHandler)
             , socket_(std::move(socket))
             , strand_(*socket_.get_executor().target<boost::asio::io_context::executor_type>()){
@@ -1028,12 +946,10 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       SslHttpSession(tcp::socket socket,
                      ssl::context& ctx,
                      boost::beast::flat_buffer buffer,
-                     std::string const& doc_root,
                      RequestHandler requestHandler)
         : HttpSession<SslHttpSession>(
             socket.get_executor().target<boost::asio::io_context::executor_type>()->context(),
             std::move(buffer),
-            doc_root,
             requestHandler)
             , stream_(std::move(socket), ctx)
             , strand_(*stream_.get_executor().target<boost::asio::io_context::executor_type>()) {
@@ -1131,7 +1047,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
         //doEof();
       }
   };
-
+  
   //------------------------------------------------------------------------------
   // Detects SSL handshakes
   class DetectSession : public std::enable_shared_from_this<DetectSession> {
@@ -1139,19 +1055,16 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       ssl::context& ctx_;
       boost::asio::strand<
       boost::asio::io_context::executor_type> strand_;
-      std::string const& doc_root_;
       boost::beast::flat_buffer buffer_;
       RequestHandler requestHandler_;
 
     public:
       explicit DetectSession(tcp::socket socket,
                              ssl::context& ctx,
-                             std::string const& doc_root,
                              RequestHandler requestHandler)
         : socket_(std::move(socket))
         , ctx_(ctx)
         , strand_(*socket_.get_executor().target<boost::asio::io_context::executor_type>())
-        , doc_root_(doc_root)
         , requestHandler_(requestHandler) {
       }
 
@@ -1180,7 +1093,6 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
               std::move(socket_),
               ctx_,
               std::move(buffer_),
-              doc_root_,
               requestHandler_)->run();
           return;
         }
@@ -1191,7 +1103,6 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
           std::make_shared<PlainHttpSession>(
               std::move(socket_),
               std::move(buffer_),
-              doc_root_,
               requestHandler_)->run();
         }
         else
@@ -1206,19 +1117,16 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       ssl::context& ctx_;
       tcp::acceptor acceptor_;
       tcp::socket socket_;
-      std::string const& doc_root_;
       RequestHandler requestHandler_;
 
     public:
       BeastListener(boost::asio::io_context& ioc,
                     ssl::context& ctx,
                     tcp::endpoint endpoint,
-                    std::string const& doc_root,
                     RequestHandler requestHandler)
         : ctx_(ctx)
         , acceptor_(ioc)
         , socket_(ioc)
-        , doc_root_(doc_root)
         , requestHandler_(requestHandler) {
         boost::system::error_code ec;
 
@@ -1280,10 +1188,9 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
         else
         {
           // Create the detector http_session and run it
-          std::make_shared<DetectSession>(
+              std::make_shared<DetectSession>(
               std::move(socket_),
               ctx_,
-              doc_root_,
               requestHandler_)->run();
         }
 
@@ -1297,15 +1204,11 @@ const std::string WebSockHttpFlexServer::serverCertFilename_ = "Server.pem";
 const std::string WebSockHttpFlexServer::serverKeyFilename_  = "Server.key";
 
 
-WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil,
-                                             std::shared_ptr<IRestHandler> restHandlerUtil)
+WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil)
  : logger_(loggerUtil),
-  restHandler_(restHandlerUtil),
   ioc_(NumOfThreads)
    {
   logger = logger_;
-  restHandler = restHandler_;
-
 }
 
 WebSockHttpFlexServer::~WebSockHttpFlexServer() {
@@ -1318,12 +1221,9 @@ WebSockHttpFlexServer::~WebSockHttpFlexServer() {
 }
 void WebSockHttpFlexServer::Initialize(std::string host,
                                        int port,
-                                       std::string && docRoot,
                                        std::string certPath,
                                        bool allowInsecure) {
     logger_->Log(LogLevel::INFO, "Initializing Boost.Beast web-socket and http server on " + host + ":" +std::to_string(port));
-
-    docRoot_ = docRoot;
 
     allowInsecureConns = allowInsecure;
     if(allowInsecureConns){
@@ -1351,7 +1251,6 @@ void WebSockHttpFlexServer::Initialize(std::string host,
       ioc_,
       ctx,
       resolvedHost->endpoint(),
-      std::move(docRoot_),
       std::bind(&WebSockHttpFlexServer::HandleRequest,
                 this,
                 std::placeholders::_1,
@@ -1537,7 +1436,7 @@ void WebSockHttpFlexServer::Start() {
     throw std::runtime_error(err);
   }
 
-  logger_->Log(LogLevel::INFO, "Starting Boost.Beast web-socket and http server");
+  logger_->Log(LogLevel::INFO, "Starting Boost.Beast web-socket server");
 
   // start listening for connections
   connListener->run();
