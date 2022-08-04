@@ -52,7 +52,6 @@ if(BUILD_UNIT_TEST)
   add_executable(${UNITTEST_EXE_NAME}
     AccessCheckerTests.cpp
     AuthenticatorTests.cpp
-    RestV1ApiHandlerTests.cpp
     SubscriptionHandlerTests.cpp
     VssCommandProcessorTests.cpp
     Gen2GetTests.cpp
