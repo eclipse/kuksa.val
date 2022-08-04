@@ -1,4 +1,7 @@
 #Upon close of PR delete images from ghcr.io registry‚
+#only for PRs originating inside the repo, for others 
+#we do not have token (which in turn also implies images
+#have not been created)
 name: clean_images
 
 on: 
@@ -7,18 +10,33 @@ on:
  
 env:
   REGISTRY: ghcr.io
-  GPSIMAGE_NAME: ${{ github.repository }}/gps
+  VALSERVER_NAME: ${{ github.repository }}/kuksa-val
+  CLIENT_NAME: ${{ github.repository }}/kuksa-client
+
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     
     steps:    
-    - name: Delete ephemereal GPS images from registry
+    - name: Delete ephemereal kuksa-val images from registry
       uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
       with:
          owner: eclipse
-         name: kuksa.val.feeders/gps
+         name: ${{env.VALSERVER_NAME}}
          token: ${{ secrets.PUSH_CONTAINER_TOKEN }}
          tag: pr-${{github.event.pull_request.number}}
+
+    - name: Delete ephemereal kuksa-client images from registry
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: ${{env.CLIENT_NAME}}
+         token: ${{ secrets.PUSH_CONTAINER_TOKEN }}
+         tag: pr-${{github.event.pull_request.number}}
+
+    - name: Finish
+      run: echo "Done"
          
