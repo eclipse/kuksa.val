@@ -11,8 +11,10 @@ syntax = "proto3";
 package kuksa.val.v1;
 import "google/protobuf/timestamp.proto";
 
+// Should probably be changed to something like:
+// option go_package = "github.com/eclipse/kuksa.val/proto/v1";
+option go_package = "/kuksa_grpc_proto";
 
-// A Value. 
 message Value {
   google.protobuf.Timestamp timestamp = 1;
 
@@ -36,87 +38,94 @@ message Value {
   }
 }
 
-// Describes a VSS datapoint, includes everything there is
-// to know about it. Most fields optional
+// Describes a VSS datapoint
+// When requesting a datapoint, the amount of information returned can
+// be controlled by specifying either a `View` or a set of `Field`s.
 message Datapoint {
   // Defines the full VSS path of the datapoint.
-  string path = 1;
+  string path = 1;  // [field: FIELD_PATH]
 
   // The value of the datapoint
-  Value value = 2;
+  Value value = 2;  // [field: FIELD_VALUE]
 
+  // Actuator target (only used if the Datapoint is an actuator)
+  oneof optional_actuator_target {
+    Value actuator_target = 3;  // [field: FIELD_ACTUATOR_TARGET]
+  }
+
+  // Metadata for this datapoint
+  Metadata metadata = 10;  // [field: FIELD_METADATA]
+}
+
+message Metadata {
   // The VSS data type of the entry.
   //
   // NOTE: protobuf doesn't have int8, int16, uint8 or uint16 so the actual
   // value will be serialized as int32 and uint32 respectively
   // (in the `value` field).
-  //
   oneof optional_data_type {
-    DataType data_type = 3;
+    DataType data_type = 11;  // [field: FIELD_METADATA__DATA_TYPE]
   }
 
   // Describes the meaning and content of the datapoint.
   oneof optional_description {
-    string description = 4;
+    string description = 12;  // [field: FIELD_METADATA__DESCRIPTION]
+  }
+
+  // Entry type
+  oneof optional_entry_type {
+    EntryType entry_type = 13;  // [field: FIELD_METADATA__ENTRY_TYPE]
   }
 
   // [optional]
   // A comment can be used to provide additional informal information
   // on a datapoint.
   oneof optional_comment {
-    string comment = 10;
+    string comment = 14;  // [field: FIELD_METADATA__COMMENT]
   }
 
   // [optional]
   // Whether this datapoint is deprecated.
   oneof optional_deprecation {
-    string deprecation = 11;
+    string deprecation = 15;  // [field: FIELD_METADATA__DEPRECATION]
   }
 
   // [optional]
   // The unit of measurement
   oneof optional_unit {
-    string unit = 12;
+    string unit = 16;  // [field: FIELD_METADATA__UNIT]
   }
 
   // [optional]
   // Restrict which values are allowed.
   // Only restrictions matching the DataType {datatype} above is valid/used.
+  ValueRestriction value_restriction = 17;  // [field: FIELD_METADATA__VALUE_RESTRICTION]
 
-  ValueRestriction value_restriction = 13;
-
-  // Data entry type
-  // Adds specific fields
-  oneof entry_type {
-    Actuator actuator   = 30;
-    Sensor sensor       = 31;
-    Attribute attribute = 32;
+  // Entry type specific metadata
+  oneof entry_specific {
+    Actuator actuator   = 20;  // [field: FIELD_METADATA__ACTUATOR]
+    Sensor sensor       = 30;  // [field: FIELD_METADATA__SENSOR]
+    Attribute attribute = 40;  // [field: FIELD_METADATA__ATTRIBUTE]
   }
-
 }
 
 ///////////////////////
 // Actuator specific fields
 message Actuator {
-  // Target value of the actuator
-  // NOTE: This is what you set in order to command the the actuator
-  //       to move.
-  Value target = 30;
+  // Nothing for now
 }
 
 ////////////////////////
 // Sensor specific
 message Sensor {
-//nothing for now
+  // Nothing for now
 }
 
 ////////////////////////
 // Attribute specific
 message Attribute {
-  // nothing for now.
+  // Nothing for now.
 }
-
-
 
 // Value restriction
 //
@@ -125,13 +134,15 @@ message Attribute {
 //
 message ValueRestriction {
   oneof restriction_type {
-    ValueRestrictionsString string_restriction = 1;
-    ValueRestrictionInt int_restriciton        = 2; //for all signed VSS integers
-    ValueRestrictionUint uint_restiction       = 3; //for all unsigned VSS integers
-    ValueRestrictionFloat float_restriction    = 4; //for VSS float and double
+    ValueRestrictionsString string_restriction = 21;
+    // For signed VSS integers
+    ValueRestrictionInt int_restriciton = 22;
+    // For unsigned VSS integers
+    ValueRestrictionUint uint_restriction = 23;
+    // For floating point VSS values (float and double)
+    ValueRestrictionFloat float_restriction = 24;
   }
 }
-
 
 message ValueRestrictionInt {
   oneof optional_min {
@@ -160,7 +171,9 @@ message ValueRestrictionFloat {
   oneof optional_max {
     double max = 2;
   }
-  repeated double allowed_values = 3; //allowed for doubles/floats not recommended
+
+  // allowed for doubles/floats not recommended
+  repeated double allowed_values = 3;
 }
 
 message ValueRestrictionDouble {
@@ -173,12 +186,10 @@ message ValueRestrictionDouble {
   repeated double allowed_values = 3;
 }
 
-
 // min, max doesn't make much sense for a string
 message ValueRestrictionsString {
   repeated string allowed_values = 3;
 }
-
 
 // VSS Data type of a signal
 //
@@ -186,70 +197,91 @@ message ValueRestrictionsString {
 // These are mapped to int32 and uint32 respectively.
 //
 enum DataType {
-  STRING          = 0;
-  BOOLEAN         = 1;
-  INT8            = 2;
-  INT16           = 3;
-  INT32           = 4;
-  INT64           = 5;
-  UINT8           = 6;
-  UINT16          = 7;
-  UINT32          = 8;
-  UINT64          = 9;
-  FLOAT           = 10;
-  DOUBLE          = 11;
-  TIMESTAMP       = 12;
-  STRING_ARRAY    = 20;
-  BOOLEAN_ARRAY   = 21;
-  INT8_ARRAY      = 22;
-  INT16_ARRAY     = 23;
-  INT32_ARRAY     = 24;
-  INT64_ARRAY     = 25;
-  UINT8_ARRAY     = 26;
-  UINT16_ARRAY    = 27;
-  UINT32_ARRAY    = 28;
-  UINT64_ARRAY    = 29;
-  FLOAT_ARRAY     = 30;
-  DOUBLE_ARRAY    = 31;
+  DATA_TYPE_UNSPECIFIED   = 0;
+  DATA_TYPE_STRING        = 1;
+  DATA_TYPE_BOOLEAN       = 2;
+  DATA_TYPE_INT8          = 3;
+  DATA_TYPE_INT16         = 4;
+  DATA_TYPE_INT32         = 5;
+  DATA_TYPE_INT64         = 6;
+  DATA_TYPE_UINT8         = 7;
+  DATA_TYPE_UINT16        = 8;
+  DATA_TYPE_UINT32        = 9;
+  DATA_TYPE_UINT64        = 10;
+  DATA_TYPE_FLOAT         = 11;
+  DATA_TYPE_DOUBLE        = 12;
+  DATA_TYPE_TIMESTAMP     = 13;
+  DATA_TYPE_STRING_ARRAY  = 20;
+  DATA_TYPE_BOOLEAN_ARRAY = 21;
+  DATA_TYPE_INT8_ARRAY    = 22;
+  DATA_TYPE_INT16_ARRAY   = 23;
+  DATA_TYPE_INT32_ARRAY   = 24;
+  DATA_TYPE_INT64_ARRAY   = 25;
+  DATA_TYPE_UINT8_ARRAY   = 26;
+  DATA_TYPE_UINT16_ARRAY  = 27;
+  DATA_TYPE_UINT32_ARRAY  = 28;
+  DATA_TYPE_UINT64_ARRAY  = 29;
+  DATA_TYPE_FLOAT_ARRAY   = 30;
+  DATA_TYPE_DOUBLE_ARRAY  = 31;
 }
 
+// Entry type
+enum EntryType {
+  ENTRY_TYPE_UNSPECIFIED = 0;
+  ENTRY_TYPE_ATTRIBUTE   = 1;
+  ENTRY_TYPE_SENSOR      = 2;
+  ENTRY_TYPE_ACTUATOR    = 3;
+}
 
+// A `View` specifies a set of fields which should
+// be populated in a `Datapoint` (in a response message)
 enum View {
-  VIEW_CURRENT_VALUE = 0;  // this is default, every implementation shall support this
-  VIEW_TARGET_VALUE  = 1;  // this is a set point of an actuator
-  VIEW_DATATYPE      = 2;  // VSS datatype of an element as string ("branch" in case of a VSS branch)
-  VIEW_UNIT          = 3;   // VSS unit of an element as string
-  VIEW_CHILDREN      = 4;   // Names of all direct children as string
-  VIEW_ALL_METADATA  = 100; // All available metadata defined in VSS model
-  VIEW_ALL           = 200; // All available data
+  VIEW_UNSPECIFIED   = 0;   // Unspecified. Equivalent to VIEW_VALUE unless `fields` are explicitly set.
+  VIEW_CURRENT_VALUE = 1;   // Populate Datapoint with value.
+  VIEW_TARGET_VALUE  = 2;   // Populate Datapoint with actuator target.
+  VIEW_METADATA      = 3;   // Populate Datapoint with metadata.
+  VIEW_FIELDS        = 10;  // Populate Datapoint only with requested fields.
+  VIEW_ALL           = 20;  // Populate Datapoint with everything.
 }
 
+// A `Field` corresponds to a specific field of a `Datapoint`.
+//
+// It can be used to:
+//   * populate only specific fields of a `Datapoint` response.
+//   * specify which fields of a `Datapoint` should be set as
+//     part of a `Set` request.
+//   * subscribe to only specific fields of a datapoint.
+//   * convey which fields of an updated `Datapoint` have changed.
 enum Field {
-    VALUE = 0;  // this is default, every implementation shall support this
-    ACTUATOR_TARGET = 1;  // this is a set point of an actuator
-    DATA_TYPE      = 2;  // VSS datatype of an element as string ("branch" in case of a   VSS branch)
-    UNIT          = 3;   // VSS unit of an element as string
-    DESCRIPTION = 4;
-    COMMENT = 5;
-    DEPRECATION = 6;
-    VALUE_RESTRICTION = 7;
-    ACTUATOR = 8;
-    SENSOR = 9;
-    ATTRIBUTE = 10;  
+  FIELD_UNSPECIFIED                = 0;   // "*" i.e. everything
+  FIELD_PATH                       = 1;   // path
+  FIELD_VALUE                      = 2;   // value
+  FIELD_ACTUATOR_TARGET            = 3;   // actuator_target
+  FIELD_METADATA                   = 10;  // metadata.*
+  FIELD_METADATA_DATA_TYPE         = 11;  // metadata.data_type
+  FIELD_METADATA_DESCRIPTION       = 12;  // metadata.description
+  FIELD_METADATA_ENTRY_TYPE        = 13;  // metadata.entry_type
+  FIELD_METADATA_COMMENT           = 14;  // metadata.comment
+  FIELD_METADATA_DEPRECATION       = 15;  // metadata.deprecation
+  FIELD_METADATA_UNIT              = 16;  // metadata.unit
+  FIELD_METADATA_VALUE_RESTRICTION = 17;  // metadata.value_restriction.*
+  FIELD_METADATA_ACTUATOR          = 20;  // metadata.actuator.*
+  FIELD_METADATA_SENSOR            = 30;  // metadata.sensor.*
+  FIELD_METADATA_ATTRIBUTE         = 40;  // metadata.attribute.*
 }
 
-// General status. Status response shall be an HTTP-like code
-// shall follow https://www.w3.org/TR/viss2-transport/#status-codes where it makes sense
+// Error response shall be an HTTP-like code.
+// Should follow https://www.w3.org/TR/viss2-transport/#status-codes.
 message Error {
-  uint32 code        = 1;
-  string reason      = 2;
-  string description = 3;
+  uint32 code    = 1;
+  string reason  = 2;
+  string message = 3;
 }
 
-// used in get/set requests to optionally report status on indivusal paths
+// Used in get/set requests to report errors for specific datapoints
 message DatapointError {
-  string path = 1; //vss path
-  Error  error = 2;
+  string path = 1;  // vss path
+  Error error = 2;
 }
 
 message StringArray {
