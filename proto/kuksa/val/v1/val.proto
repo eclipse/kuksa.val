@@ -14,104 +14,109 @@ package kuksa.val.v1;
 
 import "kuksa/val/v1/types.proto";
 
+// Should probably be changed to something like:
+// option go_package = "github.com/eclipse/kuksa.val/proto/v1";
 option go_package = "/kuksa_grpc_proto";
 
-/*
-Note on autorization: We assume to send auth-token or auth-uuid in metadata
-Token is a JWT compliant token as the examples found here:
-https://github.com/eclipse/kuksa.val/tree/master/kuksa_certificates/jwt
-See also https://github.com/eclipse/kuksa.val/blob/master/doc/jwt.md
-Upon reception of auth-token, server shall generate an auth_uuid in metadata
-that the client can use instead of auth_token in subsequent calls.
-*/
+// Note on authorization:
+// Tokens (auth-token or auth-uuid) are sent as (GRPC / http2) metadata.
+//
+// The auth-token is a JWT compliant token as the examples found here:
+// https://github.com/eclipse/kuksa.val/tree/master/kuksa_certificates/jwt
+//
+// See also https://github.com/eclipse/kuksa.val/blob/master/doc/jwt.md
+//
+// Upon reception of auth-token, server shall generate an auth-uuid in metadata
+// that the client can use instead of auth-token in subsequent calls.
 
-// The connecting service definition.
 service VAL {
-  //  Get data points..
+  //  Get datapoints
   rpc Get(GetRequest) returns (GetResponse);
 
   // Set datapoints
   rpc Set(SetRequest) returns (SetResponse);
-  
+
   // Subscribe to a set of data points
-   //
-   // Returns a stream of replies.
-   //
-   // InvalidArgument is returned if the request is malformed.
   //
   // Returns a stream of replies.
   //
   // InvalidArgument is returned if the request is malformed.
   rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
 
-  // Shall return a string identifier that allows the client to determine with what
-  // server/server implementation/version it is talking
+  // Shall return information that allows the client to determine
+  // what server/server implementation/version it is talking to
   // eg. kuksa-databroker 0.5.1
   rpc GetServerInfo(GetServerInfoRequest) returns (GetServerInfoResponse);
 }
 
-// Describing which data we want
-message DataGetRequest {
-  string path = 1;
-  View view   = 2 ;
-} 
+// Describes which data we want
+message GetDatapoint {
+  string path  = 1;
+  View view    = 2;
+  Field fields = 3;
+}
 
-// Request a number of VSS paths. 
+// Request a number of VSS datapoints.
 message GetRequest {
-  repeated DataGetRequest get = 1;
+  repeated GetDatapoint datapoints = 1;
 }
 
-
-// Status is overall status, there may be  
-// individual status information, 
+// Global errors are specified in `error`.
+// Errors for individual datapoints are specified in `errors`.
 message GetResponse {
-  repeated Datapoint datapoints    = 1;
-  repeated DatapointError errors   = 2;
-  Error error                      = 3;
+  repeated Datapoint datapoints  = 1;
+  repeated DatapointError errors = 2;
+  Error error                    = 3;
 }
 
-// Describing which data we want
-message DataSetRequest {
-  string path = 1;
-  repeated Field fields =2 ;
-  Datapoint datapoint = 3;
-} 
+// Describes which data we want to set
+message SetDatapoint {
+  string path           = 1;
+  Datapoint datapoint   = 2;
+  repeated Field fields = 3;
+}
 
 // A list of datapoints to be set
 message SetRequest {
-  repeated DataSetRequest set = 1;
+  repeated SetDatapoint datapoints = 1;
 }
 
-// Usually it is fine to only return global status for set requests.
-// It is possible to return status messages for indiviudal VSS
-// paths. It is not expected that you get a ResponseValue for 
-// all set points, or that they contain any value
+// Global errors are specified in `error`.
+// Errors for individual datapoints are specified in `errors`.
 message SetResponse {
-  Error error = 1;
+  Error error                              = 1;
   repeated DatapointError datapoint_errors = 2;
 }
 
-
-// A subscribe request either subscribes a simple VSS Path
-// or can be given in form of an SQL query
-// Simple queries for CURRENT_VALUE and TARGET_VALUE
-// shall be supported as minimum by all implementations
-message SubscribeRequest {
-  repeated DataGetRequest simplesub = 1;
+// Describes what to subscribe to
+message SubscribeDatapoint {
+  string path           = 1;
+  View view             = 2;
+  repeated Field fields = 3;
 }
 
-// In case of simple queries, a list of length 1 will be returned when
-// a subscribed datapoint is updated. In case of complex queries 
-// SELECT a,b ... more than one datapoint might be in the notification
+// Subscribe to changes in datapoints.
+message SubscribeRequest {
+  repeated SubscribeDatapoint datapoints = 1;
+}
+
+// The updated datapoint
+// `fields` specify which fields where changed.
+message UpdatedDatapoint {
+  Datapoint datapoint   = 1;
+  repeated Field fields = 2;
+}
+
+// A subscription response
 message SubscribeResponse {
-  repeated Datapoint datapoints = 1;
+  repeated UpdatedDatapoint datapoints = 1;
 }
 
 message GetServerInfoRequest {
-
+  // Nothing yet
 }
 
 message GetServerInfoResponse {
-  string name = 1;
+  string name    = 1;
   string version = 2;
 }
