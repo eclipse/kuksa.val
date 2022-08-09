@@ -17,22 +17,13 @@ source code repository logs.
 ## Declared Project Licenses
 
 This program and the accompanying materials are made available under the terms
-of the Eclipse Public License v. 2.0 which is available at
-http://www.eclipse.org/legal/epl-2.0.
+of the  Apache License, Version 2.0 
 
-SPDX-License-Identifier: EPL-2.0
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
 
-## Source Code
+SPDX-License-Identifier: Apache-2.0
 
-The project maintains the following source code repositories:
-
-* https://github.com/eclipse/kuksa.apps
-* https://github.com/eclipse/kuksa.cloud
-* https://github.com/eclipse/kuksa.ide
-* https://github.com/eclipse/kuksa.integration
-* https://github.com/eclipse/kuksa.invehicle
-* https://github.com/eclipse/kuksa.website
-* https://github.com/eclipse/kuksa.val
 
 ## Third-party Content
 

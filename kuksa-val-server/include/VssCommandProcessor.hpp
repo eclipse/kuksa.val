@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2018 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
  *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ **********************************************************************/
+
 #ifndef __VSSCOMMANDPROCESSOR_H__
 #define __VSSCOMMANDPROCESSOR_H__
 
@@ -21,7 +29,7 @@
 
 #include "IVssCommandProcessor.hpp"
 #include "VSSRequestValidator.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "IAccessChecker.hpp"
 
 class IVssDatabase;
@@ -39,23 +47,17 @@ class VssCommandProcessor : public IVssCommandProcessor {
   std::shared_ptr<IAccessChecker> accessValidator_;
   VSSRequestValidator *requestValidator;
 
-  std::string processUpdateMetaData(kuksa::kuksaChannel& channel, jsoncons::json& request);
-  std::string processAuthorizeWithPermManager(kuksa::kuksaChannel &channel, const std::string & request_id,
-                                 const std::string & client, const std::string& clientSecret);
-
-  std::string getPathFromRequest(const jsoncons::json &req, bool *gen1_compat);
-  std::string processUpdateVSSTree(kuksa::kuksaChannel& channel, jsoncons::json &request);
+  jsoncons::json processUpdateMetaData(KuksaChannel& channel, jsoncons::json& request);
+  jsoncons::json processUpdateVSSTree(KuksaChannel& channel, jsoncons::json &request);
 
  public:
-  std::string processGetMetaData(jsoncons::json &request);
-  std::string processAuthorize(kuksa::kuksaChannel& channel, const std::string & request_id,
+  jsoncons::json processGetMetaData(jsoncons::json &request);
+  jsoncons::json processAuthorize(KuksaChannel& channel, const std::string & request_id,
                           const std::string & token);
-  std::string processGet2(kuksa::kuksaChannel &channel, jsoncons::json &request);
-  std::string processSet2(kuksa::kuksaChannel &channel, jsoncons::json &request);
-  std::string processGetTarget(kuksa::kuksaChannel &channel, jsoncons::json &request);
-  std::string processSetTarget(kuksa::kuksaChannel &channel, jsoncons::json &request);
-  std::string processSubscribe(kuksa::kuksaChannel& channel, jsoncons::json &request);
-  std::string processUnsubscribe(kuksa::kuksaChannel &channel, jsoncons::json &request);
+  jsoncons::json processGet(KuksaChannel &channel, jsoncons::json &request);
+  jsoncons::json processSet(KuksaChannel &channel, jsoncons::json &request);
+  jsoncons::json processSubscribe(KuksaChannel& channel, jsoncons::json &request);
+  jsoncons::json processUnsubscribe(KuksaChannel &channel, jsoncons::json &request);
   
   VssCommandProcessor(std::shared_ptr<ILogger> loggerUtil,
                       std::shared_ptr<IVssDatabase> database,
@@ -64,7 +66,7 @@ class VssCommandProcessor : public IVssCommandProcessor {
                       std::shared_ptr<ISubscriptionHandler> subhandler);
   ~VssCommandProcessor();
 
-  std::string processQuery(const std::string &req_json, kuksa::kuksaChannel& channel);
+  jsoncons::json processQuery(const std::string &req_json, KuksaChannel& channel);
 };
 
 #endif

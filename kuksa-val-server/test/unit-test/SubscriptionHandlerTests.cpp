@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2019 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ *      Robert Bosch GmbH
+ **********************************************************************/
+
 #include <boost/test/unit_test.hpp> 
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
@@ -31,7 +39,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "ILoggerMock.hpp"
 #include "IVssDatabaseMock.hpp"
 #include "IServerMock.hpp"
@@ -76,7 +84,7 @@ BOOST_FIXTURE_TEST_SUITE(SubscriptionHandlerTests, TestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeClient)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   // setup
 
@@ -115,7 +123,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequest_Shall_SubscribeCli
 
 BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Shall_SubscribeAll)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   unsigned paths = 4;
 
   // setup
@@ -169,16 +177,16 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
 
 BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Shall_SubscribeAllClients)
 {
-  std::vector<kuksa::kuksaChannel> channels;
+  std::vector<KuksaChannel> channels;
   unsigned clientNum = 4;
   // setup
 
   // add multiple channels to request subscriptions
   for (unsigned index = 0; index < clientNum; index++) {
-    kuksa::kuksaChannel ch;
+    KuksaChannel ch;
 
-    ch.set_connectionid(index);
-    ch.set_typeofconnection(kuksa::kuksaChannel_Type_WEBSOCKET_SSL);
+    ch.setConnID(index);
+    ch.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
     channels.push_back(std::move(ch));
   }
@@ -225,16 +233,16 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
 
 BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths_Shall_SubscribeAllClients)
 {
-  std::vector<kuksa::kuksaChannel> channels;
+  std::vector<KuksaChannel> channels;
   unsigned clientNum = 4;
   // setup
 
   // add multiple channels to request subscriptions
   for (unsigned index = 0; index < clientNum; index++) {
-    kuksa::kuksaChannel ch;
+    KuksaChannel ch;
 
-    ch.set_connectionid(index);
-    ch.set_typeofconnection(kuksa::kuksaChannel_Type_WEBSOCKET_SSL);
+    ch.setConnID(index);
+    ch.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
     channels.push_back(std::move(ch));
   }
@@ -289,7 +297,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnDifferentPaths
 
 BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_Shall_UnsubscribeAll)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   unsigned paths = 4;
 
   // setup
@@ -346,16 +354,16 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
 
 BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAllClients)
 {
-  std::vector<kuksa::kuksaChannel> channels;
+  std::vector<KuksaChannel> channels;
   unsigned clientNum = 4;
   // setup
 
   // add multiple channels to request subscriptions
   for (unsigned index = 0; index < clientNum; index++) {
-    kuksa::kuksaChannel ch;
+    KuksaChannel ch;
 
-    ch.set_connectionid(index);
-    ch.set_typeofconnection(kuksa::kuksaChannel_Type_WEBSOCKET_SSL);
+    ch.setConnID(index);
+    ch.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
     channels.push_back(std::move(ch));
   }
@@ -405,13 +413,13 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
 
 BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated_Shall_NotifyClient)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
   jsoncons::json answer;
   unsigned paths = 3;
 
   // setup
 
-  channel.set_connectionid(131313);
+  channel.setConnID(131313);
 
   std::vector<std::string> retDbListWider{"$['Vehicle']['children']['Acceleration']['children']['Vertical']",
                                           "$['Vehicle']['children']['Acceleration']['children']['Longitudinal']",
@@ -461,6 +469,8 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
   for (unsigned index = 0; index < paths; index++) {
     answer["subscriptionId"] = boost::uuids::to_string(resMap[index]);
     jsoncons::json data = packDataInJson(vsspath[index], std::to_string(index));
+    //because we force publishForVSSPath with no data (and no timestamp) in VSSDatabase
+    data["dp"]["ts"] = JsonResponses::getTimeStampZero();
     answer["data"] = data;
 
     // custom verifier for returned JSON message
@@ -469,33 +479,35 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_MultipleSignalsSubscribedAndUpdated
       jsoncons::json response = jsoncons::json::parse(actual);
 
       ret = (response["subscriptionId"] == answer["subscriptionId"]);
+
       if (ret) {
         ret = (response["data"]  == answer["data"]);
       }
       return ret;
     };
 
+
     MOCK_EXPECT(serverMock->SendToConnection)
       .once()
-      .with(channel.connectionid(), jsonVerify)
+      .with(channel.getConnID(), jsonVerify)
       .returns(true);
 
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", data) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "float", "value", data) == 0);
     usleep(10000); // allow for subthread handler to run
   }
 }
 
 BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpdated_Shall_NotifyClients)
 {
-  std::vector<kuksa::kuksaChannel> channels;
+  std::vector<KuksaChannel> channels;
   jsoncons::json answer;
   unsigned paths = 3;
   unsigned channelCount = 3;
 
   // setup
   for (unsigned index = 0; index < channelCount; index++) {
-    kuksa::kuksaChannel channel;
-    channel.set_connectionid(111100 + index);
+    KuksaChannel channel;
+    channel.setConnID(111100 + index);
 
     channels.push_back(std::move(channel));
   }
@@ -551,10 +563,10 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   auto jsonVerify = [&resMap, &answer]( const std::string &actual ) -> bool {
     bool ret = false;
     jsoncons::json response = jsoncons::json::parse(actual);
-
     ret = (answer["action"] == response["action"]);
     if (ret) {
-      ret = (response["data"]["dp"]["ts"] >= answer["ts"] );
+      //because we force publishForVSSPath with no data (and no timestamp) in VSSDatabase
+      ret = (response["data"]["dp"]["ts"].as<string>() == JsonResponses::getTimeStampZero());
     }
 
     if (ret) {
@@ -570,21 +582,21 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   for (auto & ch : channels) {
     MOCK_EXPECT(serverMock->SendToConnection)
       .exactly(paths)
-      .with(ch.connectionid(), jsonVerify)
+      .with(ch.getConnID(), jsonVerify)
       .returns(true);
   }
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "string", "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
-  usleep(100000); // allow for subthread handler to run
+  sleep(1); // allow for subthread handler to run
 }
 
 BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpdatedAndClientUnsubscribeAll_Shall_NotifyOnlySubscribedClients)
 {
-  std::vector<kuksa::kuksaChannel> channels;
+  std::vector<KuksaChannel> channels;
   jsoncons::json answer;
   unsigned paths = 3;
   unsigned channelCount = 3;
@@ -592,8 +604,8 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // setup
   for (unsigned index = 0; index < channelCount; index++) {
-    kuksa::kuksaChannel channel;
-    channel.set_connectionid(111100 + index);
+    KuksaChannel channel;
+    channel.setConnID(111100 + index);
 
     channels.push_back(std::move(channel));
   }
@@ -649,7 +661,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   for (auto & ch : channels) {
     MOCK_EXPECT(serverMock->SendToConnection)
       .exactly(paths)
-      .with(ch.connectionid(), jsonVerify)
+      .with(ch.getConnID(), jsonVerify)
       .returns(true);
   }
 
@@ -685,13 +697,13 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 
   // call UUT
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "double" ,"value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
 
 
-  BOOST_TEST(subHandler->unsubscribeAll(channels.begin()->connectionid()) == 0);
+  BOOST_TEST(subHandler->unsubscribeAll(channels.front()) == 0);
   channels.erase(channels.begin());
 
   // now prepare expectations for only left signals
@@ -703,13 +715,13 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
   for (auto & ch : channels) {
     MOCK_EXPECT(serverMock->SendToConnection)
       .exactly(paths)
-      .with(ch.connectionid(), jsonVerify)
+      .with(ch.getConnID(), jsonVerify)
       .returns(true);
   }
 
   // call UUT to verify if removed channel is not called anymore
   for (unsigned index = 0; index < paths; index++) {
-    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
+    BOOST_TEST(subHandler->publishForVSSPath(vsspath[index], "string", "value", packDataInJson(vsspath[index], std::to_string(index))) == 0);
     std::this_thread::yield();
   }
   usleep(100000); // allow for subthread handler to run
@@ -718,7 +730,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
 BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpdatedAndClientUnsubscribeAll_Shall_NotifyOnlySubscribedClient) {
   unsigned index = 0;
   VSSPath vsspath = VSSPath::fromVSSGen1("Vehicle.Acceleration.Vertical");
-  BOOST_TEST(subHandler->publishForVSSPath(vsspath, "value", packDataInJson(vsspath, std::to_string(index))) == 0);
+  BOOST_TEST(subHandler->publishForVSSPath(vsspath, "int16", "value", packDataInJson(vsspath, std::to_string(index))) == 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

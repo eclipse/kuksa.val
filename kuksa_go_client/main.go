@@ -1,3 +1,17 @@
+// Copyright 2022 Robert Bosch GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -30,9 +44,24 @@ func main() {
 		log.Fatalf("Authorization Error: %v", err)
 	}
 
+	// Set and Get the attribute targetValue
+	err = kuksaClientComm.SetAttrValueFromKuksaValServer("Vehicle.Body.Trunk.IsOpen", "true", "targetValue")
+	if err != nil {
+		log.Printf("Set Attribute Error: %v", err)
+	} else {
+		log.Printf("Vehicle.Body.Trunk.IsOpen Set: True")
+	}
+
+	var value string
+	value, err = kuksaClientComm.GetAttrValueFromKuksaValServer("Vehicle.Body.Trunk.IsOpen", "targetValue")
+	if err != nil {
+		log.Printf("Get Attribute Error: %v", err)
+	} else {
+		log.Printf("Vehicle.Body.Trunk.IsOpen: " + value)
+	}
+
 	// Get Value of Vehicle.Speed1
 	// This datapoint does not exist in the VSS and should result in an error
-	var value string
 	value, err = kuksaClientComm.GetValueFromKuksaValServer("Vehicle.Speed1")
 	if err != nil {
 		log.Printf("Get Error: %v", err)

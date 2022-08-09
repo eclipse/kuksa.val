@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2019 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ *      Robert Bosch GmbH
+ **********************************************************************/
+
 #include <boost/test/unit_test.hpp>
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <turtle/mock.hpp>
@@ -21,7 +29,6 @@
 #include <memory>
 #include <string>
 
-#include "WsChannel.hpp"
 #include "ILoggerMock.hpp"
 #include "IAccessCheckerMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
@@ -120,10 +127,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForInvalidPath_Shall
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_updateMetadata) {
   jsoncons::json newMetaData, returnJson;
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
-  channel.set_connectionid(11);
-  channel.set_authorized(true);
+  channel.setConnID(11);
+  channel.setAuthorized(true);
 
   // setup
   db->initJsonTree(validFilename);
@@ -137,10 +144,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_updateMetad
 }
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataForInvalidPath_Shall_throwException) {
   jsoncons::json newMetaData, returnJson;
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
-  channel.set_connectionid(11);
-  channel.set_modifytree(true);
+  channel.setConnID(11);
+  channel.enableModifyTree();
 
   // setup
   db->initJsonTree(validFilename);
@@ -154,10 +161,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataForInvalidPath_Sh
 }
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataValidPath) {
   jsoncons::json newMetaData, returnJson;
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
-  channel.set_connectionid(11);
-  channel.set_modifytree(true);
+  channel.setConnID(11);
+  channel.enableModifyTree();
 
   // setup
   db->initJsonTree(validFilename);
@@ -187,15 +194,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetSingleSi
 
   // expectations
 
-  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration.Vertical","dp":{"value":"---"}})"};
+  std::string expectedJsonString{R"({})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
-
-  verify_and_erase_timestampZero(returnJson["dp"]);
-
+  BOOST_CHECK_THROW(returnJson = db->getSignal(signalPath, "value", false), notSetException);
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -208,15 +212,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_GetBranch_S
 
   // expectations
 
-  std::string expectedJsonString{R"({"path":"Vehicle.Acceleration","dp":{"value":"---"}})"};
+  std::string expectedJsonString{R"({})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
 
-  BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
-
-  verify_and_erase_timestampZero(returnJson["dp"]);
-
+  BOOST_CHECK_THROW(returnJson = db->getSignal(signalPath, "value", true), notSetException);
   BOOST_TEST(returnJson == expectedJson);
 }
 
@@ -233,7 +234,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
     .at_least(1)
-    .with(mock::any, "value", mock::any)
+    .with(mock::any, "int32", "value", mock::any)
     .returns(0);
 
   // verify
@@ -255,7 +256,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   setValue = 10;
 
   // verify
-  MOCK_EXPECT(subHandlerMock->publishForVSSPath).with(mock::any, "value", mock::any).returns(0);
+  MOCK_EXPECT(subHandlerMock->publishForVSSPath).with(mock::any, "int32", "value", mock::any).returns(0);
 
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, "value", setValue));
 
@@ -484,5 +485,38 @@ BOOST_AUTO_TEST_CASE(applyDefaultValues_Recurse) {
 }
 
 
+/** getDataTypeTests **/
+BOOST_AUTO_TEST_CASE(getDataTypeForSensor) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle.Speed";
+  std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
+  BOOST_TEST(dt == "int32");
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForAttribute) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/VehicleIdentification/VIN";
+  std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
+  BOOST_TEST(dt == "string");
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForActuator) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/Cabin/Door/Row1/Right/IsLocked";
+  std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
+  BOOST_TEST(dt == "boolean");
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForBranch) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/Body";
+  BOOST_CHECK_THROW(db->getDatatypeForPath(VSSPath::fromVSS(path)), genException);
+}
+
+BOOST_AUTO_TEST_CASE(getDataTypeForNonExistingPath) {
+  db->initJsonTree(validFilename);
+  std::string path = "Vehicle/FluxCapacitor/Charge";
+  BOOST_CHECK_THROW(db->getDatatypeForPath(VSSPath::fromVSS(path)), noPathFoundonTree);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

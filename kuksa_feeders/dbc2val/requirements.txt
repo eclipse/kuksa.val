@@ -1,7 +1,0 @@
-pyserial
-cantools
-python-can
-pyyaml
-j1939
-py_expression_eval
-kuksa-viss-client

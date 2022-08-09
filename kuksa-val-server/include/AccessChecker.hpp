@@ -1,21 +1,29 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2018 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
  *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ **********************************************************************/
+ 
 #ifndef __ACCESSCHECKER_H__
 #define __ACCESSCHECKER_H__
 
 #include "IAccessChecker.hpp"
-#include "kuksa.pb.h"
+#include "KuksaChannel.hpp"
 
 class IAuthenticator;
 
@@ -23,16 +31,16 @@ class IAuthenticator;
 class AccessChecker : public IAccessChecker {
  private:
   std::shared_ptr<IAuthenticator> tokenValidator;
-  bool checkSignalAccess(const kuksa::kuksaChannel& channel, const std::string& path, const std::string& requiredPermission);
+  bool checkSignalAccess(const KuksaChannel& channel, const std::string& path, const std::string& requiredPermission);
 
  public:
   AccessChecker(std::shared_ptr<IAuthenticator> vdator);
   
-  bool checkReadAccess(kuksa::kuksaChannel &channel, const VSSPath &path) override;
+  bool checkReadAccess(KuksaChannel &channel, const VSSPath &path) override;
 
-  bool checkWriteAccess(kuksa::kuksaChannel &channel, const VSSPath &path) override;
+  bool checkWriteAccess(KuksaChannel &channel, const VSSPath &path) override;
 
-  bool checkPathWriteAccess(kuksa::kuksaChannel &channel, const jsoncons::json &paths) override;
+  bool checkPathWriteAccess(KuksaChannel &channel, const jsoncons::json &paths) override;
 };
 
 #endif

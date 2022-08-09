@@ -48,8 +48,6 @@ Available build options with optional parameters, if available, are presented be
  - **BUILD_EXE** [**ON**/OFF] - Default build shall produce W3C-Server executable.
    If set to **OFF** W3C-Server shall be built as a library which could be used in another application.
    Eg: could be found in the _vehicle2cloud_ app.
- - **BUILD_TEST_CLIENT** [**ON**/OFF] - Build separate _testclient_ executable. Test client is a utility to test
-   Web-Socket request interface of W3C-Server and retrieve responses.
  - **BUILD_UNIT_TEST** [ON/**OFF**] - If enabled, build shall produce separate _w3c-unit-test_ executable which
    will run existing tests for server implementation.
  - **ADDRESS_SAN** [ON/**OFF**] - If enabled and _Clang_ is used as compiler, _AddressSanitizer_ will be used to build

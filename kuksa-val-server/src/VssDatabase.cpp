@@ -1,21 +1,30 @@
-/*
- * ******************************************************************************
- * Copyright (c) 2018-2021 Robert Bosch GmbH.
+/**********************************************************************
+ * Copyright (c) 2018-2022 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ *      Robert Bosch GmbH
+ **********************************************************************/
+
 
 #include <limits>
 #include <regex>
 #include <stdexcept>
 #include <fstream>
+#include <ctime>
 #include <boost/algorithm/string.hpp>
 #include "jsonpath/json_query.hpp"
 #include "jsoncons_ext/jsonpatch/jsonpatch.hpp"
@@ -26,7 +35,7 @@
 #include "IAccessChecker.hpp"
 #include "ISubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "JsonResponses.hpp"
 
 using namespace std;
@@ -176,6 +185,34 @@ bool VssDatabase::checkPathValid(const VSSPath & path){
     return !getLeafPaths(path).empty();
 }
 
+//return the VSS datatype of a path. If the path is not found, throw
+//an exception
+string VssDatabase::getDatatypeForPath(const VSSPath &path) {
+  if ( !pathExists(path)) {
+     throw noPathFoundonTree(path.to_string());
+  }
+  if ( !pathIsReadable(path)) { //"readable" implies sensor, actuator or attribute, those have datatypes
+    stringstream ss;
+    ss << path.to_string() + " does not contain a datatype because it is not a sensor/actuator/attribute.";
+    throw genException(ss.str());
+  }
+  jsoncons::json resArray;
+  {
+    std::lock_guard<std::mutex> lock_guard(rwMutex_);
+    resArray = jsonpath::json_query(data_tree__, path.getJSONPath());
+  }
+  jsoncons::json datapoint;
+  jsoncons::json result = resArray[0];
+  if (result.contains("datatype")) {
+    return result["datatype"].as<string>();
+  }
+  else {
+    stringstream ss;
+    ss << path.to_string() + " does not contain a datatype.";
+    throw genException(ss.str());
+  }
+}
+
 // Tokenizes path with '.' as separator.
 vector<string> getPathTokens(string path) {
   vector<string> tokens;
@@ -284,8 +321,8 @@ void VssDatabase::updateJsonTree(jsoncons::json& sourceTree, const jsoncons::jso
 
 }
 
-void VssDatabase::updateJsonTree(kuksa::kuksaChannel& channel,  jsoncons::json& jsonTree){
-  if (! channel.modifytree()) {
+void VssDatabase::updateJsonTree(KuksaChannel& channel,  jsoncons::json& jsonTree){
+  if (! channel.authorizedToModifyTree()) {
      stringstream msg;
      msg << "do not have write access for updating json tree or is invalid";
      throw noPermissionException(msg.str());
@@ -299,8 +336,8 @@ void VssDatabase::updateJsonTree(kuksa::kuksaChannel& channel,  jsoncons::json& 
 
 // update a metadata in tree, which will only do one-level-deep shallow merge/update.
 // If deep merge/update are expected, use `updateJsonTree` instead.
-void VssDatabase::updateMetaData(kuksa::kuksaChannel& channel, const VSSPath& path, const jsoncons::json& metadata){
-  if (! channel.modifytree()) {
+void VssDatabase::updateMetaData(KuksaChannel& channel, const VSSPath& path, const jsoncons::json& metadata){
+  if (! channel.authorizedToModifyTree()) {
      stringstream msg;
      msg << "do not have write access for updating MetaData or is invalid";
      throw noPermissionException(msg.str());
@@ -439,14 +476,14 @@ jsoncons::json VssDatabase::setSignal(const VSSPath &path, const std::string& at
       if (resJson.contains("datatype")) {
         checkAndSanitizeType(resJson, value);
         resJson.insert_or_assign(attr, value);
-        resJson.insert_or_assign("ts-"+attr, JsonResponses::getTimeStamp());
+        JsonResponses::addTimeStampToJSON(resJson, "-"+attr);
+        jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
+
         datapoint.insert_or_assign(attr, value);
-        datapoint.insert_or_assign("ts", JsonResponses::getTimeStamp());
+        datapoint.insert_or_assign("ts_s",  resJson["ts_s-"+attr]);
+        datapoint.insert_or_assign("ts_ns", resJson["ts_ns-"+attr]);
         data.insert_or_assign("dp", datapoint);
-        {
-          jsonpath::json_replace(data_tree__, path.getJSONPath(), resJson);
-          subHandler_->publishForVSSPath(path, attr, data);
-        }
+        subHandler_->publishForVSSPath(path, resJson["datatype"].as<std::string>(), attr, data);
       }
       else {
         throw genException(path.getVSSPath()+ "is invalid for set"); //Todo better error message. (Does not propagate);
@@ -457,7 +494,7 @@ jsoncons::json VssDatabase::setSignal(const VSSPath &path, const std::string& at
 }
 
 // Returns signal in JSON format
-jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& attr) {
+jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& attr, bool as_string) {
     jsoncons::json resArray;
     {
       std::lock_guard<std::mutex> lock_guard(rwMutex_);
@@ -468,15 +505,27 @@ jsoncons::json VssDatabase::getSignal(const VSSPath& path, const std::string& at
     answer.insert_or_assign("path", path.to_string());
     jsoncons::json result = resArray[0];
     if (result.contains(attr)) {
-      datapoint.insert_or_assign(attr, result[attr]);
+      if (as_string) {
+        datapoint.insert_or_assign(attr, result[attr].as<string>());
+      }
+      else {
+        datapoint.insert_or_assign(attr, result[attr]);
+      }
     } else {
-      datapoint[attr] = "---";
+      throw notSetException("Attribute " + attr + " on " + path.getVSSPath() + " has not been set yet.");
     }
-    if (result.contains("ts-"+attr)) {
-      datapoint["ts"] = result["ts-"+attr].as<string>();
+    if (result.contains("ts_s-"+attr) && result.contains("ts_ns-"+attr)) {
+      datapoint["ts_s"] = result["ts_s-"+attr].as<uint64_t>();
+      datapoint["ts_ns"] = result["ts_ns-"+attr].as<uint32_t>();
     } else {
-      datapoint["ts"] = JsonResponses::getTimeStampZero();
+      datapoint["ts_s"] = 0;
+      datapoint["ts_ns"] = 0;
     }
+
+    if (as_string) {
+      JsonResponses::convertJSONTimeStampToISO8601(datapoint);
+    }
+
     answer.insert_or_assign("dp", datapoint);
     return answer;
 

@@ -1,17 +1,24 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2019-2020 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *    Robert Bosch GmbH - initial API and functionality
- *	   Expleo Germany - further tests and assertion checks
- * *****************************************************************************
- */
+ *      Robert Bosch GmbH
+ **********************************************************************/
+
 #define BOOST_TEST_MODULE kuksaval-unit-test
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
@@ -35,7 +42,7 @@
 #include "SubscriptionHandler.hpp"
 #include "VssDatabase.hpp"
 #include "VssCommandProcessor.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "ILogger.hpp"
 #include "BasicLogger.hpp"
 #include "IServerMock.hpp"
@@ -44,7 +51,7 @@
 #include "kuksa.grpc.pb.h"
 #include "grpcHandler.hpp"
 #include "kuksa_mock.grpc.pb.h"
-#include "GrpcConnection.hpp"
+
 
 /* AUTH_JWT permission token looks like this
 {
@@ -115,9 +122,9 @@ kuksavalunittest::~kuksavalunittest() {
 // For testing the client the server could be mocked
 
 //-------------------------------------gRPC Client Logic Test
-class FakeClient {
+/*class FakeClient {
  public:
-  FakeClient(kuksa::viss_client::StubInterface* stub) : connGrpcSes(grpc::CreateChannel("127.0.0.1", grpc::InsecureChannelCredentials())), stub_(stub){
+  FakeClient(kuksa::kuksa_grpc_if::StubInterface* stub) : connGrpcSes(grpc::CreateChannel("127.0.0.1", grpc::InsecureChannelCredentials())), stub_(stub){
   }
   ~FakeClient() = default;
   void Setup(){
@@ -212,14 +219,14 @@ class FakeClient {
     BOOST_TEST(result["requestId"].to_string() == expected["requestId"].to_string());
   }
  private:
-    kuksa::viss_client::StubInterface* stub_;
-    kuksa::kuksaChannel kuksa_channel;
+   /kuksa::viss_client::StubInterface* stub_;
+    KuksaChannel kuksa_channel;
     GrpcConnection connGrpcSes;
-};
+};*/
 
 //--------Do not change the order of the tests in this file, because some results are dependent on the previous tests and data in the db-------
 //----------------------------------------------------gRPC Client Logic Tests 
-BOOST_AUTO_TEST_CASE(Test_GetMetaDataService){
+/*BOOST_AUTO_TEST_CASE(Test_GetMetaDataService){
    kuksa::Mockviss_clientStub stub;
    FakeClient client(&stub);
    client.Setup();
@@ -299,7 +306,7 @@ BOOST_AUTO_TEST_CASE(Test_AuthService){
     })");
     EXPECT_CALL(stub, AuthorizeChannel(testing::_,testing::_,testing::_)).Times(testing::AtLeast(1)).WillOnce(testing::DoAll(testing::SetArgPointee<2>(resp), testing::Return(grpc::Status::OK)));
     client.doAuth();
-}
+}*/
 
 //----------------------------------------------------VssDatabase Tests 
 
@@ -343,8 +350,8 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     MOCK_EXPECT(accesshandler->checkReadAccess).returns(true);
     MOCK_EXPECT(mqttPublisher->sendPathValue).returns(true);
     json result;
-    kuksa::kuksaChannel channel;
-    channel.set_connectionid(1234);
+    KuksaChannel channel;
+    channel.setConnID(1234);
     string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -358,7 +365,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 		"path": "Vehicle.Speed",
 		"requestId": "8756"
 	})");
-    string response = commandProc->processQuery(get_request,channel);
+    jsoncons::json response = commandProc->processQuery(get_request,channel);
 
 //---------------------  Uint8 SET/GET TEST ------------------------------------
     json test_value_Uint8_boundary_low;
@@ -375,7 +382,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     database->setSignal(vss_test_path_Uint8, "value", test_value_Uint8_boundary_high);
     result = database->getSignal(vss_test_path_Uint8, "value");
 
-   BOOST_TEST(result["dp"]["value"].as<uint8_t>() == numeric_limits<uint8_t>::max());
+    BOOST_TEST(result["dp"]["value"].as<uint8_t>() == numeric_limits<uint8_t>::max());
 
     json test_value_Uint8_boundary_middle;
     test_value_Uint8_boundary_middle = numeric_limits<uint8_t>::max() / 2;
@@ -431,7 +438,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     test_value_Uint16_boundary_middle = numeric_limits<uint16_t>::max() / 2;
 
     database->setSignal(vss_test_path_Uint16, "value", test_value_Uint16_boundary_middle);
-    result = database->getSignal(vss_test_path_Uint16,"value");
+    result = database->getSignal(vss_test_path_Uint16, "value");
 
     BOOST_TEST(result["dp"]["value"].as<uint16_t>() == numeric_limits<uint16_t>::max() / 2);
 
@@ -481,7 +488,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     test_value_Uint32_boundary_middle = numeric_limits<uint32_t>::max() / 2;
 
     database->setSignal(vss_test_path_Uint32, "value", test_value_Uint32_boundary_middle);
-    result = database->getSignal(vss_test_path_Uint32,"value");
+    result = database->getSignal(vss_test_path_Uint32, "value");
 
     BOOST_TEST(result["dp"]["value"].as<uint32_t>() == numeric_limits<uint32_t>::max() / 2);
 
@@ -630,7 +637,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     test_value_int32_boundary_low = numeric_limits<int32_t>::min();
 
     database->setSignal(vss_test_path_int32, "value", test_value_int32_boundary_low);
-    result = database->getSignal(vss_test_path_int32,"value");
+    result = database->getSignal(vss_test_path_int32, "value");
 
     BOOST_TEST(result["dp"]["value"].as<int32_t>() == numeric_limits<int32_t>::min());
 
@@ -697,7 +704,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     test_value_Float_boundary_high = std::numeric_limits<float>::max();
 
     database->setSignal(vss_test_path_Float, "value", test_value_Float_boundary_high);
-    result = database->getSignal(vss_test_path_Float,"value");
+    result = database->getSignal(vss_test_path_Float, "value");
 
     BOOST_TEST(result["dp"]["value"].as<float>() == std::numeric_limits<float>::max());
 
@@ -706,7 +713,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     test_value_Float_boundary_middle = std::numeric_limits<float>::max() / 2;
 
     database->setSignal(vss_test_path_Float, "value", test_value_Float_boundary_middle);
-    result = database->getSignal(vss_test_path_Float,"value");
+    result = database->getSignal(vss_test_path_Float, "value");
 
 
     BOOST_TEST(result["dp"]["value"].as<float>() == std::numeric_limits<float>::max() / 2);
@@ -727,7 +734,7 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     test_value_Double_boundary_low = std::numeric_limits<double>::min();
 
     database->setSignal(vss_test_path_Double, "value", test_value_Double_boundary_low);
-    result = database->getSignal(vss_test_path_Double,"value");
+    result = database->getSignal(vss_test_path_Double, "value");
 
     BOOST_TEST(result["dp"]["value"].as<double>() == std::numeric_limits<double>::min());
 
@@ -990,8 +997,8 @@ BOOST_AUTO_TEST_CASE(test_metadata_branch_with_wildcard)
 
 BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 {
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1007,9 +1014,8 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
                 "value" : "2345.0"
 	})");
 
-   string set_response = commandProc->processQuery(set_request,channel);
-   json set_response_json = json::parse(set_response);
-
+   auto set_response_json = commandProc->processQuery(set_request,channel);
+   
    json set_response_expected = json::parse(R"({
     "action": "set",
     "requestId": "8750"
@@ -1029,7 +1035,7 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(get_request,channel);
+   auto response_json = commandProc->processQuery(get_request,channel);
 
    json expected = json::parse(R"({
     "action": "get",
@@ -1040,8 +1046,6 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
     }
     })");
 
-   json response_json = json::parse(response);
-
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
 
@@ -1051,8 +1055,8 @@ BOOST_AUTO_TEST_CASE(process_query_set_get_simple)
 
 BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
 {
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1066,7 +1070,7 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
     "action": "get",
@@ -1077,99 +1081,17 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard)
     }
     })");
 
-   json response_json = json::parse(response);
-
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
 
    BOOST_TEST(response_json == expected);
 }
 
-/* Multiset currently not supported. May be reintorduced in Gen2 */
-
-/*
-BOOST_AUTO_TEST_CASE(process_query_set_get_withwildcard)
-{
-   WsChannel channel;
-   channel.setConnID(1234);
-   string authReq(R"({
-		"action": "authorize",
-		"requestId": "87568"
-	})");
-   json authReqJson = json::parse(authReq);
-   authReqJson["tokens"] = AUTH_JWT;
-   commandProc->processQuery(authReqJson.as_string(),channel);
-
-   string set_request(R"({
-		"action": "set",
-		"path": "Vehicle.Chassis.Axle.*.Wheel.*.Tire.Temperature",
-		"requestId": "8750",
-                "value" : [{"Row1.Wheel.Right.Tire.Temperature":35}, {"Row1.Wheel.Left.Tire.Temperature":50}, {"Row2.Wheel.Right.Tire.Temperature":65}, {"Row2.Wheel.Left.Tire.Temperature":80}]
-	})");
-
-   string set_response = commandProc->processQuery(set_request,channel);
-   json set_response_json = json::parse(set_response);
-
-   json set_response_expected = json::parse(R"({
-    "action": "set",
-    "requestId": "8750"
-     }
-     )");
-
-
-   BOOST_TEST(set_response_json.contains("ts") == true);
-   // remove timestamp to match
-   set_response_json.erase("ts");
-
-   BOOST_TEST(set_response_json == set_response_expected);
-
-
-   string get_request(R"({
-		"action": "get",
-		"path": "Vehicle.Chassis.Axle.*.Wheel.*.Tire.Temperature",
-		"requestId": "8756"
-	})");
-
-   string response = commandProc->processQuery(get_request,channel);
-
-
-
-   json expected = json::parse(R"({
-    "action": "get",
-    "requestId": "8756",
-    "value": [
-        {
-            "Vehicle.Chassis.Axle.Row2.Wheel.Right.Tire.Temperature": 65
-        },
-        {
-            "Vehicle.Chassis.Axle.Row2.Wheel.Left.Tire.Temperature": 80
-        },
-        {
-            "Vehicle.Chassis.Axle.Row1.Wheel.Right.Tire.Temperature": 35
-        },
-        {
-            "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.Temperature": 50
-        }
-      ]
-    }
-    )");
-
-
-   json response_json = json::parse(response);
-
-   BOOST_TEST(response_json.contains("ts") == true);
-
-   // remove timestamp to match
-   response_json.erase("ts");
-   BOOST_TEST(response_json == expected);
-}
-*/
-
 
 BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 {
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1183,15 +1105,13 @@ BOOST_AUTO_TEST_CASE(process_query_get_withwildcard_invalid)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
                          "action":"get",
                          "error":{"message":"I can not find Signal.*.RPM1 in my db","number":"404","reason":"Path not found"},
                          "requestId":"8756"
                          })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1219,8 +1139,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJyIn19.jbhdMq5hEWXXNfZn9xE4rECIWEVsw-q3g-jxp5lLS0VAZ2WYOGoSd5JX2P9YG0Lals7Ue0wdXtgLSFtvIGU4Ol2MuPaF-Rbb-Q5O4njxg60AZ00kr6RywpyGZHK0eT9MuFCnVMN8Krf3lo2pPB1ms-WAHX6rfArbXxx0FsMau9Ewn_3m3Sc-6sz5alQw1Y7Rk0GD9Y7WP_mbICU__gd40Ypu_ki1i59M8ba5GNfd8RytEIJXAg7RTcKREWDZfMdFH5X7F6gAPA7h_tVH3-bsbT-nOsKCbM-3PM0EKAOl104SwmKcqoWnfXbUow5zt25O8LYwmrukuRBtWiLI5FxeW6ovmS-1acvS3w1LXlQZVGWtM_ZC7shtHh-iz7nyL1WCTpZswHgoqVrvnJ0PVZQkBMBFKvsbu9WkWPUqHe0sx2cDUOdolelspfClO6iP7CYTUQQqyDov9zByDiBfQ7rILQ_LcwPG6UAAbEgM0pC_lntsPzbdcq0V-rE_OMO6y7HtmGN7GPhYHGU0K4qQBuYI_Pdn2gqyCEciI6_awB1LG4RwfoC8ietGUuGmxdcl2PWm0DI-Kj1f1bNlwc-54LKg8v5K54zsBdmK4SrrJ6Nt6OgCqq3On7zHfTDFN01dqWP6EoQHhEn6Akx5HiioTW3CHSVq6pd09Po5cgAAIoQE2U0";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1234,7 +1154,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
     "action": "get",
@@ -1244,8 +1164,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1273,8 +1191,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJyIn19.jbhdMq5hEWXXNfZn9xE4rECIWEVsw-q3g-jxp5lLS0VAZ2WYOGoSd5JX2P9YG0Lals7Ue0wdXtgLSFtvIGU4Ol2MuPaF-Rbb-Q5O4njxg60AZ00kr6RywpyGZHK0eT9MuFCnVMN8Krf3lo2pPB1ms-WAHX6rfArbXxx0FsMau9Ewn_3m3Sc-6sz5alQw1Y7Rk0GD9Y7WP_mbICU__gd40Ypu_ki1i59M8ba5GNfd8RytEIJXAg7RTcKREWDZfMdFH5X7F6gAPA7h_tVH3-bsbT-nOsKCbM-3PM0EKAOl104SwmKcqoWnfXbUow5zt25O8LYwmrukuRBtWiLI5FxeW6ovmS-1acvS3w1LXlQZVGWtM_ZC7shtHh-iz7nyL1WCTpZswHgoqVrvnJ0PVZQkBMBFKvsbu9WkWPUqHe0sx2cDUOdolelspfClO6iP7CYTUQQqyDov9zByDiBfQ7rILQ_LcwPG6UAAbEgM0pC_lntsPzbdcq0V-rE_OMO6y7HtmGN7GPhYHGU0K4qQBuYI_Pdn2gqyCEciI6_awB1LG4RwfoC8ietGUuGmxdcl2PWm0DI-Kj1f1bNlwc-54LKg8v5K54zsBdmK4SrrJ6Nt6OgCqq3On7zHfTDFN01dqWP6EoQHhEn6Akx5HiioTW3CHSVq6pd09Po5cgAAIoQE2U0";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1288,40 +1206,18 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
-    "action": "get",
-    "requestId": "8756",
-    "data":[
-        {"path": "Vehicle.VehicleIdentification.ACRISSCode", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.Brand", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.Model", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.VIN", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.WMI", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.Year", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.bodyType", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.dateVehicleFirstRegistered", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.knownVehicleDamages", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.meetsEmissionStandard", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.productionDate", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.purchaseDate", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleConfiguration", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleModelDate", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleSeatingCapacity", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleSpecialUsage", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleinteriorColor", "dp":{"value": "---"}},
-        {"path": "Vehicle.VehicleIdentification.vehicleinteriorType", "dp":{"value": "---"}}
-        ]
+    "action":"get",
+     "error":{"message":"Attribute value on Vehicle/VehicleIdentification/ACRISSCode has not been set yet.",
+      "number":"404",
+      "reason":"unavailable_data"
+      },
+     "requestId":"8756"
     })");
 
-  json response_json = json::parse(response);
-
   verify_and_erase_timestamp(response_json);
-  for (auto &  dataRes : response_json["data"].array_range()) {
-    verify_and_erase_timestampZero(dataRes["dp"]);
-  }
-
   BOOST_TEST(response_json == expected);
 }
 
@@ -1344,8 +1240,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJyIn19.jbhdMq5hEWXXNfZn9xE4rECIWEVsw-q3g-jxp5lLS0VAZ2WYOGoSd5JX2P9YG0Lals7Ue0wdXtgLSFtvIGU4Ol2MuPaF-Rbb-Q5O4njxg60AZ00kr6RywpyGZHK0eT9MuFCnVMN8Krf3lo2pPB1ms-WAHX6rfArbXxx0FsMau9Ewn_3m3Sc-6sz5alQw1Y7Rk0GD9Y7WP_mbICU__gd40Ypu_ki1i59M8ba5GNfd8RytEIJXAg7RTcKREWDZfMdFH5X7F6gAPA7h_tVH3-bsbT-nOsKCbM-3PM0EKAOl104SwmKcqoWnfXbUow5zt25O8LYwmrukuRBtWiLI5FxeW6ovmS-1acvS3w1LXlQZVGWtM_ZC7shtHh-iz7nyL1WCTpZswHgoqVrvnJ0PVZQkBMBFKvsbu9WkWPUqHe0sx2cDUOdolelspfClO6iP7CYTUQQqyDov9zByDiBfQ7rILQ_LcwPG6UAAbEgM0pC_lntsPzbdcq0V-rE_OMO6y7HtmGN7GPhYHGU0K4qQBuYI_Pdn2gqyCEciI6_awB1LG4RwfoC8ietGUuGmxdcl2PWm0DI-Kj1f1bNlwc-54LKg8v5K54zsBdmK4SrrJ6Nt6OgCqq3On7zHfTDFN01dqWP6EoQHhEn6Akx5HiioTW3CHSVq6pd09Po5cgAAIoQE2U0";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1359,40 +1255,18 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
-                   "action":"get",
-                   "requestId":"8756",
-                   "data":[
-                        {"path": "Vehicle.VehicleIdentification.ACRISSCode", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.Brand", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.Model", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.VIN", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.WMI", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.Year", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.bodyType", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.dateVehicleFirstRegistered", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.knownVehicleDamages", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.meetsEmissionStandard", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.productionDate", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.purchaseDate", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleConfiguration", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleModelDate", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleSeatingCapacity", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleSpecialUsage", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleinteriorColor", "dp":{"value": "---"}},
-                        {"path": "Vehicle.VehicleIdentification.vehicleinteriorType", "dp":{"value": "---"}}
-                        ]
-        })");
-
-  json response_json = json::parse(response);
+                       "action":"get",
+                           "error":{"message":"Attribute value on Vehicle/VehicleIdentification/ACRISSCode has not been set yet.",
+                           "number":"404",
+                           "reason":"unavailable_data"
+                        },
+                        "requestId":"8756"
+                        })");
  
   verify_and_erase_timestamp(response_json);
-  for (auto &  dataRes : response_json["data"].array_range()) {
-    verify_and_erase_timestampZero(dataRes["dp"]);
-  }
-
   BOOST_TEST(response_json == expected);
 }
 
@@ -1401,45 +1275,43 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_non_permitted_path)
 /*
     Token looks like this.
 
-  {
-  "sub": "Example JWT",
-  "iss": "Eclipse kuksa",
+{
+  "sub": "kuksa.val",
+  "iss": "Eclipse KUKSA Dev",
   "admin": true,
   "iat": 1516239022,
-  "exp": 1609372800,
-  "kuksa-vss": {
-    "Vehicle.OBD.EngineSpeed": "r"
+  "exp": 1767225599,
+  "kuksa-vss":  {
+     "Vehicle.OBD.Speed": "r"
   }
 }
 */
-   string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJyIn19.VDr_UU_efYVaotMSRs-Ga7xf1a7ArEb0oTfJixTR4ah9aXnXYNHL-f4N4YZQ1A4mX3YhdcxifgV2kE1XwXE0XBoYjydy9g8pZhPm-fMF3z9zTeWRhPBSSHYLgcJQRINChtipmn1RIQxeeEqDX3E0n4utb0HfNXcEDTOKSeP4sFygjiDyEJYl_zn1JoMWfV8HJ9beYgVybKyMRLkM7FsGqT-aUOVfdxhH3nQSGFleI-nzFh6fFIaVbNdZo9u4moeIcaoeZJLJEe2410-xTtByxp_fN0OTxntHbloLSRLjY8MxC1hu1Uhbxs5GKPfJDV7ZhhbULzqqiRMSGn13ELJO-yPEnaHV8NZ8V9U6My-rBkEGgVcwCsbyDu-i7hAP8fepFCpyYfmZkypXxrZQHj8idJ16SXHNzNLL4Q7uiXSwc9oPSRI8FcbEwk-Ul7sD-X7kUqfFukO49NGUdobc-JhVzsJl-eofwe0H0Rq3hme6Rj1kFjitLYU2SyZjUsYrrGpYrghahh7MfSjf2lqNi159wfYtZtopoBrbPmAJ3HnzWXYM2ai0kroELRCaHz4adodMtem4qTBGJoYgG7hAg1OxvnbOdYOD7yZ46-RxBGgaoWuxAnQRHsnGs4j0SaXRTVWvTBHg21tI6AHo4wwyfUD4pGEaxB3M3bEH9m2hWl4HZpk";
+   string AUTH_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJrdWtzYS52YWwiLCJpc3MiOiJFY2xpcHNlIEtVS1NBIERldiIsImFkbWluIjp0cnVlLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTc2NzIyNTU5OSwia3Vrc2EtdnNzIjp7IlZlaGljbGUuT0JELlNwZWVkIjoiciJ9fQ.UOuS6SrOaejHSweCVbs3CzcAXih9pI9gwJpwCbTGGXIHkiUk-o3aAdmooWcZ-eDWASIKXi6JVpaPwHQSTJzwmGJojG__fCm_pS6m494zmmMvydDqapz4WBbDY_o4VGEHMkaONnTzOK8uufkb7ejvhAWWn5d5n981n7OdCiWkDSf7VjhsbY11VC7KFXh62mHOIOE7inrqYQpu3EqCInnZyBomWxH90-a5FRBuoDo7FM0102C8GgoyZGsN6MEC_cSBiTQQgFUvEK_E4z_zVEH4SntufhZNhW0yS0cXEMz8xqaAeC1EckGypBRAhtUjlq6ixfqBs2C1RWWaZcBQiaYkB52BtSqAaJOkQBdKJG11w_-KkOYGjWdjcJLjZjdsXWgmyY7L4aqSnn0TtGk5Yt2MX-x3W6dDeEKOnlJtEFi8IpTCuhIlh6XAphZQuqhfTR6bVvW9R9o96iITW3dQiBcSu-t5hlHZslUem0IfxIGUqiNdkf1Q9PzbDStbvwmaXYwDyuQyNm8rz3rXzwsxkF9ooQSCI3-ECfr8AalmUtUGM2KAT5uO29M4EOWFvABvtNLUu8OMQQNkQt47r2tKSeaJrqrO7VAMRujRfCgqBSkazDzA5OMuTnuJhbo9p_m88-5dFlfCnRqaahySe26OndOZRdhHtl2srRYIUhbyhKtL8tg";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   string response=commandProc_auth->processQuery(authReqJson.as_string(),channel);
+   auto response_json = commandProc_auth->processQuery(authReqJson.as_string(),channel);
    
    string request(R"({
 		"action": "get",
-		"path": "Vehicle.OBD.Speed",
+		"path": "Vehicle.Speed",
 		"requestId": "8756"
 	})");
 
-   response = commandProc_auth->processQuery(request,channel);
-
    json expected = json::parse(R"({
                    "action":"get",
-                   "error":{"message":"Insufficient read access to Vehicle.OBD.Speed","number":"403","reason":"Forbidden"},
+                   "error":{"message":"Insufficient read access to Vehicle.Speed","number":"403","reason":"Forbidden"},
                    "requestId":"8756"
         })");
 
-   json response_json = json::parse(response);
+   response_json = commandProc_auth->processQuery(request,channel);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1464,8 +1336,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZDEiOiJyIn19.rST_a1LunN5PT1UbqFfiSS5-75nX29fXh0ZUFbIGWADk7JInDDo7EP6tt2HmiX6vW3RoeKVoZCM_UB9fKfKmJMA9-pgBkeGjVcf8PmGzIJUKJPjPp3vRUrWop0UABeCqlnlQ7SFO3IlfcSarHg0P9SdmPQm6WOtJSqv806KIe5cLVhl9Ikr0cmYMO5IJ5IQzQP6cDcWl5zro75v5MtQbjHrNBKAm7qclQnBtx0oeMmdSmLQLJR0RLy10VeORtqqrSksy2QKmVkrmK2vX1GuwR-kOOEqBZWz9j8HJ4I05XpCdltKx1P41mQIWxZKUp87uKsqZBe_8V5Bd2bqYbP3MKyIxsZEUGUjjpbLogu1DBS05oJHc4_Al6AMclX5DVkWDL7M1HMGwgOAqIfsQwwiGJah6n9c43K2oDGHmsc0zrKmNcx-UDA7dqbg1PnrAWx7Ex__nI95zhoDYnbsoxLhg_tOVaCzvvA3pCU8IEDcTBSyDp-PUVzF6m3TbzJlwrLRP2_kzl48asn5U1fiMvGTFiVzRUv34uvnelQuK0954NsqnOi9tHAP2ljNrP75KuehAqmdWhHXWMkxoUFbQ974bWP6J0eYu1SnuQs2mR-3bf_HhxxPNI-5tgNOZ0ROwfDfHrOLdMP1RgoweLrpvmffwhV1aFTAQyvqjSJYVl9tZKfk";
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1479,15 +1351,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_invalid_permission_valid_path)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
    json expected = json::parse(R"({
                    "action":"get",
                    "error":{"message":"Insufficient read access to Vehicle/OBD/EngineSpeed","number":"403","reason":"Forbidden"},
                    "requestId":"8756"
         })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1513,8 +1383,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQiOiJyIn19.aFM4kmqmupJmxkCXXPHUnmC5JC4ioIYwczk_YcGLy8ULfT4As6fzZNnAFTZVk-axBbIHnU3aUTigI5wZroF0ZkdWzJ1FA1-ZEXRLwUug9pigOC4hvTn4layT4tSEylHm3Mhh8M3Z0O4QKr-TuKZgZcbIICjrI3GQvm0kdkAO1hUTDPF2yQv16qCPuWvmJEDmy70MjzZfKIy94LCXL6Gf1OdIo4hXIbhLFPOR4ea8iaEz35VEjEZ828KbP8DCXRNWlad-CjAx7f4whS_YHctVZelFoa5G-MzNXRcr54VmkGbYM4WGDn6Twamsfb7YmwROzNmsI8DNahWWXciWxVZElsAexKx5yFXr3CslxG8dbgZgHWQ1tZe0Nq1b-4XUkomz6e6hd0iUF913D-TjvBACz4fpl5_28Wr0TMy84w1DvkpfNmgQ_1fiZNbho2uBxDoisfDWq_sI_ph0xO5mu-HKrs2T_tkuFveCPDHvIm1uZIzT8hX2cFDoBNClUlf4BOo6EHw3Ax9ISr28WzRxpZPOs9bYh4AIlnkqh28P91emK7pdb4eXhZKm3ZVWGEA17pLUUraxEhTYWXAFMsafwqTAaUhYt-JUBiExvHRvZpa49UDkXd4lJvl9gYO9YPiyrG6dioIsK9QSw-Mhob2WacRUzbG0O8V9uVApjw73tK4FYhA";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1528,7 +1398,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action": "get",
@@ -1538,8 +1408,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1567,8 +1435,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQiOiJyIn19.aFM4kmqmupJmxkCXXPHUnmC5JC4ioIYwczk_YcGLy8ULfT4As6fzZNnAFTZVk-axBbIHnU3aUTigI5wZroF0ZkdWzJ1FA1-ZEXRLwUug9pigOC4hvTn4layT4tSEylHm3Mhh8M3Z0O4QKr-TuKZgZcbIICjrI3GQvm0kdkAO1hUTDPF2yQv16qCPuWvmJEDmy70MjzZfKIy94LCXL6Gf1OdIo4hXIbhLFPOR4ea8iaEz35VEjEZ828KbP8DCXRNWlad-CjAx7f4whS_YHctVZelFoa5G-MzNXRcr54VmkGbYM4WGDn6Twamsfb7YmwROzNmsI8DNahWWXciWxVZElsAexKx5yFXr3CslxG8dbgZgHWQ1tZe0Nq1b-4XUkomz6e6hd0iUF913D-TjvBACz4fpl5_28Wr0TMy84w1DvkpfNmgQ_1fiZNbho2uBxDoisfDWq_sI_ph0xO5mu-HKrs2T_tkuFveCPDHvIm1uZIzT8hX2cFDoBNClUlf4BOo6EHw3Ax9ISr28WzRxpZPOs9bYh4AIlnkqh28P91emK7pdb4eXhZKm3ZVWGEA17pLUUraxEhTYWXAFMsafwqTAaUhYt-JUBiExvHRvZpa49UDkXd4lJvl9gYO9YPiyrG6dioIsK9QSw-Mhob2WacRUzbG0O8V9uVApjw73tK4FYhA";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1582,7 +1450,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action": "get",
@@ -1592,8 +1460,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_permission_valid_path_2)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1620,8 +1486,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS4qLkVuZ2luZVNwZWVkIjoiciJ9fQ.fUyHFOh3rD2IwOVMIYzNKdR4Y6IbKmQhN3Y2pGfcOy8SjXcE5MS6owIYRUVCxnlnH9-ywpNrwvePgKPHnjnWq8wSHr6I22zh3dNty0dFn-gJ82LQ-aNRKcweFqZXXP7-b-__Lc_ivEZpl-w0T9IzPWsUhZyt82XIPkzOZrfULv-DhXpoVIFTr-nz7KSpypcp0j_zXvbkf35bLLwcca7nMY5a9ftMKzMcv4xWekjPQQYvGchtLi1lOG1k8iHlf_cGsVEE4CK55x3bkrEjOYagT7WlRkMgR4F4HOzG0LNHsiXEVpNf17cs1Fsy6K5ObY-_J4BCx8wWGc7Bnkg4yap_3jG1IW_o7gcINcx4WiTNHz42LU6d0GQ9spc3vSP5vPm7J1aglBqazYf-tWRHp7QF8WDtAgenLpb4Ld4n_Aq5gHBWfOlt4tCyMgOgLlnzUJT1yc65vNesB7zUAFCdJ49kSV4Lwf0hv4W-hXl3wUPvb06yaff4U2_zrDQOc7GhoVLMzHmAYccNlDEMfM6HjQAnGLLIdvMxfs5g4a2CLKfxbOusRAQYNd4XwU4CpNAWabiu0FHIC43vy578zY3dpCHBOtpEC5csNEnHqyTSWdJwMy9BLmPneNM04NIHni-4ir4ExzK1TUmIDisk5_KBWmcjKyW-HX8k_u2gxylCf9I82Y0";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1635,7 +1501,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action": "get",
@@ -1645,8 +1511,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1673,8 +1537,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLiouRW5naW5lU3BlZWQiOiJ3In19.ILMNoPpsF9OD_EhBRvm679kGFFzQVOWpxtws9flHjyoXBUuswfTYo6VTZySksyIv2EEVsFwgHG6EpYU18dXvpBXWI7KtUlkUy0ewiwNXZDsrpPVD1_dhlSs5aNvHsGJr2X_aHF-gZ89XtZ1sBBcza7FdtoMQMn9hyWs3rPi5d552uwxCpMO7EDwzb8rNrndEbtuORQmSCSHb74gVP5_thZvKmfCvJLOYaqXbtIff7CNJc5JtmOp7Suv2ICVhDAyiVRAF8wC5yXCRS_MfHRHT-VVO6PvnOzUkZU4VskkCz10L4XyHhj-2GEnXaPnVV76H1BZscLAnshoiR1I6rWAA4yvRcriJkmnM3DSJqvPJ4wQ7pZsZE48n6jfrPU1fZPGrCIMbJ67-YntL9XL0GHO2AdJTD9nj4sYpVVSPJPheQSLVbQwUJq7JPczkJ04kvDpLIOp27A8GnT0JN78liQSH4VUuExY3et2f5VbyGKZbEbwtV_R8WuVOuFKGlrI07KhpYsz3avVNwNZonjEuU7f6Uadad2zZh96nJ623BgbdNhMCC-WkjoXZos7JjKIXKKLH1_LyHIVpubZFlzh2GUJNItr7k-VlLodjrvqsoBcz-Zi0KyUco69X5qz9qousN4E3LPSP5btefq-D2nhFUkn2lW_YPyWA6Wtfi6Fauby0ZD8";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1688,15 +1552,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_write_permission)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
    json expected = json::parse(R"({
                    "action":"get",
                    "error":{"message":"Insufficient read access to Vehicle.OBD.EngineSpeed","number":"403","reason":"Forbidden"},
                    "requestId":"8756"
         })");
-
-   json response_json = json::parse(response);
    
    verify_and_erase_timestamp(response_json);
 
@@ -1722,8 +1584,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_wildcard_req
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLiouRW5naW5lU3BlZWQiOiJyIn19.4L_gleoOJ29SR75go0qtBgYjwkwWE0ofYMMQJm884-ifCNihl3aSNhxjVy-6KUQckTd-OMiGkd1RRXElHfnaLfVSmpaFAIjupzvXaKwEoLa6duXfh3-qaEQPSCUxSjr8Tur3aXkj8nJEcSYBYUo_RTX-Srgto0dSTLQza0Lvm0aYPHhE6oIy2dniMIxwCSNxtarFt6-DWIxR3RqFcTVcuGtgn3A6JCm-WurI2zHsmF2BHrIfUYWuTdzUH16QLSfviTVcMjBLgGhVGdQPz22t4nKtdwcVMJkYfLsaU-GYuRi-ZMIrbi7F1oU8pU21U4Ja9C9CuR-H4Xhy2uG_FVQmog-_K-kR6_tndbM-AL7BnfOt-T_QpD-CSfCY0K5Y1bS_IuiM6MrXu5J2q1lfLp_TAK9YBWpuKRGhxdke7zHlSB37dpbiqZFIdGwfJ7Kq6XzqZNFRkWw7_XM2U4s5OXcw2JDklJYJ_EA1bUBhoPb-UHCqYxTP6G5OAHgD1Ydji93o3IsRSt6cX8o7hsmF79L3HvSzCm-qTN_EPhvbVfucJFj5phOd_9GjoFn3ySkwTINX_Pe3aT-Kz9qn5_Sb6utxw4eYvf_e_TYH6bAICjb9OmOyvH5gS9u2ieJ_1ra4SIGuZ25d86m3aRBybJSnFCprpsv63ziKXNGcL2vIGlCzKUc";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1737,15 +1599,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_wildcard_req
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"get",
     "error":{"message":"Insufficient read access to Vehicle.OBD.*","number":"403","reason":"Forbidden"},
     "requestId":"8756"
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1771,8 +1631,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_branch_path_
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLiouRW5naW5lU3BlZWQiOiJyIn19.4L_gleoOJ29SR75go0qtBgYjwkwWE0ofYMMQJm884-ifCNihl3aSNhxjVy-6KUQckTd-OMiGkd1RRXElHfnaLfVSmpaFAIjupzvXaKwEoLa6duXfh3-qaEQPSCUxSjr8Tur3aXkj8nJEcSYBYUo_RTX-Srgto0dSTLQza0Lvm0aYPHhE6oIy2dniMIxwCSNxtarFt6-DWIxR3RqFcTVcuGtgn3A6JCm-WurI2zHsmF2BHrIfUYWuTdzUH16QLSfviTVcMjBLgGhVGdQPz22t4nKtdwcVMJkYfLsaU-GYuRi-ZMIrbi7F1oU8pU21U4Ja9C9CuR-H4Xhy2uG_FVQmog-_K-kR6_tndbM-AL7BnfOt-T_QpD-CSfCY0K5Y1bS_IuiM6MrXu5J2q1lfLp_TAK9YBWpuKRGhxdke7zHlSB37dpbiqZFIdGwfJ7Kq6XzqZNFRkWw7_XM2U4s5OXcw2JDklJYJ_EA1bUBhoPb-UHCqYxTP6G5OAHgD1Ydji93o3IsRSt6cX8o7hsmF79L3HvSzCm-qTN_EPhvbVfucJFj5phOd_9GjoFn3ySkwTINX_Pe3aT-Kz9qn5_Sb6utxw4eYvf_e_TYH6bAICjb9OmOyvH5gS9u2ieJ_1ra4SIGuZ25d86m3aRBybJSnFCprpsv63ziKXNGcL2vIGlCzKUc";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1786,15 +1646,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_permission_branch_path_
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"get",
     "error":{"message":"Insufficient read access to Vehicle.OBD","number":"403","reason":"Forbidden"},
     "requestId":"8756"
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1820,8 +1678,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZSI6InIifX0.AKCWRDrtl4UkFzAGEzsyUZIKH4Q7jHg_Y5p8xVMLWtGTXIeFdQlz7FW-6rAy1Os9ad-H8ghEepcy2gs6DK3kr3FNDxqUyIaz8p_CDkwrgqp0Wczi1DsgwbyTsY2wsDa94Mja3ng2VszQgs4FZmsdbnzFzJeAsGucOZeIQj8w68up6YI6KXiCjO1094I2eixkclNnb1psPiucTkyListTLHxK3029fZT1EGGcrt7ziFYGiT5Z0Zk7x0PSN7dvmaT1rMOBWjbpluLCepkWZYt73ipO8YoAWhluMiW0sJI7ezrIU3UAKDkna_6kjAapm-9vAVTA63Tv4ovnRaALb_V2oxbIGCPTNoAY7ui00uFcxuN2B5l4M05OFgMIcxwS9-UEVQIWbFUxvPTQLNkOp12jd73ic786lUOs7fvuwseMZ2KX9cpV03TSAN1BIwG_TJ0iOQJ_5wuyDFRqwBK8zubg-zohUPMwsLpZgc7fTVI7AhXzGLZ57fE977NsluzfjFS0smtuzN-8JTvAMnCrgTQwu5GyTiL64a3NlYcQ2qt5K6D8xOIs7xSe8i0_PlKSgG8ECMOBE3JwSCwU1q83mTPCTSGHxTaNYnPhputc6gEiPv2VYmppGrMCeG2d5oLNzGhecIaLf_PGTTSmrUUZNK6HkuybgZStgMdN5uMTXrBkEvw";
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1835,7 +1693,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action": "get",
@@ -1845,8 +1703,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_full_read_permission)
         "dp":{"value": "2345.0"}
     }
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
    verify_and_erase_timestamp(response_json["data"]["dp"]);
@@ -1874,8 +1730,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3MDkzNzI4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5TcGVlZCI6IncifX0.KE0I1N6Izp_5k-vj8WkB23aKaPiHyrZc0jNulQHGNmwvNnJUaXp7N79-ACZPxVVI_f_MWLkanmMXHr4NqV-nIv5Tzcc4B7WMylF_DSI2kNmOqNqArQgcAgof90Z-mTDu6mdXvlIRmP0h_Zf7Bzcmp5HzgyonNpNsqjU6NZsBJbPWZZr-jWewslIt9dPVd3ZH8Q8F84bKldx2ur8oL-3bxj9CQ426TvGqT8ey-V_79IyFOMftKL0X0QcBlLhF5FwcrUBkJ2MbfJrtNL6egHqjQ70bGvYN7fj5zLTOP2dgAN-xLTFE8HhScc6f0dCi5aAZBKobU2Uw3t_soSuKr5Gx0kYStVFkW8A_TIBVdEPIT_gWogm9AqWWj9Q9ss8sp4_ozsMruXNTyhomYt6dfLtb2D7UQkkrfxB5jC2FND5j7EYiDn4ZM3qsJApXHcwY0fQEKRjon2rmFeR1kKmrp9WSLeUbOpuhRpZYJOwnTvNSQOMIWixM51AkX0JmTdHip25ffXpmBfvGmNUD-KzLanxkY0K88pcDX1qnnyjx3c75bWsg-PCWvMNyqElqTsgQxzRQ0RhIpk0LhEU1mLMO-yVWhsHqfJc9CzNJhP0Lzt5lUYKJg3NgEvmyXbx-5SxArzIqRO2KtPI5pKT-4A_y5IVQRuJu2yTwt9qkBlX0dMnfnhs";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
 
    string authReq(R"({
 		"action": "authorize",
@@ -1891,14 +1747,12 @@ BOOST_AUTO_TEST_CASE(permission_basic_write)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"set",
     "requestId":"8756"
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1924,8 +1778,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5TcGVlZCI6IncifX0.HOAb7fh1IRTtIXGI3GlptjIZgUYGXKkF8Zp0A2CrqhYY3-5RzuuQ4cTzc_FQfn8hRO0CzF5hARGpvECR7fMxTyKMOelnqI9DJbCL_wyHIrizOo_fZwoEt_GH5AMKawryn3XkFsyOwCl74V8coYboycCpQXKyMHfz4zXGOh6Re9iXX7eBU6U0RCxCUso1pALmMvF2PoUHlZRtFJg1VhhErRoCSu5F-dCDykd04rorbzTOsgRuzHfAXoRQVprb4NwoT99jw1qg-Su0q8LxsDUtRfxdDHBmAXJVhmTzWSwzzD6da08PLoIojyIuSPk2AWTH8u0tMz9anI13I2R4nS6ikXeg3oVaxcXcj4gTnhYfJmwx0zyThuHSJ4lEpxYMAOgP49s6jpHdSBamOiTnB4Nkrm_stCcT4bCZCZ-9bjVxXkXZe49fLVDOrg1FhGJ5sJazYZC6z7JKly8BE-FO2bQiYiMB-XD7AEgPSp61nAY_JtSQTsxa3lEBSGJJQYLqcQMZ_aLIQY0fSUjrtjG4jQpi-walriUUyP87-1SqdIV12rgvOtn1sSHm0rwGfSKf43f3HnwngbotVkWaZ7t4NvBkLU2FMrMeiG_8x5Xjq1mnZlI_K3bMRg7yAzznrrDIe3sUxP0Etnjky0CNYpeqwYGZmHNRdHAUNnWaNVGRt_tJBZc";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1940,15 +1794,13 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_not_permitted)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"set",
     "error":{"message":"No write access to Vehicle.OBD.EngineSpeed","number":"403","reason":"Forbidden"},
     "requestId":"8756"
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -1974,8 +1826,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3MDkzNzI4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC4qIjoicncifX0.U4zpy38DBTx2thPWfOMKALfZovJdkr5xQWDQaGSQo6sMhG-MgDz2UZDvVyRllHiv76f2VmZ2X0TnUZ_Z6yFUmjVYq83LGzUjSDY-xFLLRqOPvFKsQbTmOLbT629uU5Pz2m6x1HcxHBVCxNvI3pZw1D_rHODkVVlgSjycDK5NaHi9EdbSDmccmwk3jI6tPag0eKC7adzBlqkt-h6vqlx_FRz7kjyhiLXmR95QIV3_0MIyq484SsU4ztMPgmHBn1VUWz0x5EW065J2BIavXpaF20oNek0ZzsGcDq-UEQOLPDFoAnYykFrcYmIlXc51wRU2Mw-IIIIs4CV9-Vp1GkQfhQCicmR3OprRepzi_C0Fdh6kwSetAYJWqlVOeo1oUIxFIYbxGFjtdG38dOaacDddBnJ93K8JlnbFdp79Ins39HCmRPit198vdf7gLRcM_GLtvGF6SbT0V2tn17CNt2UxLEniHp7hGybxBVKqgTws2H73ZLe4HEq3UU8vhbeg2V2KXeSXvDJeE3LZvDWARafyHVXrkOx8-O9HqIClfAr-LAl7nnBqq2f9DneW1hjFZOFV5RUCrJ_UpZR_hyEU_aroXO6MNw_MC6KvZeOC6ti1NO6uAB3BYHzpNP1mlyUHlfRl-oLuKZFFqFVBrxY3tBrQwgzfhPZwi427ZIwrNlfv-aU";
 
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -1990,14 +1842,12 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
+   auto response_json = commandProc->processQuery(request,channel);
 
   json expected = json::parse(R"({
     "action":"set",
     "requestId":"8756"
     })");
-
-   json response_json = json::parse(response);
 
    verify_and_erase_timestamp(response_json);
 
@@ -2011,18 +1861,16 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_wildcard_permission)
 		"requestId": "8756"
 	})");
 
-   string get_response = commandProc->processQuery(get_request,channel);
+   auto get_response_json = commandProc->processQuery(get_request,channel);
 
   json get_expected = json::parse(R"({
     "action": "get",
     "requestId": "8756",
     "data":{
         "path": "Vehicle.OBD.Speed",
-        "dp":{"value": "345"}
+        "dp":{"value": "345.0"}
     }
     })");
-
-   json get_response_json = json::parse(get_response);
 
    verify_and_erase_timestamp(get_response_json);
    verify_and_erase_timestamp(get_response_json["data"]["dp"]);
@@ -2049,8 +1897,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRCI6IncifX0.SEWdQbdA8GIbxyC_2f1vV5CB_k7JF-krXnBplROgmvG5qLhZn8QTWkfjdEpPLhsnClpc3meX-bkAJA1T25ISJGRwg5fugRBtjgbpk9sSP3grRuhQVjZSvWoajIB7sHrRkI0J9ggS7jegQpZjGnrBh0nFuEAAbCQY6ToQCYWnz5phTqO9YKZK3AZ3JfPKIqxZ0_MSrrfK_VTWtSE5TDzo8_NVu9Mmqzz_2_EcPiF5r9te-Pe_y4WsVj1WGkbXQoSlLw4b5aTk19DipQAqTS7nL-b0ce1ljuKnSE5-ksM0zMMWQ2Fh_hJyppkUi-vDBQPL4ZHTBDl33AaZnwwlNbUbWOqbuEDKmJk7jRQBfLqKkh2NsifI4wY0Bhmbm9v8-wJESItBw3AVQI1uyan9KHO5OBaH-qKnY1CcGCnNq04-BEsXT5vlVbGlFoFXzB1pw4d27oHkm73Yz2or9MxO5Uv3UPMjqRy-czIdncfewLxBzgT13owfuAP9Fm2t5YXaRpSPiki-QI4Zf02iSRETIM6l5CdSLHAdqOnujYkZjjRauhulp1nuCMQuXxotmn-Mp9OHENtSonddmXC3NtDc5WDMir9lf1NdAItEFfeS8TmeyyTiqxERmxyu8heAeKiOKYQAIrbcNgap7ggiCAjKviQfv-sQIJvFJ0gmHNN9xqQkNTg";
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -2066,14 +1914,8 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 		"requestId": "8756"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
-/*
-  json expected = json::parse(R"({
-    "action":"set",
-    "requestId":"8756"
-    })");
-    */
    //Current (12/2020) in server is, that "branch" node permission does not grant the right to modify
    //childs. So we test accordingly 
    json expected = json::parse(R"({
@@ -2082,9 +1924,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
     "requestId":"8756"
     })");
     
-
-   json response_json = json::parse(response);
-
    verify_and_erase_timestamp(response_json);
 
    BOOST_TEST(response_json == expected);
@@ -2097,7 +1936,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
 		"requestId": "8757"
 	})");
    
-   string get_response = commandProc_auth->processQuery(get_request,channel);
+   auto get_response_json = commandProc_auth->processQuery(get_request,channel);
   // because only write access in the token.
   // Also: Current (12/2020) in server is, that "branch" node permission does not grant the right to modify
   // childs. So we test accordingly 
@@ -2107,8 +1946,6 @@ BOOST_AUTO_TEST_CASE(permission_basic_write_with_branch_permission)
     "error":{"message":"Insufficient read access to Vehicle.OBD.Speed","number":"403","reason":"Forbidden"},
     "requestId": "8757"
     })");
-
-   json get_response_json = json::parse(get_response);
 
    verify_and_erase_timestamp(get_response_json);
 
@@ -2138,8 +1975,8 @@ BOOST_AUTO_TEST_CASE(subscription_test)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -2155,8 +1992,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
 		"requestId": "8778"
 	})");
 
-   string response = commandProc->processQuery(request,channel);
-   json response_json = json::parse(response);
+   auto response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
      "action":"subscribe",
@@ -2184,8 +2020,7 @@ BOOST_AUTO_TEST_CASE(subscription_test)
    json temp_unsubreq = json::parse(request_unsub);
    temp_unsubreq["subscriptionId"] = subID;
 
-   string unsub_response = commandProc->processQuery(temp_unsubreq.as_string(),channel);
-   json unsub_response_json = json::parse(unsub_response);
+   auto unsub_response_json = commandProc->processQuery(temp_unsubreq.as_string(),channel);
 
    BOOST_TEST(unsub_response_json.contains("subscriptionId") == true);
 
@@ -2223,16 +2058,15 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuKiI6InJ3In19.LLdJFIuoViNF4uVv1IL30fXPySoM1oCHxLrWm6xM_4eynvXqPvrCI9fW__GMI0d8PxBLpM8FhgG3ynVVlOuLV_Sl6lDImZlkNQiR02lJwFqf67RWVdI4f4uhdHdKjEpe0a0F-6e7McS__3qQYyjNuQAZIIXkZUIDyXye9upwNARj1wGPtZyNzSY1uyxmuc7MMPaILAIzL8ZnY_D9qgbpbiInGavZtDE_X1iy9GhxbUguP8oiVYn14-H6RBDIF0s5dXwXnJ0cm9Q2DTFpb0YRq4sMgTC4PT1Smdda_6Pj2ELmBjGbH7PYlqfVk1jVdSPGcUpU48e__qVitSRkEK_unM5CihrDVIy7nw3_KclIZJa8_af3kQ4x-leg-ErRCt78j5l0DDxIo5EtCxAeLbO7baZD6D1tPrb3vYkI_9zl1vzydp_nmNMS9QzCRq5yEJfP07gpvG0Z1O0tSLedSCG9cZJ-lJ3Oj3bqxNxk3ih6vKfjnvjAgli7wEP_etHofZmqs3NI-qtP6ldz93fBfAK_iApsSnG4PV7oS_-3UQIow6fUHAA8szn4Ad1ZYiaDsXRcHbdIoLEemGDllkRTYNBe_5vFDT3s1gY82L3fvgwAzTGZ2k46eh66Zx3SmuPgHlCQK6gR-6eAVn0jh_Tjk5vubtin6UdRjHF0Y4BvCwvE0bk";
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   string response=commandProc->processQuery(authReqJson.as_string(),channel);
-   json response_json=json::parse(response);
+   auto response_json=commandProc->processQuery(authReqJson.as_string(),channel);
    BOOST_TEST(response_json.contains("action") == true);
    BOOST_TEST(response_json["action"].as<std::string>() == "authorize");
 
@@ -2243,8 +2077,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
 		"requestId": "8778"
 	})");
 
-   response = commandProc->processQuery(request,channel);
-   response_json = json::parse(response);
+   response_json = commandProc->processQuery(request,channel);
 
    json expected = json::parse(R"({
      "action":"subscribe",
@@ -2272,8 +2105,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_wildcard_permission)
    json temp_unsubreq = json::parse(request_unsub);
    temp_unsubreq["subscriptionId"] = subID;
 
-   string unsub_response = commandProc->processQuery(temp_unsubreq.as_string(),channel);
-   json unsub_response_json = json::parse(unsub_response);
+   auto unsub_response_json = commandProc->processQuery(temp_unsubreq.as_string(),channel);
 
    // assert subid.
    BOOST_TEST(unsub_response_json.contains("subscriptionId") == true);
@@ -2313,8 +2145,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIiwiVmVoaWNsZS5PQkQuU3BlZWQiOiJ3In19.ob9r5oT8R5TEtQ1ZULw2jJZpplv3-hMSd9rgFqU0CUTg-G4zhMLwegTmNDgY2EAyhOQ2LSNXK46b-ftCiVINWfnOIlNAwTmXoRNNqJ5F81aVpt8ub1aMUt0B8iKHH1Vy9sNMDrdjbB8qnNK-9SodsEafxvHAN816b81FZplA8z4S5F1gRjiCeK_tI_ZltiGYHp5FKcu25WuQosasZOUiGS7i_WFLftSn59S4lb2cBgpYIVxsGYjsnDKxc_mTNJRaCF5W5kF9zMaOR2x0sXJaZRWQnl5ioCu6tbneUF9Sb5ri1hR5m720WdNuu9iBaWbYno8QtjS8Di5L6KoIRNAcvGkAXuhLhmhSTd4ANYd9Ccc2xU6v4YWiKR4Sq3PXRvSfI-RUBuniOGi_v4Bpe8571B6EBZ3sPI3lkdgekusjqo_Man0WUc-h56ZttWsaqPVFyrSBz7uVtlcRHCwXrLaTwF-7rvNKwR5n3tIy-QG2YCQqQVr7-2934-NSADY8yTuKg-7bvv0DQv0pvNwwPjXE0Y6DSXGsk2PdujD8qai2aW5bZd9LI2WNxFqftm_t-cdicKgipzZVCzwwK9kTbpPq5KesVUymc8TIhmJynrh7lIVh-1EfvEY8T-v374kVppQ-k6aZmPphMvcWNF04x07_rw1DWxKoLIX4tTBvXiApSWo";
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -2330,8 +2162,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_no_permission)
 		"requestId": "8778"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
-   json response_json = json::parse(response);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
    json expected = json::parse(R"({
                    "action":"subscribe",
@@ -2364,8 +2195,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath)
 */
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIiwiVmVoaWNsZS5PQkQuU3BlZWQiOiJ3In19.ob9r5oT8R5TEtQ1ZULw2jJZpplv3-hMSd9rgFqU0CUTg-G4zhMLwegTmNDgY2EAyhOQ2LSNXK46b-ftCiVINWfnOIlNAwTmXoRNNqJ5F81aVpt8ub1aMUt0B8iKHH1Vy9sNMDrdjbB8qnNK-9SodsEafxvHAN816b81FZplA8z4S5F1gRjiCeK_tI_ZltiGYHp5FKcu25WuQosasZOUiGS7i_WFLftSn59S4lb2cBgpYIVxsGYjsnDKxc_mTNJRaCF5W5kF9zMaOR2x0sXJaZRWQnl5ioCu6tbneUF9Sb5ri1hR5m720WdNuu9iBaWbYno8QtjS8Di5L6KoIRNAcvGkAXuhLhmhSTd4ANYd9Ccc2xU6v4YWiKR4Sq3PXRvSfI-RUBuniOGi_v4Bpe8571B6EBZ3sPI3lkdgekusjqo_Man0WUc-h56ZttWsaqPVFyrSBz7uVtlcRHCwXrLaTwF-7rvNKwR5n3tIy-QG2YCQqQVr7-2934-NSADY8yTuKg-7bvv0DQv0pvNwwPjXE0Y6DSXGsk2PdujD8qai2aW5bZd9LI2WNxFqftm_t-cdicKgipzZVCzwwK9kTbpPq5KesVUymc8TIhmJynrh7lIVh-1EfvEY8T-v374kVppQ-k6aZmPphMvcWNF04x07_rw1DWxKoLIX4tTBvXiApSWo";
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
    string authReq(R"({
 		"action": "authorize",
 		"requestId": "87568"
@@ -2381,8 +2212,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalidpath)
 		"requestId": "8778"
 	})");
 
-   string response = commandProc_auth->processQuery(request,channel);
-   json response_json = json::parse(response);
+   auto response_json = commandProc_auth->processQuery(request,channel);
 
    json expected = json::parse(R"({
                    "action":"subscribe",
@@ -2418,18 +2248,18 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
    std::string channelperm;
    perm.dump_pretty(channelperm);
 
-    kuksa::kuksaChannel channel;
-    channel.set_connectionid(1234);
-    channel.set_authorized(true);
-    channel.set_authtoken(AUTH_TOKEN);
-    channel.set_permissions(channelperm);
+    KuksaChannel channel;
+    channel.setConnID(1234);
+    channel.setAuthorized(true);
+    channel.setAuthToken(AUTH_TOKEN);
+    channel.setPermissions(channelperm);
     string request(R"({
                    "action": "subscribe",
                    "path": "Vehicle.*.EngineSpeed",
                    "requestId": "8778"
                    })");
 
-   string response = commandProc_auth->processQuery(request,channel);
+   auto response_json = commandProc_auth->processQuery(request,channel);
    
     json expected = json::parse(R"({
                                 "action": "subscribe",
@@ -2437,7 +2267,6 @@ BOOST_AUTO_TEST_CASE(process_sub_with_wildcard)
                                 })");
 
 
-    json response_json = json::parse(response);
     json request_json = json::parse(request);
     BOOST_TEST(response_json.contains("subscriptionId") == true);
     response_json.erase("subscriptionId");
@@ -2464,8 +2293,8 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
 }*/
    string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MjQ5NDg4MDAsImt1a3NhLXZzcyI6eyJWZWhpY2xlLk9CRC5FbmdpbmVTcGVlZCI6IndyIiwiVmVoaWNsZS5PQkQuU3BlZWQiOiJ3In19.ob9r5oT8R5TEtQ1ZULw2jJZpplv3-hMSd9rgFqU0CUTg-G4zhMLwegTmNDgY2EAyhOQ2LSNXK46b-ftCiVINWfnOIlNAwTmXoRNNqJ5F81aVpt8ub1aMUt0B8iKHH1Vy9sNMDrdjbB8qnNK-9SodsEafxvHAN816b81FZplA8z4S5F1gRjiCeK_tI_ZltiGYHp5FKcu25WuQosasZOUiGS7i_WFLftSn59S4lb2cBgpYIVxsGYjsnDKxc_mTNJRaCF5W5kF9zMaOR2x0sXJaZRWQnl5ioCu6tbneUF9Sb5ri1hR5m720WdNuu9iBaWbYno8QtjS8Di5L6KoIRNAcvGkAXuhLhmhSTd4ANYd9Ccc2xU6v4YWiKR4Sq3PXRvSfI-RUBuniOGi_v4Bpe8571B6EBZ3sPI3lkdgekusjqo_Man0WUc-h56ZttWsaqPVFyrSBz7uVtlcRHCwXrLaTwF-7rvNKwR5n3tIy-QG2YCQqQVr7-2934-NSADY8yTuKg-7bvv0DQv0pvNwwPjXE0Y6DSXGsk2PdujD8qai2aW5bZd9LI2WNxFqftm_t-cdicKgipzZVCzwwK9kTbpPq5KesVUymc8TIhmJynrh7lIVh-1EfvEY8T-v374kVppQ-k6aZmPphMvcWNF04x07_rw1DWxKoLIX4tTBvXiApSWo";
 
-   kuksa::kuksaChannel channel;
-   channel.set_connectionid(1234);
+   KuksaChannel channel;
+   channel.setConnID(1234);
     
    string authReq(R"({
 		"action": "authorize",
@@ -2473,7 +2302,7 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
 	})");
    json authReqJson = json::parse(authReq);
    authReqJson["tokens"] = AUTH_TOKEN;
-   string res=commandProc_auth->processQuery(authReqJson.as_string(),channel);
+   auto res=commandProc_auth->processQuery(authReqJson.as_string(),channel);
 
     string request(R"({
                    "action": "subscribe",
@@ -2481,15 +2310,13 @@ BOOST_AUTO_TEST_CASE(process_sub_without_wildcard)
                    "requestId": "4243"
                    })");
 
-    string response = commandProc_auth->processQuery(request,channel);
+    auto response_json = commandProc_auth->processQuery(request,channel);
   
     json expected = json::parse(R"({
                                 "action": "subscribe",
                                 "requestId": "4243"
                                 })");
 
-
-    json response_json = json::parse(response);
     json request_json = json::parse(request);
     // TEST response for parameters
     BOOST_TEST(response_json.contains("subscriptionId") == true);
@@ -2523,8 +2350,8 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard)
     string AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFeGFtcGxlIEpXVCIsImlzcyI6IkVjbGlwc2Uga3Vrc2EiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE2MDkzNzI4MDAsInczYy12c3MiOnsiVmVoaWNsZS5PQkQuRW5naW5lU3BlZWQiOiJ3ciIsIlZlaGljbGUuT0JELlNwZWVkIjoidyJ9fQ.R4Ulq0T84oiTJFb8scj-t4C-GnFQ0QvYVCd4glsXxiOlaNUIovZUehQwJAO5WK3b3Phz86yILuFCxNO7fsdHMmyUzNLhjiXMrL7Y2PU3gvr20EIoWYKyh52BFTH_YT6sB1EWfyhPb63_tWP0P2aa1JcXhBjAlXtmnIghjcj7KloH8MQGzKArjXa4R2NaKLH0FrO5aK8hBH3tevWp38Wae-fIypr4MgG-tXoKMt8juaE7RVDVTRiYyHJkCHjbZ0EZB9gAmy-_FyMiPxHNo8f49UtCGdBq82ZlQ_SKF6cMfH3iPw19BYG9ayIgzfEIm3HFhW8RdnxuxHzHYRtqaQKFYr37qNNk3lg4NRS3g9Mn4XA3ubi07JxBUcFl8_2ReJkcVqhua3ZiTcISkBmje6CUg1DmbH8-7SMaZhC-LJsZc8K9DBZN1cYCId7smhln5LcfjkZRh8N3d-hamrVRvfbdbee7_Ua-2SiJpWlPiIEgx65uYTV7flMgdnng0KVxv5-t_8QjySfKFruXE-HkYKN7TH8EqQA1RXuiDhj8bdFGtrB36HAlVah-cHnCCgL-p-29GceNIEoWJQT9hKWk8kQieXfJfiFUZPOxInDxHyUQEjblY049qMbU2kVSNvQ7nrmwP9OTjcXfnp7bndbstTHCGsVj1ixq8QF3tOdEGlC3Brg";
 
 
-    kuksa::kuksaChannel channel;
-    channel.set_connectionid(1234);
+    KuksaChannel channel;
+    channel.setConnID(1234);
     string authReq(R"({
                    "action": "authorize",
                    "requestId": "878787"
@@ -2540,8 +2367,7 @@ BOOST_AUTO_TEST_CASE(subscription_test_invalid_wildcard)
                    "requestId": "878787"
                    })");
 
-    string response = commandProc->processQuery(request,channel);
-    json response_json = json::parse(response);
+    auto response_json = commandProc->processQuery(request,channel);
 
     json expected = json::parse(R"({
                                 "action":"subscribe",

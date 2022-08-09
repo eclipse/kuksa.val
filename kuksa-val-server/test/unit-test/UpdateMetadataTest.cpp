@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2021 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ *      Robert Bosch GmbH
+ **********************************************************************/
+
 
 /** This are tests for VSSUpdateMetadata. No access checks */
 
@@ -30,7 +38,7 @@
 #include "IAuthenticatorMock.hpp"
 #include "ILoggerMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "kuksa.pb.h"
 
 #include "exception.hpp"
@@ -91,10 +99,10 @@ BOOST_FIXTURE_TEST_SUITE(UpdateMetadataTests, TestSuiteFixture);
 
 /* Adding to VSS tree */
 BOOST_AUTO_TEST_CASE(update_metadata_change) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_modifytree(true);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.enableModifyTree();
+  channel.setConnID(1);
 
   std::string updateMetadataRequestString = R"(
     {
@@ -152,8 +160,7 @@ BOOST_AUTO_TEST_CASE(update_metadata_change) {
 
 
   // run updateVSSTree
-  auto resStr = processor->processQuery(updateMetadataRequestString, channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(updateMetadataRequestString, channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));
@@ -164,8 +171,7 @@ BOOST_AUTO_TEST_CASE(update_metadata_change) {
 
 
   // verify metadata
-  resStr = processor->processQuery(getMetadataRequestString, channel);
-  res = json::parse(resStr);
+  res = processor->processQuery(getMetadataRequestString, channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));
@@ -177,10 +183,10 @@ BOOST_AUTO_TEST_CASE(update_metadata_change) {
 }
 
 BOOST_AUTO_TEST_CASE(update_metadata_brokenrequest) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_modifytree(true);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.enableModifyTree();
+  channel.setConnID(1);
 
   std::string updateMetadataRequestString = R"(
     {
@@ -203,11 +209,8 @@ BOOST_AUTO_TEST_CASE(update_metadata_brokenrequest) {
   }
   )");
  
-
-
   // run updateVSSTree
-  auto resStr = processor->processQuery(updateMetadataRequestString, channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(updateMetadataRequestString, channel);
 
   // Does result have a timestamp?
   BOOST_TEST(res.contains("ts"));

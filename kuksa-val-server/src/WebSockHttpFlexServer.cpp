@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
- * Copyright (c) 2019 Robert Bosch GmbH.
+/**********************************************************************
+ * Copyright (c) 2019-2022 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ *      Robert Bosch GmbH
+ **********************************************************************/
+
 
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -42,12 +50,11 @@
 
 #include "WebSockHttpFlexServer.hpp"
 
-#include "IRestHandler.hpp"
 #include "IVssCommandProcessor.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "ILogger.hpp"
 
-using RequestHandler = std::function<std::string(const std::string &, kuksa::kuksaChannel &)>;
+using RequestHandler = std::function<std::string(const std::string &, KuksaChannel &)>;
 using Listeners = std::vector<std::pair<ObserverType,std::shared_ptr<IVssCommandProcessor>>>;
 using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
 namespace ssl = boost::asio::ssl;               // from <boost/asio/ssl.hpp>
@@ -63,7 +70,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
 
 /**
  * @class ConnectionHandler
- * @brief Helper class to handle connection between \ref kuksa::kuksaChannel and actual sessions
+ * @brief Helper class to handle connection between \ref KuksaChannel and actual sessions
  */
   class ConnectionHandler {
     // Allow access to connection information from this file implementation details
@@ -76,13 +83,13 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       std::mutex mSslHttp_;
 
       std::unordered_map<const PlainWebsocketSession *,
-                         std::shared_ptr<kuksa::kuksaChannel>> connPlainWebSock_;
+                         std::shared_ptr<KuksaChannel>> connPlainWebSock_;
       std::unordered_map<const SslWebsocketSession *,
-                         std::shared_ptr<kuksa::kuksaChannel>> connSslWebSock_;
+                         std::shared_ptr<KuksaChannel>> connSslWebSock_;
       std::unordered_map<const PlainHttpSession *,
-                         std::shared_ptr<kuksa::kuksaChannel>> connPlainHttp_;
+                         std::shared_ptr<KuksaChannel>> connPlainHttp_;
       std::unordered_map<const SslHttpSession *,
-                         std::shared_ptr<kuksa::kuksaChannel>> connSslHttp_;
+                         std::shared_ptr<KuksaChannel>> connSslHttp_;
 
     public:
       ConnectionHandler() = default;
@@ -91,14 +98,14 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       /**
        * @brief Add new client for plain Web-Socket session
        * @param session New session to add
-       * @return \ref kuksa::kuksaChannel with new connection information
+       * @return \ref KuksaChannel with new connection information
        */
-      kuksa::kuksaChannel& AddClient(const PlainWebsocketSession * session) {
-        auto newChannel = std::make_shared<kuksa::kuksaChannel>();
+      KuksaChannel& AddClient(const PlainWebsocketSession * session) {
+        auto newChannel = std::make_shared<KuksaChannel>();
         std::lock_guard<std::mutex> lock(mPlainWebSock_);
 
-        newChannel->set_connectionid(reinterpret_cast<uint64_t>(session));
-        newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_WEBSOCKET_PLAIN);
+        newChannel->setConnID(reinterpret_cast<uint64_t>(session));
+        newChannel->setType(KuksaChannel::Type::WEBSOCKET_PLAIN);
         connPlainWebSock_[session] = newChannel;
         return *newChannel;
       }
@@ -106,14 +113,14 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       /**
        * @brief Add new client for SSL Web-Socket session
        * @param session New session to add
-       * @return \ref kuksa::kuksaChannel with new connection information
+       * @return \ref KuksaChannel with new connection information
        */
-      kuksa::kuksaChannel& AddClient(const SslWebsocketSession * session) {
-        auto newChannel = std::make_shared<kuksa::kuksaChannel>();
+      KuksaChannel& AddClient(const SslWebsocketSession * session) {
+        auto newChannel = std::make_shared<KuksaChannel>();
         std::lock_guard<std::mutex> lock(mSslWebSock_);
 
-        newChannel->set_connectionid(reinterpret_cast<uint64_t>(session));
-        newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_WEBSOCKET_SSL);
+        newChannel->setConnID(reinterpret_cast<uint64_t>(session));
+        newChannel->setType(KuksaChannel::Type::WEBSOCKET_SSL);
         connSslWebSock_[session] = newChannel;
 
         return *newChannel;
@@ -122,14 +129,14 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       /**
        * @brief Add new client for plain HTTP session
        * @param session New session to add
-       * @return \ref kuksa::kuksaChannel with new connection information
+       * @return \ref KuksaChannel with new connection information
        */
-      kuksa::kuksaChannel& AddClient(const PlainHttpSession * session) {
-        auto newChannel = std::make_shared<kuksa::kuksaChannel>();
+      KuksaChannel& AddClient(const PlainHttpSession * session) {
+        auto newChannel = std::make_shared<KuksaChannel>();
         std::lock_guard<std::mutex> lock(mPlainHttp_);
 
-        newChannel->set_connectionid(reinterpret_cast<uint64_t>(session));
-        newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_HTTP_PLAIN);
+        newChannel->setConnID(reinterpret_cast<uint64_t>(session));
+        newChannel->setType(KuksaChannel::Type::HTTP_PLAIN);
         connPlainHttp_[session] = newChannel;
 
         return *newChannel;
@@ -138,14 +145,14 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       /**
        * @brief Add new client for SSL HTTP session
        * @param session New session to add
-       * @return \ref kuksa::kuksaChannel with new connection information
+       * @return \ref KuksaChannel with new connection information
        */
-      kuksa::kuksaChannel& AddClient(const SslHttpSession * session) {
-        auto newChannel = std::make_shared<kuksa::kuksaChannel>();
+      KuksaChannel& AddClient(const SslHttpSession * session) {
+        auto newChannel = std::make_shared<KuksaChannel>();
         std::lock_guard<std::mutex> lock(mSslHttp_);
 
-        newChannel->set_connectionid(reinterpret_cast<uint64_t>(session));
-        newChannel->set_typeofconnection(kuksa::kuksaChannel_Type_HTTP_SSL);
+        newChannel->setConnID(reinterpret_cast<uint64_t>(session));
+        newChannel->setType(KuksaChannel::Type::HTTP_SSL);
         connSslHttp_[session] = newChannel;
 
         return *newChannel;
@@ -200,7 +207,6 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
   bool allowInsecureConns = false;
 
   std::shared_ptr<ILogger> logger;
-  std::shared_ptr<IRestHandler> restHandler;
 
   const unsigned DEFAULT_TIMEOUT_VALUE   = std::numeric_limits<unsigned int>::max();   // in seconds
   const unsigned WEBSOCKET_TIMEOUT_VALUE = DEFAULT_TIMEOUT_VALUE;
@@ -253,7 +259,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       boost::asio::io_context::executor_type> strand_;
       boost::asio::steady_timer timer_;
       RequestHandler requestHandler_;
-      kuksa::kuksaChannel channel;
+      KuksaChannel channel;
       std::list<std::string> writeQueue_;
     public:
       // Construct the session
@@ -752,7 +758,6 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
           }
       };
 
-      std::string const& doc_root_;
       http::request<http::string_body> req_;
       queue queue_;
 
@@ -762,16 +767,14 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       boost::asio::io_context::executor_type> strand_;
       boost::beast::flat_buffer bufferRead_;
       RequestHandler requestHandler_;
-      kuksa::kuksaChannel channel;
+      KuksaChannel channel;
 
     public:
       // Construct the session
       HttpSession(boost::asio::io_context& ioc,
                   boost::beast::flat_buffer buffer,
-                  std::string const& doc_root,
                   RequestHandler requestHandler)
-        : doc_root_(doc_root)
-        , queue_(*this)
+        : queue_(*this)
         , timer_(ioc,
             (std::chrono::steady_clock::time_point::max)())
         , strand_(ioc.get_executor())
@@ -841,82 +844,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
               std::move(req_), requestHandler_);
         }
 
-        // Otherwise handle pure HTTP connection
-        std::string jsonRequest;
-
-        // if we got correct JSON request back, send it to handler
-        auto res = restHandler->GetJson(std::string(req_.method_string()),
-                                        std::string(req_.target()),
-                                        jsonRequest);
-
-        // regex for extracting HTTP status code from error response
-        const std::regex getErrNumber("\"number\":\\ +(\\d+)");
-        std::smatch sm;
-        std::string response;
-
-        // HTTP response object
-        http::response<http::string_body> httpResponse{
-          std::piecewise_construct,
-          std::make_tuple(""),
-          std::make_tuple(http::status::ok, req_.version())};
-
-        // HTTP 'OPTIONS' method is handled differently to support CORS pre-flight checks from browsers
-        if (req_.method_string().compare("OPTIONS") != 0) {
-          // if all ok, process further generated JSON request
-          if (res) {
-            response = requestHandler_(jsonRequest, channel);
-
-            // check if error was returned so we can set correct HTTP response status
-            std::regex_search (response, sm, getErrNumber);
-            if (sm.size()) {
-              // set error response
-              httpResponse.result(std::stoi(sm.str(1)));
-            }
-            httpResponse.body() = response;
-          }
-          // if getting of JSON request failed, set error HTTP response
-          else {
-            // check if there was error so we can set correct HTTP response status
-            std::regex_search (jsonRequest, sm, getErrNumber);
-            if (sm.size()) {
-              // set error response
-              httpResponse.result(std::stoi(sm.str(1)));
-            }
-            httpResponse.body() = jsonRequest;
-          }
-        }
-        // handle HTTP 'OPTIONS' method
-        else {
-          // if all ok, prepare OPTIONS response
-          if (res) {
-            auto jsonReq = jsoncons::json::parse(jsonRequest);
-            httpResponse.set(http::field::access_control_allow_methods, jsonReq["methods"].as_string());
-            httpResponse.set(http::field::access_control_allow_headers, jsonReq["headers"].as_string());
-            httpResponse.set(http::field::access_control_max_age, jsonReq["max-age"].as_string());
-          }
-          else {
-            // handle error
-            httpResponse.body() = jsonRequest;
-            // check if there was error so we can set correct HTTP response status
-            std::regex_search (jsonRequest, sm, getErrNumber);
-            if (sm.size()) {
-              // set error response
-              httpResponse.result(std::stoi(sm.str(1)));
-            }
-          }
-        }
-        httpResponse.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-        httpResponse.set(http::field::content_type, "application/json");
-
-        // allow cross-domain calls with setting below header
-        // TODO: evaluate this header for production level SW
-        httpResponse.set(http::field::access_control_allow_origin, "*");
-
-        httpResponse.keep_alive(req_.keep_alive());
-        httpResponse.prepare_payload();
-
-        // add response object in transmit queue
-        queue_(std::move(httpResponse));
+        // Otherwise ignore request
 
         // If we aren't at the queue limit, try to pipeline another request
         if(! queue_.is_full())
@@ -958,12 +886,10 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       // Create the http_session
       PlainHttpSession(tcp::socket socket,
                        boost::beast::flat_buffer buffer,
-                       std::string const& doc_root,
                        RequestHandler requestHandler)
         : HttpSession<PlainHttpSession>(
             socket.get_executor().target<boost::asio::io_context::executor_type>()->context(),
             std::move(buffer),
-            doc_root,
             requestHandler)
             , socket_(std::move(socket))
             , strand_(*socket_.get_executor().target<boost::asio::io_context::executor_type>()){
@@ -1020,12 +946,10 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       SslHttpSession(tcp::socket socket,
                      ssl::context& ctx,
                      boost::beast::flat_buffer buffer,
-                     std::string const& doc_root,
                      RequestHandler requestHandler)
         : HttpSession<SslHttpSession>(
             socket.get_executor().target<boost::asio::io_context::executor_type>()->context(),
             std::move(buffer),
-            doc_root,
             requestHandler)
             , stream_(std::move(socket), ctx)
             , strand_(*stream_.get_executor().target<boost::asio::io_context::executor_type>()) {
@@ -1123,7 +1047,7 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
         //doEof();
       }
   };
-
+  
   //------------------------------------------------------------------------------
   // Detects SSL handshakes
   class DetectSession : public std::enable_shared_from_this<DetectSession> {
@@ -1131,19 +1055,16 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       ssl::context& ctx_;
       boost::asio::strand<
       boost::asio::io_context::executor_type> strand_;
-      std::string const& doc_root_;
       boost::beast::flat_buffer buffer_;
       RequestHandler requestHandler_;
 
     public:
       explicit DetectSession(tcp::socket socket,
                              ssl::context& ctx,
-                             std::string const& doc_root,
                              RequestHandler requestHandler)
         : socket_(std::move(socket))
         , ctx_(ctx)
         , strand_(*socket_.get_executor().target<boost::asio::io_context::executor_type>())
-        , doc_root_(doc_root)
         , requestHandler_(requestHandler) {
       }
 
@@ -1172,7 +1093,6 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
               std::move(socket_),
               ctx_,
               std::move(buffer_),
-              doc_root_,
               requestHandler_)->run();
           return;
         }
@@ -1183,7 +1103,6 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
           std::make_shared<PlainHttpSession>(
               std::move(socket_),
               std::move(buffer_),
-              doc_root_,
               requestHandler_)->run();
         }
         else
@@ -1198,19 +1117,16 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
       ssl::context& ctx_;
       tcp::acceptor acceptor_;
       tcp::socket socket_;
-      std::string const& doc_root_;
       RequestHandler requestHandler_;
 
     public:
       BeastListener(boost::asio::io_context& ioc,
                     ssl::context& ctx,
                     tcp::endpoint endpoint,
-                    std::string const& doc_root,
                     RequestHandler requestHandler)
         : ctx_(ctx)
         , acceptor_(ioc)
         , socket_(ioc)
-        , doc_root_(doc_root)
         , requestHandler_(requestHandler) {
         boost::system::error_code ec;
 
@@ -1272,10 +1188,9 @@ namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.h
         else
         {
           // Create the detector http_session and run it
-          std::make_shared<DetectSession>(
+              std::make_shared<DetectSession>(
               std::move(socket_),
               ctx_,
-              doc_root_,
               requestHandler_)->run();
         }
 
@@ -1289,15 +1204,11 @@ const std::string WebSockHttpFlexServer::serverCertFilename_ = "Server.pem";
 const std::string WebSockHttpFlexServer::serverKeyFilename_  = "Server.key";
 
 
-WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil,
-                                             std::shared_ptr<IRestHandler> restHandlerUtil)
+WebSockHttpFlexServer::WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil)
  : logger_(loggerUtil),
-  restHandler_(restHandlerUtil),
   ioc_(NumOfThreads)
    {
   logger = logger_;
-  restHandler = restHandler_;
-
 }
 
 WebSockHttpFlexServer::~WebSockHttpFlexServer() {
@@ -1310,12 +1221,9 @@ WebSockHttpFlexServer::~WebSockHttpFlexServer() {
 }
 void WebSockHttpFlexServer::Initialize(std::string host,
                                        int port,
-                                       std::string && docRoot,
                                        std::string certPath,
                                        bool allowInsecure) {
     logger_->Log(LogLevel::INFO, "Initializing Boost.Beast web-socket and http server on " + host + ":" +std::to_string(port));
-
-    docRoot_ = docRoot;
 
     allowInsecureConns = allowInsecure;
     if(allowInsecureConns){
@@ -1343,20 +1251,19 @@ void WebSockHttpFlexServer::Initialize(std::string host,
       ioc_,
       ctx,
       resolvedHost->endpoint(),
-      std::move(docRoot_),
       std::bind(&WebSockHttpFlexServer::HandleRequest,
                 this,
                 std::placeholders::_1,
                 std::placeholders::_2));
 }
 
-std::string WebSockHttpFlexServer::HandleRequest(const std::string &req_json, kuksa::kuksaChannel &channel) {
-  std::string response;
-  auto const type = channel.typeofconnection();
+std::string WebSockHttpFlexServer::HandleRequest(const std::string &req_json, KuksaChannel &channel) {
+  jsoncons::json response;
+  auto const type = channel.getType();
   ObserverType handlerType;
 
-  if ((type == kuksa::kuksaChannel_Type_WEBSOCKET_PLAIN) ||
-      (type == kuksa::kuksaChannel_Type_WEBSOCKET_SSL ))
+  if ((type == KuksaChannel::Type::WEBSOCKET_PLAIN) ||
+      (type == KuksaChannel::Type::WEBSOCKET_SSL))
   {
     handlerType = ObserverType::WEBSOCKET;
   }
@@ -1373,7 +1280,7 @@ std::string WebSockHttpFlexServer::HandleRequest(const std::string &req_json, ku
     }
   }
 
-  return response;
+  return response.as<std::string>();
 }
 
 void WebSockHttpFlexServer::AddListener(ObserverType type,
@@ -1529,7 +1436,7 @@ void WebSockHttpFlexServer::Start() {
     throw std::runtime_error(err);
   }
 
-  logger_->Log(LogLevel::INFO, "Starting Boost.Beast web-socket and http server");
+  logger_->Log(LogLevel::INFO, "Starting Boost.Beast web-socket server");
 
   // start listening for connections
   connListener->run();

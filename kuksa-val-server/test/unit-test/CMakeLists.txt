@@ -2,10 +2,10 @@
 # ******************************************************************************
 # Copyright (c) 2018-2022 Robert Bosch GmbH and others.
 #
-# All rights reserved. This program and the accompanying materials
-# are made available under the terms of the Eclipse Public License v2.0
-# which accompanies this distribution, and is available at
-# https://www.eclipse.org/org/documents/epl-2.0/index.php
+# All rights reserved. This configuration file is provided to you under the
+# terms and conditions of the Eclipse Distribution License v1.0 which
+# accompanies this distribution, and is available at
+# http://www.eclipse.org/org/documents/edl-v10.php
 #
 #  Contributors:
 #      Robert Bosch GmbH - initial API and functionality
@@ -52,7 +52,6 @@ if(BUILD_UNIT_TEST)
   add_executable(${UNITTEST_EXE_NAME}
     AccessCheckerTests.cpp
     AuthenticatorTests.cpp
-    RestV1ApiHandlerTests.cpp
     SubscriptionHandlerTests.cpp
     VssCommandProcessorTests.cpp
     Gen2GetTests.cpp
@@ -63,7 +62,6 @@ if(BUILD_UNIT_TEST)
     KuksavalUnitTest.cpp
     UpdateVSSTreeTest.cpp
     UpdateMetadataTest.cpp
-    kuksa_grpc_client_mock.cpp
   )
 
   # declares a test with our executable

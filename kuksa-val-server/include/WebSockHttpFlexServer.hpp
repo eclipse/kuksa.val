@@ -1,21 +1,29 @@
-/*
- * ******************************************************************************
- * Copyright (c) 2019 Robert Bosch GmbH.
+/**********************************************************************
+ * Copyright (c) 2019-2022 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
  *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ **********************************************************************/
+
 #ifndef __WEBSOCKHTTPFLEXSERVER_H__
 #define __WEBSOCKHTTPFLEXSERVER_H__
 
 #include "IServer.hpp"
-#include "kuksa.pb.h"
+#include "KuksaChannel.hpp"
 
 #include <boost/asio/ssl/context.hpp>
 #include <vector>
@@ -23,7 +31,6 @@
 #include <mutex>
 #include <memory>
 
-class IRestHandler;
 class ILogger;
 
 /**
@@ -37,10 +44,8 @@ class WebSockHttpFlexServer : public IServer {
     std::vector<std::pair<ObserverType,std::shared_ptr<IVssCommandProcessor>>> listeners_;
     std::mutex mutex_;
     std::shared_ptr<ILogger> logger_;
-    std::shared_ptr<IRestHandler> restHandler_;
 
     bool isInitialized = false;
-    std::string docRoot_;
 
     const uint8_t NumOfThreads = 1;
     boost::asio::io_context ioc_;
@@ -63,23 +68,20 @@ class WebSockHttpFlexServer : public IServer {
      * @param channel Connection identifier
      * @return Response JSON message for client
      */
-    std::string HandleRequest(const std::string &req_json, kuksa::kuksaChannel &channel);
+    std::string HandleRequest(const std::string &req_json, KuksaChannel &channel);
   public:
-    WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil,
-                          std::shared_ptr<IRestHandler> rest2jsonUtil);
+    WebSockHttpFlexServer(std::shared_ptr<ILogger> loggerUtil);
     ~WebSockHttpFlexServer();
 
     /**
      * @brief Initialize Boost.Beast server
      * @param host Hostname for server connection
      * @param port Port where to wait for server connections
-     * @param docRoot URL path that is handled
      * @param certPath Directory path where 'Server.pem' and 'Server.key' are located
      * @param allowInsecure If true, plain connections are allowed, otherwise SSL is mandatory
      */
     void Initialize(std::string host,
                     int port,
-                    std::string && docRoot,
                     std::string certPath,
                     bool allowInsecure = false);
     /**

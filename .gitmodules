@@ -10,3 +10,7 @@
 [submodule "kuksa_apps/kanto/ditto-clients-python"]
 	path = kuksa_apps/kanto/ditto-clients-python
 	url = https://github.com/eclipse/ditto-clients-python.git
+[submodule "kuksa-feeders"]
+	path = kuksa-feeders
+	url = https://github.com/eclipse/kuksa.val.feeders.git
+

@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2020 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
  *      Robert Bosch GmbH
- * *****************************************************************************
- */
+ **********************************************************************/
+
 
 #include "JsonResponses.hpp"
 #include "VSSPath.hpp"
@@ -26,7 +34,7 @@
 
 /** Implements the Websocket get request accroding to GEN2, with GEN1 backwards
  * compatibility **/
-std::string VssCommandProcessor::processGet2(kuksa::kuksaChannel &channel,
+jsoncons::json VssCommandProcessor::processGet(KuksaChannel &channel,
                                              jsoncons::json &request) {
   std::string pathStr= request["path"].as_string();
   VSSPath path = VSSPath::fromVSS(pathStr);
@@ -59,10 +67,11 @@ std::string VssCommandProcessor::processGet2(kuksa::kuksaChannel &channel,
   }
 
   logger->Log(LogLevel::VERBOSE, "Get request with id " + requestId +
-                                     " for path: " + path.to_string() + ", attribute: " + attribute);
+                                     " for path: " + path.to_string() + " with attribute: " + attribute);
 
   jsoncons::json answer;
   jsoncons::json datapoints = jsoncons::json::array();
+  jsoncons::json current_dp;
 
   try {
     list<VSSPath> vssPaths = database->getLeafPaths(path);
@@ -79,7 +88,9 @@ std::string VssCommandProcessor::processGet2(kuksa::kuksaChannel &channel,
         logger->Log(LogLevel::WARNING,msg.str());
         return JsonResponses::noAccess(request["requestId"].as<string>(), "set", msg.str());
       } else {
-        datapoints.push_back(database->getSignal(vssPath, attribute));
+        bool as_string = channel.getType() != KuksaChannel::Type::GRPC;
+        current_dp = database->getSignal(vssPath, attribute, as_string);
+        datapoints.push_back(current_dp);
       }
     }
     if (vssPaths.size() < 1) {
@@ -90,6 +101,9 @@ std::string VssCommandProcessor::processGet2(kuksa::kuksaChannel &channel,
     } else {
       answer["data"] = datapoints;
     }
+  } catch (notSetException &e) {
+    logger->Log(LogLevel::ERROR, string(e.what()));
+    return JsonResponses::notSetResponse(requestId, e.what());
   } catch (std::exception &e) {
     logger->Log(LogLevel::ERROR, "Unhandled error: " + string(e.what()));
     return JsonResponses::malFormedRequest(
@@ -99,7 +113,6 @@ std::string VssCommandProcessor::processGet2(kuksa::kuksaChannel &channel,
   answer["action"] = "get";
   answer["requestId"] = requestId;
   answer["ts"] = JsonResponses::getTimeStamp();
-  stringstream ss;
-  ss << pretty_print(answer);
-  return ss.str();
+  return answer;
+
 }

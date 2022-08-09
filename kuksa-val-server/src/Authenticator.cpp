@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2018-2020 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
  *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ **********************************************************************/
+
 #include "Authenticator.hpp"
 #include "ILogger.hpp"
 #include <fstream>
@@ -22,7 +30,7 @@
 #include <jwt-cpp/jwt.h>
 #include <jsoncons/json.hpp>
 #include "VssDatabase.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 
 using namespace std;
 
@@ -57,7 +65,7 @@ void Authenticator::updatePubKey(string key) {
 }
 
 // utility method to validate token.
-int Authenticator::validateToken(kuksa::kuksaChannel& channel, string authToken) {
+int Authenticator::validateToken(KuksaChannel& channel, string authToken) {
   json claims;
   int ttl = -1;
 
@@ -80,8 +88,8 @@ int Authenticator::validateToken(kuksa::kuksaChannel& channel, string authToken)
       return -1;
     }
 
-    channel.set_authorized(true);
-    channel.set_authtoken(authToken);
+    channel.setAuthorized(true);
+    channel.setAuthToken(authToken);
     ttl = claims["exp"].as<int>();
   }
   catch (std::exception &e) {
@@ -99,7 +107,7 @@ Authenticator::Authenticator(std::shared_ptr<ILogger> loggerUtil, string secretk
 
 // validates the token against expiry date/time. should be extended to check
 // some other claims.
-int Authenticator::validate(kuksa::kuksaChannel& channel,
+int Authenticator::validate(KuksaChannel& channel,
                             string authToken) {
   int ttl = validateToken(channel, authToken);
   if (ttl > 0) {
@@ -112,12 +120,12 @@ int Authenticator::validate(kuksa::kuksaChannel& channel,
 // Checks if the token is still valid for the requests from the channel(client).
 // Internally check this before publishing messages for previously subscribed
 // signals.
-bool Authenticator::isStillValid(kuksa::kuksaChannel& channel) {
-  string token = channel.authtoken();
+bool Authenticator::isStillValid(KuksaChannel& channel) {
+  string token = channel.getAuthToken();
   int ret = validateToken(channel, token);
 
   if (ret == -1) {
-    channel.set_authorized(false);
+    channel.setAuthorized(false);
     return false;
   } else {
     return true;
@@ -127,8 +135,8 @@ bool Authenticator::isStillValid(kuksa::kuksaChannel& channel) {
 // **Do this only once for authenticate request**
 // resolves the permission in the JWT token and store the absolute path to the
 // signals in permissions JSON in WsChannel.
-void Authenticator::resolvePermissions(kuksa::kuksaChannel& channel) {
-  string authToken = channel.authtoken();
+void Authenticator::resolvePermissions(KuksaChannel& channel) {
+  string authToken = channel.getAuthToken();
   auto decoded = jwt::decode(authToken);
   json claims;
   for (auto& e : decoded.get_payload_claims()) {
@@ -140,7 +148,7 @@ void Authenticator::resolvePermissions(kuksa::kuksaChannel& channel) {
 
   json permissions;
   if (claims.contains("modifyTree") && claims["modifyTree"].as<bool>()) {
-    channel.set_modifytree(true);
+    channel.enableModifyTree();
   }
 
   if (claims.contains("kuksa-vss")) {
@@ -159,5 +167,5 @@ void Authenticator::resolvePermissions(kuksa::kuksaChannel& channel) {
   }
   std::string channelPermissions;
   permissions.dump_pretty(channelPermissions);
-  channel.set_permissions(channelPermissions);
+  channel.setPermissions(channelPermissions);
 }

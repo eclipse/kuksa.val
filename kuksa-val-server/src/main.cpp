@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
- * Copyright (c) 2019-2021 Robert Bosch GmbH.
+/**********************************************************************
+ * Copyright (c) 2019-2022 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ *      Robert Bosch GmbH
+ **********************************************************************/
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +38,6 @@
 #include "AccessChecker.hpp"
 #include "Authenticator.hpp"
 #include "BasicLogger.hpp"
-#include "RestV1ApiHandler.hpp"
 #include "SubscriptionHandler.hpp"
 #include "VssCommandProcessor.hpp"
 #include "VssDatabase.hpp"
@@ -74,16 +81,14 @@ static void print_usage(const char *prog_name,
   cerr << desc << std::endl;
 }
 
-void httpRunServer(boost::program_options::variables_map variables, std::shared_ptr<WebSockHttpFlexServer> httpServer, std::string docRoot, std::shared_ptr<VssCommandProcessor> cmdProcessor){
+void httpRunServer(boost::program_options::variables_map variables, std::shared_ptr<WebSockHttpFlexServer> httpServer, std::shared_ptr<VssCommandProcessor> cmdProcessor){
 
     auto port = variables["port"].as<int>();
     auto insecure = variables[("insecure")].as<bool>();
     httpServer->AddListener(ObserverType::ALL, cmdProcessor);
     httpServer->Initialize(variables["address"].as<string>(), port,
-                           std::move(docRoot),
                            variables["cert-path"].as<boost::filesystem::path>().string(), insecure);
     httpServer->Start();
-
 }
 
 int main(int argc, const char *argv[]) {
@@ -105,14 +110,14 @@ int main(int argc, const char *argv[]) {
       "Configuration file with `kuksa-val-server` input parameters."
       "Configuration file can replace command-line parameters and through different files multiple configurations can be handled more easily (e.g. test and production setup)."
       "Sample of configuration file parameters looks like:\n"
-      "vss = vss_release_2.1.json\n"
+      "vss = vss_release_2.2.json\n"
       "cert-path = . \n"
       "log-level = ALL\n")
-    ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which `kuksa-val-server` shall handle. Sample 'vss_release_2.1.json' file can be found under [data](./data/vss-core/vss_release_2.1.json)")
+    ("vss", program_options::value<boost::filesystem::path>()->required(), "[mandatory] Path to VSS data file describing VSS data tree structure which `kuksa-val-server` shall handle. Sample 'vss_release_2.2.json' file can be found under [data](./data/vss-core/vss_release_2.2.json)")
     ("overlays", program_options::value<boost::filesystem::path>(), "Path to a directory cotaiing additional VSS models. All json files will be applied on top of the main vss file given by the -vss parameter in alphanumerical order")
     ("cert-path", program_options::value<boost::filesystem::path>()->required()->default_value(boost::filesystem::path(".")),
       "[mandatory] Directory path where 'Server.pem', 'Server.key' and 'jwt.key.pub' are located. ")
-    ("insecure", program_options::bool_switch()->default_value(false), "By default, `kuksa-val-server` shall accept only SSL (TLS) secured connections. If provided, `kuksa-val-server` shall also accept plain un-secured connections for Web-Socket and REST API connections, and also shall not fail connections due to self-signed certificates.")
+    ("insecure", program_options::bool_switch()->default_value(false), "By default, `kuksa-val-server` shall accept only SSL (TLS) secured connections. If provided, `kuksa-val-server` shall also accept plain un-secured connections for Web-Socket and GRPC API connections, and also shall not fail connections due to self-signed certificates.")
     ("use-keycloak", "Use KeyCloak for permission management")
     ("address", program_options::value<string>()->default_value("127.0.0.1"),
       "If provided, `kuksa-val-server` shall use different server address than default _'localhost'_")
@@ -202,20 +207,13 @@ int main(int argc, const char *argv[]) {
     // initialize pseudo random number generator
     std::srand(std::time(nullptr));
 
-    // define doc root path for server..
-    // for now also add 'v1' to designate version 1 of REST API as default
-    // in future, we can add/update REST API with new versions but also support
-    // older by having API versioning through URIs
-    std::string docRoot{"/vss/api/v1/"};
 
     auto pubKeyFile =
         variables["cert-path"].as<boost::filesystem::path>() / "jwt.key.pub";
     string jwtPubkey =
         Authenticator::getPublicKeyFromFile(pubKeyFile.string(), logger);
-    auto rest2JsonConverter =
-        std::make_shared<RestV1ApiHandler>(logger, docRoot);
     auto httpServer = std::make_shared<WebSockHttpFlexServer>(
-        logger, std::move(rest2JsonConverter));
+        logger);
 
     auto tokenValidator =
         std::make_shared<Authenticator>(logger, jwtPubkey, "RS256");
@@ -273,8 +271,8 @@ int main(int argc, const char *argv[]) {
       if(variables.count("insecure")){
         insecureConn = variables["insecure"].as<bool>();
       }
-      std::thread http(httpRunServer, variables, httpServer, docRoot, cmdProcessor);
-      std::thread grpc(grpcHandler::RunServer, cmdProcessor, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
+      std::thread http(httpRunServer, variables, httpServer, cmdProcessor);
+      std::thread grpc(grpcHandler::RunServer, cmdProcessor, database, subHandler, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
       http.join();
       grpc.join();
       

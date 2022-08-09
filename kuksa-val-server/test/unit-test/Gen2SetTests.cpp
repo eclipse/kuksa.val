@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2020-2021 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ *      Robert Bosch GmbH
+ **********************************************************************/
+
 
 /** This are tests for VIS Gen2-style set request. No access checks */
 
@@ -28,7 +36,7 @@
 #include "IAuthenticatorMock.hpp"
 #include "ILoggerMock.hpp"
 #include "ISubscriptionHandlerMock.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 
 #include "exception.hpp"
 
@@ -88,9 +96,9 @@ BOOST_FIXTURE_TEST_SUITE(Gen2SetTests, TestSuiteFixture);
 
 /** Set an existing sensor */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -119,13 +127,12 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
   // Notify subscribers
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
       .once()
-      .with(mock::any, "value", mock::any)
+      .with(mock::any, "float","value", mock::any)
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -134,9 +141,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Sensor_Simple) {
 
 /** Set an array */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Array) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -168,13 +175,12 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Array) {
   // Notify subscribers
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
       .once()
-      .with(mock::any, "value", mock::any)
+      .with(mock::any, "string[]", "value", mock::any)
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -182,9 +188,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Array) {
 }
 /** Send an invalid JSON */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -210,9 +216,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -221,9 +226,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON) {
 
 /** Send an invalid JSON, without any determinable Request Id */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -245,9 +250,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -256,9 +260,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Invalid_JSON_NoRequestID) {
 
 /** Set an non-existing path */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -292,10 +296,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -305,9 +307,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Non_Existing_Path) {
 
 /** Set branch */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -341,10 +343,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -354,9 +354,9 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Branch) {
 
 /** Set attribute */
 BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
-  kuksa::kuksaChannel channel;
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  KuksaChannel channel;
+  channel.setAuthorized(false);
+  channel.setConnID(1);
 
   jsoncons::json jsonSetRequestForSignal;
 
@@ -390,10 +390,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
       .returns(true);
 
   // run UUT
-  auto resStr =
+  auto res =
       processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-
-  auto res = json::parse(resStr);
 
   verify_and_erase_timestamp(res);
 
@@ -401,7 +399,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_Attribute) {
 }
 
 BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonNoAccess;
@@ -410,8 +408,8 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
   const VSSPath vss_path = VSSPath::fromVSSGen2("Vehicle/VehicleIdentification/Brand");
 
   // setup
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  channel.setAuthorized(false);
+  channel.setConnID(1);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = vss_path.to_string();
@@ -426,8 +424,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Set_noPermissionException) {
     .returns(false);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
   verify_and_erase_timestamp(res);

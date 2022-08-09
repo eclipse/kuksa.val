@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2018 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
  *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ **********************************************************************/
+
 
 #include "AccessChecker.hpp"
 
@@ -19,20 +27,19 @@
 #include <regex>
 
 #include "IAuthenticator.hpp"
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 
 using namespace std;
 using namespace jsoncons;
-//using jsoncons::json;
 
 AccessChecker::AccessChecker(std::shared_ptr<IAuthenticator> vdator) {
   tokenValidator = vdator;
 }
 
-bool AccessChecker::checkSignalAccess(const kuksa::kuksaChannel& channel, const string& path, const string& requiredPermission){
+bool AccessChecker::checkSignalAccess(const KuksaChannel& channel, const string& path, const string& requiredPermission){
   json permissions;
-  if(!channel.permissions().empty()){
-    permissions = json::parse(channel.permissions());
+  if(!channel.getPermissions().empty()){
+    permissions = json::parse(channel.getPermissions().as_string());
   }
   else{
     permissions = json::parse("{}");
@@ -54,20 +61,20 @@ bool AccessChecker::checkSignalAccess(const kuksa::kuksaChannel& channel, const 
 }
 
 
-// check the permissions json in WsChannel if path has read access
-bool AccessChecker::checkReadAccess(kuksa::kuksaChannel &channel, const VSSPath &path) {
+// check the permissions json in KuksaChannel if path has read access
+bool AccessChecker::checkReadAccess(KuksaChannel &channel, const VSSPath &path) {
   return checkSignalAccess(channel, path.getVSSGen1Path(), "r");
 }
 
-// check the permissions json in WsChannel if path has read access
-bool AccessChecker::checkWriteAccess(kuksa::kuksaChannel &channel, const VSSPath &path) {
+// check the permissions json in KuksaChannel if path has read access
+bool AccessChecker::checkWriteAccess(KuksaChannel &channel, const VSSPath &path) {
   return checkSignalAccess(channel, path.getVSSGen1Path(), "w");
 }
 
 
 // Checks if all the paths have write access.If even 1 path in the list does not
 // have write access, this method returns false.
-bool AccessChecker::checkPathWriteAccess(kuksa::kuksaChannel &channel, const json &paths) {
+bool AccessChecker::checkPathWriteAccess(KuksaChannel &channel, const json &paths) {
   for (size_t i = 0; i < paths.size(); i++) {
     json item = paths[i];
     string jPath = item["path"].as<string>();

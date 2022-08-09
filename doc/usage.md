@@ -23,7 +23,7 @@ OPTIONS:
   --vss arg                             [mandatory] Path to VSS data file 
                                         describing VSS data tree structure 
                                         which `kuksa-val-server` shall handle. 
-                                        Sample 'vss_release_2.2json' file can 
+                                        Sample 'vss_release_2.2.json' file can 
                                         be found under [data](./data/vss-core/v
                                         ss_release_2.2.json)
   --overlays arg                        Path to a directory cotaiing additional
@@ -39,7 +39,7 @@ OPTIONS:
                                         connections. If provided, 
                                         `kuksa-val-server` shall also accept 
                                         plain un-secured connections for 
-                                        Web-Socket and REST API connections, 
+                                        Web-Socket and GRPC API connections, 
                                         and also shall not fail connections due
                                         to self-signed certificates.
   --use-keycloak                        Use KeyCloak for permission management
@@ -84,10 +84,9 @@ MQTT Options:
                                         format with `.`) to be published to 
                                         mqtt broker, using ";" to seperate 
                                         multiple path and "*" as wildcard
-```
-
+```                                      
 
 Server demo certificates are located in [../kuksa_certificates](../kuksa_certificates) directory of git repo. Certificates from 'kuksa_certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
 For authorizing client, file 'jwt.key.pub' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.key.pub' file, see [KUKSA.VAL JWT authorization](./jwt.md) for more details.
 
-Default configuration shall provide both Web-Socket and REST API connectivity.
+Default configuration shall provide both Web-Socket and GRPC API connectivity.

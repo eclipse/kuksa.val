@@ -1,16 +1,24 @@
-/*
- * ******************************************************************************
+/**********************************************************************
  * Copyright (c) 2019 Robert Bosch GmbH.
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/org/documents/epl-2.0/index.php
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *      Robert Bosch GmbH - initial API and functionality
- * *****************************************************************************
- */
+ *      Robert Bosch GmbH
+ **********************************************************************/
+
 #include <boost/test/unit_test.hpp>
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <turtle/mock.hpp>
@@ -24,7 +32,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include "WsChannel.hpp"
+#include "KuksaChannel.hpp"
 #include "ILoggerMock.hpp"
 #include "IVssDatabaseMock.hpp"
 #include "IAuthenticatorMock.hpp"
@@ -81,7 +89,7 @@ BOOST_FIXTURE_TEST_SUITE(VssCommandProcessorTests, TestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonPathNotFound;
@@ -92,8 +100,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
   
   // setup
 
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -112,8 +121,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
     .returns(std::list<VSSPath>());
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  jsoncons::json res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -125,7 +133,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_PathNotValid_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonMalformedReq;
@@ -137,8 +145,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
   // setup
 
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_PLAIN);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -165,12 +175,11 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
     .returns(true);  
   MOCK_EXPECT(dbMock->getSignal)
     .once()
-    .with(path2, "value")
+    .with(path2, "value", true)
     .throws(std::exception());
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -183,7 +192,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_DBThrowsNotExpectedException_Shall
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonNoAccess;
@@ -194,8 +203,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
   // setup
 
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -217,12 +227,11 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
     .returns(false);
 
   MOCK_EXPECT(dbMock->getSignal)
-    .with(path2, "value")
+    .with(path2, "value", true)
     .throws(noPermissionException("Insufficient read access to " + path));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -235,7 +244,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserNotAuthorized_Shall_ReturnErro
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonSignalData;
@@ -248,8 +257,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -257,7 +267,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
   jsonSignalData["path"] = path;
   jsonSignalDataPoint["value"] = 123;
-  jsonSignalDataPoint["ts"] = 11111111;
+  jsonSignalDataPoint["ts"] = "1970-01-01T00:00:00.0Z";
   jsonSignalData["dp"] = jsonSignalDataPoint;
 
   jsonGetResponseForSignal["action"] = "get";
@@ -282,12 +292,11 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
     .with(path2, "value")
     .returns(true); 
   MOCK_EXPECT(dbMock->getSignal)
-    .with(path2, "value")
+    .with(path2, "value", true)
     .returns(jsonSignalData);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
   verify_and_erase_timestamp(res);
@@ -297,7 +306,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_UserAuthorized_Shall_ReturnValue)
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonGetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -310,8 +319,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonGetRequestForSignal["action"] = "get";
   jsonGetRequestForSignal["path"] = path;
@@ -334,8 +345,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
     .returns(std::list<VSSPath>{});
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -351,7 +361,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetQuery_When_NoValueFromDB_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonPathNotFound;
@@ -365,10 +375,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
   //We need permission first, (otherwise get 403 before checking for invalid path)
   std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
 
-  channel.set_permissions(perm);
+  channel.setPermissions(perm);
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -387,8 +399,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
     .with(vsspath).returns(false);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -401,7 +412,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_InvalidPath_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -410,7 +421,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
    // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
   std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
-  channel.set_permissions(perm);
+  channel.setPermissions(perm);
 
   string requestId = "1";
   int requestValue = 300; //OoB for uint8
@@ -419,8 +430,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -454,8 +467,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
     .throws(outOfBoundException(""));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -468,7 +480,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_ValueOutOfBound_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -481,8 +493,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -511,8 +525,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
     .throws(noPermissionException(""));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -525,7 +538,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_NoPermission_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -539,9 +552,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
   // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
   std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
-  channel.set_permissions(perm);
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setPermissions(perm);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+    channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -574,8 +588,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
     .throws(std::exception());
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -588,7 +601,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_DBThrowsNotExpectedException_Shall
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -602,9 +615,10 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
   // setup
   //We need permission first, (otherwise get 403 before checking for invalid path)
   std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
-  channel.set_permissions(perm);
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setPermissions(perm);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -636,8 +650,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
     .with(vsspath, "value", mock::any).returns(jsonSignalValue);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -653,7 +666,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetQuery_When_UserAuthorized_Shall_UpdateValue)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_InvalidPath_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonPathNotFound;
@@ -667,10 +680,11 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_InvalidPath_Shall_Retur
   //We need permission first, (otherwise get 403 before checking for invalid path)
   std::string perm = "{\"Vehicle.OBD.*\" : \"wr\"}";
 
-  channel.set_permissions(perm);
+  channel.setPermissions(perm);
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["path"] = path;
@@ -689,8 +703,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_InvalidPath_Shall_Retur
     .with(vsspath).returns(false);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -703,7 +716,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_InvalidPath_Shall_Retur
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Sensor_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonNoAccess;
@@ -717,10 +730,11 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Sensor_Shall_ReturnErro
   //We need permission first, (otherwise get 403 before checking for invalid path)
   std::string perm = "{\"Vehicle.*\" : \"wr\"}";
 
-  channel.set_permissions(perm);
+  channel.setPermissions(perm);
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["attribute"] = "targetValue";
@@ -746,8 +760,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Sensor_Shall_ReturnErro
   jsoncons::json jsonValue = jsonSetRequestForSignal["targetValue"];
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -760,7 +773,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Sensor_Shall_ReturnErro
 
 BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Actor_Shall_Work)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSetRequestForSignal;
   jsoncons::json jsonGetResponseForSignal;
@@ -774,10 +787,11 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Actor_Shall_Work)
   //We need permission first, (otherwise get 403 before checking for invalid path)
   std::string perm = "{\"Vehicle.*\" : \"wr\"}";
 
-  channel.set_permissions(perm);
+  channel.setPermissions(perm);
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSetRequestForSignal["action"] = "set";
   jsonSetRequestForSignal["attribute"] = "targetValue";
@@ -805,8 +819,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Actor_Shall_Work)
   jsoncons::json jsonValue = jsonSetRequestForSignal["targetValue"];
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSetRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -822,7 +835,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSetTargetValueQuery_When_Actor_Shall_Work)
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnSubscrId)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -833,8 +846,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -855,8 +869,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
     .returns(subscriptionId);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
 
@@ -869,7 +883,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorized_Shall_ReturnS
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -880,8 +894,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -905,8 +920,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
     .throws(noPathFoundonTree(path));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
 
@@ -919,7 +934,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserAuthorizedButSubIdZero_S
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonNoAccess;
@@ -929,8 +944,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -948,8 +964,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
     .throws(noPermissionException(""));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
 
   // verify
 
@@ -962,7 +977,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_UserNotAuthorized_Shall_Retu
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonPathNotFound;
@@ -972,8 +987,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -991,8 +1007,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
     .throws(noPathFoundonTree(path));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1006,7 +1022,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_PathNotValid_Shall_ReturnErr
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonOutOfBound;
@@ -1016,8 +1032,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -1035,8 +1052,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
     .throws(genException(path));
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
 
@@ -1049,7 +1066,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_OutOfBounds_Shall_ReturnErro
 
 BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedException_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonSubscribeRequestForSignal;
   jsoncons::json jsonMalformedReq;
@@ -1059,8 +1076,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonSubscribeRequestForSignal["action"] = "subscribe";
   jsonSubscribeRequestForSignal["path"] = path;
@@ -1078,8 +1096,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
     .throws(std::exception());
 
   // run UUT
-  auto resStr = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonSubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
 
@@ -1095,7 +1113,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidSubscribeQuery_When_SubHandlerThrowsNotExpectedE
 
 BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsubscribe)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonUnsubscribeRequestForSignal;
   jsoncons::json jsonSignalValue;
@@ -1105,8 +1123,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
   jsonUnsubscribeRequestForSignal["subscriptionId"] = boost::uuids::to_string(subscriptionId);
@@ -1127,8 +1146,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
     .returns(0);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1140,7 +1159,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_UserAuthorized_Shall_Unsub
 
 BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonUnsubscribeRequestForSignal;
   jsoncons::json jsonSignalValue, jsonSignalValueErr;
@@ -1150,8 +1169,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
   jsonUnsubscribeRequestForSignal["subscriptionId"] = boost::uuids::to_string(subscriptionId);
@@ -1175,8 +1195,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
     .returns(1);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1188,7 +1208,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidUnsubscribeQuery_When_Error_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_MalformedUUD_In_Unsubscribe)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonUnsubscribeRequestForSignal;
   jsoncons::json jsonSignalValue, jsonSignalValueErr;
@@ -1198,8 +1218,9 @@ BOOST_AUTO_TEST_CASE(Given_MalformedUUD_In_Unsubscribe)
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonUnsubscribeRequestForSignal["action"] = "unsubscribe";
   jsonUnsubscribeRequestForSignal["subscriptionId"] = "definitely-not-an-uuid";
@@ -1223,8 +1244,8 @@ BOOST_AUTO_TEST_CASE(Given_MalformedUUD_In_Unsubscribe)
     .returns(1);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonUnsubscribeRequestForSignal.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1239,7 +1260,7 @@ BOOST_AUTO_TEST_CASE(Given_MalformedUUD_In_Unsubscribe)
 
 BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMetadata)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonGetMetaRequest;
   jsoncons::json jsonValue, jsonMetadata;
@@ -1250,8 +1271,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonGetMetaRequest["action"] = "getMetaData";
   jsonGetMetaRequest["requestId"] = requestId;
@@ -1274,8 +1296,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
     .returns(jsonMetadata);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonGetMetaRequest.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonGetMetaRequest.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1290,7 +1312,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidGetMetadataQuery_When_UserAuthorized_Shall_GetMe
 
 BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonAuthRequest;
   jsoncons::json jsonValue, jsonMetadata;
@@ -1301,8 +1323,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
 
   // setup
 
-  channel.set_authorized(false);
-  channel.set_connectionid(1);
+  channel.setAuthorized(false);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonAuthRequest["action"] = "authorize";
   jsonAuthRequest["requestId"] = requestId;
@@ -1325,8 +1348,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
     .returns(ttl);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonAuthRequest.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonAuthRequest.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1338,7 +1361,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenValid_Shall_Authorize)
 
 BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonAuthRequest;
   jsoncons::json jsonValue, jsonValueErr;
@@ -1349,8 +1372,9 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 
   // setup
 
-  channel.set_authorized(true);
-  channel.set_connectionid(1);
+  channel.setAuthorized(true);
+  channel.setConnID(1);
+  channel.setType(KuksaChannel::Type::WEBSOCKET_SSL);
 
   jsonAuthRequest["action"] = "authorize";
   jsonAuthRequest["requestId"] = requestId;
@@ -1376,8 +1400,8 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
     .returns(ttl);
 
   // run UUT
-  auto resStr = processor->processQuery(jsonAuthRequest.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonAuthRequest.as_string(), channel);
+
 
   // verify
   BOOST_TEST(res.contains("ts"));
@@ -1392,7 +1416,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidAuthJson_When_TokenInvalid_Shall_ReturnError)
 
 BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyErrors)
 {
-  kuksa::kuksaChannel channel;
+  KuksaChannel channel;
 
   jsoncons::json jsonRequest;
   jsoncons::json jsonExpected, jsonValueErr;
@@ -1413,8 +1437,8 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   //////////////////////
   // check empty request
-  auto resStr = processor->processQuery(jsonRequest.as_string(), channel);
-  auto res = json::parse(resStr);
+  auto res = processor->processQuery(jsonRequest.as_string(), channel);
+
 
   BOOST_TEST(res.contains("ts"));
   BOOST_TEST(res["ts"].is_string());
@@ -1425,9 +1449,8 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   //////////////////////
   /// check request with only get action
   jsonRequest["action"] = "get";
-  resStr = processor->processQuery(jsonRequest.as_string(), channel);
-  res = json::parse(resStr);
-
+  res = processor->processQuery(jsonRequest.as_string(), channel);
+  
   jsonValueErr["message"] = "Key not found: 'path'";
   jsonExpected["error"] = jsonValueErr;
 
@@ -1440,8 +1463,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   //////////////////////
   /// check request with added path
   jsonRequest["path"] = path;
-  resStr = processor->processQuery(jsonRequest.as_string(), channel);
-  res = json::parse(resStr);
+  res = processor->processQuery(jsonRequest.as_string(), channel);
 
   jsonValueErr["message"] = "Schema error: #: Required property \"requestId\" not found";
 
@@ -1460,8 +1482,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
   jsonRequest["requestId"] = 1;
   jsonRequest["action"] = "nothing";
 
-  resStr = processor->processQuery(jsonRequest.as_string(), channel);
-  res = json::parse(resStr);
+  res = processor->processQuery(jsonRequest.as_string(), channel);
 
   jsonValueErr["message"] = "Unknown action requested";
   jsonExpected["error"] = jsonValueErr;
@@ -1478,8 +1499,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   //////////////////////
   /// check random string as request
-  resStr = processor->processQuery("random string P{ }", channel);
-  res = json::parse(resStr);
+  res = processor->processQuery("random string P{ }", channel);
 
   jsonValueErr["message"] = "";
   jsonExpected["error"] = jsonValueErr;
@@ -1495,8 +1515,7 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   //////////////////////
   /// check empty JSON
-  resStr = processor->processQuery("{ }", channel);
-  res = json::parse(resStr);
+  res = processor->processQuery("{ }", channel);
 
   jsonValueErr["message"] = "";
   jsonExpected["error"] = jsonValueErr;
@@ -1510,13 +1529,12 @@ BOOST_AUTO_TEST_CASE(Given_JsonStrings_When_processQuery_Shall_HandleCorrectlyEr
 
   //////////////////////
   /// check malformed JSON
-  resStr = processor->processQuery("{ \"action\": asdasd, }", channel);
-  res = json::parse(resStr);
+  res = processor->processQuery("{ \"action\": asdasd, }", channel);
 
   jsonValueErr["message"] = "";
   jsonExpected["error"] = jsonValueErr;
 
-   BOOST_TEST(res.contains("ts"));
+  BOOST_TEST(res.contains("ts"));
   BOOST_TEST(res["ts"].is_string());
   jsonExpected["ts"]=res["ts"].as_string(); // ignoring timestamp difference for response 
 
