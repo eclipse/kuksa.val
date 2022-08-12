@@ -1,15 +1,15 @@
 # Updating/Extending VSS structure during runtime
 
-Upon startup the KUKSA.val server loads a JSON file describing the data points it manages. Usually this is a version of the [Geniivi Vehicle Signal Specification](https://github.com/GENIVI/vehicle_signal_specification/).
+Upon startup the KUKSA.val server loads a JSON file describing the data points it manages. Usually this is a version of the [COVESA Vehicle Signal Specification](https://github.com/COVESA/vehicle_signal_specification/).
 
 If you want to extend or modify the VSS structure from your application during runtime, this is possible using the `updateVSSTree` and `updateMetaData` requests described here.
 
 ## Overlays using updateVSSTree
 The updateVSSTree method takes an input JSON that follows the same rules as the initial VSS JSON. This is added as an _overlay_ meaning:
- - If the new JSON specifies branches, actors, sensors or attribtues or metadata not in the original VSS tree, they will be added
-  - If the new JSON refers to existing entries, the changed metadata will be overwritten
+ - If the new JSON specifies branches, actors, sensors or attributes or metadata not in the original VSS tree, they will be added
+ - If the new JSON refers to existing entries, the changed metadata will be overwritten
 
-We suggest not creating overlay JSON files directly, but instead writing YAML files following the [Genivi VSS format](https://genivi.github.io/vehicle_signal_specification/) using [Genivi VSS tooling](https://github.com/GENIVI/vss-tools/) to convert them to JSON. That way your extension can be used in the whole VSS ecosystem.
+We suggest not creating overlay JSON files directly, but instead writing YAML files following the [COVESA VSS format](https://covesa.github.io/vehicle_signal_specification/) using [COVESA VSS tooling](https://github.com/COVESA/vss-tools/) to convert them to JSON. That way your extension can be used in the whole VSS ecosystem.
 
 Lets make an example
 
@@ -35,12 +35,12 @@ Consider this VSS-compliant YAML file. We call it `roadster-elon.vspec`
 ```
 
 What happened here? 
- - We changed the allowed max value for `Vehicle.Speed`. This value is already in the standard Genivi VSS data points, however in our use example we need to increase the allowed max value
-  - We added a completely new signal `ThrustersActive` in the `Vehicle.Private` branch
+ - We changed the allowed max value for `Vehicle.Speed`. This value is already in the standard COVESA VSS data points, however in our use example we need to increase the allowed max value
+ - We added a completely new signal `ThrustersActive` in the `Vehicle.Private` branch
 
 Please note, that due to current vss-tools limitations you need to recreate the branch structure with all intermediate branches you use in the yaml.
 
-Use the Genivi tools to generate a JSON
+Use the COVESA tools to generate a JSON
 
 ```bash
 python3 vspec2json.py -i :my.id -I ../spec/ roadster-elon.vspec  roadster-elon.json
