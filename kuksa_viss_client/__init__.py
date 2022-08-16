@@ -63,8 +63,8 @@ class KuksaClientThread(threading.Thread):
         return self.KuksaClientObject.getMetaData(path, timeout)
 
     # Set value to a given path
-    def setValue(self, path, value, attribute="value", timeout = 1):
-        return self.KuksaClientObject.setValue(path, value, attribute, timeout)
+    def setValue(self, path, value, attribute="value", dt="none", timeout = 1):
+        return self.KuksaClientObject.setValue(path, value, attribute, dt, timeout)
 
     # Get value to a given path
     def getValue(self, path, attribute="value", timeout = 5):

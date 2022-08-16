@@ -127,13 +127,14 @@ class KuksaGrpcComm:
         return respJson 
 
     # Function to implement set
-    def setValue(self, path, value, attribute="value", timeout = 5):
+    def setValue(self, path, value, attribute="value", dt="none", timeout = 5):
         recvQueue = queue.Queue(maxsize=1)
 
         # Create Set Request
         req = kuksa_pb2.SetRequest()
         if attribute in self.AttrDict.keys():
-            dt = self.getDataType(path)
+            if dt=="none":
+                dt = self.getDataType(path)
             req.type = self.AttrDict[attribute]
             val = kuksa_pb2.Value()
             val.path = path
@@ -154,8 +155,11 @@ class KuksaGrpcComm:
                 if value in ["False", "false", "F", "f"]:
                     value = 0
                 val.valueBool = bool(value)
-            else:
+            elif dt=="string":
                 val.valueString = str(value)
+            else:
+                respJson = json.dumps({"error": "Invalid datatype"})
+                return respJson
 
             req.values.append(val)
 

@@ -156,7 +156,8 @@ class KuksaWsComm:
         return self._sendReceiveMsg(req, timeout)
 
     # Set value to a given path
-    def setValue(self, path, value, attribute="value", timeout = 1):
+    def setValue(self, path, value, attribute="value", dt="none", timeout = 1):
+        # dt will be ignored as VISS requires everything to be a string.
         if 'nan' == value:
             print(path + " has an invalid value " + str(value))
             return

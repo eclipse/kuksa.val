@@ -136,6 +136,7 @@ class TestClient(Cmd):
     ap_setValue.add_argument("Path", help="Path to be set", completer_method=path_completer)
     ap_setValue.add_argument("Value", help="Value to be set")
     ap_setValue.add_argument("-a", "--attribute", help="Attribute to be set", default="value")
+    ap_setValue.add_argument("-t", "--type", help="Datatype of the attribute to be set", default="none")
 
     ap_getValue = argparse.ArgumentParser()
     ap_getValue.add_argument("Path", help="Path to be read", completer_method=path_completer)
@@ -205,7 +206,7 @@ class TestClient(Cmd):
     def do_setValue(self, args):
         """Set the value of a path"""
         if self.checkConnection():
-            resp = self.commThread.setValue(args.Path, args.Value, args.attribute)
+            resp = self.commThread.setValue(args.Path, args.Value, args.attribute, args.type)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
