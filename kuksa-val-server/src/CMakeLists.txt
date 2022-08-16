@@ -170,6 +170,7 @@ if(BUILD_EXE)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.1.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.2.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_3.0.json ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../config.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../config_grpc_client.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
@@ -183,6 +184,7 @@ if(BUILD_EXE)
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.0.json DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.1.json DESTINATION bin/${SERVER_EXE_NAME})
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_2.2.json DESTINATION bin/${SERVER_EXE_NAME})
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../data/vss-core/vss_release_3.0.json DESTINATION bin/${SERVER_EXE_NAME})
 
 
   # CPack

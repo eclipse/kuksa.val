@@ -46,7 +46,7 @@
 
 namespace {
 // common resources for tests
-std::string validFilename{"test_vss_rel_2.0.json"};
+std::string validFilename{"test_vss_release_latest.json"};
 
 std::shared_ptr<ILoggerMock> logMock;
 std::shared_ptr<IAccessCheckerMock> accCheckMock;
@@ -63,7 +63,7 @@ struct TestSuiteFixture {
     accCheckMock = std::make_shared<IAccessCheckerMock>();
     subHandlerMock = std::make_shared<ISubscriptionHandlerMock>();
 
-    std::string vss_file{"test_vss_rel_2.0.json"};
+    std::string vss_file{"test_vss_release_latest.json"};
 
     MOCK_EXPECT(logMock->Log).at_least(0);  // ignore log events
     db = std::make_shared<VssDatabase>(logMock, subHandlerMock);
@@ -83,6 +83,14 @@ static jsoncons::json createEnumMeta(const std::string& enumValues) {
   meta["enum"] = json::parse(enumValues);
   return meta;
 }
+
+static jsoncons::json createAllowedMeta(const std::string& enumValues) {
+  jsoncons::json meta;
+  meta["datatype"] = "string";
+  meta["allowed"] = json::parse(enumValues);
+  return meta;
+}
+
 static jsoncons::json createUnlimitedMeta(std::string datatype) {
   jsoncons::json meta;
   meta["datatype"] = datatype;
@@ -522,6 +530,7 @@ BOOST_AUTO_TEST_CASE(boolean_array) {
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }
 
+// "enum" no longer supported from VSS 3.0 onwards, replaced by "allowed"
 BOOST_AUTO_TEST_CASE(enumtype) {
   jsoncons::json meta = createEnumMeta("[\"bla\", \"blu\"]");
   jsoncons::json value = "bla";
@@ -533,6 +542,22 @@ BOOST_AUTO_TEST_CASE(enumtype) {
   value = "b";
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
   
+  value = "blablu";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+}
+
+// "allowed" supported from VSS 3.0 onwards, replacing "enum"
+BOOST_AUTO_TEST_CASE(allowedtype) {
+  jsoncons::json meta = createAllowedMeta("[\"bla\", \"blu\"]");
+  jsoncons::json value = "bla";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "blu";
+  BOOST_CHECK_NO_THROW(db->checkAndSanitizeType(meta, value));
+
+  value = "b";
+  BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
+
   value = "blablu";
   BOOST_CHECK_THROW(db->checkAndSanitizeType(meta, value), outOfBoundException);
 }

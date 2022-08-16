@@ -53,7 +53,7 @@
 
 namespace {
 // common resources for tests
-std::string validFilename{"test_vss_rel_2.0.json"};
+std::string validFilename{"test_vss_release_latest.json"};
 
 std::shared_ptr<ILoggerMock> logMock;
 std::shared_ptr<IAuthenticatorMock> authMock;
@@ -74,7 +74,7 @@ struct TestSuiteFixture {
     accCheckMock = std::make_shared<IAccessCheckerMock>();
     subHandlerMock = std::make_shared<ISubscriptionHandlerMock>();
 
-    std::string vss_file{"test_vss_rel_2.0.json"};
+    std::string vss_file{"test_vss_release_latest.json"};
 
     MOCK_EXPECT(logMock->Log).at_least(0);  // ignore log events
     db = std::make_shared<VssDatabase>(logMock, subHandlerMock);
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Branch) {
 
   std::string expectedJsonString{R"(
     {"action":"get",
-     "error":{"message":"Attribute value on Vehicle/VehicleIdentification/ACRISSCode has not been set yet.",
+     "error":{"message":"Attribute value on Vehicle/VehicleIdentification/AcrissCode has not been set yet.",
      "number":"404",
      "reason":"unavailable_data"},
      "requestId":"1"
@@ -307,7 +307,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_Wildcard_End) {
 
   std::string expectedJsonString{R"(
     {"action":"get",
-     "error":{"message":"Attribute value on Vehicle/VehicleIdentification/ACRISSCode has not been set yet.",
+     "error":{"message":"Attribute value on Vehicle/VehicleIdentification/AcrissCode has not been set yet.",
      "number":"404",
      "reason":"unavailable_data"},
      "requestId":"1"
@@ -413,7 +413,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
   jsoncons::json value="100";
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
       .once()
-      .with(mock::any, "int32", "value", mock::any)
+      .with(mock::any, "float", "value", mock::any)
       .returns(true);
   db->setSignal(vss_path, "value", value);
   
@@ -429,7 +429,7 @@ BOOST_AUTO_TEST_CASE(Gen2_Get_StableTimestamp) {
         "data": {
             "path": "Vehicle/Speed", 
             "dp": {
-                "value": "100"
+                "value": "100.0"
             }
         }
     }
