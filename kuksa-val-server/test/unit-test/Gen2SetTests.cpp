@@ -50,7 +50,7 @@
 
 namespace {
 // common resources for tests
-std::string validFilename{"test_vss_rel_2.2.json"};
+std::string validFilename{"test_vss_release_latest.json"};
 
 std::shared_ptr<ILoggerMock> logMock;
 std::shared_ptr<IAuthenticatorMock> authMock;

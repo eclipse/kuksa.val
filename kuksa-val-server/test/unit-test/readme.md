@@ -1,10 +1,11 @@
-# W3C-VISS Unit Test
+# Kuksa-val-server Unit Test
 
 ### Requires Boost version > 1.59
 
-Enable set(UNIT_TEST ON) in CMakeLists.txt under w3v-visserver-api folder.
+Enable set(UNIT_TEST ON) in CMakeLists.txt.
 
 ```
+cd kuksa-val-server
 
 mkdir build
 

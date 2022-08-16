@@ -39,7 +39,7 @@
 
 namespace {
   // common resources for tests
-  std::string validFilename{"test_vss_rel_2.0.json"};
+  std::string validFilename{"test_vss_release_latest.json"};
 
   std::shared_ptr<ILoggerMock> logMock;
   std::shared_ptr<ISubscriptionHandlerMock> subHandlerMock;
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForSingleSignal_Shal
 
   // expectations
 
-  std::string expectedJsonString{R"({"Vehicle":{"children":{"Acceleration":{"children":{"Vertical":{"datatype":"int32","description":"Vehicle acceleration in Z (vertical acceleration).","type":"sensor","unit":"m/s2","uuid":"9521e8d36a9b546d9414a779f5dd9bef"}},"description":"Spatial acceleration","type":"branch","uuid":"ce0fb48b566354c7841e279125f6f66d"}},"description":"High-level vehicle data.","type":"branch","uuid":"1c72453e738511e9b29ad46a6a4b77e9"}})"};
+  std::string expectedJsonString{R"({"Vehicle":{"children":{"Acceleration":{"children":{"Vertical":{"datatype":"float","description":"Vehicle acceleration in Z (vertical acceleration).","type":"sensor","unit":"m/s^2","uuid":"a4a8a7c4ac5b52deb0b3ee4ed8787c59"}},"description":"Spatial acceleration. Axis definitions according to ISO 8855.","type":"branch","uuid":"6c490e6a798c5abc8f0178ed6deae0a8"}},"description":"High-level vehicle data.","type":"branch","uuid":"ccc825f94139544dbb5f4bfd033bece6"}})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_GetMetadataForBranch_Shall_Retu
 
   // expectations
 
-  std::string expectedJsonString{R"({"Vehicle":{"children":{"Acceleration":{"children":{"Lateral":{"datatype":"int32","description":"Vehicle acceleration in Y (lateral acceleration).","type":"sensor","unit":"m/s2","uuid":"5c28427f79ca5fe394b47fe057a2af9b"},"Longitudinal":{"datatype":"int32","description":"Vehicle acceleration in X (longitudinal acceleration).","type":"sensor","unit":"m/s2","uuid":"c83f0c12653b5e7baf000799052f5533"},"Vertical":{"datatype":"int32","description":"Vehicle acceleration in Z (vertical acceleration).","type":"sensor","unit":"m/s2","uuid":"9521e8d36a9b546d9414a779f5dd9bef"}},"description":"Spatial acceleration","type":"branch","uuid":"ce0fb48b566354c7841e279125f6f66d"}},"description":"High-level vehicle data.","type":"branch","uuid":"1c72453e738511e9b29ad46a6a4b77e9"}})"};
+  std::string expectedJsonString{R"({"Vehicle":{"children":{"Acceleration":{"children":{"Lateral":{"datatype":"float","description":"Vehicle acceleration in Y (lateral acceleration).","type":"sensor","unit":"m/s^2","uuid":"7522c5d6b7665b16a099643b2700e93c"},"Longitudinal":{"datatype":"float","description":"Vehicle acceleration in X (longitudinal acceleration).","type":"sensor","unit":"m/s^2","uuid":"3d511fe7232b5841be311b37f322de5a"},"Vertical":{"datatype":"float","description":"Vehicle acceleration in Z (vertical acceleration).","type":"sensor","unit":"m/s^2","uuid":"a4a8a7c4ac5b52deb0b3ee4ed8787c59"}},"description":"Spatial acceleration. Axis definitions according to ISO 8855.","type":"branch","uuid":"6c490e6a798c5abc8f0178ed6deae0a8"}},"description":"High-level vehicle data.","type":"branch","uuid":"ccc825f94139544dbb5f4bfd033bece6"}})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   // verify
@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilename_When_updateMetadataValidPath) {
 
   // expectations
 
-  std::string expectedJsonString{R"({"Vehicle":{"children":{"Acceleration":{"children":{"Vertical":{"bla":"blu","datatype":"int64","description":"Vehicle acceleration in Z (vertical acceleration).","type":"sensor","unit":"m/s2","uuid":"9521e8d36a9b546d9414a779f5dd9bef"}},"description":"Spatial acceleration","type":"branch","uuid":"ce0fb48b566354c7841e279125f6f66d"}},"description":"High-level vehicle data.","type":"branch","uuid":"1c72453e738511e9b29ad46a6a4b77e9"}})"};
+  std::string expectedJsonString{R"({"Vehicle":{"children":{"Acceleration":{"children":{"Vertical":{"bla":"blu","datatype":"int64","description":"Vehicle acceleration in Z (vertical acceleration).","type":"sensor","unit":"m/s^2","uuid":"a4a8a7c4ac5b52deb0b3ee4ed8787c59"}},"description":"Spatial acceleration. Axis definitions according to ISO 8855.","type":"branch","uuid":"6c490e6a798c5abc8f0178ed6deae0a8"}},"description":"High-level vehicle data.","type":"branch","uuid":"ccc825f94139544dbb5f4bfd033bece6"}})"};
   jsoncons::json expectedJson = jsoncons::json::parse(expectedJsonString);
 
   std::string metaDataString{R"({"bla":"blu","datatype":"int64"})"};
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
 
   MOCK_EXPECT(subHandlerMock->publishForVSSPath)
     .at_least(1)
-    .with(mock::any, "int32", "value", mock::any)
+    .with(mock::any, "float", "value", mock::any)
     .returns(0);
 
   // verify
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, "value", setValue));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
-  BOOST_TEST(returnJson["dp"]["value"].as<int>() == 10);
+  BOOST_TEST(returnJson["dp"]["value"].as<float>() == 10);
 }
 
 BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSignalNoChannel_Shall_SetValue) {
@@ -256,12 +256,12 @@ BOOST_AUTO_TEST_CASE(Given_ValidVssFilenameAndChannelAuthorized_When_SetSingleSi
   setValue = 10;
 
   // verify
-  MOCK_EXPECT(subHandlerMock->publishForVSSPath).with(mock::any, "int32", "value", mock::any).returns(0);
+  MOCK_EXPECT(subHandlerMock->publishForVSSPath).with(mock::any, "float", "value", mock::any).returns(0);
 
   BOOST_CHECK_NO_THROW(db->setSignal(signalPath, "value", setValue));
 
   BOOST_CHECK_NO_THROW(returnJson = db->getSignal(signalPath, "value"));
-  BOOST_TEST(returnJson["dp"]["value"].as<int>() == 10);
+  BOOST_TEST(returnJson["dp"]["value"].as<float>() == 10);
 }
 
 
@@ -490,7 +490,7 @@ BOOST_AUTO_TEST_CASE(getDataTypeForSensor) {
   db->initJsonTree(validFilename);
   std::string path = "Vehicle.Speed";
   std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
-  BOOST_TEST(dt == "int32");
+  BOOST_TEST(dt == "float");
 }
 
 BOOST_AUTO_TEST_CASE(getDataTypeForAttribute) {

@@ -87,10 +87,10 @@ if(BUILD_UNIT_TEST)
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE ${OPENSSL_LIBRARIES})
   target_link_libraries(${UNITTEST_EXE_NAME} PRIVATE jsoncons jwt-cpp gtest_main gmock)
 
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../../data/vss-core/vss_release_2.2.json ${CMAKE_CURRENT_BINARY_DIR}/test_vss_rel_2.2.json COPYONLY)
-
-  # old test json file to satisfy old test cases 
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test_vss_rel_2.0.json ${CMAKE_CURRENT_BINARY_DIR}/test_vss_rel_2.0.json COPYONLY)
+# Copy all files needed for tests, in general no problem to use older versions as long as KUKSA.val supports that version
+# Unless required for other reasons tests shall use "test_vss_release_latest.json" so that we always test against latest released version
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../../data/vss-core/vss_release_3.0.json ${CMAKE_CURRENT_BINARY_DIR}/test_vss_release_latest.json COPYONLY)
+# If older versions needs to be used in test then include them as "test_vss_release_X.Y.json"
 
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../../kuksa_certificates/jwt/jwt.key.pub ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
   if (ENABLE_COVERAGE)

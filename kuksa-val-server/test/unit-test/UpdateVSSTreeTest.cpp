@@ -52,7 +52,7 @@
 
 namespace {
 // common resources for tests
-std::string validFilename{"test_vss_rel_2.0.json"};
+std::string validFilename{"test_vss_release_latest.json"};
 
 std::shared_ptr<ILoggerMock> logMock;
 std::shared_ptr<IAuthenticatorMock> authMock;
@@ -73,7 +73,7 @@ struct TestSuiteFixture {
     accCheckMock = std::make_shared<IAccessCheckerMock>();
     subHandlerMock = std::make_shared<ISubscriptionHandlerMock>();
 
-    std::string vss_file{"test_vss_rel_2.0.json"};
+    std::string vss_file{"test_vss_release_latest.json"};
 
     MOCK_EXPECT(logMock->Log).at_least(0);  // ignore log events
     db = std::make_shared<VssDatabase>(logMock, subHandlerMock);
@@ -162,7 +162,6 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_add) {
                 "uuid": "304b0817a2df524fa442c6a2d2742ed0"
                 }
             },
-            "description": "Uncontrolled branch where non-public signals can be defined.",
             "type": "branch",
             "uuid": "4161866b048a5b76aa3124dec82e0260"
             }
@@ -340,13 +339,12 @@ BOOST_AUTO_TEST_CASE(update_vss_tree_override) {
         "Vehicle": {
         "children": {
             "Speed": {
-            "datatype": "int32",
-            "description": "Vehicle speed, as sensed by the gearbox.",
+            "datatype": "float",
+            "description": "Vehicle speed.",
             "max": 9100,
-            "min": -250,
             "type": "sensor",
             "unit": "km/h",
-            "uuid": "1efc9a11943b5a15ac159786051c5836"
+            "uuid": "efe50798638d55fab18ab7d43cc490e9"
             }
         },
         "description": "High-level vehicle data.",

@@ -165,9 +165,13 @@ void VssDatabase::checkAndSanitizeType(jsoncons::json &meta, jsoncons::json &val
         checkBoolType(val);
     }
     else if (dt == "string") { 
-      if (meta.contains("enum") ) {
-        checkEnumType(meta["enum"], val);
-      }
+    	// In VSS 3.0 the keyword "allowed" replaced "enum"
+        if (meta.contains("allowed") ) {
+            checkEnumType(meta["allowed"], val);
+        }
+        if (meta.contains("enum") ) {
+          checkEnumType(meta["enum"], val);
+        }
     }
     else if (dt.rfind("[]") == dt.size()-2){
         std::string subdatatype = dt.substr(0, dt.size()-2);

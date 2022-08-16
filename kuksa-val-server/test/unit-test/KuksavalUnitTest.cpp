@@ -100,14 +100,14 @@ kuksavalunittest::kuksavalunittest() {
   subhandler->addPublisher(mqttPublisher);
   database = std::make_shared<VssDatabase>(logger, subhandler);
   commandProc = std::make_shared<VssCommandProcessor>(logger, database, authhandler , accesshandler, subhandler);
-  database->initJsonTree("test_vss_rel_2.0.json");
+  database->initJsonTree("test_vss_release_latest.json");
 
    //we can not mock for testing authentication
    auto accesshandler_real = std::make_shared<AccessChecker>(authhandler);
    auto subhandler_auth = std::make_shared<SubscriptionHandler>(logger, httpServer, authhandler, accesshandler_real);
    subhandler_auth->addPublisher(mqttPublisher);
    auto database_auth = std::make_shared<VssDatabase>(logger, subhandler_auth);
-   database_auth->initJsonTree("test_vss_rel_2.0.json");
+   database_auth->initJsonTree("test_vss_release_latest.json");
 
    commandProc_auth = std::make_shared<VssCommandProcessor>(logger, database_auth, authhandler , accesshandler_real, subhandler_auth);
 }
@@ -316,31 +316,31 @@ BOOST_AUTO_TEST_CASE(Test_AuthService){
 
 BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
 {
-    string test_path_Uint8 = "Vehicle.OBD.AcceleratorPositionE";
+    string test_path_Uint8 = "Vehicle.OBD.WarmupsSinceDTCClear";
     VSSPath vss_test_path_Uint8 = VSSPath::fromVSSGen1(test_path_Uint8);
 
-    string test_path_Uint16 = "Vehicle.OBD.WarmupsSinceDTCClear";
+    string test_path_Uint16 = "Vehicle.Driver.HeartRate";
     VSSPath vss_test_path_Uint16 = VSSPath::fromVSSGen1(test_path_Uint16);
 
-    string test_path_Uint32 = "Vehicle.OBD.TimeSinceDTCCleared";
+    string test_path_Uint32 = "Vehicle.VersionVSS.Major";
     VSSPath vss_test_path_Uint32 = VSSPath::fromVSSGen1(test_path_Uint32);
 
-    string test_path_int8 = "Vehicle.Body.Mirrors.Right.Tilt";
+    string test_path_int8 = "Vehicle.Powertrain.Transmission.CurrentGear";
     VSSPath vss_test_path_int8 = VSSPath::fromVSSGen1(test_path_int8);
 
-    string test_path_int16 = "Vehicle.OBD.FuelInjectionTiming";
+    string test_path_int16 = "Vehicle.Chassis.SteeringWheel.Angle";
     VSSPath vss_test_path_int16 = VSSPath::fromVSSGen1(test_path_int16);
 
-    string test_path_int32 = "Vehicle.ADAS.CruiseControl.SpeedSet";
+    string test_path_int32 = "Vehicle.Service.TimeToService";
     VSSPath vss_test_path_int32 = VSSPath::fromVSSGen1(test_path_int32);
 
-    string test_path_boolean = "Vehicle.OBD.Status.MIL";
+    string test_path_boolean = "Vehicle.Driver.IsEyesOnRoad";
     VSSPath vss_test_path_boolean = VSSPath::fromVSSGen1(test_path_boolean);
 
-    string test_path_Float = "Vehicle.OBD.FuelRate";
+    string test_path_Float = "Vehicle.Service.DistanceToService";
    VSSPath vss_test_path_Float = VSSPath::fromVSSGen1(test_path_Float);
 
-    string test_path_Double =  "Vehicle.Cabin.Infotainment.Navigation.CurrentLocation.Altitude";
+    string test_path_Double =  "Vehicle.CurrentLocation.Altitude";
     VSSPath vss_test_path_Double = VSSPath::fromVSSGen1(test_path_Double);
 
     string test_path_string = "Vehicle.Cabin.Infotainment.Media.Played.URI";
@@ -818,14 +818,9 @@ BOOST_AUTO_TEST_CASE(set_get_test_all_datatypes_boundary_conditions)
     BOOST_TEST(result["dp"]["value"].as<bool>() == test_value_bool_true);
 }
 
-
-
 // -------------------------------- Metadata test ----------------------------------
-
-BOOST_AUTO_TEST_CASE(test_metadata_simple)
+void test_engine_speed(VSSPath test_path)
 {
-    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.OBD.EngineSpeed"); // pass a valid path without wildcard.
-
     json result = database->getMetaData(test_path);
 
     json expected = json::parse(R"({
@@ -837,159 +832,114 @@ BOOST_AUTO_TEST_CASE(test_metadata_simple)
                         "description": "PID 0C - Engine speed measured as rotations per minute",
                         "type": "sensor",
                         "datatype": "float",
-                        "uuid": "45b85b6ba8555ccb8ca5c9b96ab5f94e",
+                        "uuid": "b682eea93b3e5874ab3b52e95a1fad37",
                         "unit": "rpm"
                     }
                 },
                 "description": "OBD data.",
-                "uuid": "423b844a2f3b51a688b0ab74ecb6eae4",
+                "uuid": "7ad7c512ed5d52c8b31944d2d47a4bc3",
                 "type": "branch"
             }
         },
         "description": "High-level vehicle data.",
-        "uuid": "1c72453e738511e9b29ad46a6a4b77e9",
+        "uuid": "ccc825f94139544dbb5f4bfd033bece6",
         "type": "branch"
     }
     })");
 
     BOOST_TEST(result ==  expected);
+}
+
+
+BOOST_AUTO_TEST_CASE(test_metadata_simple)
+{
+    test_engine_speed(VSSPath::fromVSSGen1("Vehicle.OBD.EngineSpeed")); // pass a valid path without wildcard.
 }
 
 BOOST_AUTO_TEST_CASE(test_metadata_with_wildcard)
 {
-    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.*.EngineSpeed"); // pass a valid path with wildcard.
+    test_engine_speed(VSSPath::fromVSSGen1("Vehicle.*.EngineSpeed")); // pass a valid path with wildcard.
+
+}
+
+//Helper function for tests below
+void test_steering(VSSPath test_path)
+{
+
 
     json result = database->getMetaData(test_path);
 
     json expected = json::parse(R"({
-    "Vehicle": {
-        "children": {
-            "OBD": {
-                "children": {
-                    "EngineSpeed": {
-                        "description": "PID 0C - Engine speed measured as rotations per minute",
-                        "uuid": "45b85b6ba8555ccb8ca5c9b96ab5f94e",
-                        "datatype": "float",
-                        "type": "sensor",
-                        "unit": "rpm"
-                    }
+    "Vehicle":{
+      "children":{
+         "Chassis":{
+           "children":{
+             "SteeringWheel":{
+               "children":{
+                 "Angle":{
+                   "datatype":"int16",
+                   "description":"Steering wheel angle. Positive = degrees to the left. Negative = degrees to the right.",
+                   "type":"sensor",
+                   "unit":"degrees",
+                   "uuid":"92cd3b3d37585b2291806fe5127d9393"
                 },
-                "description": "OBD data.",
-                "uuid": "423b844a2f3b51a688b0ab74ecb6eae4",
-                "type": "branch"
+                "Extension":{
+                   "datatype":"uint8",
+                "description":"Steering wheel column extension from dashboard. 0 = Closest to dashboard. 100 = Furthest from dashboard.",
+                   "max":100,
+                   "min":0,
+                   "type":"actuator",
+                   "unit":"percent",
+                   "uuid":"6a84cc3604fc5960a1fb384fe63fae72"
+                },
+                "Position":{
+                   "allowed":["FRONT_LEFT","FRONT_RIGHT"],
+                   "datatype":"string",
+                   "default":"FRONT_LEFT",
+                   "description":"Position of the steering wheel on the left or right side of the vehicle.",
+                   "type":"attribute",
+                   "uuid":"314d6eeeba195098b36ae7f476d27824"
+                },
+                "Tilt":{
+                   "datatype":"uint8",
+                   "description":"Steering wheel column tilt. 0 = Lowest position. 100 = Highest position.",
+                   "max":100,
+                   "min":0,
+                   "type":"actuator",
+                   "unit":"percent",
+                   "uuid":"33e979769f91521d8080384447d06c00"
+                }
+              },
+              "description":"Steering wheel signals",
+              "type":"branch",
+              "uuid":"8c759072791e5986ac4efe9df0c2b751"
             }
-        },
-        "description": "High-level vehicle data.",
-        "uuid": "1c72453e738511e9b29ad46a6a4b77e9",
-        "type": "branch"
-    }
-    })");
+         },
+         "description":"All data concerning steering, suspension, wheels, and brakes.",
+         "type":"branch",
+         "uuid":"87d260d635425da0a4ebd62bc4e5c313"
+       }
+     },
+     "description":"High-level vehicle data.",
+     "type":"branch",
+     "uuid":"ccc825f94139544dbb5f4bfd033bece6"
+   }
+   })");
 
     BOOST_TEST(result ==  expected);
 }
 
+
 BOOST_AUTO_TEST_CASE(test_metadata_branch)
 {
-    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.Chassis.SteeringWheel"); // pass a valid branch path without wildcard.
+  test_steering(VSSPath::fromVSSGen1("Vehicle.Chassis.SteeringWheel")); // pass a valid branch path without wildcard.
 
-    json result = database->getMetaData(test_path);
 
-    json expected = json::parse(R"({
-    "Vehicle": {
-        "children": {
-            "Chassis": {
-                "children": {
-                    "SteeringWheel": {
-                        "children": {
-                            "Angle": {
-                                "description": "Steering wheel angle. Positive = degrees to the left. Negative = degrees to the right.",
-                                "type": "sensor",
-                                "datatype": "int16",
-                                "unit": "degrees",
-                                "uuid": "b4d1437aad9d5be38fe325954deb131a"
-                            },
-                            "Extension": {
-                                "description": "Steering wheel column extension from dashboard. 0 = Closest to dashboard. 100 = Furthest from dashboard.",
-                                "type": "actuator",
-                                "datatype": "uint8",
-                                "max": 100,
-                                "min": 0,
-                                "unit": "percent",
-                                "uuid": "2704da815c8a5ce798d1db0042a040e7"
-                            },
-                            "Tilt": {
-                                "description": "Steering wheel column tilt. 0 = Lowest position. 100 = Highest position.",
-                                "type": "actuator",
-                                "datatype": "uint8",
-                                "max": 100,
-                                "min": 0,
-                                "unit": "percent",
-                                "uuid": "927d3bca395a568ab282486579351704"
-                            }
-                        },
-                        "description": "Steering wheel signals",
-                        "type": "branch",
-                        "uuid": "c7c33837f61559378630a6a021591c45"
-                    }
-                },
-                "description": "All data concerning steering, suspension, wheels, and brakes.",
-                "type": "branch",
-                "uuid": "b7b7566dd46951eb8a321babc6e236ec"
-            }
-        },
-        "description": "High-level vehicle data.",
-        "type": "branch",
-        "uuid": "1c72453e738511e9b29ad46a6a4b77e9"
-    }
-  }
-)");
-
-    BOOST_TEST(result ==  expected);
 }
 
 BOOST_AUTO_TEST_CASE(test_metadata_branch_with_wildcard)
 {
-    VSSPath test_path = VSSPath::fromVSSGen1("Vehicle.*.SteeringWheel"); // pass a valid branch path with wildcard.
-
-    json result = database->getMetaData(test_path);
-
-    json expected = json::parse(R"({
-  "Vehicle": {
-    "children": {
-      "Cabin": {
-        "children": {
-          "SteeringWheel": {
-            "children": {
-              "Position": {
-                "datatype": "string",
-                "description": "Position of the steering wheel inside the cabin",
-                "enum": [
-                  "front_left",
-                  "front_right"
-                ],
-                "type": "attribute",
-                "uuid": "e3e2fad9ee16547c89881fce84ba381f",
-                "value": "front_left"
-              }
-            },
-            "description": "Steering wheel configuration attributes",
-            "type": "branch",
-            "uuid": "b6e4c824083a58a794386fd41dc854b5"
-          }
-        },
-        "description": "All in-cabin components, including doors.",
-        "type": "branch",
-        "uuid": "2a9e2e147fd7517baee92a29c5462ddd"
-      }
-    },
-    "description": "High-level vehicle data.",
-    "type": "branch",
-    "uuid": "1c72453e738511e9b29ad46a6a4b77e9"
-  }
-}
-)");
-
-    BOOST_TEST(result ==  expected);
+    test_steering(VSSPath::fromVSSGen1("Vehicle.*.SteeringWheel")); // pass a valid branch path with wildcard.
 }
 
 
@@ -1210,7 +1160,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_wildcard_path)
 
    json expected = json::parse(R"({
     "action":"get",
-     "error":{"message":"Attribute value on Vehicle/VehicleIdentification/ACRISSCode has not been set yet.",
+     "error":{"message":"Attribute value on Vehicle/VehicleIdentification/AcrissCode has not been set yet.",
       "number":"404",
       "reason":"unavailable_data"
       },
@@ -1259,7 +1209,7 @@ BOOST_AUTO_TEST_CASE(permission_basic_read_with_branch_path)
 
    json expected = json::parse(R"({
                        "action":"get",
-                           "error":{"message":"Attribute value on Vehicle/VehicleIdentification/ACRISSCode has not been set yet.",
+                           "error":{"message":"Attribute value on Vehicle/VehicleIdentification/AcrissCode has not been set yet.",
                            "number":"404",
                            "reason":"unavailable_data"
                         },
