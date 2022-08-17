@@ -11,6 +11,8 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
+#![allow(unknown_lints)]
+#![allow(clippy::derive_partial_eq_without_eq)]
 pub mod proto {
     pub mod v1 {
         tonic::include_proto!("sdv.databroker.v1");

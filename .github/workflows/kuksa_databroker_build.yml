@@ -207,3 +207,28 @@ jobs:
           name: databroker-oci-multiarch.tar
           path: ${{github.workspace}}/databroker-oci-multiarch.tar
           retention-days: 1
+
+  integration-test:
+    name: Run integration test
+    runs-on: ubuntu-latest
+    needs: [build-databroker-image]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Retrieve saved container image
+        uses: actions/download-artifact@v3
+        with:
+          name: databroker-oci-multiarch.tar
+          path: ${{github.workspace}}
+
+      - name: Load image
+        shell: bash
+        run: |
+          skopeo copy oci-archive:databroker-oci-multiarch.tar docker-daemon:databroker:integration_test
+
+      - name: Run integration test
+        env:
+          DATABROKER_IMAGE: databroker:integration_test
+        run: ${{github.workspace}}/kuksa_databroker/integration_test/run.sh
