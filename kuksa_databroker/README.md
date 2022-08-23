@@ -211,10 +211,12 @@ DOCKER_BUILDKIT=1 docker build -f kuksa_databroker/Dockerfile -t databroker:<tag
 
 The image creation may take around 2 minutes.
 After the image is created the databroker container can be ran from any directory of the project:
+
 ```shell
-#By default the container will execute the ./databroker command.
+#By default the container will execute the ./databroker command and load the latest VSS file.
 docker run --rm -it  -p 55555:55555/tcp databroker
 ```
+
 To run any specific command, just append you command at the end.
 
 ```shell

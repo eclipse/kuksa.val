@@ -27,9 +27,13 @@ FROM --platform=$TARGETPLATFORM debian:buster-slim
 
 COPY --from=builder workdir/databroker /app/databroker
 
+COPY ./data/vss-core/vss_release_3.0.json vss_release_3.0.json
+
 ENV KUKSA_DATA_BROKER_ADDR=0.0.0.0
 ENV KUKSA_DATA_BROKER_PORT=55555
+ENV KUKSA_DATA_BROKER_METADATA_FILE=vss_release_3.0.json
 
 EXPOSE $KUKSA_DATA_BROKER_PORT
 
 ENTRYPOINT [ "/app/databroker" ]
+
