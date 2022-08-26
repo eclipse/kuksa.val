@@ -13,4 +13,5 @@
 
 pub mod server;
 
+mod kuksa_val_v1;
 mod sdv_databroker_v1;

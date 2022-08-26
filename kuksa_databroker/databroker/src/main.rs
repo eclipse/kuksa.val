@@ -199,33 +199,41 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.is_present("dummy-metadata") {
         info!("Populating (hardcoded) metadata");
         for (name, data_type, change_type, description) in DATAPOINTS {
-            let id = broker
-                .register_datapoint(
+            if let Ok(id) = broker
+                .add_entry(
                     name.to_string(),
                     data_type.clone(),
                     change_type.clone(),
                     description.to_string(),
                 )
-                .await;
-
-            if name == &"Vehicle.TestArray" {
-                match broker
-                    .set_datapoints(&[(
-                        id.unwrap(),
-                        broker::DataPoint {
-                            ts: std::time::SystemTime::now(),
-                            value: databroker::types::DataValue::StringArray(vec![
-                                String::from("yes"),
-                                String::from("no"),
-                                String::from("maybe"),
-                                String::from("nah"),
-                            ]),
-                        },
-                    )])
-                    .await
-                {
-                    Ok(_) => {}
-                    Err(e) => println!("{:?}", e),
+                .await
+            {
+                if name == &"Vehicle.TestArray" {
+                    match broker
+                        .update_entries([(
+                            id,
+                            broker::EntryUpdate {
+                                path: None,
+                                datapoint: Some(broker::Datapoint {
+                                    ts: std::time::SystemTime::now(),
+                                    value: databroker::types::DataValue::StringArray(vec![
+                                        String::from("yes"),
+                                        String::from("no"),
+                                        String::from("maybe"),
+                                        String::from("nah"),
+                                    ]),
+                                }),
+                                actuator_target: None,
+                                entry_type: None,
+                                data_type: None,
+                                description: None,
+                            },
+                        )])
+                        .await
+                    {
+                        Ok(_) => {}
+                        Err(e) => println!("{:?}", e),
+                    }
                 }
             }
         }
@@ -242,7 +250,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             debug!("Adding {}", entry.name);
 
             let id = broker
-                .register_datapoint(
+                .add_entry(
                     entry.name.clone(),
                     entry.data_type,
                     databroker::types::ChangeType::OnChange,
@@ -251,14 +259,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .await;
 
             if let (Ok(id), Some(default)) = (id, entry.default) {
-                let ids = &[(
+                let ids = [(
                     id,
-                    broker::DataPoint {
-                        ts: std::time::SystemTime::now(),
-                        value: default,
+                    broker::EntryUpdate {
+                        datapoint: Some(broker::Datapoint {
+                            ts: std::time::SystemTime::now(),
+                            value: default,
+                        }),
+                        path: None,
+                        actuator_target: None,
+                        entry_type: None,
+                        data_type: None,
+                        description: None,
                     },
                 )];
-                if let Err(errors) = broker.set_datapoints(ids).await {
+                if let Err(errors) = broker.update_entries(ids).await {
                     // There's only one error (since we're only trying to set one)
                     if let Some(error) = errors.get(0) {
                         info!(

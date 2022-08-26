@@ -43,6 +43,13 @@ pub enum DataType {
     TimestampArray,
 }
 
+#[derive(Debug, Clone)]
+pub enum EntryType {
+    Sensor,
+    Attribute,
+    Actuator,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ChangeType {
     Static,
@@ -117,12 +124,11 @@ impl DataValue {
                     }
                 }
             }
-            (DataValue::Int64(value), DataValue::Float(other_value)) => {
-                match i32::try_from(*value) {
-                    Ok(value) => Ok(f64::from(value) > f64::from(*other_value)),
-                    Err(_) => Err(CastError {}),
-                }
-            }
+            (DataValue::Int64(value), DataValue::Float(other_value)) => match i32::try_from(*value)
+            {
+                Ok(value) => Ok(f64::from(value) > f64::from(*other_value)),
+                Err(_) => Err(CastError {}),
+            },
             (DataValue::Int64(value), DataValue::Double(other_value)) => {
                 match i32::try_from(*value) {
                     Ok(value) => Ok(f64::from(value) > *other_value),
@@ -272,12 +278,11 @@ impl DataValue {
                     }
                 }
             }
-            (DataValue::Int64(value), DataValue::Float(other_value)) => {
-                match i32::try_from(*value) {
-                    Ok(value) => Ok(f64::from(value) < f64::from(*other_value)),
-                    Err(_) => Err(CastError {}),
-                }
-            }
+            (DataValue::Int64(value), DataValue::Float(other_value)) => match i32::try_from(*value)
+            {
+                Ok(value) => Ok(f64::from(value) < f64::from(*other_value)),
+                Err(_) => Err(CastError {}),
+            },
             (DataValue::Int64(value), DataValue::Double(other_value)) => {
                 match i32::try_from(*value) {
                     Ok(value) => Ok(f64::from(value) < *other_value),
@@ -429,14 +434,11 @@ impl DataValue {
                     }
                 }
             }
-            (DataValue::Int64(value), DataValue::Float(other_value)) => {
-                match i32::try_from(*value) {
-                    Ok(value) => {
-                        Ok((f64::from(value) - f64::from(*other_value)).abs() < f64::EPSILON)
-                    }
-                    Err(_) => Err(CastError {}),
-                }
-            }
+            (DataValue::Int64(value), DataValue::Float(other_value)) => match i32::try_from(*value)
+            {
+                Ok(value) => Ok((f64::from(value) - f64::from(*other_value)).abs() < f64::EPSILON),
+                Err(_) => Err(CastError {}),
+            },
             (DataValue::Int64(value), DataValue::Double(other_value)) => {
                 match i32::try_from(*value) {
                     Ok(value) => Ok((f64::from(value) - *other_value).abs() < f64::EPSILON),

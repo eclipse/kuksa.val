@@ -16,7 +16,7 @@ use std::fmt;
 use crate::types;
 
 #[derive(Debug)]
-pub struct MetadataEntry {
+pub struct VssEntry {
     pub name: String,
     pub data_type: types::DataType,
     pub description: Option<String>,
@@ -45,7 +45,7 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-pub fn parse_vss(data: &str) -> Result<Vec<MetadataEntry>, Error> {
+pub fn parse_vss(data: &str) -> Result<Vec<VssEntry>, Error> {
     // Parse the string of data into serde_json::Value.
     match serde_json::from_str::<serde_json::Value>(data) {
         Ok(root) => {
@@ -66,7 +66,7 @@ pub fn parse_vss(data: &str) -> Result<Vec<MetadataEntry>, Error> {
 fn parse_entry(
     name: &str,
     entry: &serde_json::Value,
-    entries: &mut Vec<MetadataEntry>,
+    entries: &mut Vec<VssEntry>,
 ) -> Result<(), Error> {
     if let Some(entry) = entry.as_object() {
         if !entry.contains_key("type") {
@@ -90,7 +90,7 @@ fn parse_entry(
             VssEntryType::Sensor | VssEntryType::Actuator | VssEntryType::Attribute => {
                 let data_type = parse_data_type(name, entry)?;
                 let default_value = parse_default_value(name, &data_type, entry)?;
-                entries.push(MetadataEntry {
+                entries.push(VssEntry {
                     name: name.to_owned(),
                     data_type,
                     description: entry["description"].as_str().map(|s| s.to_owned()),
