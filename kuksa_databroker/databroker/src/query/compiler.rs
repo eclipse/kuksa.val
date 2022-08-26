@@ -15,7 +15,7 @@ use super::expr::*;
 
 use sqlparser::ast;
 
-use crate::types::{DataType, DataValue};
+use crate::types::{DataType, Value};
 
 use std::collections::{HashMap, HashSet};
 
@@ -79,7 +79,7 @@ pub struct CompiledQuery {
     /// or as part of a condition.
     ///
     /// These needs to be provided in the `input` when
-    /// executing the query.  
+    /// executing the query.
     pub input_spec: HashSet<String>, // Needed datapoints (values) for execution
 }
 
@@ -109,17 +109,17 @@ pub fn compile_expr(
             Ok(Expr::UnresolvedLiteral { raw: n.to_owned() })
         }
         ast::Expr::Value(ast::Value::SingleQuotedString(ref s)) => Ok(Expr::ResolvedLiteral {
-            value: DataValue::String(s.clone()),
+            value: Value::String(s.clone()),
             data_type: DataType::String,
         }),
 
         ast::Expr::Value(ast::Value::Boolean(n)) => Ok(Expr::ResolvedLiteral {
-            value: DataValue::Bool(*n),
+            value: Value::Bool(*n),
             data_type: DataType::Bool,
         }),
 
         ast::Expr::Value(ast::Value::DoubleQuotedString(s)) => Ok(Expr::ResolvedLiteral {
-            value: DataValue::String(s.clone()),
+            value: Value::String(s.clone()),
             data_type: DataType::String,
         }),
 
@@ -187,11 +187,11 @@ pub fn compile_expr(
                                 match (raw_left.parse::<i64>(), raw_right.parse::<i64>()) {
                                     (Ok(left_value), Ok(right_value)) => (
                                         Box::new(Expr::ResolvedLiteral {
-                                            value: DataValue::Int64(left_value),
+                                            value: Value::Int64(left_value),
                                             data_type: DataType::Int64,
                                         }),
                                         Box::new(Expr::ResolvedLiteral {
-                                            value: DataValue::Int64(right_value),
+                                            value: Value::Int64(right_value),
                                             data_type: DataType::Int64,
                                         }),
                                     ),
@@ -199,11 +199,11 @@ pub fn compile_expr(
                                         match (raw_left.parse::<u64>(), raw_right.parse::<u64>()) {
                                             (Ok(left_value), Ok(right_value)) => (
                                                 Box::new(Expr::ResolvedLiteral {
-                                                    value: DataValue::Uint64(left_value),
+                                                    value: Value::Uint64(left_value),
                                                     data_type: DataType::Uint64,
                                                 }),
                                                 Box::new(Expr::ResolvedLiteral {
-                                                    value: DataValue::Uint64(right_value),
+                                                    value: Value::Uint64(right_value),
                                                     data_type: DataType::Uint64,
                                                 }),
                                             ),
@@ -213,11 +213,11 @@ pub fn compile_expr(
                                             ) {
                                                 (Ok(left_value), Ok(right_value)) => (
                                                     Box::new(Expr::ResolvedLiteral {
-                                                        value: DataValue::Double(left_value),
+                                                        value: Value::Double(left_value),
                                                         data_type: DataType::Double,
                                                     }),
                                                     Box::new(Expr::ResolvedLiteral {
-                                                        value: DataValue::Double(right_value),
+                                                        value: Value::Double(right_value),
                                                         data_type: DataType::Double,
                                                     }),
                                                 ),
@@ -339,70 +339,70 @@ fn resolve_literal(
     match (wanted_type, unresolved_literal) {
         (DataType::Int8, UnresolvedLiteral::Number(raw)) => match raw.parse::<i8>() {
             Ok(value) => Ok(Expr::ResolvedLiteral {
-                value: DataValue::Int32(value as i32),
+                value: Value::Int32(value as i32),
                 data_type: DataType::Int8,
             }),
             Err(_) => Err(UnresolvedLiteral::Error),
         },
         (DataType::Int16, UnresolvedLiteral::Number(raw)) => match raw.parse::<i16>() {
             Ok(value) => Ok(Expr::ResolvedLiteral {
-                value: DataValue::Int32(value as i32),
+                value: Value::Int32(value as i32),
                 data_type: DataType::Int16,
             }),
             Err(_) => Err(UnresolvedLiteral::Error),
         },
         (DataType::Int32, UnresolvedLiteral::Number(raw)) => match raw.parse::<i32>() {
             Ok(value) => Ok(Expr::ResolvedLiteral {
-                value: DataValue::Int32(value),
+                value: Value::Int32(value),
                 data_type: DataType::Int32,
             }),
             Err(_) => Err(UnresolvedLiteral::Error),
         },
         (DataType::Int64, UnresolvedLiteral::Number(raw)) => match raw.parse::<i64>() {
             Ok(value) => Ok(Expr::ResolvedLiteral {
-                value: DataValue::Int64(value),
+                value: Value::Int64(value),
                 data_type: DataType::Int64,
             }),
             Err(_) => Err(UnresolvedLiteral::Error),
         },
         (DataType::Uint8, UnresolvedLiteral::Number(raw)) => match raw.parse::<u8>() {
             Ok(value) => Ok(Expr::ResolvedLiteral {
-                value: DataValue::Uint32(value as u32),
+                value: Value::Uint32(value as u32),
                 data_type: DataType::Uint8,
             }),
             Err(_) => Err(UnresolvedLiteral::Error),
         },
         (DataType::Uint16, UnresolvedLiteral::Number(raw)) => match raw.parse::<u16>() {
             Ok(value) => Ok(Expr::ResolvedLiteral {
-                value: DataValue::Uint32(value as u32),
+                value: Value::Uint32(value as u32),
                 data_type: DataType::Uint16,
             }),
             Err(_) => Err(UnresolvedLiteral::Error),
         },
         (DataType::Uint32, UnresolvedLiteral::Number(raw)) => match raw.parse::<u32>() {
             Ok(value) => Ok(Expr::ResolvedLiteral {
-                value: DataValue::Uint32(value),
+                value: Value::Uint32(value),
                 data_type: DataType::Uint32,
             }),
             Err(_) => Err(UnresolvedLiteral::Error),
         },
         (DataType::Uint64, UnresolvedLiteral::Number(raw)) => match raw.parse::<u64>() {
             Ok(value) => Ok(Expr::ResolvedLiteral {
-                value: DataValue::Uint64(value),
+                value: Value::Uint64(value),
                 data_type: DataType::Uint64,
             }),
             Err(_) => Err(UnresolvedLiteral::Error),
         },
         (DataType::Float, UnresolvedLiteral::Number(raw)) => match raw.parse::<f32>() {
             Ok(value) => Ok(Expr::ResolvedLiteral {
-                value: DataValue::Float(value),
+                value: Value::Float(value),
                 data_type: DataType::Float,
             }),
             Err(_) => Err(UnresolvedLiteral::Error),
         },
         (DataType::Double, UnresolvedLiteral::Number(raw)) => match raw.parse::<f64>() {
             Ok(value) => Ok(Expr::ResolvedLiteral {
-                value: DataValue::Double(value),
+                value: Value::Double(value),
                 data_type: DataType::Double,
             }),
             Err(_) => Err(UnresolvedLiteral::Error),

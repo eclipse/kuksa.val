@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use super::compiler::CompiledQuery;
 use super::expr::*;
 
-use crate::types::DataValue;
+use crate::types::Value;
 
 #[derive(Debug)]
 pub enum ExecutionError {
@@ -27,22 +27,22 @@ pub enum ExecutionError {
 
 #[derive(Debug)]
 pub struct ExecutionInputImpl {
-    fields: HashMap<String, DataValue>,
+    fields: HashMap<String, Value>,
 }
 
 pub trait ExecutionInput {
-    fn lookup(&self, field: &str) -> DataValue;
+    fn lookup(&self, field: &str) -> Value;
 }
 
 impl CompiledQuery {
     pub fn execute(
         &self,
         input: &impl ExecutionInput,
-    ) -> Result<Option<Vec<(String, DataValue)>>, ExecutionError> {
+    ) -> Result<Option<Vec<(String, Value)>>, ExecutionError> {
         // Check condition
         let condition_fulfilled = match &self.selection {
             Some(condition) => match condition.execute(input) {
-                Ok(DataValue::Bool(b)) => b,
+                Ok(Value::Bool(b)) => b,
                 Ok(_) => {
                     return Err(ExecutionError::GeneralError(
                         "Error evaluating WHERE statement (didn't evaluate to a boolean)"
@@ -76,7 +76,7 @@ impl CompiledQuery {
 }
 
 impl Expr {
-    pub fn execute(&self, input: &impl ExecutionInput) -> Result<DataValue, ExecutionError> {
+    pub fn execute(&self, input: &impl ExecutionInput) -> Result<Value, ExecutionError> {
         match &self {
             Expr::Datapoint { name, data_type: _ } => Ok(input.lookup(name)),
             Expr::Alias { expr, .. } => expr.execute(input),
@@ -120,41 +120,41 @@ fn execute_binary_operation(
     operator: &Operator,
     right: &Expr,
     input: &impl ExecutionInput,
-) -> Result<DataValue, ExecutionError> {
+) -> Result<Value, ExecutionError> {
     let left_value = left.execute(input)?;
     let right_value = right.execute(input)?;
 
     match operator {
         Operator::Or => match (&left_value, &right_value) {
-            (DataValue::Bool(left), DataValue::Bool(right)) => Ok(DataValue::Bool(*left || *right)),
+            (Value::Bool(left), Value::Bool(right)) => Ok(Value::Bool(*left || *right)),
             _ => Err(ExecutionError::TypeError(format!(
                 "OR is only possible with boolean expressions, tried \"{:?} OR {:?}\"",
                 left_value, right_value
             ))),
         },
         Operator::And => match (&left_value, &right_value) {
-            (DataValue::Bool(left), DataValue::Bool(right)) => Ok(DataValue::Bool(*left && *right)),
+            (Value::Bool(left), Value::Bool(right)) => Ok(Value::Bool(*left && *right)),
             _ => Err(ExecutionError::TypeError(format!(
                 "AND is only possible with boolean expressions, tried \"{:?} AND {:?}\"",
                 left_value, right_value
             ))),
         },
         Operator::Eq => match left_value.equals(&right_value) {
-            Ok(equals) => Ok(DataValue::Bool(equals)),
+            Ok(equals) => Ok(Value::Bool(equals)),
             Err(_) => Err(ExecutionError::CastError(format!(
                 "comparison {:?} = {:?} isn't supported",
                 left_value, right_value
             ))),
         },
         Operator::NotEq => match left_value.equals(&right_value) {
-            Ok(equals) => Ok(DataValue::Bool(!equals)), // Negate equals
+            Ok(equals) => Ok(Value::Bool(!equals)), // Negate equals
             Err(_) => Err(ExecutionError::CastError(format!(
                 "comparison {:?} != {:?} isn't supported",
                 left_value, right_value
             ))),
         },
         Operator::Gt => match left_value.greater_than(&right_value) {
-            Ok(greater_than) => Ok(DataValue::Bool(greater_than)),
+            Ok(greater_than) => Ok(Value::Bool(greater_than)),
             Err(_) => Err(ExecutionError::CastError(format!(
                 "comparison {:?} > {:?} isn't supported",
                 left_value, right_value
@@ -163,10 +163,10 @@ fn execute_binary_operation(
         Operator::Ge => match left_value.greater_than(&right_value) {
             Ok(greater_than) => {
                 if greater_than {
-                    Ok(DataValue::Bool(greater_than))
+                    Ok(Value::Bool(greater_than))
                 } else {
                     match left_value.equals(&right_value) {
-                        Ok(equals) => Ok(DataValue::Bool(equals)),
+                        Ok(equals) => Ok(Value::Bool(equals)),
                         Err(_) => Err(ExecutionError::CastError(format!(
                             "comparison {:?} >= {:?} isn't supported",
                             left_value, right_value
@@ -180,7 +180,7 @@ fn execute_binary_operation(
             ))),
         },
         Operator::Lt => match left_value.less_than(&right_value) {
-            Ok(less_than) => Ok(DataValue::Bool(less_than)),
+            Ok(less_than) => Ok(Value::Bool(less_than)),
             Err(_) => Err(ExecutionError::CastError(format!(
                 "comparison {:?} < {:?} isn't supported",
                 left_value, right_value
@@ -189,10 +189,10 @@ fn execute_binary_operation(
         Operator::Le => match left_value.less_than(&right_value) {
             Ok(less_than) => {
                 if less_than {
-                    Ok(DataValue::Bool(less_than))
+                    Ok(Value::Bool(less_than))
                 } else {
                     match left_value.equals(&right_value) {
-                        Ok(equals) => Ok(DataValue::Bool(equals)),
+                        Ok(equals) => Ok(Value::Bool(equals)),
                         Err(_) => Err(ExecutionError::CastError(format!(
                             "comparison {:?} <= {:?} isn't supported",
                             left_value, right_value
@@ -212,10 +212,10 @@ fn execute_unary_operation(
     expr: &Expr,
     operator: &UnaryOperator,
     fields: &impl ExecutionInput,
-) -> Result<DataValue, ExecutionError> {
+) -> Result<Value, ExecutionError> {
     match operator {
         UnaryOperator::Not => match expr.execute(fields) {
-            Ok(DataValue::Bool(b)) => Ok(DataValue::Bool(!b)),
+            Ok(Value::Bool(b)) => Ok(Value::Bool(!b)),
             Ok(_) => Err(ExecutionError::TypeError(
                 "negation of non boolean expression isn't supported".to_string(),
             )),
@@ -230,17 +230,17 @@ fn execute_between_operation(
     low: &Expr,
     high: &Expr,
     input: &impl ExecutionInput,
-) -> Result<DataValue, ExecutionError> {
+) -> Result<Value, ExecutionError> {
     match execute_binary_operation(expr, &Operator::Ge, low, input) {
-        Ok(DataValue::Bool(low_cond)) => match low_cond {
+        Ok(Value::Bool(low_cond)) => match low_cond {
             true => {
                 if negated {
-                    return Ok(DataValue::Bool(false));
+                    return Ok(Value::Bool(false));
                 }
             }
             false => {
                 if !negated {
-                    return Ok(DataValue::Bool(false));
+                    return Ok(Value::Bool(false));
                 }
             }
         },
@@ -254,15 +254,15 @@ fn execute_between_operation(
     };
 
     match execute_binary_operation(expr, &Operator::Le, high, input) {
-        Ok(DataValue::Bool(high_cond)) => match high_cond {
+        Ok(Value::Bool(high_cond)) => match high_cond {
             true => {
                 if negated {
-                    return Ok(DataValue::Bool(false));
+                    return Ok(Value::Bool(false));
                 }
             }
             false => {
                 if !negated {
-                    return Ok(DataValue::Bool(false));
+                    return Ok(Value::Bool(false));
                 }
             }
         },
@@ -274,7 +274,7 @@ fn execute_between_operation(
         }
         Err(e) => return Err(e),
     };
-    Ok(DataValue::Bool(true))
+    Ok(Value::Bool(true))
 }
 
 impl ExecutionInputImpl {
@@ -284,7 +284,7 @@ impl ExecutionInputImpl {
         }
     }
 
-    pub fn add(&mut self, name: String, value: DataValue) {
+    pub fn add(&mut self, name: String, value: Value) {
         self.fields.insert(name, value);
     }
 }
@@ -296,10 +296,10 @@ impl Default for ExecutionInputImpl {
 }
 
 impl ExecutionInput for ExecutionInputImpl {
-    fn lookup(&self, field: &str) -> DataValue {
+    fn lookup(&self, field: &str) -> Value {
         match self.fields.get(field) {
             Some(value) => value.to_owned(),
-            None => DataValue::NotAvailable,
+            None => Value::NotAvailable,
         }
     }
 }
@@ -323,12 +323,12 @@ struct TestCompilationInput {}
 
 #[cfg(test)]
 impl ExecutionInput for TestExecutionInput {
-    fn lookup(&self, field: &str) -> DataValue {
+    fn lookup(&self, field: &str) -> Value {
         match field {
-            "Vehicle.Cabin.Seat.Row1.Pos1.Position" => DataValue::Int32(self.seat_pos),
-            "Vehicle.Datapoint1" => DataValue::Int32(self.datapoint1),
-            "Vehicle.Datapoint2" => DataValue::Bool(self.datapoint2),
-            _ => DataValue::NotAvailable,
+            "Vehicle.Cabin.Seat.Row1.Pos1.Position" => Value::Int32(self.seat_pos),
+            "Vehicle.Datapoint1" => Value::Int32(self.datapoint1),
+            "Vehicle.Datapoint2" => Value::Bool(self.datapoint2),
+            _ => Value::NotAvailable,
         }
     }
 }
@@ -383,11 +383,11 @@ fn executor_test() {
     let expected = vec![
         (
             "Vehicle.Cabin.Seat.Row1.Pos1.Position".to_owned(),
-            DataValue::Int32(230),
+            Value::Int32(230),
         ),
         (
             "Vehicle.Cabin.Seat.Row1.Pos2.Position".to_owned(),
-            DataValue::NotAvailable,
+            Value::NotAvailable,
         ),
     ];
     assert!(matches!(res, Some(_)));

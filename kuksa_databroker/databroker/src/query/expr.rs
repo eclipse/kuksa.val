@@ -11,7 +11,7 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-use crate::types::{DataType, DataValue};
+use crate::types::{DataType, Value};
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -31,7 +31,7 @@ pub enum Expr {
         raw: String,
     },
     ResolvedLiteral {
-        value: DataValue,
+        value: Value,
         data_type: DataType,
     },
     BinaryOperation {

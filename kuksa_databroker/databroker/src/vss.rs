@@ -16,11 +16,11 @@ use std::fmt;
 use crate::types;
 
 #[derive(Debug)]
-pub struct MetadataEntry {
+pub struct VssEntry {
     pub name: String,
     pub data_type: types::DataType,
     pub description: Option<String>,
-    pub default: Option<types::DataValue>,
+    pub default: Option<types::Value>,
 }
 
 enum VssEntryType {
@@ -45,7 +45,7 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-pub fn parse_vss(data: &str) -> Result<Vec<MetadataEntry>, Error> {
+pub fn parse_vss(data: &str) -> Result<Vec<VssEntry>, Error> {
     // Parse the string of data into serde_json::Value.
     match serde_json::from_str::<serde_json::Value>(data) {
         Ok(root) => {
@@ -66,7 +66,7 @@ pub fn parse_vss(data: &str) -> Result<Vec<MetadataEntry>, Error> {
 fn parse_entry(
     name: &str,
     entry: &serde_json::Value,
-    entries: &mut Vec<MetadataEntry>,
+    entries: &mut Vec<VssEntry>,
 ) -> Result<(), Error> {
     if let Some(entry) = entry.as_object() {
         if !entry.contains_key("type") {
@@ -90,7 +90,7 @@ fn parse_entry(
             VssEntryType::Sensor | VssEntryType::Actuator | VssEntryType::Attribute => {
                 let data_type = parse_data_type(name, entry)?;
                 let default_value = parse_default_value(name, &data_type, entry)?;
-                entries.push(MetadataEntry {
+                entries.push(VssEntry {
                     name: name.to_owned(),
                     data_type,
                     description: entry["description"].as_str().map(|s| s.to_owned()),
@@ -108,18 +108,18 @@ fn parse_default_value(
     name: &str,
     data_type: &types::DataType,
     entry: &serde_json::Map<String, serde_json::Value>,
-) -> Result<Option<types::DataValue>, Error> {
+) -> Result<Option<types::Value>, Error> {
     match entry.get("default") {
         Some(value) => match data_type {
             types::DataType::String => match serde_json::from_value::<String>(value.to_owned()) {
-                Ok(value) => Ok(Some(types::DataValue::String(value))),
+                Ok(value) => Ok(Some(types::Value::String(value))),
                 Err(_) => Err(Error::ParseError(format!(
                     "Could not parse default value ({}) as {:?} for {}",
                     value, data_type, name
                 ))),
             },
             types::DataType::Bool => match serde_json::from_value::<bool>(value.to_owned()) {
-                Ok(value) => Ok(Some(types::DataValue::Bool(value))),
+                Ok(value) => Ok(Some(types::Value::Bool(value))),
                 Err(_) => Err(Error::ParseError(format!(
                     "Could not parse default value ({}) as {:?} for {}",
                     value, data_type, name
@@ -127,7 +127,7 @@ fn parse_default_value(
             },
             types::DataType::Int8 | types::DataType::Int16 | types::DataType::Int32 => {
                 match serde_json::from_value::<i32>(value.to_owned()) {
-                    Ok(value) => Ok(Some(types::DataValue::Int32(value))),
+                    Ok(value) => Ok(Some(types::Value::Int32(value))),
                     Err(_) => Err(Error::ParseError(format!(
                         "Could not parse default value ({}) as {:?} for {}",
                         value, data_type, name
@@ -135,7 +135,7 @@ fn parse_default_value(
                 }
             }
             types::DataType::Int64 => match serde_json::from_value::<i64>(value.to_owned()) {
-                Ok(value) => Ok(Some(types::DataValue::Int64(value))),
+                Ok(value) => Ok(Some(types::Value::Int64(value))),
                 Err(_) => Err(Error::ParseError(format!(
                     "Could not parse default value ({}) as {:?} for {}",
                     value, data_type, name
@@ -143,7 +143,7 @@ fn parse_default_value(
             },
             types::DataType::Uint8 | types::DataType::Uint16 | types::DataType::Uint32 => {
                 match serde_json::from_value::<u32>(value.to_owned()) {
-                    Ok(value) => Ok(Some(types::DataValue::Uint32(value))),
+                    Ok(value) => Ok(Some(types::Value::Uint32(value))),
                     Err(_) => Err(Error::ParseError(format!(
                         "Could not parse default value ({}) as {:?} for {}",
                         value, data_type, name
@@ -151,21 +151,21 @@ fn parse_default_value(
                 }
             }
             types::DataType::Uint64 => match serde_json::from_value::<u64>(value.to_owned()) {
-                Ok(value) => Ok(Some(types::DataValue::Uint64(value))),
+                Ok(value) => Ok(Some(types::Value::Uint64(value))),
                 Err(_) => Err(Error::ParseError(format!(
                     "Could not parse default value ({}) as {:?} for {}",
                     value, data_type, name
                 ))),
             },
             types::DataType::Float => match serde_json::from_value::<f32>(value.to_owned()) {
-                Ok(value) => Ok(Some(types::DataValue::Float(value))),
+                Ok(value) => Ok(Some(types::Value::Float(value))),
                 Err(_) => Err(Error::ParseError(format!(
                     "Could not parse default value ({}) as {:?} for {}",
                     value, data_type, name
                 ))),
             },
             types::DataType::Double => match serde_json::from_value::<f64>(value.to_owned()) {
-                Ok(value) => Ok(Some(types::DataValue::Double(value))),
+                Ok(value) => Ok(Some(types::Value::Double(value))),
                 Err(_) => Err(Error::ParseError(format!(
                     "Could not parse default value ({}) as {:?} for {}",
                     value, data_type, name
@@ -174,7 +174,7 @@ fn parse_default_value(
             // types::DataType::Timestamp => todo!(),
             types::DataType::StringArray => {
                 match serde_json::from_value::<Vec<String>>(value.to_owned()) {
-                    Ok(value) => Ok(Some(types::DataValue::StringArray(value))),
+                    Ok(value) => Ok(Some(types::Value::StringArray(value))),
                     Err(_) => Err(Error::ParseError(format!(
                         "Could not parse default value ({}) as {:?} for {}",
                         value, data_type, name
@@ -183,7 +183,7 @@ fn parse_default_value(
             }
             types::DataType::BoolArray => {
                 match serde_json::from_value::<Vec<bool>>(value.to_owned()) {
-                    Ok(value) => Ok(Some(types::DataValue::BoolArray(value))),
+                    Ok(value) => Ok(Some(types::Value::BoolArray(value))),
                     Err(_) => Err(Error::ParseError(format!(
                         "Could not parse default value ({}) as {:?} for {}",
                         value, data_type, name
@@ -194,7 +194,7 @@ fn parse_default_value(
             | types::DataType::Int16Array
             | types::DataType::Int32Array => {
                 match serde_json::from_value::<Vec<i32>>(value.to_owned()) {
-                    Ok(value) => Ok(Some(types::DataValue::Int32Array(value))),
+                    Ok(value) => Ok(Some(types::Value::Int32Array(value))),
                     Err(_) => Err(Error::ParseError(format!(
                         "Could not parse default value ({}) as {:?} for {}",
                         value, data_type, name
@@ -203,7 +203,7 @@ fn parse_default_value(
             }
             types::DataType::Int64Array => {
                 match serde_json::from_value::<Vec<i64>>(value.to_owned()) {
-                    Ok(value) => Ok(Some(types::DataValue::Int64Array(value))),
+                    Ok(value) => Ok(Some(types::Value::Int64Array(value))),
                     Err(_) => Err(Error::ParseError(format!(
                         "Could not parse default value ({}) as {:?} for {}",
                         value, data_type, name
@@ -214,7 +214,7 @@ fn parse_default_value(
             | types::DataType::Uint16Array
             | types::DataType::Uint32Array => {
                 match serde_json::from_value::<Vec<u32>>(value.to_owned()) {
-                    Ok(value) => Ok(Some(types::DataValue::Uint32Array(value))),
+                    Ok(value) => Ok(Some(types::Value::Uint32Array(value))),
                     Err(_) => Err(Error::ParseError(format!(
                         "Could not parse default value ({}) as {:?} for {}",
                         value, data_type, name
@@ -223,7 +223,7 @@ fn parse_default_value(
             }
             types::DataType::Uint64Array => {
                 match serde_json::from_value::<Vec<u64>>(value.to_owned()) {
-                    Ok(value) => Ok(Some(types::DataValue::Uint64Array(value))),
+                    Ok(value) => Ok(Some(types::Value::Uint64Array(value))),
                     Err(_) => Err(Error::ParseError(format!(
                         "Could not parse default value ({}) as {:?} for {}",
                         value, data_type, name
@@ -232,7 +232,7 @@ fn parse_default_value(
             }
             types::DataType::FloatArray => {
                 match serde_json::from_value::<Vec<f32>>(value.to_owned()) {
-                    Ok(value) => Ok(Some(types::DataValue::FloatArray(value))),
+                    Ok(value) => Ok(Some(types::Value::FloatArray(value))),
                     Err(_) => Err(Error::ParseError(format!(
                         "Could not parse default value ({}) as {:?} for {}",
                         value, data_type, name
@@ -241,7 +241,7 @@ fn parse_default_value(
             }
             types::DataType::DoubleArray => {
                 match serde_json::from_value::<Vec<f64>>(value.to_owned()) {
-                    Ok(value) => Ok(Some(types::DataValue::DoubleArray(value))),
+                    Ok(value) => Ok(Some(types::Value::DoubleArray(value))),
                     Err(_) => Err(Error::ParseError(format!(
                         "Could not parse default value ({}) as {:?} for {}",
                         value, data_type, name

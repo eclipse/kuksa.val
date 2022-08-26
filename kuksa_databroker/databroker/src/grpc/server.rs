@@ -3,7 +3,7 @@ use std::{future::Future, time::Duration};
 use tonic::transport::Server;
 use tracing::info;
 
-use databroker_api::sdv;
+use databroker_api::{kuksa, sdv};
 
 use crate::broker;
 
@@ -39,6 +39,7 @@ where
         .add_service(sdv::databroker::v1::collector_server::CollectorServer::new(
             broker.clone(),
         ))
+        .add_service(kuksa::val::v1::val_server::ValServer::new(broker.clone()))
         .serve_with_shutdown(addr, shutdown(broker, signal))
         .await?;
 

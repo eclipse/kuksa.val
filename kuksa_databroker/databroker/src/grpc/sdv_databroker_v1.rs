@@ -27,49 +27,47 @@ use std::pin::Pin;
 use std::time::SystemTime;
 
 use crate::broker;
-use crate::types::{ChangeType, DataType, DataValue};
+use crate::types::{ChangeType, DataType, Value};
 
 use tracing::debug;
 
-impl From<&proto::Datapoint> for broker::DataPoint {
+impl From<&proto::Datapoint> for broker::Datapoint {
     fn from(datapoint: &proto::Datapoint) -> Self {
         let value = match &datapoint.value {
             Some(value) => match value {
-                proto::datapoint::Value::StringValue(value) => DataValue::String(value.to_owned()),
-                proto::datapoint::Value::BoolValue(value) => DataValue::Bool(*value),
-                proto::datapoint::Value::Int32Value(value) => DataValue::Int32(*value),
-                proto::datapoint::Value::Int64Value(value) => DataValue::Int64(*value),
-                proto::datapoint::Value::Uint32Value(value) => DataValue::Uint32(*value),
-                proto::datapoint::Value::Uint64Value(value) => DataValue::Uint64(*value),
-                proto::datapoint::Value::FloatValue(value) => DataValue::Float(*value),
-                proto::datapoint::Value::DoubleValue(value) => DataValue::Double(*value),
+                proto::datapoint::Value::StringValue(value) => Value::String(value.to_owned()),
+                proto::datapoint::Value::BoolValue(value) => Value::Bool(*value),
+                proto::datapoint::Value::Int32Value(value) => Value::Int32(*value),
+                proto::datapoint::Value::Int64Value(value) => Value::Int64(*value),
+                proto::datapoint::Value::Uint32Value(value) => Value::Uint32(*value),
+                proto::datapoint::Value::Uint64Value(value) => Value::Uint64(*value),
+                proto::datapoint::Value::FloatValue(value) => Value::Float(*value),
+                proto::datapoint::Value::DoubleValue(value) => Value::Double(*value),
                 proto::datapoint::Value::StringArray(array) => {
-                    DataValue::StringArray(array.values.clone())
+                    Value::StringArray(array.values.clone())
                 }
-                proto::datapoint::Value::BoolArray(array) => {
-                    DataValue::BoolArray(array.values.clone())
-                }
+                proto::datapoint::Value::BoolArray(array) => Value::BoolArray(array.values.clone()),
                 proto::datapoint::Value::Int32Array(array) => {
-                    DataValue::Int32Array(array.values.clone())
+                    Value::Int32Array(array.values.clone())
                 }
                 proto::datapoint::Value::Int64Array(array) => {
-                    DataValue::Int64Array(array.values.clone())
+                    Value::Int64Array(array.values.clone())
                 }
                 proto::datapoint::Value::Uint32Array(array) => {
-                    DataValue::Uint32Array(array.values.clone())
+                    Value::Uint32Array(array.values.clone())
                 }
                 proto::datapoint::Value::Uint64Array(array) => {
-                    DataValue::Uint64Array(array.values.clone())
+                    Value::Uint64Array(array.values.clone())
                 }
                 proto::datapoint::Value::FloatArray(array) => {
-                    DataValue::FloatArray(array.values.clone())
+                    Value::FloatArray(array.values.clone())
                 }
                 proto::datapoint::Value::DoubleArray(array) => {
-                    DataValue::DoubleArray(array.values.clone())
+                    Value::DoubleArray(array.values.clone())
                 }
-                proto::datapoint::Value::FailureValue(_) => DataValue::NotAvailable,
+                proto::datapoint::Value::FailureValue(_) => Value::NotAvailable,
             },
-            None => DataValue::NotAvailable,
+            None => Value::NotAvailable,
         };
 
         let ts = match &datapoint.timestamp {
@@ -77,60 +75,46 @@ impl From<&proto::Datapoint> for broker::DataPoint {
             None => SystemTime::now(),
         };
 
-        broker::DataPoint { ts, value }
+        broker::Datapoint { ts, value }
     }
 }
 
-impl From<&broker::DataPoint> for proto::Datapoint {
-    fn from(datapoint: &broker::DataPoint) -> Self {
+impl From<&broker::Datapoint> for proto::Datapoint {
+    fn from(datapoint: &broker::Datapoint) -> Self {
         let value = match &datapoint.value {
-            DataValue::Bool(value) => proto::datapoint::Value::BoolValue(*value),
-            DataValue::String(value) => proto::datapoint::Value::StringValue(value.to_owned()),
-            DataValue::Int32(value) => proto::datapoint::Value::Int32Value(*value),
-            DataValue::Int64(value) => proto::datapoint::Value::Int64Value(*value),
-            DataValue::Uint32(value) => proto::datapoint::Value::Uint32Value(*value),
-            DataValue::Uint64(value) => proto::datapoint::Value::Uint64Value(*value),
-            DataValue::Float(value) => proto::datapoint::Value::FloatValue(*value),
-            DataValue::Double(value) => proto::datapoint::Value::DoubleValue(*value),
-            DataValue::BoolArray(array) => proto::datapoint::Value::BoolArray(proto::BoolArray {
+            Value::Bool(value) => proto::datapoint::Value::BoolValue(*value),
+            Value::String(value) => proto::datapoint::Value::StringValue(value.to_owned()),
+            Value::Int32(value) => proto::datapoint::Value::Int32Value(*value),
+            Value::Int64(value) => proto::datapoint::Value::Int64Value(*value),
+            Value::Uint32(value) => proto::datapoint::Value::Uint32Value(*value),
+            Value::Uint64(value) => proto::datapoint::Value::Uint64Value(*value),
+            Value::Float(value) => proto::datapoint::Value::FloatValue(*value),
+            Value::Double(value) => proto::datapoint::Value::DoubleValue(*value),
+            Value::BoolArray(array) => proto::datapoint::Value::BoolArray(proto::BoolArray {
                 values: array.clone(),
             }),
-            DataValue::StringArray(array) => {
-                proto::datapoint::Value::StringArray(proto::StringArray {
-                    values: array.clone(),
-                })
-            }
-            DataValue::Int32Array(array) => {
-                proto::datapoint::Value::Int32Array(proto::Int32Array {
-                    values: array.clone(),
-                })
-            }
-            DataValue::Int64Array(array) => {
-                proto::datapoint::Value::Int64Array(proto::Int64Array {
-                    values: array.clone(),
-                })
-            }
-            DataValue::Uint32Array(array) => {
-                proto::datapoint::Value::Uint32Array(proto::Uint32Array {
-                    values: array.clone(),
-                })
-            }
-            DataValue::Uint64Array(array) => {
-                proto::datapoint::Value::Uint64Array(proto::Uint64Array {
-                    values: array.clone(),
-                })
-            }
-            DataValue::FloatArray(array) => {
-                proto::datapoint::Value::FloatArray(proto::FloatArray {
-                    values: array.clone(),
-                })
-            }
-            DataValue::DoubleArray(array) => {
-                proto::datapoint::Value::DoubleArray(proto::DoubleArray {
-                    values: array.clone(),
-                })
-            }
-            DataValue::NotAvailable => proto::datapoint::Value::FailureValue(
+            Value::StringArray(array) => proto::datapoint::Value::StringArray(proto::StringArray {
+                values: array.clone(),
+            }),
+            Value::Int32Array(array) => proto::datapoint::Value::Int32Array(proto::Int32Array {
+                values: array.clone(),
+            }),
+            Value::Int64Array(array) => proto::datapoint::Value::Int64Array(proto::Int64Array {
+                values: array.clone(),
+            }),
+            Value::Uint32Array(array) => proto::datapoint::Value::Uint32Array(proto::Uint32Array {
+                values: array.clone(),
+            }),
+            Value::Uint64Array(array) => proto::datapoint::Value::Uint64Array(proto::Uint64Array {
+                values: array.clone(),
+            }),
+            Value::FloatArray(array) => proto::datapoint::Value::FloatArray(proto::FloatArray {
+                values: array.clone(),
+            }),
+            Value::DoubleArray(array) => proto::datapoint::Value::DoubleArray(proto::DoubleArray {
+                values: array.clone(),
+            }),
+            Value::NotAvailable => proto::datapoint::Value::FailureValue(
                 proto::datapoint::Failure::NotAvailable as i32,
             ),
         };
@@ -142,56 +126,42 @@ impl From<&broker::DataPoint> for proto::Datapoint {
     }
 }
 
-impl From<&DataValue> for proto::Datapoint {
-    fn from(data_value: &DataValue) -> Self {
+impl From<&Value> for proto::Datapoint {
+    fn from(data_value: &Value) -> Self {
         let value = match &data_value {
-            DataValue::Bool(value) => proto::datapoint::Value::BoolValue(*value),
-            DataValue::String(value) => proto::datapoint::Value::StringValue(value.to_owned()),
-            DataValue::Int32(value) => proto::datapoint::Value::Int32Value(*value),
-            DataValue::Int64(value) => proto::datapoint::Value::Int64Value(*value),
-            DataValue::Uint32(value) => proto::datapoint::Value::Uint32Value(*value),
-            DataValue::Uint64(value) => proto::datapoint::Value::Uint64Value(*value),
-            DataValue::Float(value) => proto::datapoint::Value::FloatValue(*value),
-            DataValue::Double(value) => proto::datapoint::Value::DoubleValue(*value),
-            DataValue::BoolArray(array) => proto::datapoint::Value::BoolArray(proto::BoolArray {
+            Value::Bool(value) => proto::datapoint::Value::BoolValue(*value),
+            Value::String(value) => proto::datapoint::Value::StringValue(value.to_owned()),
+            Value::Int32(value) => proto::datapoint::Value::Int32Value(*value),
+            Value::Int64(value) => proto::datapoint::Value::Int64Value(*value),
+            Value::Uint32(value) => proto::datapoint::Value::Uint32Value(*value),
+            Value::Uint64(value) => proto::datapoint::Value::Uint64Value(*value),
+            Value::Float(value) => proto::datapoint::Value::FloatValue(*value),
+            Value::Double(value) => proto::datapoint::Value::DoubleValue(*value),
+            Value::BoolArray(array) => proto::datapoint::Value::BoolArray(proto::BoolArray {
                 values: array.clone(),
             }),
-            DataValue::StringArray(array) => {
-                proto::datapoint::Value::StringArray(proto::StringArray {
-                    values: array.clone(),
-                })
-            }
-            DataValue::Int32Array(array) => {
-                proto::datapoint::Value::Int32Array(proto::Int32Array {
-                    values: array.clone(),
-                })
-            }
-            DataValue::Int64Array(array) => {
-                proto::datapoint::Value::Int64Array(proto::Int64Array {
-                    values: array.clone(),
-                })
-            }
-            DataValue::Uint32Array(array) => {
-                proto::datapoint::Value::Uint32Array(proto::Uint32Array {
-                    values: array.clone(),
-                })
-            }
-            DataValue::Uint64Array(array) => {
-                proto::datapoint::Value::Uint64Array(proto::Uint64Array {
-                    values: array.clone(),
-                })
-            }
-            DataValue::FloatArray(array) => {
-                proto::datapoint::Value::FloatArray(proto::FloatArray {
-                    values: array.clone(),
-                })
-            }
-            DataValue::DoubleArray(array) => {
-                proto::datapoint::Value::DoubleArray(proto::DoubleArray {
-                    values: array.clone(),
-                })
-            }
-            DataValue::NotAvailable => proto::datapoint::Value::FailureValue(
+            Value::StringArray(array) => proto::datapoint::Value::StringArray(proto::StringArray {
+                values: array.clone(),
+            }),
+            Value::Int32Array(array) => proto::datapoint::Value::Int32Array(proto::Int32Array {
+                values: array.clone(),
+            }),
+            Value::Int64Array(array) => proto::datapoint::Value::Int64Array(proto::Int64Array {
+                values: array.clone(),
+            }),
+            Value::Uint32Array(array) => proto::datapoint::Value::Uint32Array(proto::Uint32Array {
+                values: array.clone(),
+            }),
+            Value::Uint64Array(array) => proto::datapoint::Value::Uint64Array(proto::Uint64Array {
+                values: array.clone(),
+            }),
+            Value::FloatArray(array) => proto::datapoint::Value::FloatArray(proto::FloatArray {
+                values: array.clone(),
+            }),
+            Value::DoubleArray(array) => proto::datapoint::Value::DoubleArray(proto::DoubleArray {
+                values: array.clone(),
+            }),
+            Value::NotAvailable => proto::datapoint::Value::FailureValue(
                 proto::datapoint::Failure::NotAvailable as i32,
             ),
         };
@@ -283,7 +253,7 @@ impl From<&broker::Metadata> for proto::Metadata {
     fn from(metadata: &broker::Metadata) -> Self {
         proto::Metadata {
             id: metadata.id,
-            name: metadata.name.to_owned(),
+            name: metadata.path.to_owned(),
             data_type: proto::DataType::from(&metadata.data_type) as i32,
             change_type: proto::ChangeType::Continuous as i32, // TODO: Add to metadata
             description: metadata.description.to_owned(),
@@ -291,14 +261,14 @@ impl From<&broker::Metadata> for proto::Metadata {
     }
 }
 
-impl From<&broker::DatapointError> for proto::DatapointError {
-    fn from(error: &broker::DatapointError) -> Self {
+impl From<&broker::UpdateError> for proto::DatapointError {
+    fn from(error: &broker::UpdateError) -> Self {
         match error {
-            broker::DatapointError::NotFound => proto::DatapointError::UnknownDatapoint,
-            broker::DatapointError::WrongType | broker::DatapointError::UnsupportedType => {
+            broker::UpdateError::NotFound => proto::DatapointError::UnknownDatapoint,
+            broker::UpdateError::WrongType | broker::UpdateError::UnsupportedType => {
                 proto::DatapointError::InvalidType
             }
-            broker::DatapointError::OutOfBounds => proto::DatapointError::OutOfBounds,
+            broker::UpdateError::OutOfBounds => proto::DatapointError::OutOfBounds,
         }
     }
 }
@@ -313,13 +283,25 @@ impl proto::collector_server::Collector for broker::DataBroker {
         let mut errors = HashMap::new();
 
         let message = request.into_inner();
-        let ids = message
+        let ids: Vec<(i32, broker::EntryUpdate)> = message
             .datapoints
             .iter()
-            .map(|(id, datapoint)| (*id, broker::DataPoint::from(datapoint)))
-            .collect::<Vec<(i32, broker::DataPoint)>>();
+            .map(|(id, datapoint)| {
+                (
+                    *id,
+                    broker::EntryUpdate {
+                        path: None,
+                        datapoint: Some(broker::Datapoint::from(datapoint)),
+                        actuator_target: None,
+                        entry_type: None,
+                        data_type: None,
+                        description: None,
+                    },
+                )
+            })
+            .collect();
 
-        match self.set_datapoints(&ids).await {
+        match self.update_entries(ids).await {
             Ok(()) => {}
             Err(err) => {
                 debug!("Failed to set datapoint: {:?}", err);
@@ -356,12 +338,25 @@ impl proto::collector_server::Collector for broker::DataBroker {
                             Ok(request) => {
                                 match request {
                                     Some(req) => {
-                                        let ids = req.datapoints.iter().map(|(id, datapoint)| {
-                                            (*id, broker::DataPoint::from(datapoint))
-                                        }).collect::<Vec<(i32, broker::DataPoint)>>();
+                                        let ids: Vec<(i32, broker::EntryUpdate)> = req.datapoints
+                                            .iter()
+                                            .map(|(id, datapoint)|
+                                                (
+                                                    *id,
+                                                    broker::EntryUpdate {
+                                                        path: None,
+                                                        datapoint: Some(broker::Datapoint::from(datapoint)),
+                                                        actuator_target: None,
+                                                        entry_type: None,
+                                                        data_type: None,
+                                                        description: None
+                                                    }
+                                                )
+                                            )
+                                            .collect();
                                         // TODO: Check if sender is allowed to provide datapoint with this id
                                         match databroker
-                                            .set_datapoints(&ids)
+                                            .update_entries(ids)
                                             .await
                                         {
                                             Ok(_) => {}
@@ -416,7 +411,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
             ) {
                 (Some(value_type), Some(change_type)) => {
                     match self
-                        .register_datapoint(
+                        .add_entry(
                             metadata.name.clone(),
                             DataType::from(&value_type),
                             ChangeType::from(&change_type),
@@ -493,7 +488,7 @@ impl proto::broker_server::Broker for broker::DataBroker {
             let mut datapoints = HashMap::new();
 
             for name in requested.datapoints {
-                match self.get_datapoint_by_name(&name).await {
+                match self.get_datapoint_by_path(&name).await {
                     Some(datapoint) => {
                         datapoints.insert(name, proto::Datapoint::from(&datapoint));
                     }
@@ -554,7 +549,7 @@ impl proto::broker_server::Broker for broker::DataBroker {
 
             let entries = self.entries.read().await;
             for name in request.names {
-                if let Some(entry) = entries.get_by_name(&name) {
+                if let Some(entry) = entries.get_by_path(&name) {
                     list.push(proto::Metadata::from(&entry.metadata));
                 }
             }
