@@ -11,8 +11,10 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
+pub use crate::types;
+
 use crate::query;
-use crate::types::{ChangeType, DataType, DataValue};
+pub use crate::types::{ChangeType, DataType, DataValue, EntryType};
 
 use tokio::sync::{broadcast, mpsc, RwLock};
 use tokio_stream::wrappers::ReceiverStream;
@@ -27,7 +29,7 @@ use std::time::SystemTime;
 use tracing::{debug, info};
 
 #[derive(Debug)]
-pub enum DatapointError {
+pub enum UpdateError {
     NotFound,
     WrongType,
     OutOfBounds,
@@ -37,28 +39,30 @@ pub enum DatapointError {
 #[derive(Debug, Clone)]
 pub struct Metadata {
     pub id: i32,
-    pub name: String,
+    pub path: String,
     pub data_type: DataType,
     pub change_type: ChangeType,
     pub description: String,
 }
 
 #[derive(Debug, Clone)]
-pub struct DataPoint {
+pub struct Datapoint {
     pub ts: SystemTime,
     pub value: DataValue,
 }
 
-#[derive(Debug)]
-pub struct DataPointEntry {
+#[derive(Debug, Clone)]
+pub struct Entry {
+    pub datapoint: Datapoint,
+    pub actuator_target: Option<DataValue>,
     pub metadata: Metadata,
-    pub datapoint: DataPoint,
 }
 
 #[derive(Default)]
-pub struct DatapointEntries {
+pub struct Entries {
     next_id: AtomicI32,
-    entries: HashMap<i32, DataPointEntry>,
+    path_to_id: HashMap<String, i32>,
+    entries: HashMap<i32, Entry>,
 }
 
 #[derive(Default)]
@@ -85,7 +89,7 @@ pub enum SubscriptionError {
 
 #[derive(Clone)]
 pub struct DataBroker {
-    pub entries: Arc<RwLock<DatapointEntries>>,
+    pub entries: Arc<RwLock<Entries>>,
     pub subscriptions: Arc<RwLock<Subscriptions>>,
     shutdown_trigger: broadcast::Sender<()>,
 }
@@ -101,8 +105,262 @@ pub struct NotificationError {}
 #[derive(Debug)]
 pub struct RegistrationError {}
 
+#[derive(Debug, Clone, Default)]
+pub struct EntryUpdate {
+    pub path: Option<String>,
+
+    pub datapoint: Option<Datapoint>,
+
+    // Actuator target is wrapped in an additional Option<> in
+    // order to be able to convey "update it to None" which would
+    // mean setting it to `Some(None)`.
+    pub actuator_target: Option<Option<DataValue>>, // only for actuators
+
+    // Metadata
+    pub entry_type: Option<EntryType>,
+    pub data_type: Option<DataType>,
+    pub description: Option<String>,
+}
+
+impl EntryUpdate {
+    pub fn is_empty(self) -> bool {
+        self.path.is_none()
+            && self.datapoint.is_none()
+            && self.actuator_target.is_none()
+            && self.entry_type.is_none()
+            && self.data_type.is_none()
+            && self.description.is_none()
+    }
+}
+
+impl Entry {
+    pub fn diff(&self, mut update: EntryUpdate) -> EntryUpdate {
+        if let Some(datapoint) = &update.datapoint {
+            if self.metadata.change_type != ChangeType::Continuous {
+                // TODO: Compare timestamps as well?
+                if datapoint.value == self.datapoint.value {
+                    update.datapoint = None;
+                }
+            }
+        }
+
+        if let Some(actuator_target) = &update.actuator_target {
+            if actuator_target == &self.actuator_target {
+                update.actuator_target = None;
+            }
+        }
+
+        // TODO: Implement for .path
+        //                     .entry_type
+        //                     .data_type
+        //                     .description
+
+        update
+    }
+
+    pub fn validate(&self, update: &EntryUpdate) -> Result<(), UpdateError> {
+        if let Some(datapoint) = &update.datapoint {
+            self.validate_value(&datapoint.value)?;
+        }
+        if let Some(Some(value)) = &update.actuator_target {
+            self.validate_value(value)?;
+        }
+        Ok(())
+    }
+
+    fn validate_value(&self, value: &DataValue) -> Result<(), UpdateError> {
+        // Validate value
+        match self.metadata.data_type {
+            DataType::Bool => match value {
+                DataValue::Bool(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::String => match value {
+                DataValue::String(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Int8 => match value {
+                DataValue::Int32(value) => match i8::try_from(*value) {
+                    Ok(_) => Ok(()),
+                    Err(_) => Err(UpdateError::OutOfBounds),
+                },
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Int16 => match value {
+                DataValue::Int32(value) => match i16::try_from(*value) {
+                    Ok(_) => Ok(()),
+                    Err(_) => Err(UpdateError::OutOfBounds),
+                },
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Int32 => match value {
+                DataValue::Int32(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+
+            DataType::Int64 => match value {
+                DataValue::Int64(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Uint8 => match value {
+                DataValue::Uint32(value) => match u8::try_from(*value) {
+                    Ok(_) => Ok(()),
+                    Err(_) => Err(UpdateError::OutOfBounds),
+                },
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Uint16 => match value {
+                DataValue::Uint32(value) => match u16::try_from(*value) {
+                    Ok(_) => Ok(()),
+                    Err(_) => Err(UpdateError::OutOfBounds),
+                },
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Uint32 => match value {
+                DataValue::Uint32(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Uint64 => match value {
+                DataValue::Uint64(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Float => match value {
+                DataValue::Float(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Double => match value {
+                DataValue::Double(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::BoolArray => match value {
+                DataValue::BoolArray(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::StringArray => match value {
+                DataValue::StringArray(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Int8Array => match &value {
+                DataValue::Int32Array(array) => {
+                    let mut out_of_bounds = false;
+                    for value in array {
+                        match i8::try_from(*value) {
+                            Ok(_) => {}
+                            Err(_) => {
+                                out_of_bounds = true;
+                                break;
+                            }
+                        }
+                    }
+                    if out_of_bounds {
+                        Err(UpdateError::OutOfBounds)
+                    } else {
+                        Ok(())
+                    }
+                }
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Int16Array => match &value {
+                DataValue::Int32Array(array) => {
+                    let mut out_of_bounds = false;
+                    for value in array {
+                        match i16::try_from(*value) {
+                            Ok(_) => {}
+                            Err(_) => {
+                                out_of_bounds = true;
+                                break;
+                            }
+                        }
+                    }
+                    if out_of_bounds {
+                        Err(UpdateError::OutOfBounds)
+                    } else {
+                        Ok(())
+                    }
+                }
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Int32Array => match value {
+                DataValue::Int32Array(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Int64Array => match value {
+                DataValue::Int64Array(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Uint8Array => match &value {
+                DataValue::Uint32Array(array) => {
+                    let mut out_of_bounds = false;
+                    for value in array {
+                        match u8::try_from(*value) {
+                            Ok(_) => {}
+                            Err(_) => {
+                                out_of_bounds = true;
+                                break;
+                            }
+                        }
+                    }
+                    if out_of_bounds {
+                        Err(UpdateError::OutOfBounds)
+                    } else {
+                        Ok(())
+                    }
+                }
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Uint16Array => match &value {
+                DataValue::Uint32Array(array) => {
+                    let mut out_of_bounds = false;
+                    for value in array {
+                        match u16::try_from(*value) {
+                            Ok(_) => {}
+                            Err(_) => {
+                                out_of_bounds = true;
+                                break;
+                            }
+                        }
+                    }
+                    if out_of_bounds {
+                        Err(UpdateError::OutOfBounds)
+                    } else {
+                        Ok(())
+                    }
+                }
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Uint32Array => match value {
+                DataValue::Uint32Array(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Uint64Array => match value {
+                DataValue::Uint64Array(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::FloatArray => match value {
+                DataValue::FloatArray(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::DoubleArray => match value {
+                DataValue::DoubleArray(_) => Ok(()),
+                _ => Err(UpdateError::WrongType),
+            },
+            DataType::Timestamp => Err(UpdateError::UnsupportedType),
+            DataType::TimestampArray => Err(UpdateError::UnsupportedType),
+        }
+    }
+
+    pub fn apply(&mut self, update: EntryUpdate) {
+        if let Some(datapoint) = update.datapoint {
+            self.datapoint = datapoint;
+        }
+        if let Some(actuator_target) = update.actuator_target {
+            self.actuator_target = actuator_target;
+        }
+    }
+}
+
 #[derive(Debug)]
-pub enum SuccessfulSet {
+pub enum SuccessfulUpdate {
     NoChange,
     ValueChanged,
 }
@@ -136,7 +394,7 @@ impl Subscription {
     fn generate_input(
         &self,
         changed: Option<&Vec<i32>>,
-        all: &DatapointEntries,
+        all: &Entries,
     ) -> Option<impl query::ExecutionInput> {
         let id_used_in_query = {
             let mut query_uses_id = false;
@@ -144,7 +402,7 @@ impl Subscription {
                 Some(changed) => {
                     for id in changed {
                         if let Some(entry) = all.get_by_id(*id) {
-                            if self.query.input_spec.contains(&entry.metadata.name) {
+                            if self.query.input_spec.contains(&entry.metadata.path) {
                                 query_uses_id = true;
                             }
                         }
@@ -161,7 +419,7 @@ impl Subscription {
         if id_used_in_query {
             let mut input = query::ExecutionInputImpl::new();
             for name in self.query.input_spec.iter() {
-                match all.get_by_name(name) {
+                match all.get_by_path(name) {
                     Some(entry) => input.add(name.to_owned(), entry.datapoint.value.to_owned()),
                     None => {
                         // TODO: This should probably generate an error
@@ -206,37 +464,52 @@ impl Subscription {
     }
 }
 
-impl DatapointEntries {
+impl Entries {
     pub fn new() -> Self {
         Self {
             next_id: Default::default(),
+            path_to_id: Default::default(),
             entries: Default::default(),
         }
     }
 
-    pub fn get_by_id(&self, id: i32) -> Option<&DataPointEntry> {
+    pub fn get_by_id(&self, id: i32) -> Option<&Entry> {
         self.entries.get(&id)
     }
 
-    pub fn get_by_name(&self, name: &str) -> Option<&DataPointEntry> {
-        self.entries
-            .values()
-            .find(|datapoint| datapoint.metadata.name == name)
+    pub fn get_by_path(&self, name: impl AsRef<str>) -> Option<&Entry> {
+        match self.path_to_id.get(name.as_ref()) {
+            Some(id) => self.get_by_id(*id),
+            None => None,
+        }
     }
 
-    pub fn set(&mut self, id: i32, datapoint: DataPoint) -> Result<SuccessfulSet, DatapointError> {
-        match self.validate_data_value(id, &datapoint.value)? {
-            SuccessfulSet::NoChange => Ok(SuccessfulSet::NoChange),
-            SuccessfulSet::ValueChanged => match self.entries.get_mut(&id) {
-                Some(entry) => {
-                    entry.datapoint = datapoint;
-                    Ok(SuccessfulSet::ValueChanged)
+    pub fn update_by_path(
+        &mut self,
+        path: impl AsRef<str>,
+        update: EntryUpdate,
+    ) -> Result<EntryUpdate, UpdateError> {
+        match self.path_to_id.get(path.as_ref()) {
+            Some(id) => self.update(*id, update),
+            None => Err(UpdateError::NotFound),
+        }
+    }
+
+    pub fn update(&mut self, id: i32, update: EntryUpdate) -> Result<EntryUpdate, UpdateError> {
+        match self.entries.get_mut(&id) {
+            Some(entry) => {
+                // Reduce update to only include changes
+                let update = entry.diff(update);
+                // Validate update
+                match entry.validate(&update) {
+                    Ok(_) => {
+                        entry.apply(update.clone());
+                        Ok(update)
+                    }
+                    Err(err) => Err(err),
                 }
-                None => {
-                    debug_assert!(false, "Should not happen");
-                    Err(DatapointError::NotFound)
-                }
-            },
+            }
+            None => Err(UpdateError::NotFound),
         }
     }
 
@@ -246,9 +519,9 @@ impl DatapointEntries {
         data_type: DataType,
         change_type: ChangeType,
         description: String,
-        datapoint: Option<DataPoint>,
+        datapoint: Option<Datapoint>,
     ) -> Result<i32, RegistrationError> {
-        if let Some(datapoint) = self.get_by_name(&name) {
+        if let Some(datapoint) = self.get_by_path(&name) {
             // It already exists
             return Ok(datapoint.metadata.id);
         };
@@ -256,23 +529,28 @@ impl DatapointEntries {
         // Get next id (and bump it)
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
 
+        // Map name -> id
+        self.path_to_id.insert(name.clone(), id);
+
+        // Add entry (mapped by id)
         self.entries.insert(
             id,
-            DataPointEntry {
+            Entry {
                 metadata: Metadata {
                     id,
-                    name,
+                    path: name,
                     data_type,
                     change_type,
                     description,
                 },
                 datapoint: match datapoint {
                     Some(datapoint) => datapoint,
-                    None => DataPoint {
+                    None => Datapoint {
                         ts: SystemTime::now(),
                         value: DataValue::NotAvailable,
                     },
                 },
+                actuator_target: None,
             },
         );
 
@@ -280,217 +558,14 @@ impl DatapointEntries {
         Ok(id)
     }
 
-    fn validate_data_value(
-        &self,
-        id: i32,
-        value: &DataValue,
-    ) -> Result<SuccessfulSet, DatapointError> {
-        match self.get_by_id(id) {
-            Some(entry) => {
-                if *value == entry.datapoint.value {
-                    // Value is the same, only Continuous is considered changed
-                    // TODO: Static should not be allowed to change?
-                    //       Defer until metadata configuration is implemented.
-                    match entry.metadata.change_type {
-                        ChangeType::Static => Ok(SuccessfulSet::NoChange),
-                        ChangeType::OnChange => Ok(SuccessfulSet::NoChange),
-                        ChangeType::Continuous => Ok(SuccessfulSet::ValueChanged),
-                    }
-                } else if value == &DataValue::NotAvailable {
-                    // NotAvaible is a valid type regardless of data type
-                    Ok(SuccessfulSet::ValueChanged)
-                } else {
-                    match &entry.metadata.data_type {
-                        DataType::Bool => match &value {
-                            DataValue::Bool(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::String => match &value {
-                            DataValue::String(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Int8 => match &value {
-                            DataValue::Int32(value) => match i8::try_from(*value) {
-                                Ok(_) => Ok(SuccessfulSet::ValueChanged),
-                                Err(_) => Err(DatapointError::OutOfBounds),
-                            },
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Int16 => match &value {
-                            DataValue::Int32(value) => match i16::try_from(*value) {
-                                Ok(_) => Ok(SuccessfulSet::ValueChanged),
-                                Err(_) => Err(DatapointError::OutOfBounds),
-                            },
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Int32 => match &value {
-                            DataValue::Int32(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-
-                        DataType::Int64 => match &value {
-                            DataValue::Int64(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Uint8 => match &value {
-                            DataValue::Uint32(value) => match u8::try_from(*value) {
-                                Ok(_) => Ok(SuccessfulSet::ValueChanged),
-                                Err(_) => Err(DatapointError::OutOfBounds),
-                            },
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Uint16 => match &value {
-                            DataValue::Uint32(value) => match u16::try_from(*value) {
-                                Ok(_) => Ok(SuccessfulSet::ValueChanged),
-                                Err(_) => Err(DatapointError::OutOfBounds),
-                            },
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Uint32 => match &value {
-                            DataValue::Uint32(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Uint64 => match &value {
-                            DataValue::Uint64(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Float => match &value {
-                            DataValue::Float(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Double => match &value {
-                            DataValue::Double(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::BoolArray => match &value {
-                            DataValue::BoolArray(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::StringArray => match &value {
-                            DataValue::StringArray(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Int8Array => match &value {
-                            DataValue::Int32Array(array) => {
-                                let mut out_of_bounds = false;
-                                for value in array {
-                                    match i8::try_from(*value) {
-                                        Ok(_) => {}
-                                        Err(_) => {
-                                            out_of_bounds = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if out_of_bounds {
-                                    Err(DatapointError::OutOfBounds)
-                                } else {
-                                    Ok(SuccessfulSet::ValueChanged)
-                                }
-                            }
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Int16Array => match &value {
-                            DataValue::Int32Array(array) => {
-                                let mut out_of_bounds = false;
-                                for value in array {
-                                    match i16::try_from(*value) {
-                                        Ok(_) => {}
-                                        Err(_) => {
-                                            out_of_bounds = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if out_of_bounds {
-                                    Err(DatapointError::OutOfBounds)
-                                } else {
-                                    Ok(SuccessfulSet::ValueChanged)
-                                }
-                            }
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Int32Array => match &value {
-                            DataValue::Int32Array(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Int64Array => match &value {
-                            DataValue::Int64Array(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Uint8Array => match &value {
-                            DataValue::Uint32Array(array) => {
-                                let mut out_of_bounds = false;
-                                for value in array {
-                                    match u8::try_from(*value) {
-                                        Ok(_) => {}
-                                        Err(_) => {
-                                            out_of_bounds = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if out_of_bounds {
-                                    Err(DatapointError::OutOfBounds)
-                                } else {
-                                    Ok(SuccessfulSet::ValueChanged)
-                                }
-                            }
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Uint16Array => match &value {
-                            DataValue::Uint32Array(array) => {
-                                let mut out_of_bounds = false;
-                                for value in array {
-                                    match u16::try_from(*value) {
-                                        Ok(_) => {}
-                                        Err(_) => {
-                                            out_of_bounds = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if out_of_bounds {
-                                    Err(DatapointError::OutOfBounds)
-                                } else {
-                                    Ok(SuccessfulSet::ValueChanged)
-                                }
-                            }
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Uint32Array => match &value {
-                            DataValue::Uint32Array(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Uint64Array => match &value {
-                            DataValue::Uint64Array(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::FloatArray => match &value {
-                            DataValue::FloatArray(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::DoubleArray => match &value {
-                            DataValue::DoubleArray(_) => Ok(SuccessfulSet::ValueChanged),
-                            _ => Err(DatapointError::WrongType),
-                        },
-                        DataType::Timestamp => Err(DatapointError::UnsupportedType),
-                        DataType::TimestampArray => Err(DatapointError::UnsupportedType),
-                    }
-                }
-            }
-            None => Err(DatapointError::NotFound),
-        }
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &DataPointEntry> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &Entry> + '_ {
         self.entries.values()
     }
 }
 
-impl query::CompilationInput for DatapointEntries {
+impl query::CompilationInput for Entries {
     fn get_datapoint_type(&self, field: &str) -> Result<DataType, query::CompilationError> {
-        match self.get_by_name(field) {
+        match self.get_by_path(field) {
             Some(entry) => Ok(entry.metadata.data_type.to_owned()),
             None => Err(query::CompilationError::UnknownField(field.to_owned())),
         }
@@ -522,7 +597,7 @@ impl DataBroker {
         });
     }
 
-    pub async fn register_datapoint(
+    pub async fn add_entry(
         &self,
         name: String,
         data_type: DataType,
@@ -535,7 +610,15 @@ impl DataBroker {
             .add(name, data_type, change_type, description, None)
     }
 
-    pub async fn get_datapoint(&self, id: i32) -> Option<DataPoint> {
+    pub async fn get_id_by_path(&self, name: &str) -> Option<i32> {
+        self.entries
+            .read()
+            .await
+            .get_by_path(name)
+            .map(|entry| entry.metadata.id)
+    }
+
+    pub async fn get_datapoint(&self, id: i32) -> Option<Datapoint> {
         self.entries
             .read()
             .await
@@ -543,11 +626,11 @@ impl DataBroker {
             .map(|entry| entry.datapoint.clone())
     }
 
-    pub async fn get_datapoint_by_name(&self, name: &str) -> Option<DataPoint> {
+    pub async fn get_datapoint_by_path(&self, name: &str) -> Option<Datapoint> {
         self.entries
             .read()
             .await
-            .get_by_name(name)
+            .get_by_path(name)
             .map(|entry| entry.datapoint.clone())
     }
 
@@ -559,39 +642,52 @@ impl DataBroker {
             .map(|item| item.metadata.clone())
     }
 
-    pub async fn set_datapoints(
+    pub async fn get_entry_by_path(&self, path: impl AsRef<str>) -> Option<Entry> {
+        self.entries
+            .read()
+            .await
+            .get_by_path(path.as_ref())
+            .cloned()
+    }
+
+    pub async fn get_entry(&self, id: i32) -> Option<Entry> {
+        self.entries.read().await.get_by_id(id).cloned()
+    }
+
+    pub async fn update_entries(
         &self,
-        datapoints: &[(i32, DataPoint)],
-    ) -> Result<(), Vec<(i32, DatapointError)>> {
+        updates: impl IntoIterator<Item = (i32, EntryUpdate)>,
+    ) -> Result<(), Vec<(i32, UpdateError)>> {
         let mut errors = Vec::new();
-        let ids = {
-            let mut entries = self.entries.write().await;
-            datapoints
-                .iter()
-                .filter_map(|(id, datapoint)| {
-                    debug!("setting id {} to {:?}", id, datapoint);
-                    match entries.set(*id, datapoint.to_owned()) {
-                        Ok(changed) => match changed {
-                            SuccessfulSet::ValueChanged => Some(id.to_owned()),
-                            SuccessfulSet::NoChange => None,
+        let mut entries = self.entries.write().await;
+
+        let cleanup_needed = {
+            let ids = updates
+                .into_iter()
+                .filter_map(|(id, update)| {
+                    debug!("setting id {} to {:?}", id, update);
+                    match entries.update(id, update) {
+                        Ok(update) => match update.is_empty() {
+                            false => Some(id),
+                            true => None,
                         },
                         Err(err) => {
-                            errors.push((*id, err));
+                            errors.push((id, err));
                             None
                         }
                     }
                 })
-                .collect::<Vec<i32>>()
-        };
+                .collect::<Vec<i32>>();
 
-        // Notify
-        let cleanup_needed = {
+            // Downgrade to reader (to allow other readers) while holding on
+            // to a read lock in order to ensure a consistent state while
+            // notifying subscribers (no writes in between)
+            let entries = entries.downgrade();
+
+            // Notify
             let mut cleanup_needed = false;
-            // Hold the reader while looping through the subscriptions
-            // to ensure a consistent state (no writes in between)
-            let reader = self.entries.read().await;
             for sub in self.subscriptions.read().await.iter() {
-                if let Some(input) = sub.generate_input(Some(&ids), &reader) {
+                if let Some(input) = sub.generate_input(Some(&ids), &entries) {
                     match sub.notify(&input).await {
                         Ok(()) => {}
                         Err(_) => cleanup_needed = true,
@@ -669,7 +765,7 @@ impl Default for DataBroker {
 async fn test_register_datapoint() {
     let datapoints = DataBroker::new();
     let id1 = datapoints
-        .register_datapoint(
+        .add_entry(
             "test.datapoint1".to_owned(),
             DataType::Bool,
             ChangeType::OnChange,
@@ -682,7 +778,7 @@ async fn test_register_datapoint() {
         match datapoints.entries.read().await.get_by_id(id1) {
             Some(entry) => {
                 assert_eq!(entry.metadata.id, id1);
-                assert_eq!(entry.metadata.name, "test.datapoint1");
+                assert_eq!(entry.metadata.path, "test.datapoint1");
                 assert_eq!(entry.metadata.data_type, DataType::Bool);
                 assert_eq!(entry.metadata.description, "Test datapoint 1");
             }
@@ -693,7 +789,7 @@ async fn test_register_datapoint() {
     }
 
     let id2 = datapoints
-        .register_datapoint(
+        .add_entry(
             "test.datapoint2".to_owned(),
             DataType::String,
             ChangeType::OnChange,
@@ -706,7 +802,7 @@ async fn test_register_datapoint() {
         match datapoints.entries.read().await.get_by_id(id2) {
             Some(entry) => {
                 assert_eq!(entry.metadata.id, id2);
-                assert_eq!(entry.metadata.name, "test.datapoint2");
+                assert_eq!(entry.metadata.path, "test.datapoint2");
                 assert_eq!(entry.metadata.data_type, DataType::String);
                 assert_eq!(entry.metadata.description, "Test datapoint 2");
             }
@@ -717,7 +813,7 @@ async fn test_register_datapoint() {
     }
 
     let id3 = datapoints
-        .register_datapoint(
+        .add_entry(
             "test.datapoint1".to_owned(),
             DataType::Bool,
             ChangeType::OnChange,
@@ -734,7 +830,7 @@ async fn test_get_set_datapoint() {
     let datapoints = DataBroker::new();
 
     let id1 = datapoints
-        .register_datapoint(
+        .add_entry(
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
@@ -754,11 +850,18 @@ async fn test_get_set_datapoint() {
     }
 
     datapoints
-        .set_datapoints(&[(
+        .update_entries([(
             id1,
-            DataPoint {
-                ts: SystemTime::now(),
-                value: DataValue::Int32(100),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts: SystemTime::now(),
+                    value: DataValue::Int32(100),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await
@@ -781,7 +884,7 @@ async fn test_subscribe_and_get() {
 
     let datapoints = DataBroker::new();
     let id1 = datapoints
-        .register_datapoint(
+        .add_entry(
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
@@ -809,11 +912,18 @@ async fn test_subscribe_and_get() {
     }
 
     datapoints
-        .set_datapoints(&[(
+        .update_entries([(
             id1,
-            DataPoint {
-                ts: SystemTime::now(),
-                value: DataValue::Int32(101),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts: SystemTime::now(),
+                    value: DataValue::Int32(101),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await
@@ -848,7 +958,7 @@ async fn test_multi_subscribe() {
 
     let datapoints = DataBroker::new();
     let id1 = datapoints
-        .register_datapoint(
+        .add_entry(
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
@@ -895,11 +1005,18 @@ async fn test_multi_subscribe() {
 
     for i in 0..100 {
         datapoints
-            .set_datapoints(&[(
+            .update_entries([(
                 id1,
-                DataPoint {
-                    ts: SystemTime::now(),
-                    value: DataValue::Int32(i),
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts: SystemTime::now(),
+                        value: DataValue::Int32(i),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
                 },
             )])
             .await
@@ -937,7 +1054,7 @@ async fn test_subscribe_after_new_registration() {
 
     let datapoints = DataBroker::new();
     let id1 = datapoints
-        .register_datapoint(
+        .add_entry(
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
@@ -965,11 +1082,18 @@ async fn test_subscribe_after_new_registration() {
     }
 
     datapoints
-        .set_datapoints(&[(
+        .update_entries([(
             id1,
-            DataPoint {
-                ts: SystemTime::now(),
-                value: DataValue::Int32(200),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts: SystemTime::now(),
+                    value: DataValue::Int32(200),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await
@@ -996,7 +1120,7 @@ async fn test_subscribe_after_new_registration() {
     }
 
     let id2 = datapoints
-        .register_datapoint(
+        .add_entry(
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
@@ -1008,11 +1132,18 @@ async fn test_subscribe_after_new_registration() {
     assert_eq!(id1, id2, "Re-registration should result in the same id");
 
     datapoints
-        .set_datapoints(&[(
+        .update_entries([(
             id1,
-            DataPoint {
-                ts: SystemTime::now(),
-                value: DataValue::Int32(102),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts: SystemTime::now(),
+                    value: DataValue::Int32(102),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await
@@ -1045,7 +1176,7 @@ async fn test_subscribe_set_multiple() {
 
     let datapoints = DataBroker::new();
     let id1 = datapoints
-        .register_datapoint(
+        .add_entry(
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
@@ -1055,7 +1186,7 @@ async fn test_subscribe_set_multiple() {
         .expect("Register datapoint should succeed");
 
     let id2 = datapoints
-        .register_datapoint(
+        .add_entry(
             "test.datapoint2".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
@@ -1086,19 +1217,33 @@ async fn test_subscribe_set_multiple() {
 
     for i in 0..10 {
         datapoints
-            .set_datapoints(&[
+            .update_entries([
                 (
                     id1,
-                    DataPoint {
-                        ts: SystemTime::now(),
-                        value: DataValue::Int32(-i),
+                    EntryUpdate {
+                        path: None,
+                        datapoint: Some(Datapoint {
+                            ts: SystemTime::now(),
+                            value: DataValue::Int32(-i),
+                        }),
+                        actuator_target: None,
+                        entry_type: None,
+                        data_type: None,
+                        description: None,
                     },
                 ),
                 (
                     id2,
-                    DataPoint {
-                        ts: SystemTime::now(),
-                        value: DataValue::Int32(i),
+                    EntryUpdate {
+                        path: None,
+                        datapoint: Some(Datapoint {
+                            ts: SystemTime::now(),
+                            value: DataValue::Int32(i),
+                        }),
+                        actuator_target: None,
+                        entry_type: None,
+                        data_type: None,
+                        description: None,
                     },
                 ),
             ])
@@ -1131,7 +1276,7 @@ async fn test_subscribe_set_multiple() {
 async fn test_bool_array() {
     let broker = DataBroker::new();
     let id = broker
-        .register_datapoint(
+        .add_entry(
             "Vehicle.TestArray".to_owned(),
             DataType::BoolArray,
             ChangeType::OnChange,
@@ -1142,11 +1287,18 @@ async fn test_bool_array() {
 
     let ts = std::time::SystemTime::now();
     match broker
-        .set_datapoints(&[(
+        .update_entries([(
             id,
-            DataPoint {
-                ts,
-                value: DataValue::BoolArray(vec![true, true, false, true]),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts,
+                    value: DataValue::BoolArray(vec![true, true, false, true]),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await
@@ -1176,7 +1328,7 @@ async fn test_bool_array() {
 async fn test_string_array() {
     let broker = DataBroker::new();
     let id = broker
-        .register_datapoint(
+        .add_entry(
             "Vehicle.TestArray".to_owned(),
             DataType::StringArray,
             ChangeType::OnChange,
@@ -1187,16 +1339,23 @@ async fn test_string_array() {
 
     let ts = std::time::SystemTime::now();
     match broker
-        .set_datapoints(&[(
+        .update_entries([(
             id,
-            DataPoint {
-                ts,
-                value: DataValue::StringArray(vec![
-                    String::from("yes"),
-                    String::from("no"),
-                    String::from("maybe"),
-                    String::from("nah"),
-                ]),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts,
+                    value: DataValue::StringArray(vec![
+                        String::from("yes"),
+                        String::from("no"),
+                        String::from("maybe"),
+                        String::from("nah"),
+                    ]),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await
@@ -1231,7 +1390,7 @@ async fn test_string_array() {
 async fn test_int8_array() {
     let broker = DataBroker::new();
     let id = broker
-        .register_datapoint(
+        .add_entry(
             "Vehicle.TestArray".to_owned(),
             DataType::Int8Array,
             ChangeType::OnChange,
@@ -1242,11 +1401,18 @@ async fn test_int8_array() {
 
     let ts = std::time::SystemTime::now();
     match broker
-        .set_datapoints(&[(
+        .update_entries([(
             id,
-            DataPoint {
-                ts,
-                value: DataValue::Int32Array(vec![10, 20, 30, 40]),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts,
+                    value: DataValue::Int32Array(vec![10, 20, 30, 40]),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await
@@ -1261,11 +1427,18 @@ async fn test_int8_array() {
     }
 
     if broker
-        .set_datapoints(&[(
+        .update_entries([(
             id,
-            DataPoint {
-                ts,
-                value: DataValue::Int32Array(vec![100, 200, 300, 400]),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts,
+                    value: DataValue::Int32Array(vec![100, 200, 300, 400]),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await
@@ -1287,7 +1460,7 @@ async fn test_int8_array() {
 async fn test_uint8_array() {
     let broker = DataBroker::new();
     let id = broker
-        .register_datapoint(
+        .add_entry(
             "Vehicle.TestArray".to_owned(),
             DataType::Uint8Array,
             ChangeType::OnChange,
@@ -1298,11 +1471,18 @@ async fn test_uint8_array() {
 
     let ts = std::time::SystemTime::now();
     match broker
-        .set_datapoints(&[(
+        .update_entries([(
             id,
-            DataPoint {
-                ts,
-                value: DataValue::Uint32Array(vec![10, 20, 30, 40]),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts,
+                    value: DataValue::Uint32Array(vec![10, 20, 30, 40]),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await
@@ -1317,11 +1497,18 @@ async fn test_uint8_array() {
     }
 
     if broker
-        .set_datapoints(&[(
+        .update_entries([(
             id,
-            DataPoint {
-                ts,
-                value: DataValue::Uint32Array(vec![100, 200, 300, 400]),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts,
+                    value: DataValue::Uint32Array(vec![100, 200, 300, 400]),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await
@@ -1346,7 +1533,7 @@ async fn test_uint8_array() {
 async fn test_float_array() {
     let broker = DataBroker::new();
     let id = broker
-        .register_datapoint(
+        .add_entry(
             "Vehicle.TestArray".to_owned(),
             DataType::FloatArray,
             ChangeType::OnChange,
@@ -1357,11 +1544,18 @@ async fn test_float_array() {
 
     let ts = std::time::SystemTime::now();
     match broker
-        .set_datapoints(&[(
+        .update_entries([(
             id,
-            DataPoint {
-                ts,
-                value: DataValue::FloatArray(vec![10.0, 20.0, 30.0, 40.0]),
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts,
+                    value: DataValue::FloatArray(vec![10.0, 20.0, 30.0, 40.0]),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
             },
         )])
         .await

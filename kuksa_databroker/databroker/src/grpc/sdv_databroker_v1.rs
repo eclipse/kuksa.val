@@ -31,7 +31,7 @@ use crate::types::{ChangeType, DataType, DataValue};
 
 use tracing::debug;
 
-impl From<&proto::Datapoint> for broker::DataPoint {
+impl From<&proto::Datapoint> for broker::Datapoint {
     fn from(datapoint: &proto::Datapoint) -> Self {
         let value = match &datapoint.value {
             Some(value) => match value {
@@ -77,12 +77,12 @@ impl From<&proto::Datapoint> for broker::DataPoint {
             None => SystemTime::now(),
         };
 
-        broker::DataPoint { ts, value }
+        broker::Datapoint { ts, value }
     }
 }
 
-impl From<&broker::DataPoint> for proto::Datapoint {
-    fn from(datapoint: &broker::DataPoint) -> Self {
+impl From<&broker::Datapoint> for proto::Datapoint {
+    fn from(datapoint: &broker::Datapoint) -> Self {
         let value = match &datapoint.value {
             DataValue::Bool(value) => proto::datapoint::Value::BoolValue(*value),
             DataValue::String(value) => proto::datapoint::Value::StringValue(value.to_owned()),
@@ -283,7 +283,7 @@ impl From<&broker::Metadata> for proto::Metadata {
     fn from(metadata: &broker::Metadata) -> Self {
         proto::Metadata {
             id: metadata.id,
-            name: metadata.name.to_owned(),
+            name: metadata.path.to_owned(),
             data_type: proto::DataType::from(&metadata.data_type) as i32,
             change_type: proto::ChangeType::Continuous as i32, // TODO: Add to metadata
             description: metadata.description.to_owned(),
@@ -291,14 +291,14 @@ impl From<&broker::Metadata> for proto::Metadata {
     }
 }
 
-impl From<&broker::DatapointError> for proto::DatapointError {
-    fn from(error: &broker::DatapointError) -> Self {
+impl From<&broker::UpdateError> for proto::DatapointError {
+    fn from(error: &broker::UpdateError) -> Self {
         match error {
-            broker::DatapointError::NotFound => proto::DatapointError::UnknownDatapoint,
-            broker::DatapointError::WrongType | broker::DatapointError::UnsupportedType => {
+            broker::UpdateError::NotFound => proto::DatapointError::UnknownDatapoint,
+            broker::UpdateError::WrongType | broker::UpdateError::UnsupportedType => {
                 proto::DatapointError::InvalidType
             }
-            broker::DatapointError::OutOfBounds => proto::DatapointError::OutOfBounds,
+            broker::UpdateError::OutOfBounds => proto::DatapointError::OutOfBounds,
         }
     }
 }
@@ -313,13 +313,25 @@ impl proto::collector_server::Collector for broker::DataBroker {
         let mut errors = HashMap::new();
 
         let message = request.into_inner();
-        let ids = message
+        let ids: Vec<(i32, broker::EntryUpdate)> = message
             .datapoints
             .iter()
-            .map(|(id, datapoint)| (*id, broker::DataPoint::from(datapoint)))
-            .collect::<Vec<(i32, broker::DataPoint)>>();
+            .map(|(id, datapoint)| {
+                (
+                    *id,
+                    broker::EntryUpdate {
+                        path: None,
+                        datapoint: Some(broker::Datapoint::from(datapoint)),
+                        actuator_target: None,
+                        entry_type: None,
+                        data_type: None,
+                        description: None,
+                    },
+                )
+            })
+            .collect();
 
-        match self.set_datapoints(&ids).await {
+        match self.update_entries(ids).await {
             Ok(()) => {}
             Err(err) => {
                 debug!("Failed to set datapoint: {:?}", err);
@@ -356,12 +368,25 @@ impl proto::collector_server::Collector for broker::DataBroker {
                             Ok(request) => {
                                 match request {
                                     Some(req) => {
-                                        let ids = req.datapoints.iter().map(|(id, datapoint)| {
-                                            (*id, broker::DataPoint::from(datapoint))
-                                        }).collect::<Vec<(i32, broker::DataPoint)>>();
+                                        let ids: Vec<(i32, broker::EntryUpdate)> = req.datapoints
+                                            .iter()
+                                            .map(|(id, datapoint)|
+                                                (
+                                                    *id,
+                                                    broker::EntryUpdate {
+                                                        path: None,
+                                                        datapoint: Some(broker::Datapoint::from(datapoint)),
+                                                        actuator_target: None,
+                                                        entry_type: None,
+                                                        data_type: None,
+                                                        description: None
+                                                    }
+                                                )
+                                            )
+                                            .collect();
                                         // TODO: Check if sender is allowed to provide datapoint with this id
                                         match databroker
-                                            .set_datapoints(&ids)
+                                            .update_entries(ids)
                                             .await
                                         {
                                             Ok(_) => {}
@@ -416,7 +441,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
             ) {
                 (Some(value_type), Some(change_type)) => {
                     match self
-                        .register_datapoint(
+                        .add_entry(
                             metadata.name.clone(),
                             DataType::from(&value_type),
                             ChangeType::from(&change_type),
@@ -493,7 +518,7 @@ impl proto::broker_server::Broker for broker::DataBroker {
             let mut datapoints = HashMap::new();
 
             for name in requested.datapoints {
-                match self.get_datapoint_by_name(&name).await {
+                match self.get_datapoint_by_path(&name).await {
                     Some(datapoint) => {
                         datapoints.insert(name, proto::Datapoint::from(&datapoint));
                     }
@@ -554,7 +579,7 @@ impl proto::broker_server::Broker for broker::DataBroker {
 
             let entries = self.entries.read().await;
             for name in request.names {
-                if let Some(entry) = entries.get_by_name(&name) {
+                if let Some(entry) = entries.get_by_path(&name) {
                     list.push(proto::Metadata::from(&entry.metadata));
                 }
             }
