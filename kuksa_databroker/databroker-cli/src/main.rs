@@ -14,7 +14,7 @@
 extern crate ansi_term;
 extern crate linefeed;
 
-use databroker_api::proto;
+use databroker_api::sdv::databroker as proto;
 use prost_types::Timestamp;
 
 use std::collections::{HashMap, HashSet};
