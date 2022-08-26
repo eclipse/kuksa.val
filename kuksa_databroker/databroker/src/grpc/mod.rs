@@ -11,8 +11,6 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-pub mod broker;
-pub mod grpc;
-pub mod query;
-pub mod types;
-pub mod vss;
+pub mod server;
+
+mod sdv_databroker_v1;

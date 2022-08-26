@@ -13,8 +13,18 @@
 
 #![allow(unknown_lints)]
 #![allow(clippy::derive_partial_eq_without_eq)]
-pub mod proto {
-    pub mod v1 {
-        tonic::include_proto!("sdv.databroker.v1");
+pub mod sdv {
+    pub mod databroker {
+        pub mod v1 {
+            tonic::include_proto!("sdv.databroker.v1");
+        }
+    }
+}
+
+pub mod kuksa {
+    pub mod val {
+        pub mod v1 {
+            tonic::include_proto!("kuksa.val.v1");
+        }
     }
 }

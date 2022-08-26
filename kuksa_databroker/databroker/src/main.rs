@@ -22,7 +22,7 @@ use tokio::signal::unix::{signal, SignalKind};
 
 use clap::{Arg, Command};
 
-use databroker::grpc_service;
+use databroker::grpc;
 use databroker::types;
 use databroker::{broker, vss};
 
@@ -273,7 +273,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Listening on {}", addr);
 
-    grpc_service::serve_with_shutdown(&addr, broker, shutdown_handler()).await?;
+    grpc::server::serve_with_shutdown(&addr, broker, shutdown_handler()).await?;
 
     Ok(())
 }
