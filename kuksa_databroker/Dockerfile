@@ -11,23 +11,28 @@
 # * SPDX-License-Identifier: Apache-2.0
 # ********************************************************************************/
 
-FROM --platform=$BUILDPLATFORM alpine:latest as builder
+# This is expected to be executed in the kuksa.val top-level directory
+FROM rust:1.63 as builder
 
-ARG TARGETPLATFORM
 
-WORKDIR /workdir
+RUN rustup component add rustfmt
 
-COPY ./databroker* /workdir
+RUN mkdir /build
+WORKDIR /build
 
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ] ; \
-    then tar -xzf databroker_x86_64.tar.gz && cp -v ./target/release/databroker ./databroker; \
-    else tar -xzf databroker_aarch64.tar.gz && cp -v ./target/aarch64-unknown-linux-gnu/release/databroker ./databroker; fi
+ADD  kuksa_databroker ./
 
-FROM --platform=$TARGETPLATFORM debian:buster-slim
+WORKDIR /build/databroker
 
-COPY --from=builder workdir/databroker /app/databroker
+ENV RUSTFLAGS='-C link-arg=-s'
+RUN cargo build --bin databroker --release 
 
-COPY ./data/vss-core/vss_release_3.0.json vss_release_3.0.json
+
+FROM  debian:buster-slim
+
+COPY --from=builder /build/databroker/target/release/databroker /app/databroker
+
+ADD ./data/vss-core/vss_release_3.0.json vss_release_3.0.json
 
 ENV KUKSA_DATA_BROKER_ADDR=0.0.0.0
 ENV KUKSA_DATA_BROKER_PORT=55555
@@ -36,4 +41,3 @@ ENV KUKSA_DATA_BROKER_METADATA_FILE=vss_release_3.0.json
 EXPOSE $KUKSA_DATA_BROKER_PORT
 
 ENTRYPOINT [ "/app/databroker" ]
-
