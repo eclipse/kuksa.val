@@ -14,7 +14,7 @@ on:
 
 jobs:
   check_push_rights:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       have_secrets: ${{ steps.check-secrets.outputs.have_secrets }}
       registry: ${{ steps.check-secrets.outputs.registry }}

@@ -14,6 +14,8 @@
 name: kuksa_databroker_build
 
 on:
+  push:
+    branches: [ master ]
   pull_request:
     paths:
       - ".github/workflows/kuksa_databroker_build.yml"
@@ -22,6 +24,7 @@ on:
       - "Cross.toml"
   workflow_call:
   workflow_dispatch:
+
 
 jobs:
   lint:
@@ -100,135 +103,92 @@ jobs:
       #     repo_token: ${{ secrets.GITHUB_TOKEN }}
       #     minimum_coverage: 40
 
-  build-x86_64:
-    name: Build (x86_64)
-    runs-on: ubuntu-latest
+
+  checkrights:
+    uses: ./.github/workflows/check_push_rights.yml
+    secrets: inherit
+
+  build-container:
+    runs-on: [ ubuntu-latest ]
+    needs: checkrights
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
+      with: 
+        submodules: recursive
 
-      - name: Build release (stripped)
-        working-directory: ${{github.workspace}}/kuksa_databroker
-        run: RUSTFLAGS='-C link-arg=-s' cargo build --release --bins --examples
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v3.5.0
+      with:
+        # list of Docker images to use as base name for tags
+        images: |
+          ghcr.io/eclipse/kuksa.val/databroker
+        # generate Docker tags based on the following events/attributes
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          
+    #only needed for runners without buildx setup, will be slow
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+      
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
 
-      - name: Tar files
-        shell: bash
-        working-directory: ${{github.workspace}}
-        run: |
-          tar -czvf databroker_x86_64.tar.gz \
-          target/release/databroker-cli \
-          target/release/databroker \
-          target/release/examples/perf_setter \
-          target/release/examples/perf_subscriber
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: databroker_x86_64.tar.gz
-          path: ${{github.workspace}}/databroker_x86_64.tar.gz
-          if-no-files-found: error
-
-  build-aarch64:
-    name: Build (aarch64)
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install build tools
-        run: cargo install cross
-
-      - name: Build release (stripped)
-        working-directory: ${{github.workspace}}/kuksa_databroker
-        run: RUSTFLAGS='-C link-arg=-s' cross build --release --bins --examples --target aarch64-unknown-linux-gnu
-
-      - name: Tar files
-        shell: bash
-        working-directory: ${{github.workspace}}
-        run: |
-          tar -czvf databroker_aarch64.tar.gz \
-          target/aarch64-unknown-linux-gnu/release/databroker-cli \
-          target/aarch64-unknown-linux-gnu/release/databroker \
-          target/aarch64-unknown-linux-gnu/release/examples/perf_setter \
-          target/aarch64-unknown-linux-gnu/release/examples/perf_subscriber
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: databroker_aarch64.tar.gz
-          path: ${{github.workspace}}/databroker_aarch64.tar.gz
-          if-no-files-found: error
-
-  build-databroker-image:
-    name: "Build multi-arch image (databroker)"
-    runs-on: ubuntu-latest
-    needs: [build-x86_64, build-aarch64]
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Retrieve build binaries
-        uses: actions/download-artifact@v3
-        with:
-          path: ${{github.workspace}}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
+    - name: Log in to the Container registry
+      if: needs.checkrights.outputs.have_secrets == 'true'
+      uses: docker/login-action@v2
+      with:
+          registry: ${{ needs.checkrights.outputs.registry }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+    - name: Build kuksa.val databroker container and push to ghcr.io
+      id: ghcr-build
+      if: needs.checkrights.outputs.have_secrets == 'true'
+      uses: docker/build-push-action@v2
+      with:
+        platforms: |
+          linux/amd64
+          linux/arm64
+        file: ./kuksa_databroker/Dockerfile
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}, "ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h"
+        labels: ${{ steps.meta.outputs.labels }}
 
-      - name: "Create container image"
-        id: image_build
-        uses: docker/build-push-action@v2
-        with:
-          pull: true
-          push: false
-          outputs: |
-            type=oci,dest=./databroker-oci-multiarch.tar
-          context: .
-          file: ./kuksa_databroker/Dockerfile
-          platforms: linux/amd64, linux/arm64
-          tags: ${{ github.sha }}
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+    - name: Build ephemereal kuksa.val databroker container and push to ttl.sh
+      if: needs.checkrights.outputs.have_secrets == 'false'
+      id: tmp-build
+      uses: docker/build-push-action@v2
+      with:
+        platforms: |
+          linux/amd64
+          linux/arm64
+        file: ./kuksa_databroker/Dockerfile
+        context: .
+        push: true
+        tags: "ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h"
+        labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Save container image (multiarch)
-        uses: actions/upload-artifact@v3
-        with:
-          name: databroker-oci-multiarch.tar
-          path: ${{github.workspace}}/databroker-oci-multiarch.tar
-          retention-days: 1
 
+    
   integration-test:
     name: Run integration test
     runs-on: ubuntu-latest
-    needs: [build-databroker-image]
+    needs: [build-container]
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Retrieve saved container image
-        uses: actions/download-artifact@v3
-        with:
-          name: databroker-oci-multiarch.tar
-          path: ${{github.workspace}}
-
-      - name: Load image
-        shell: bash
-        run: |
-          skopeo copy oci-archive:databroker-oci-multiarch.tar docker-daemon:databroker:integration_test
-
+    
+      - uses: actions/checkout@v2
+        
       - name: Run integration test
         env:
-          DATABROKER_IMAGE: databroker:integration_test
-        run: ${{github.workspace}}/kuksa_databroker/integration_test/run.sh
+          DATABROKER_IMAGE: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h
+        run: |
+          ${{github.workspace}}/kuksa_databroker/integration_test/run.sh
