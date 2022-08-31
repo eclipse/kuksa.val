@@ -233,9 +233,12 @@ class KuksaWsComm:
     # Main loop for handling websocket communication
     async def mainLoop(self):
         if not self.insecure:
-            context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            context = ssl.create_default_context()
             context.load_cert_chain(certfile=self.certificate, keyfile=self.keyfile)
             context.load_verify_locations(cafile=self.cacertificate)
+            # Certificates in ../kuksa_certificates does not contain the IP address used for
+            # connection to server so hostname check must be disabled
+            context.check_hostname = False
             try:
                 print("connect to wss://"+self.serverIP+":"+str(self.serverPort))
                 async with websockets.connect("wss://"+self.serverIP+":"+str(self.serverPort), ssl=context) as ws:
