@@ -15,6 +15,8 @@ use std::fmt;
 
 use crate::types;
 
+use tracing::{debug};
+
 use serde_json::Value;
 
 #[derive(Debug)]
@@ -22,6 +24,7 @@ pub struct MetadataEntry {
     pub name: String,
     pub data_type: types::DataType,
     pub description: Option<String>,
+    pub default: Option<Value>,
 }
 
 enum VssEntryType {
@@ -96,6 +99,13 @@ fn parse_entry(name: &str, entry: &Value, entries: &mut Vec<MetadataEntry>) -> R
                     name: name.to_owned(),
                     data_type,
                     description: entry["description"].as_str().map(|s| s.to_owned()),
+                    default: match entry.get("default") {
+                        Some(x) =>  {
+                            debug!("Parsing default value {} for path {}",x,name);
+                            Some(x.clone())
+                        },
+                        None => None,
+                    }
                 });
             }
         }

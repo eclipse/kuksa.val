@@ -24,6 +24,7 @@ use clap::{Arg, Command};
 
 use databroker::grpc_service;
 use databroker::types;
+use databroker::broker::{DataBroker};
 use databroker::{broker, vss};
 
 // Hardcoded datapoints
@@ -103,6 +104,22 @@ fn init_logging() {
         .expect("Unable to install global logging subscriber");
 
     info!("{}", output);
+}
+
+async fn apply_default(id: i32, val: &serde_json::Value, broker : &DataBroker) {
+    let res = broker.set_datapoints(&[( //This need logic for all the types :-/
+        id,
+        broker::DataPoint {
+            ts:  std::time::SystemTime::now(), 
+            value: types::DataValue::String("he".to_string()),
+        },
+    )])
+    .await;
+
+    match res {
+        Ok(_t) => info!("Yeay"),
+        Err(_e) => info!("Error applying default"), //No easy way to print error
+    }
 }
 
 async fn shutdown_handler() {
@@ -232,7 +249,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if let Some(filename) = args.value_of("metadata") {
-        info!("Populating metadata from file '{}'", filename);
+        info!("Populating metadata... from file '{}'", filename);
         let mut metadata_file = std::fs::OpenOptions::new().read(true).open(filename)?;
         // metadata_file
         let mut data = String::new();
@@ -240,6 +257,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let entries = vss::parse_vss(&data)?;
         for entry in entries {
             debug!("Adding {}", entry.name);
+
+            if !entry.default.is_none() {
+                info!("Setting {} to default value {}",entry.name, entry.default.as_ref().unwrap());
+            }
             let _id = broker
                 .register_datapoint(
                     entry.name,
@@ -248,6 +269,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     entry.description.unwrap_or_else(|| "".to_owned()),
                 )
                 .await;
+
+                if !entry.default.is_none() {
+                    match _id {
+                        Ok(id) => {
+                            apply_default(id, &entry.default.unwrap(), &broker).await;
+                        },
+                        Err(_e) => debug!("Kaput"),
+                    }
+                }
+
         }
     }
 
