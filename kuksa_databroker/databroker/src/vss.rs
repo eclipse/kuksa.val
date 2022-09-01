@@ -15,16 +15,12 @@ use std::fmt;
 
 use crate::types;
 
-use tracing::{debug};
-
-use serde_json::Value;
-
 #[derive(Debug)]
 pub struct MetadataEntry {
     pub name: String,
     pub data_type: types::DataType,
     pub description: Option<String>,
-    pub default: Option<Value>,
+    pub default: Option<types::DataValue>,
 }
 
 enum VssEntryType {
@@ -51,7 +47,7 @@ impl std::error::Error for Error {}
 
 pub fn parse_vss(data: &str) -> Result<Vec<MetadataEntry>, Error> {
     // Parse the string of data into serde_json::Value.
-    match serde_json::from_str::<Value>(data) {
+    match serde_json::from_str::<serde_json::Value>(data) {
         Ok(root) => {
             if let Some(root) = root.as_object() {
                 let mut entries = Vec::new();
@@ -67,7 +63,11 @@ pub fn parse_vss(data: &str) -> Result<Vec<MetadataEntry>, Error> {
     }
 }
 
-fn parse_entry(name: &str, entry: &Value, entries: &mut Vec<MetadataEntry>) -> Result<(), Error> {
+fn parse_entry(
+    name: &str,
+    entry: &serde_json::Value,
+    entries: &mut Vec<MetadataEntry>,
+) -> Result<(), Error> {
     if let Some(entry) = entry.as_object() {
         if !entry.contains_key("type") {
             return Err(Error::ParseError(format!(
@@ -88,24 +88,13 @@ fn parse_entry(name: &str, entry: &Value, entries: &mut Vec<MetadataEntry>) -> R
                 }
             }
             VssEntryType::Sensor | VssEntryType::Actuator | VssEntryType::Attribute => {
-                if !entry.contains_key("datatype") {
-                    return Err(Error::ParseError(format!(
-                        "Key \"datatype\" not found in {}",
-                        name
-                    )));
-                }
-                let data_type = parse_data_type(entry["datatype"].as_str())?;
+                let data_type = parse_data_type(name, entry)?;
+                let default_value = parse_default_value(name, &data_type, entry)?;
                 entries.push(MetadataEntry {
                     name: name.to_owned(),
                     data_type,
                     description: entry["description"].as_str().map(|s| s.to_owned()),
-                    default: match entry.get("default") {
-                        Some(x) =>  {
-                            debug!("Parsing default value {} for path {}",x,name);
-                            Some(x.clone())
-                        },
-                        None => None,
-                    }
+                    default: default_value,
                 });
             }
         }
@@ -115,41 +104,202 @@ fn parse_entry(name: &str, entry: &Value, entries: &mut Vec<MetadataEntry>) -> R
     }
 }
 
-fn parse_data_type(data_type: Option<&str>) -> Result<types::DataType, Error> {
-    match data_type {
-        Some(data_type) => match data_type {
-            "string" => Ok(types::DataType::String),
-            "boolean" => Ok(types::DataType::Bool),
-            "int8" => Ok(types::DataType::Int8),
-            "int16" => Ok(types::DataType::Int16),
-            "int32" => Ok(types::DataType::Int32),
-            "int64" => Ok(types::DataType::Int64),
-            "uint8" => Ok(types::DataType::Uint8),
-            "uint16" => Ok(types::DataType::Uint16),
-            "uint32" => Ok(types::DataType::Uint32),
-            "uint64" => Ok(types::DataType::Uint64),
-            "float" => Ok(types::DataType::Float),
-            "double" => Ok(types::DataType::Double),
-            "string[]" => Ok(types::DataType::StringArray),
-            "boolean[]" => Ok(types::DataType::BoolArray),
-            "int8[]" => Ok(types::DataType::Int8Array),
-            "int16[]" => Ok(types::DataType::Int16Array),
-            "int32[]" => Ok(types::DataType::Int32Array),
-            "int64[]" => Ok(types::DataType::Int64Array),
-            "uint8[]" => Ok(types::DataType::Uint8Array),
-            "uint16[]" => Ok(types::DataType::Uint16Array),
-            "uint32[]" => Ok(types::DataType::Uint32Array),
-            "uint64[]" => Ok(types::DataType::Uint64Array),
-            "float[]" => Ok(types::DataType::FloatArray),
-            "double[]" => Ok(types::DataType::DoubleArray),
+fn parse_default_value(
+    name: &str,
+    data_type: &types::DataType,
+    entry: &serde_json::Map<String, serde_json::Value>,
+) -> Result<Option<types::DataValue>, Error> {
+    match entry.get("default") {
+        Some(value) => match data_type {
+            types::DataType::String => match serde_json::from_value::<String>(value.to_owned()) {
+                Ok(value) => Ok(Some(types::DataValue::String(value))),
+                Err(_) => Err(Error::ParseError(format!(
+                    "Could not parse default value ({}) as {:?} for {}",
+                    value, data_type, name
+                ))),
+            },
+            types::DataType::Bool => match serde_json::from_value::<bool>(value.to_owned()) {
+                Ok(value) => Ok(Some(types::DataValue::Bool(value))),
+                Err(_) => Err(Error::ParseError(format!(
+                    "Could not parse default value ({}) as {:?} for {}",
+                    value, data_type, name
+                ))),
+            },
+            types::DataType::Int8 | types::DataType::Int16 | types::DataType::Int32 => {
+                match serde_json::from_value::<i32>(value.to_owned()) {
+                    Ok(value) => Ok(Some(types::DataValue::Int32(value))),
+                    Err(_) => Err(Error::ParseError(format!(
+                        "Could not parse default value ({}) as {:?} for {}",
+                        value, data_type, name
+                    ))),
+                }
+            }
+            types::DataType::Int64 => match serde_json::from_value::<i64>(value.to_owned()) {
+                Ok(value) => Ok(Some(types::DataValue::Int64(value))),
+                Err(_) => Err(Error::ParseError(format!(
+                    "Could not parse default value ({}) as {:?} for {}",
+                    value, data_type, name
+                ))),
+            },
+            types::DataType::Uint8 | types::DataType::Uint16 | types::DataType::Uint32 => {
+                match serde_json::from_value::<u32>(value.to_owned()) {
+                    Ok(value) => Ok(Some(types::DataValue::Uint32(value))),
+                    Err(_) => Err(Error::ParseError(format!(
+                        "Could not parse default value ({}) as {:?} for {}",
+                        value, data_type, name
+                    ))),
+                }
+            }
+            types::DataType::Uint64 => match serde_json::from_value::<u64>(value.to_owned()) {
+                Ok(value) => Ok(Some(types::DataValue::Uint64(value))),
+                Err(_) => Err(Error::ParseError(format!(
+                    "Could not parse default value ({}) as {:?} for {}",
+                    value, data_type, name
+                ))),
+            },
+            types::DataType::Float => match serde_json::from_value::<f32>(value.to_owned()) {
+                Ok(value) => Ok(Some(types::DataValue::Float(value))),
+                Err(_) => Err(Error::ParseError(format!(
+                    "Could not parse default value ({}) as {:?} for {}",
+                    value, data_type, name
+                ))),
+            },
+            types::DataType::Double => match serde_json::from_value::<f64>(value.to_owned()) {
+                Ok(value) => Ok(Some(types::DataValue::Double(value))),
+                Err(_) => Err(Error::ParseError(format!(
+                    "Could not parse default value ({}) as {:?} for {}",
+                    value, data_type, name
+                ))),
+            },
+            // types::DataType::Timestamp => todo!(),
+            types::DataType::StringArray => {
+                match serde_json::from_value::<Vec<String>>(value.to_owned()) {
+                    Ok(value) => Ok(Some(types::DataValue::StringArray(value))),
+                    Err(_) => Err(Error::ParseError(format!(
+                        "Could not parse default value ({}) as {:?} for {}",
+                        value, data_type, name
+                    ))),
+                }
+            }
+            types::DataType::BoolArray => {
+                match serde_json::from_value::<Vec<bool>>(value.to_owned()) {
+                    Ok(value) => Ok(Some(types::DataValue::BoolArray(value))),
+                    Err(_) => Err(Error::ParseError(format!(
+                        "Could not parse default value ({}) as {:?} for {}",
+                        value, data_type, name
+                    ))),
+                }
+            }
+            types::DataType::Int8Array
+            | types::DataType::Int16Array
+            | types::DataType::Int32Array => {
+                match serde_json::from_value::<Vec<i32>>(value.to_owned()) {
+                    Ok(value) => Ok(Some(types::DataValue::Int32Array(value))),
+                    Err(_) => Err(Error::ParseError(format!(
+                        "Could not parse default value ({}) as {:?} for {}",
+                        value, data_type, name
+                    ))),
+                }
+            }
+            types::DataType::Int64Array => {
+                match serde_json::from_value::<Vec<i64>>(value.to_owned()) {
+                    Ok(value) => Ok(Some(types::DataValue::Int64Array(value))),
+                    Err(_) => Err(Error::ParseError(format!(
+                        "Could not parse default value ({}) as {:?} for {}",
+                        value, data_type, name
+                    ))),
+                }
+            }
+            types::DataType::Uint8Array
+            | types::DataType::Uint16Array
+            | types::DataType::Uint32Array => {
+                match serde_json::from_value::<Vec<u32>>(value.to_owned()) {
+                    Ok(value) => Ok(Some(types::DataValue::Uint32Array(value))),
+                    Err(_) => Err(Error::ParseError(format!(
+                        "Could not parse default value ({}) as {:?} for {}",
+                        value, data_type, name
+                    ))),
+                }
+            }
+            types::DataType::Uint64Array => {
+                match serde_json::from_value::<Vec<u64>>(value.to_owned()) {
+                    Ok(value) => Ok(Some(types::DataValue::Uint64Array(value))),
+                    Err(_) => Err(Error::ParseError(format!(
+                        "Could not parse default value ({}) as {:?} for {}",
+                        value, data_type, name
+                    ))),
+                }
+            }
+            types::DataType::FloatArray => {
+                match serde_json::from_value::<Vec<f32>>(value.to_owned()) {
+                    Ok(value) => Ok(Some(types::DataValue::FloatArray(value))),
+                    Err(_) => Err(Error::ParseError(format!(
+                        "Could not parse default value ({}) as {:?} for {}",
+                        value, data_type, name
+                    ))),
+                }
+            }
+            types::DataType::DoubleArray => {
+                match serde_json::from_value::<Vec<f64>>(value.to_owned()) {
+                    Ok(value) => Ok(Some(types::DataValue::DoubleArray(value))),
+                    Err(_) => Err(Error::ParseError(format!(
+                        "Could not parse default value ({}) as {:?} for {}",
+                        value, data_type, name
+                    ))),
+                }
+            }
+            // types::DataType::TimestampArray => todo!(),
+            _ => Err(Error::ParseError(format!(
+                "Could not parse default value ({}) as {:?} for {} (NOT IMPLEMENTED)",
+                value, data_type, name
+            ))),
+        },
+        None => Ok(None), // "default" is not mandatory,
+    }
+}
+
+fn parse_data_type(
+    name: &str,
+    entry: &serde_json::Map<String, serde_json::Value>,
+) -> Result<types::DataType, Error> {
+    match entry.get("datatype") {
+        Some(data_type) => match data_type.as_str() {
+            Some("string") => Ok(types::DataType::String),
+            Some("boolean") => Ok(types::DataType::Bool),
+            Some("int8") => Ok(types::DataType::Int8),
+            Some("int16") => Ok(types::DataType::Int16),
+            Some("int32") => Ok(types::DataType::Int32),
+            Some("int64") => Ok(types::DataType::Int64),
+            Some("uint8") => Ok(types::DataType::Uint8),
+            Some("uint16") => Ok(types::DataType::Uint16),
+            Some("uint32") => Ok(types::DataType::Uint32),
+            Some("uint64") => Ok(types::DataType::Uint64),
+            Some("float") => Ok(types::DataType::Float),
+            Some("double") => Ok(types::DataType::Double),
+            Some("string[]") => Ok(types::DataType::StringArray),
+            Some("boolean[]") => Ok(types::DataType::BoolArray),
+            Some("int8[]") => Ok(types::DataType::Int8Array),
+            Some("int16[]") => Ok(types::DataType::Int16Array),
+            Some("int32[]") => Ok(types::DataType::Int32Array),
+            Some("int64[]") => Ok(types::DataType::Int64Array),
+            Some("uint8[]") => Ok(types::DataType::Uint8Array),
+            Some("uint16[]") => Ok(types::DataType::Uint16Array),
+            Some("uint32[]") => Ok(types::DataType::Uint32Array),
+            Some("uint64[]") => Ok(types::DataType::Uint64Array),
+            Some("float[]") => Ok(types::DataType::FloatArray),
+            Some("double[]") => Ok(types::DataType::DoubleArray),
+            None => Err(Error::ParseError(
+                "Key \"datatype\" is not a string".to_owned(),
+            )),
             _ => Err(Error::ParseError(format!(
                 "Unrecognized data type: {}",
                 data_type
             ))),
         },
-        None => Err(Error::ParseError(
-            "Key \"datatype\" is not a string".to_owned(),
-        )),
+        None => Err(Error::ParseError(format!(
+            "Key \"datatype\" not found in {}",
+            name
+        ))),
     }
 }
 

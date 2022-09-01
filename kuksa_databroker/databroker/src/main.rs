@@ -24,7 +24,6 @@ use clap::{Arg, Command};
 
 use databroker::grpc_service;
 use databroker::types;
-use databroker::broker::{DataBroker};
 use databroker::{broker, vss};
 
 // Hardcoded datapoints
@@ -104,22 +103,6 @@ fn init_logging() {
         .expect("Unable to install global logging subscriber");
 
     info!("{}", output);
-}
-
-async fn apply_default(id: i32, val: &serde_json::Value, broker : &DataBroker) {
-    let res = broker.set_datapoints(&[( //This need logic for all the types :-/
-        id,
-        broker::DataPoint {
-            ts:  std::time::SystemTime::now(), 
-            value: types::DataValue::String("he".to_string()),
-        },
-    )])
-    .await;
-
-    match res {
-        Ok(_t) => info!("Yeay"),
-        Err(_e) => info!("Error applying default"), //No easy way to print error
-    }
 }
 
 async fn shutdown_handler() {
@@ -258,27 +241,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         for entry in entries {
             debug!("Adding {}", entry.name);
 
-            if !entry.default.is_none() {
-                info!("Setting {} to default value {}",entry.name, entry.default.as_ref().unwrap());
-            }
-            let _id = broker
+            let id = broker
                 .register_datapoint(
-                    entry.name,
+                    entry.name.clone(),
                     entry.data_type,
                     databroker::types::ChangeType::OnChange,
                     entry.description.unwrap_or_else(|| "".to_owned()),
                 )
                 .await;
 
-                if !entry.default.is_none() {
-                    match _id {
-                        Ok(id) => {
-                            apply_default(id, &entry.default.unwrap(), &broker).await;
-                        },
-                        Err(_e) => debug!("Kaput"),
+            if let (Ok(id), Some(default)) = (id, entry.default) {
+                let ids = &[(
+                    id,
+                    broker::DataPoint {
+                        ts: std::time::SystemTime::now(),
+                        value: default,
+                    },
+                )];
+                if let Err(errors) = broker.set_datapoints(ids).await {
+                    // There's only one error (since we're only trying to set one)
+                    if let Some(error) = errors.get(0) {
+                        info!(
+                            "Failed to set default value for {}: {:?}",
+                            entry.name, error.1
+                        );
                     }
                 }
-
+            }
         }
     }
 
