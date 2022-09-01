@@ -27,49 +27,49 @@ on:
 
 
 jobs:
-#  lint:
-#    name: Lint
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - uses: actions/checkout@v3
-#      - name: cargo fmt
-#        working-directory: ${{github.workspace}}
-#        run: cargo fmt -- --check
-#      - name: cargo clippy
-#        working-directory: ${{github.workspace}}
-#        run: cargo clippy --all-targets -- -W warnings -D warnings
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
 
-#  test:
-#    name: Test
-#    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: cargo fmt
+        working-directory: ${{github.workspace}}
+        run: cargo fmt -- --check
+      - name: cargo clippy
+        working-directory: ${{github.workspace}}
+        run: cargo clippy --all-targets -- -W warnings -D warnings
 
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: actions-rs/install@v0.1
-#        with:
-#          crate: cargo-tarpaulin
-#          version: latest
+  test:
+    name: Test
+    runs-on: ubuntu-latest
 
-#      - uses: actions-rs/install@v0.1
-#        with:
-#          crate: cross
-#          version: latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-tarpaulin
+          version: latest
 
-#      - uses: actions-rs/install@v0.1
-#        with:
-#          crate: cargo-strip
-#          version: latest
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cross
+          version: latest
 
-#      - uses: actions-rs/install@v0.1
-#        with:
-#          crate: cargo2junit
-#          version: latest
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-strip
+          version: latest
 
-#      - name: Run Tests
-#        working-directory: ${{github.workspace}}
-#        run: |
-#          cargo test --all-targets -- -Z unstable-options --report-time --format json | cargo2junit > results.xml;
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cargo2junit
+          version: latest
+
+      - name: Run Tests
+        working-directory: ${{github.workspace}}
+        run: |
+          cargo test --all-targets -- -Z unstable-options --report-time --format json | cargo2junit > results.xml;
 
       # - name: Publish test results as PR comment
       #   uses: EnricoMi/publish-unit-test-result-action@v1
@@ -79,21 +79,21 @@ jobs:
       #     github_token: ${{ secrets.GITHUB_TOKEN }}
       #     files: results.xml
 
-#      - name: Upload testing report
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: Unit test results
-#          path: results.xml
+      - name: Upload testing report
+        uses: actions/upload-artifact@v3
+        with:
+          name: Unit test results
+          path: results.xml
 
-#      - name: Run code coverage
-#        run: |
-#          cargo tarpaulin -o Xml
+      - name: Run code coverage
+        run: |
+          cargo tarpaulin -o Xml
 
-#      - name: Upload coverage report
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: Code coverage report
-#          path: cobertura.xml
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: Code coverage report
+          path: cobertura.xml
 
       # - name: Publish coverage report as comment
       #   uses: 5monkeys/cobertura-action@v12
@@ -108,8 +108,10 @@ jobs:
     uses: ./.github/workflows/check_push_rights.yml
     secrets: inherit
 
+# Run on selfhosted, becasue our runner has native ARM build in a remote
+# builder (no need for qemu
   build-container:
-    runs-on: [ ubuntu-latest ]
+    runs-on: [ self-hosted ]
     needs: checkrights
 
     steps:
@@ -132,13 +134,13 @@ jobs:
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
           
-    #only needed for runners without buildx setup, will be slow
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
+    # only needed for runners without buildx setup, will be slow 
+    #- name: Set up QEMU
+    #  uses: docker/setup-qemu-action@v2
       
-    - name: Set up Docker Buildx
-      id: buildx
-      uses: docker/setup-buildx-action@v2
+    #- name: Set up Docker Buildx
+    #  id: buildx
+    #  uses: docker/setup-buildx-action@v2
 
     - name: Log in to the Container registry
       if: needs.checkrights.outputs.have_secrets == 'true'
@@ -155,7 +157,7 @@ jobs:
       with:
         platforms: |
           linux/amd64
-        #  linux/arm64
+          linux/arm64
         file: ./kuksa_databroker/Dockerfile
         context: .
         push: true
