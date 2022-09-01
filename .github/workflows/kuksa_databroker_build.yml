@@ -27,49 +27,49 @@ on:
 
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
+#  lint:
+#    name: Lint
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - uses: actions/checkout@v3
+#      - name: cargo fmt
+#        working-directory: ${{github.workspace}}
+#        run: cargo fmt -- --check
+#      - name: cargo clippy
+#        working-directory: ${{github.workspace}}
+#        run: cargo clippy --all-targets -- -W warnings -D warnings
 
-    steps:
-      - uses: actions/checkout@v3
-      - name: cargo fmt
-        working-directory: ${{github.workspace}}
-        run: cargo fmt -- --check
-      - name: cargo clippy
-        working-directory: ${{github.workspace}}
-        run: cargo clippy --all-targets -- -W warnings -D warnings
+#  test:
+#    name: Test
+#    runs-on: ubuntu-latest
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: actions-rs/install@v0.1
+#        with:
+#          crate: cargo-tarpaulin
+#          version: latest
 
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-tarpaulin
-          version: latest
+#      - uses: actions-rs/install@v0.1
+#        with:
+#          crate: cross
+#          version: latest
 
-      - uses: actions-rs/install@v0.1
-        with:
-          crate: cross
-          version: latest
+#      - uses: actions-rs/install@v0.1
+#        with:
+#          crate: cargo-strip
+#          version: latest
 
-      - uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-strip
-          version: latest
+#      - uses: actions-rs/install@v0.1
+#        with:
+#          crate: cargo2junit
+#          version: latest
 
-      - uses: actions-rs/install@v0.1
-        with:
-          crate: cargo2junit
-          version: latest
-
-      - name: Run Tests
-        working-directory: ${{github.workspace}}
-        run: |
-          cargo test --all-targets -- -Z unstable-options --report-time --format json | cargo2junit > results.xml;
+#      - name: Run Tests
+#        working-directory: ${{github.workspace}}
+#        run: |
+#          cargo test --all-targets -- -Z unstable-options --report-time --format json | cargo2junit > results.xml;
 
       # - name: Publish test results as PR comment
       #   uses: EnricoMi/publish-unit-test-result-action@v1
@@ -79,21 +79,21 @@ jobs:
       #     github_token: ${{ secrets.GITHUB_TOKEN }}
       #     files: results.xml
 
-      - name: Upload testing report
-        uses: actions/upload-artifact@v3
-        with:
-          name: Unit test results
-          path: results.xml
+#      - name: Upload testing report
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: Unit test results
+#          path: results.xml
 
-      - name: Run code coverage
-        run: |
-          cargo tarpaulin -o Xml
+#      - name: Run code coverage
+#        run: |
+#          cargo tarpaulin -o Xml
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v3
-        with:
-          name: Code coverage report
-          path: cobertura.xml
+#      - name: Upload coverage report
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: Code coverage report
+#          path: cobertura.xml
 
       # - name: Publish coverage report as comment
       #   uses: 5monkeys/cobertura-action@v12
@@ -151,15 +151,17 @@ jobs:
     - name: Build kuksa.val databroker container and push to ghcr.io
       id: ghcr-build
       if: needs.checkrights.outputs.have_secrets == 'true'
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
         platforms: |
           linux/amd64
-          linux/arm64
+        #  linux/arm64
         file: ./kuksa_databroker/Dockerfile
         context: .
         push: true
-        tags: ${{ steps.meta.outputs.tags }}, "ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h"
+        tags: |
+          ${{ steps.meta.outputs.tags }}
+          ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h
         labels: ${{ steps.meta.outputs.labels }}
 
     - name: Build ephemereal kuksa.val databroker container and push to ttl.sh
