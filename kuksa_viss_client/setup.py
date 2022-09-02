@@ -31,7 +31,7 @@ setuptools.setup(
     package_dir={'kuksa_viss_client': '.' },
     packages=['kuksa_viss_client'],
     data_files=[
-        ("kuksa_certificates", glob('../kuksa_certificates/C*')), #Cleint and CA.pem
+        ("kuksa_certificates", glob('../kuksa_certificates/C*')), #Client and CA.pem
         ("kuksa_certificates/jwt", glob('../kuksa_certificates/jwt/*')),
         ],
     package_data={ "kuksa_viss_client": ["logo"] },
