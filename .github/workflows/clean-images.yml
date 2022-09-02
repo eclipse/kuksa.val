@@ -39,7 +39,47 @@ jobs:
          name: kuksa.val/kuksa-client
          token: ${{ secrets.PUSH_CONTAINER_TOKEN }}
          tag: pr-${{github.event.pull_request.number}}
+         
+   ##One time cleanup from previous failures :)
+    - name: Try delete db 344
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/databroker
+         token: ${{ secrets.PUSH_CONTAINER_TOKEN }}
+         tag: pr-344
+         
+    - name: Try delete kvs 283
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/kuksa-val
+         token: ${{ secrets.PUSH_CONTAINER_TOKEN }}
+         tag: pr-283
 
+    - name: Try delete kvs 344
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/kuksa-val
+         token: ${{ secrets.PUSH_CONTAINER_TOKEN }}
+         tag: pr-344
+             
+    - name: Try delete kvs 245
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/kuksa-val
+         token: ${{ secrets.PUSH_CONTAINER_TOKEN }}
+         tag: pr-345
+
+
+         
+         
     - name: Finish
       run: echo "Any temp images in GHCR shall be gone" 
          
