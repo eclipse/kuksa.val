@@ -4,26 +4,64 @@
 `kuksa.val` is a part of the opensource project [eclipse kuksa](https://www.eclipse.org/kuksa/).
 More about `kuksa.val` can be found under the root [README.md](../README.md).
 
-## Installation
+## Introduction
+
+`kuksa_viss_client` is a command-line test client which can be used to interact with the [KUKSA val server](../kuksa-val-server/README.md)
+
+## Installing and Starting the client
+
+The fastest way to start using the kuksa-viss-client is to install a pre-built version with pip.
+Instructions on how to build and run locally can be found further down in this document.
+
 ```
 pip install kuksa-viss-client
 ```
 
-## Test client
-`kuksa_viss_client` is a command-line test client.
+
 After you have installed the kuksa-viss-client package via pip you can run the test client directly by executing
 
 ```bash
 $ kuksa_viss_client
 ```
+If everything works as expected and the server can be contacted you will get an output similar to below.
 
-![try kuksa_viss_client out](../doc/pictures/testclient_basic.gif "test client usage")
 
+```bash
+Welcome to kuksa viss client version <some_version>
+
+                  `-:+o/shhhs+:`                  
+                ./oo/+o/``.-:ohhs-                
+              `/o+-  /o/  `..  :yho`              
+              +o/    /o/  oho    ohy`             
+             :o+     /o/`+hh.     sh+             
+             +o:     /oo+o+`      /hy             
+             +o:     /o+/oo-      +hs             
+             .oo`    oho `oo-    .hh:             
+              :oo.   oho  -+:   -hh/              
+               .+o+-`oho     `:shy-               
+                 ./o/ohy//+oyhho-                 
+                    `-/+oo+/:.             
+
+Default tokens directory: /some/path/kuksa_certificates/jwt
+
+connectj to wss://127.0.0.1:8090
+Websocket connected securely.
+Test Client>
+```
+
+The next step is to authorize against the server.
 The jwt tokens for testing can either be found under [kuksa_certificates/jwt](../kuksa_certificates/jwt) or you can also use following command inside `kuksa_viss_client` to find the via `pip` installed certificate directory.
 
 ```bash
 Test Client> printTokenDir
 ```
+Select one of the tokens and use the `authorize` command like below. 
+
+```bash
+Test Client> authorize /some/path/kuksa_certificates/jwt/super-admin.json.token
+```
+
+## Usage Instructions
 
 Refer help for further information
 ```
@@ -54,6 +92,12 @@ updateMetaData      Update MetaData of a given path
 updateVISSTree      Update VISS Tree Entry
 ```
 
+This is an example showing how some of the commands can be used:
+
+![try kuksa_viss_client out](../doc/pictures/testclient_basic.gif "test client usage")
+
+### Updating VSS Structure
+
 Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](../doc/liveUpdateVSSTree.md).
 
 **Note**: You can also use `setValue` to change the value of an array, but the value should not contains any non-quoted spaces. Consider the following examples:
@@ -78,13 +122,41 @@ usage: setValue [-h] Path Value
 setValue: error: unrecognized arguments: dtc2 ]
 ```
 
-#### Docker
-You can build a docker image of the testclient using the [`Dockerfile`](./Dockerfile). Not the most effcient way to pack a small python script, but it is easy to get started. The Dockerfile needs to be executed on the parent directory (so it include the needed certificates and `pip` package configuration).
+
+## Building and Running a local version
+
+For development purposes it may be necessary to customize the code for the client and run a locally built version.
+The commands below can be used for that purpose. this will assure that local `*.py` files will be used when running the client.
+
+```bash
+cd kuksa_viss_client
+pipenv shell
+pipenv lock
+pipenv sync
+python __main.py__
+```
+
+After testing you can use `quit` to exit the client and `exit`to exit the pipenv shell. In subsequent runs some parts can be skipped:
+
+```bash
+cd kuksa_viss_client
+pipenv shell
+python __main.py__
+```
+
+## Using Docker
+You can build a docker image of the testclient using the [`Dockerfile`](./Dockerfile). Not the most effcient way to pack a small python script, but it is easy to get started. The Dockerfile needs to be executed on the parent directory (so it include the needed certificates and `pip` package configuration). 
+
+
+```bash
+cd /some/dir/kuksa.val
+docker build -f kuksa_viss_client/Dockerfile -t kuksa-client:latest .
+```
 
 To run the builded image:
 
 ```
-docker run --rm -it --net=host <image-id-from docker-build>
+docker run --rm -it --net=host kuksa-client:latest
 ```
 
 `--rm` ensures we do not keep the docker continer lying aroind after closing the vss-testclient and `--net=host` makes sure you can reach locally running kuksa.val-server or kuksa-val docker with port forwarding on the host using the default `127.0.0.1` address.
