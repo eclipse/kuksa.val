@@ -22,7 +22,7 @@ jobs:
 
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with: 
         submodules: recursive
 
@@ -46,12 +46,12 @@ jobs:
       uses: docker/login-action@v2
       with:
           registry: ${{ needs.checkrights.outputs.registry }}
-          username: kuksa-bot
-          password: ${{ secrets.PUSH_CONTAINER_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build kuksa-val docker and push to ghcr.io
+    - name: Build kuksa.val server container and push to ghcr.io
       if: needs.checkrights.outputs.have_secrets == 'true'
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
         platforms: |
           linux/amd64
@@ -59,12 +59,14 @@ jobs:
         file: ./kuksa-val-server/docker/Dockerfile
         context: .
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
+        tags: | 
+          ${{ steps.meta.outputs.tags }}
+          ttl.sh/kuksa.val/kuksa-server-${{github.sha}}:1h
         labels: ${{ steps.meta.outputs.labels }}
 
     - name: Build ephemereal kuksa-val docker and push to ttl.sh
       if: needs.checkrights.outputs.have_secrets == 'false'
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
         platforms: |
           linux/amd64
@@ -72,5 +74,5 @@ jobs:
         file: ./kuksa-val-server/docker/Dockerfile
         context: .
         push: true
-        tags: "ttl.sh/kuksa.val/kuksa-server:8h"
+        tags: ttl.sh/kuksa.val/kuksa-server-${{github.sha}}:1h
         labels: ${{ steps.meta.outputs.labels }}
