@@ -10,7 +10,8 @@
 
 FROM python:3.10-alpine as build
 RUN apk update && apk add git alpine-sdk linux-headers
-ADD . /kuksa.val
+COPY kuksa_viss_client /kuksa.val/kuksa_viss_client/
+COPY kuksa_certificates /kuksa.val/kuksa_certificates/
 WORKDIR /kuksa.val/kuksa_viss_client
 RUN pip install --upgrade pip build grpcio grpcio-tools
 RUN rm -rf dist 
