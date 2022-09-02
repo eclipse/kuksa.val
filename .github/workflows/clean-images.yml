@@ -41,6 +41,15 @@ jobs:
          tag: pr-${{github.event.pull_request.number}}
          
    ##One time cleanup from previous failures :)
+    - name: Try delete db 347
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/databroker
+         token: ${{ secrets.GITHUB_TOKEN }}
+         tag: pr-347
+         
     - name: Try delete db 344
       uses: bots-house/ghcr-delete-image-action@v1.0.0
       continue-on-error: true
