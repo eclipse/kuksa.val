@@ -20,5 +20,5 @@ echo -e "\nCreating public key"
 openssl rsa -in jwt.key -pubout -outform PEM -out jwt.key.pub
 
 echo -e '\nYou can use the PRIVATE key "jwt.key" to generate new tokens using https://jwt.io or the "createToken.py" script.'
-echo 'You need to give the  PUBLIC key "jwt.key.pub" to the kuksa.val server, so it can verify correctly signed JWT tokens.'
+echo 'You need to give the PUBLIC key "jwt.key.pub" to the kuksa.val server, so it can verify correctly signed JWT tokens.'
 
