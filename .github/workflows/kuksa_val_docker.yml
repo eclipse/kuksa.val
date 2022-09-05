@@ -10,6 +10,7 @@ on:
     - "kuksa_databroker/**"
     - "Cargo.*"
     - "Cross.toml"
+  workflow_dispatch:
     
 jobs:
   checkrights:
