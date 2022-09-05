@@ -5,20 +5,90 @@ on:
   pull_request:
     types: [closed]
  
-env:
-  REGISTRY: ghcr.io
-  GPSIMAGE_NAME: ${{ github.repository }}/gps
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     
     steps:    
-    - name: Delete ephemereal GPS images from registry
+    - name: Try delete kuksa.val databroker PR container from GHCR
       uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
       with:
          owner: eclipse
-         name: kuksa.val.feeders/gps
-         token: ${{ secrets.PUSH_CONTAINER_TOKEN }}
+         name: kuksa.val/databroker
+         token: ${{ secrets.GITHUB_TOKEN }}
          tag: pr-${{github.event.pull_request.number}}
+
+
+    - name: Try delete kuksa.val server PR container from GHCR
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/kuksa-val
+         token: ${{ secrets.GITHUB_TOKEN }}
+         tag: pr-${{github.event.pull_request.number}}
+
+
+    - name: Try delete kuksa.val client PR container from GHCR
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/kuksa-client
+         token: ${{ secrets.GITHUB_TOKEN }}
+         tag: pr-${{github.event.pull_request.number}}
+         
+   ##One time cleanup from previous failures :)
+    - name: Try delete kvs 347
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/kuksa-val
+         token: ${{ secrets.GITHUB_TOKEN }}
+         tag: pr-347
+         
+    - name: Try delete db 344
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/databroker
+         token: ${{ secrets.GITHUB_TOKEN }}
+         tag: pr-344
+         
+    - name: Try delete kvs 283
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/kuksa-val
+         token: ${{ secrets.GITHUB_TOKEN }}
+         tag: pr-283
+
+    - name: Try delete kvs 344
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/kuksa-val
+         token: ${{ secrets.GITHUB_TOKEN }}
+         tag: pr-344
+             
+    - name: Try delete kvs 245
+      uses: bots-house/ghcr-delete-image-action@v1.0.0
+      continue-on-error: true
+      with:
+         owner: eclipse
+         name: kuksa.val/kuksa-val
+         token: ${{ secrets.GITHUB_TOKEN }}
+         tag: pr-345
+
+
+         
+         
+    - name: Finish
+      run: echo "Any temp images in GHCR shall be gone" 
          
