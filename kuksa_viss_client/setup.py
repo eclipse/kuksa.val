@@ -19,22 +19,18 @@ class BuildCommand(distutils.command.build.build):
 
 
 setuptools.setup(
-    version_config={
+    setuptools_git_versioning={
         "template": "{tag}",
         "dev_template": "{tag}-{ccount}",
-        "dirty_template": "{tag}-{ccount}-dirty",
+        "dirty_template": "{tag}-{ccount}",
         "starting_version": "0.1.6",
         "version_callback": None,
         "version_file": None,
         "count_commits_from_version_file": False
     },
-    package_dir={'kuksa_viss_client': '.' },
-    packages=['kuksa_viss_client'],
-    data_files=[
-        ("kuksa_certificates", glob('../kuksa_certificates/C*')), #Client and CA.pem
-        ("kuksa_certificates/jwt", glob('../kuksa_certificates/jwt/*')),
-        ],
-    package_data={ "kuksa_viss_client": ["logo"] },
+    package_dir={'kuksa_viss_client': '.' , 'kuksa_certificates': '../kuksa_certificates'},
+    packages=['kuksa_viss_client', 'kuksa_certificates'],
+    package_data={ "kuksa_viss_client": ["logo"], "kuksa_certificates": ["*", "jwt/*"]},
     setup_requires=['setuptools-git-versioning', 'grpcio', 'grpcio-tools'],
     cmdclass={
     'build': BuildCommand,
