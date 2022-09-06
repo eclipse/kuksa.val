@@ -51,9 +51,9 @@ service VAL {
 
 // Describes which data we want
 message GetDatapoint {
-  string path  = 1;
-  View view    = 2;
-  Field fields = 3;
+  string path           = 1;
+  View view             = 2;
+  repeated Field fields = 3;
 }
 
 // Request a number of VSS datapoints.
