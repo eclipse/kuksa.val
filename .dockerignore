@@ -1,2 +1,4 @@
 build
 artifacts
+target
+.venv

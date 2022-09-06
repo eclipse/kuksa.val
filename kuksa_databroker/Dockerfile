@@ -20,17 +20,18 @@ RUN rustup component add rustfmt
 RUN mkdir /build
 WORKDIR /build
 
-ADD  kuksa_databroker ./
+ADD kuksa_databroker kuksa_databroker
+ADD proto proto
 
-WORKDIR /build/databroker
+WORKDIR /build/kuksa_databroker/databroker
 
 ENV RUSTFLAGS='-C link-arg=-s'
-RUN cargo build --bin databroker --release 
+RUN cargo build --bin databroker --release
 
 
 FROM  debian:buster-slim
 
-COPY --from=builder /build/databroker/target/release/databroker /app/databroker
+COPY --from=builder /build/kuksa_databroker/databroker/target/release/databroker /app/databroker
 
 ADD ./data/vss-core/vss_release_3.0.json vss_release_3.0.json
 
