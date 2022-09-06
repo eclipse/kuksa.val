@@ -30,15 +30,15 @@ option go_package = "/kuksa_grpc_proto";
 // that the client can use instead of auth-token in subsequent calls.
 
 service VAL {
-  //  Get datapoints
+  // Get entries
   rpc Get(GetRequest) returns (GetResponse);
 
-  // Set datapoints
+  // Set entries
   rpc Set(SetRequest) returns (SetResponse);
 
-  // Subscribe to a set of data points
+  // Subscribe to a set of entries
   //
-  // Returns a stream of replies.
+  // Returns a stream of notifications.
   //
   // InvalidArgument is returned if the request is malformed.
   rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
@@ -49,47 +49,47 @@ service VAL {
   rpc GetServerInfo(GetServerInfoRequest) returns (GetServerInfoResponse);
 }
 
-// Describes which data we want
-message GetDatapoint {
+// Define which data we want
+message EntryRequest {
   string path           = 1;
   View view             = 2;
   repeated Field fields = 3;
 }
 
-// Request a number of VSS datapoints.
+// Request a set of entries.
 message GetRequest {
-  repeated GetDatapoint datapoints = 1;
+  repeated EntryRequest entries = 1;
 }
 
 // Global errors are specified in `error`.
-// Errors for individual datapoints are specified in `errors`.
+// Errors for individual entries are specified in `errors`.
 message GetResponse {
-  repeated Datapoint datapoints  = 1;
-  repeated DatapointError errors = 2;
+  repeated DataEntry entries     = 1;
+  repeated DataEntryError errors = 2;
   Error error                    = 3;
 }
 
-// Describes which data we want to set
-message SetDatapoint {
+// Define the data we want to set
+message EntryUpdate {
   string path           = 1;
-  Datapoint datapoint   = 2;
+  DataEntry entry       = 2;
   repeated Field fields = 3;
 }
 
-// A list of datapoints to be set
+// A list of entries to be updated
 message SetRequest {
-  repeated SetDatapoint datapoints = 1;
+  repeated EntryUpdate updates = 1;
 }
 
 // Global errors are specified in `error`.
-// Errors for individual datapoints are specified in `errors`.
+// Errors for individual entries are specified in `errors`.
 message SetResponse {
-  Error error                              = 1;
-  repeated DatapointError datapoint_errors = 2;
+  Error error                    = 1;
+  repeated DataEntryError errors = 2;
 }
 
-// Describes what to subscribe to
-message SubscribeDatapoint {
+// Define what to subscribe to
+message SubscribeEntry {
   string path           = 1;
   View view             = 2;
   repeated Field fields = 3;
@@ -97,19 +97,19 @@ message SubscribeDatapoint {
 
 // Subscribe to changes in datapoints.
 message SubscribeRequest {
-  repeated SubscribeDatapoint datapoints = 1;
+  repeated SubscribeEntry entries = 1;
 }
 
-// The updated datapoint
+// The updated entry
 // `fields` specify which fields where changed.
-message UpdatedDatapoint {
-  Datapoint datapoint   = 1;
+message ChangeNotification {
+  DataEntry entry       = 1;
   repeated Field fields = 2;
 }
 
 // A subscription response
 message SubscribeResponse {
-  repeated UpdatedDatapoint datapoints = 1;
+  repeated ChangeNotification notifications = 1;
 }
 
 message GetServerInfoRequest {
