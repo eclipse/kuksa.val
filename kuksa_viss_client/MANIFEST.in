@@ -1,4 +1,3 @@
-recursive-include ../kuksa_certificates *
 include  *.py
-includo logo
+include logo
 global-exclude *.pyc
