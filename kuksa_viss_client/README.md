@@ -1,12 +1,12 @@
 # Kuksa VISS Client
-![kuksa.val Logo](../doc/pictures/logo.png)
+![kuksa.val Logo](https://raw.githubusercontent.com/eclipse/kuksa.val/0.2.5/doc/pictures/logo.png)
 
 `kuksa.val` is a part of the opensource project [eclipse kuksa](https://www.eclipse.org/kuksa/).
-More about `kuksa.val` can be found under the root [README.md](../README.md).
+More about `kuksa.val` can be found in the [repository](https://github.com/eclipse/kuksa.val).
 
 ## Introduction
 
-`kuksa_viss_client` is a command-line test client which can be used to interact with the [KUKSA val server](../kuksa-val-server/README.md)
+`kuksa_viss_client` is a command-line test client which can be used to interact with the [KUKSA val server](https://github.com/eclipse/kuksa.val/tree/0.2.5/kuksa-val-server)
 
 ## Installing and Starting the client
 
@@ -50,7 +50,7 @@ Test Client>
 ```
 
 The next step is to authorize against the server.
-The jwt tokens for testing can either be found under [kuksa_certificates/jwt](../kuksa_certificates/jwt) or you can also use following command inside `kuksa_viss_client` to find the via `pip` installed certificate directory.
+The jwt tokens for testing can either be found under [kuksa_certificates/jwt](https://github.com/eclipse/kuksa.val/tree/0.2.5/kuksa_certificates/jwt) or you can also use following command inside `kuksa_viss_client` to find the via `pip` installed certificate directory.
 
 ```bash
 Test Client> printTokenDir
@@ -94,11 +94,11 @@ updateVISSTree      Update VISS Tree Entry
 
 This is an example showing how some of the commands can be used:
 
-![try kuksa_viss_client out](../doc/pictures/testclient_basic.gif "test client usage")
+![try kuksa_viss_client out](https://raw.githubusercontent.com/eclipse/kuksa.val/0.2.5/doc/pictures/testclient_basic.gif "test client usage")
 
 ### Updating VSS Structure
 
-Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](../doc/liveUpdateVSSTree.md).
+Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](https://github.com/eclipse/kuksa.val/blob/0.2.5/doc/liveUpdateVSSTree.md).
 
 **Note**: You can also use `setValue` to change the value of an array, but the value should not contains any non-quoted spaces. Consider the following examples:
 
