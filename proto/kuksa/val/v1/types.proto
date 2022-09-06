@@ -48,10 +48,8 @@ message Datapoint {
   // The value of the datapoint
   Value value = 2;  // [field: FIELD_VALUE]
 
-  // Actuator target (only used if the Datapoint is an actuator)
-  oneof optional_actuator_target {
-    Value actuator_target = 3;  // [field: FIELD_ACTUATOR_TARGET]
-  }
+  // Actuator target (only used if Datapoint is an actuator)
+  Value actuator_target = 3;  // [field: FIELD_ACTUATOR_TARGET]
 
   // Metadata for this datapoint
   Metadata metadata = 10;  // [field: FIELD_METADATA]
@@ -63,38 +61,26 @@ message Metadata {
   // NOTE: protobuf doesn't have int8, int16, uint8 or uint16 so the actual
   // value will be serialized as int32 and uint32 respectively
   // (in the `value` field).
-  oneof optional_data_type {
-    DataType data_type = 11;  // [field: FIELD_METADATA__DATA_TYPE]
-  }
+  optional DataType data_type = 11;  // [field: FIELD_METADATA__DATA_TYPE]
 
   // Describes the meaning and content of the datapoint.
-  oneof optional_description {
-    string description = 12;  // [field: FIELD_METADATA__DESCRIPTION]
-  }
+  optional string description = 12;  // [field: FIELD_METADATA__DESCRIPTION]
 
   // Entry type
-  oneof optional_entry_type {
-    EntryType entry_type = 13;  // [field: FIELD_METADATA__ENTRY_TYPE]
-  }
+  optional EntryType entry_type = 13;  // [field: FIELD_METADATA__ENTRY_TYPE]
 
   // [optional]
   // A comment can be used to provide additional informal information
   // on a datapoint.
-  oneof optional_comment {
-    string comment = 14;  // [field: FIELD_METADATA__COMMENT]
-  }
+  optional string comment = 14;  // [field: FIELD_METADATA__COMMENT]
 
   // [optional]
   // Whether this datapoint is deprecated.
-  oneof optional_deprecation {
-    string deprecation = 15;  // [field: FIELD_METADATA__DEPRECATION]
-  }
+  optional string deprecation = 15;  // [field: FIELD_METADATA__DEPRECATION]
 
   // [optional]
   // The unit of measurement
-  oneof optional_unit {
-    string unit = 16;  // [field: FIELD_METADATA__UNIT]
-  }
+  optional string unit = 16;  // [field: FIELD_METADATA__UNIT]
 
   // [optional]
   // Restrict which values are allowed.
@@ -145,44 +131,29 @@ message ValueRestriction {
 }
 
 message ValueRestrictionInt {
-  oneof optional_min {
-    sint64 min = 1;
-  }
-  oneof optional_max {
-    sint64 max = 2;
-  }
+  optional sint64 min            = 1;
+  optional sint64 max            = 2;
   repeated sint64 allowed_values = 3;
 }
 
 message ValueRestrictionUint {
-  oneof optional_min {
-    uint64 min = 1;
-  }
-  oneof optional_max {
-    uint64 max = 2;
-  }
+  optional uint64 min            = 1;
+  optional uint64 max            = 2;
   repeated uint64 allowed_values = 3;
 }
 
 message ValueRestrictionFloat {
-  oneof optional_min {
-    double min = 1;
-  }
-  oneof optional_max {
-    double max = 2;
-  }
+  optional double min = 1;
+  optional double max = 2;
 
   // allowed for doubles/floats not recommended
   repeated double allowed_values = 3;
 }
 
 message ValueRestrictionDouble {
-  oneof optional_min {
-    double min = 1;
-  }
-  oneof optional_max {
-    double max = 2;
-  }
+  optional double min = 1;
+  optional double max = 2;
+
   repeated double allowed_values = 3;
 }
 
