@@ -125,7 +125,6 @@ class KuksaWsComm:
         req = {}
         req["action"]= "authorize"
         req["tokens"] = token
-        print(f"Sending token {token}")
         return self._sendReceiveMsg(req, timeout)
 
     # Update VSS Tree Entry 
