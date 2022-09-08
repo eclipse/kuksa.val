@@ -487,7 +487,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
     }
 }
 
-fn convert_datapoint_stream_to_subscribe_stream(
+fn convert_to_proto_stream(
     input: impl Stream<Item = broker::QueryResponse>,
 ) -> impl Stream<Item = Result<proto::SubscribeReply, Status>> {
     input.map(move |item| {
@@ -552,9 +552,9 @@ impl proto::broker_server::Broker for broker::DataBroker {
         request: tonic::Request<proto::SubscribeRequest>,
     ) -> Result<tonic::Response<Self::SubscribeStream>, tonic::Status> {
         let query = request.into_inner().query;
-        match self.subscribe(&query).await {
+        match self.subscribe_query(&query).await {
             Ok(stream) => {
-                let stream = convert_datapoint_stream_to_subscribe_stream(stream);
+                let stream = convert_to_proto_stream(stream);
                 debug!("Subscribed to new query");
                 Ok(Response::new(Box::pin(stream)))
             }
