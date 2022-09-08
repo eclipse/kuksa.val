@@ -20,7 +20,7 @@ use tokio::sync::{broadcast, mpsc, RwLock};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::Stream;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
@@ -57,6 +57,12 @@ pub struct Entry {
     pub datapoint: Datapoint,
     pub actuator_target: Option<DataValue>,
     pub metadata: Metadata,
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub enum Field {
+    Datapoint,
+    ActuatorTarget,
 }
 
 #[derive(Default)]
@@ -350,13 +356,20 @@ impl Entry {
         }
     }
 
-    pub fn apply(&mut self, update: EntryUpdate) {
+    pub fn apply(&mut self, update: EntryUpdate) -> HashSet<Field> {
+        let mut updated = HashSet::new();
         if let Some(datapoint) = update.datapoint {
             self.datapoint = datapoint;
+            updated.insert(Field::Datapoint);
         }
         if let Some(actuator_target) = update.actuator_target {
             self.actuator_target = actuator_target;
+            updated.insert(Field::ActuatorTarget);
         }
+
+        // TODO: Apply the other fields as well
+
+        updated
     }
 }
 
@@ -394,17 +407,20 @@ impl Subscriptions {
 impl Subscription {
     fn generate_input(
         &self,
-        changed: Option<&Vec<i32>>,
+        changed: Option<&Vec<(i32, HashSet<Field>)>>,
         all: &Entries,
     ) -> Option<impl query::ExecutionInput> {
         let id_used_in_query = {
             let mut query_uses_id = false;
             match changed {
                 Some(changed) => {
-                    for id in changed {
+                    for (id, fields) in changed {
                         if let Some(entry) = all.get_by_id(*id) {
-                            if self.query.input_spec.contains(&entry.metadata.path) {
+                            if self.query.input_spec.contains(&entry.metadata.path)
+                                && fields.contains(&Field::Datapoint)
+                            {
                                 query_uses_id = true;
+                                break;
                             }
                         }
                     }
@@ -489,14 +505,14 @@ impl Entries {
         &mut self,
         path: impl AsRef<str>,
         update: EntryUpdate,
-    ) -> Result<EntryUpdate, UpdateError> {
+    ) -> Result<HashSet<Field>, UpdateError> {
         match self.path_to_id.get(path.as_ref()) {
             Some(id) => self.update(*id, update),
             None => Err(UpdateError::NotFound),
         }
     }
 
-    pub fn update(&mut self, id: i32, update: EntryUpdate) -> Result<EntryUpdate, UpdateError> {
+    pub fn update(&mut self, id: i32, update: EntryUpdate) -> Result<HashSet<Field>, UpdateError> {
         match self.entries.get_mut(&id) {
             Some(entry) => {
                 // Reduce update to only include changes
@@ -504,8 +520,8 @@ impl Entries {
                 // Validate update
                 match entry.validate(&update) {
                     Ok(_) => {
-                        entry.apply(update.clone());
-                        Ok(update)
+                        let changed_fields = entry.apply(update);
+                        Ok(changed_fields)
                     }
                     Err(err) => Err(err),
                 }
@@ -666,22 +682,25 @@ impl DataBroker {
         let mut entries = self.entries.write().await;
 
         let cleanup_needed = {
-            let ids = updates
+            let updated: Vec<(i32, HashSet<Field>)> = updates
                 .into_iter()
                 .filter_map(|(id, update)| {
                     debug!("setting id {} to {:?}", id, update);
                     match entries.update(id, update) {
-                        Ok(update) => match update.is_empty() {
-                            false => Some(id),
-                            true => None,
-                        },
+                        Ok(updated_fields) => {
+                            if updated_fields.is_empty() {
+                                None
+                            } else {
+                                Some((id, updated_fields))
+                            }
+                        }
                         Err(err) => {
                             errors.push((id, err));
                             None
                         }
                     }
                 })
-                .collect::<Vec<i32>>();
+                .collect();
 
             // Downgrade to reader (to allow other readers) while holding on
             // to a read lock in order to ensure a consistent state while
@@ -691,7 +710,7 @@ impl DataBroker {
             // Notify
             let mut cleanup_needed = false;
             for sub in self.subscriptions.read().await.iter() {
-                if let Some(input) = sub.generate_input(Some(&ids), &entries) {
+                if let Some(input) = sub.generate_input(Some(&updated), &entries) {
                     match sub.notify(&input).await {
                         Ok(()) => {}
                         Err(_) => cleanup_needed = true,
