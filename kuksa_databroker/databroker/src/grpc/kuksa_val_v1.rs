@@ -52,7 +52,7 @@ impl proto::val_server::Val for broker::DataBroker {
                             }
                             fields
                         };
-                        let fields = normalize_view_and_fields(view, fields);
+                        let fields = combine_view_and_fields(view, fields);
                         debug!("Getting fields: {:?}", fields);
                         let proto_entry = proto_entry_from_entry_and_fields(entry, fields);
                         debug!("Getting datapoint: {:?}", proto_entry);
@@ -113,36 +113,17 @@ impl proto::val_server::Val for broker::DataBroker {
                                 }
                             };
                         }
-
-                        // Combine with unspecified view to inherit default behaviour
-                        normalize_view_and_fields(proto::View::Unspecified, fields)
+                        fields
                     };
 
-                    let entry = &request.entry;
-                    debug!("Settings fields: {:?}", fields);
-                    let mut update = broker::EntryUpdate::default();
-                    for field in fields {
-                        match field {
-                            proto::Field::Unspecified => todo!(),
-                            proto::Field::Path => todo!(),
-                            proto::Field::Value => update.set_value_from_proto_entry(entry),
-                            proto::Field::ActuatorTarget => {
-                                update.set_actuator_target_from_proto_entry(entry)
-                            }
-                            proto::Field::Metadata => todo!(),
-                            proto::Field::MetadataDataType => todo!(),
-                            proto::Field::MetadataDescription => todo!(),
-                            proto::Field::MetadataEntryType => todo!(),
-                            proto::Field::MetadataComment => todo!(),
-                            proto::Field::MetadataDeprecation => todo!(),
-                            proto::Field::MetadataUnit => todo!(),
-                            proto::Field::MetadataValueRestriction => todo!(),
-                            proto::Field::MetadataActuator => todo!(),
-                            proto::Field::MetadataSensor => todo!(),
-                            proto::Field::MetadataAttribute => todo!(),
+                    let entry = match &request.entry {
+                        Some(entry) => entry,
+                        None => {
+                            return Err(tonic::Status::invalid_argument("Empty entry".to_string()))
                         }
-                    }
-
+                    };
+                    debug!("Settings fields: {:?}", fields);
+                    let update = broker::EntryUpdate::from_proto_entry(entry, fields);
                     updates.push((id, update));
                 }
                 None => {
@@ -208,24 +189,132 @@ fn proto_entry_from_entry_and_fields(
     entry: broker::Entry,
     fields: HashSet<proto::Field>,
 ) -> proto::DataEntry {
+    let path = entry.metadata.path;
+    let value = match fields.contains(&proto::Field::Value) {
+        true => proto_datapoint_from_datapoint(entry.datapoint),
+        false => None,
+    };
+    let actuator_target = match fields.contains(&proto::Field::ActuatorTarget) {
+        true => match entry.actuator_target {
+            Some(actuator_target) => proto_datapoint_from_value(actuator_target),
+            None => None,
+        },
+        false => None,
+    };
+    let metadata = {
+        let mut metadata = proto::Metadata::default();
+        let mut metadata_is_set = false;
+
+        let all = fields.contains(&proto::Field::Metadata);
+
+        if all || fields.contains(&proto::Field::MetadataDataType) {
+            metadata_is_set = true;
+            metadata.data_type = match entry.metadata.data_type {
+                broker::DataType::String => Some(proto::DataType::String as i32),
+                broker::DataType::Bool => Some(proto::DataType::Boolean as i32),
+                broker::DataType::Int8 => Some(proto::DataType::Int8 as i32),
+                broker::DataType::Int16 => Some(proto::DataType::Int16 as i32),
+                broker::DataType::Int32 => Some(proto::DataType::Int32 as i32),
+                broker::DataType::Int64 => Some(proto::DataType::Int64 as i32),
+                broker::DataType::Uint8 => Some(proto::DataType::Uint8 as i32),
+                broker::DataType::Uint16 => Some(proto::DataType::Uint16 as i32),
+                broker::DataType::Uint32 => Some(proto::DataType::Uint32 as i32),
+                broker::DataType::Uint64 => Some(proto::DataType::Uint64 as i32),
+                broker::DataType::Float => Some(proto::DataType::Float as i32),
+                broker::DataType::Double => Some(proto::DataType::Double as i32),
+                broker::DataType::Timestamp => Some(proto::DataType::Timestamp as i32),
+                broker::DataType::StringArray => Some(proto::DataType::StringArray as i32),
+                broker::DataType::BoolArray => Some(proto::DataType::BooleanArray as i32),
+                broker::DataType::Int8Array => Some(proto::DataType::Int8Array as i32),
+                broker::DataType::Int16Array => Some(proto::DataType::Int16Array as i32),
+                broker::DataType::Int32Array => Some(proto::DataType::Int32Array as i32),
+                broker::DataType::Int64Array => Some(proto::DataType::Int64Array as i32),
+                broker::DataType::Uint8Array => Some(proto::DataType::Uint8Array as i32),
+                broker::DataType::Uint16Array => Some(proto::DataType::Uint16Array as i32),
+                broker::DataType::Uint32Array => Some(proto::DataType::Uint32Array as i32),
+                broker::DataType::Uint64Array => Some(proto::DataType::Uint64Array as i32),
+                broker::DataType::FloatArray => Some(proto::DataType::FloatArray as i32),
+                broker::DataType::DoubleArray => Some(proto::DataType::DoubleArray as i32),
+                broker::DataType::TimestampArray => Some(proto::DataType::TimestampArray as i32),
+            };
+        }
+        if all || fields.contains(&proto::Field::MetadataDescription) {
+            metadata_is_set = true;
+            metadata.description = Some(entry.metadata.description);
+        }
+        if all || fields.contains(&proto::Field::MetadataEntryType) {
+            metadata_is_set = true;
+            metadata.entry_type = match entry.metadata.entry_type {
+                broker::EntryType::Sensor => Some(proto::EntryType::Sensor as i32),
+                broker::EntryType::Attribute => Some(proto::EntryType::Attribute as i32),
+                broker::EntryType::Actuator => Some(proto::EntryType::Actuator as i32),
+            }
+        }
+        if all || fields.contains(&proto::Field::MetadataComment) {
+            metadata_is_set = true;
+            // TODO: Add to Metadata
+            metadata.comment = Some("".to_string())
+        }
+        if all || fields.contains(&proto::Field::MetadataDeprecation) {
+            metadata_is_set = true;
+            // TODO: Add to Metadata
+            metadata.deprecation = Some("".to_string());
+        }
+        if all || fields.contains(&proto::Field::MetadataUnit) {
+            metadata_is_set = true;
+            // TODO: Add to Metadata
+            metadata.unit = Some("".to_string());
+        }
+        if all || fields.contains(&proto::Field::MetadataValueRestriction) {
+            metadata_is_set = true;
+            // TODO: Add to Metadata
+        }
+        if all || fields.contains(&proto::Field::MetadataActuator) {
+            metadata_is_set = true;
+            // TODO: Add to Metadata
+            metadata.entry_specific = match entry.metadata.entry_type {
+                broker::EntryType::Actuator => Some(proto::metadata::EntrySpecific::Actuator(
+                    proto::Actuator::default(),
+                )),
+                broker::EntryType::Sensor | broker::EntryType::Attribute => None,
+            };
+        }
+        if all || fields.contains(&proto::Field::MetadataSensor) {
+            metadata_is_set = true;
+            // TODO: Add to Metadata
+            metadata.entry_specific = match entry.metadata.entry_type {
+                broker::EntryType::Sensor => Some(proto::metadata::EntrySpecific::Sensor(
+                    proto::Sensor::default(),
+                )),
+                broker::EntryType::Attribute | broker::EntryType::Actuator => None,
+            };
+        }
+        if all || fields.contains(&proto::Field::MetadataAttribute) {
+            metadata_is_set = true;
+            // TODO: Add to Metadata
+            metadata.entry_specific = match entry.metadata.entry_type {
+                broker::EntryType::Attribute => Some(proto::metadata::EntrySpecific::Attribute(
+                    proto::Attribute::default(),
+                )),
+                broker::EntryType::Sensor | broker::EntryType::Actuator => None,
+            };
+        }
+
+        if metadata_is_set {
+            Some(metadata)
+        } else {
+            None
+        }
+    };
     proto::DataEntry {
-        path: entry.metadata.path,
-        value: match fields.contains(&proto::Field::Value) {
-            true => proto_datapoint_from_datapoint(entry.datapoint),
-            false => None,
-        },
-        actuator_target: match fields.contains(&proto::Field::ActuatorTarget) {
-            true => match entry.actuator_target {
-                Some(actuator_target) => proto_datapoint_from_value(actuator_target),
-                None => None,
-            },
-            false => None,
-        },
-        metadata: None, // TODO: implement
+        path,
+        value,
+        actuator_target,
+        metadata,
     }
 }
 
-fn normalize_view_and_fields(
+fn combine_view_and_fields(
     view: proto::View,
     fields: impl IntoIterator<Item = proto::Field>,
 ) -> HashSet<proto::Field> {
@@ -492,23 +581,32 @@ fn proto_datapoint_from_value(value: broker::DataValue) -> Option<proto::Datapoi
 }
 
 impl broker::EntryUpdate {
-    fn set_value_from_proto_entry(&mut self, datapoint: &Option<proto::DataEntry>) {
-        self.datapoint = match datapoint {
-            Some(datapoint) => datapoint
+    fn from_proto_entry(entry: &proto::DataEntry, fields: HashSet<proto::Field>) -> Self {
+        let path = match fields.contains(&proto::Field::Path) {
+            true => Some(entry.path.clone()),
+            false => None,
+        };
+        let datapoint = match fields.contains(&proto::Field::Value) {
+            true => entry
                 .value
                 .as_ref()
                 .map(|value| datapoint_from_proto_datapoint(value.clone())),
-            None => None,
+            false => None,
         };
-    }
-
-    fn set_actuator_target_from_proto_entry(&mut self, entry: &Option<proto::DataEntry>) {
-        self.actuator_target = match entry {
-            Some(entry) => match &entry.actuator_target {
+        let actuator_target = match fields.contains(&proto::Field::ActuatorTarget) {
+            true => match &entry.actuator_target {
                 Some(datapoint) => Some(Some(value_from_proto_value(datapoint.value.clone()))),
                 None => Some(None),
             },
-            None => None,
+            false => None,
         };
+        Self {
+            path,
+            datapoint,
+            actuator_target,
+            entry_type: None,
+            data_type: None,
+            description: None,
+        }
     }
 }
