@@ -19,7 +19,13 @@ use crate::types;
 pub struct VssEntry {
     pub name: String,
     pub data_type: types::DataType,
+    pub entry_type: types::EntryType,
     pub description: Option<String>,
+    pub comment: Option<String>,
+    pub unit: Option<String>,
+    pub min: Option<types::DataValue>,
+    pub max: Option<types::DataValue>,
+    pub allowed: Option<Vec<types::DataValue>>,
     pub default: Option<types::DataValue>,
 }
 
@@ -90,11 +96,25 @@ fn parse_entry(
             VssEntryType::Sensor | VssEntryType::Actuator | VssEntryType::Attribute => {
                 let data_type = parse_data_type(name, entry)?;
                 let default_value = parse_default_value(name, &data_type, entry)?;
+                let entry_type = match entry_type {
+                    VssEntryType::Branch => {
+                        return Err(Error::ParseError("Internal error".to_owned()))
+                    }
+                    VssEntryType::Sensor => types::EntryType::Sensor,
+                    VssEntryType::Actuator => types::EntryType::Actuator,
+                    VssEntryType::Attribute => types::EntryType::Attribute,
+                };
                 entries.push(VssEntry {
                     name: name.to_owned(),
                     data_type,
                     description: entry["description"].as_str().map(|s| s.to_owned()),
                     default: default_value,
+                    entry_type,
+                    comment: None,
+                    unit: None,
+                    min: None,
+                    max: None,
+                    allowed: None,
                 });
             }
         }

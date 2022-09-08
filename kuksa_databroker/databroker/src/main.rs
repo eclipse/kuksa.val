@@ -27,65 +27,81 @@ use databroker::types;
 use databroker::{broker, vss};
 
 // Hardcoded datapoints
-const DATAPOINTS: &[(&str, types::DataType, types::ChangeType, &str)] = &[
+const DATAPOINTS: &[(
+    &str,
+    types::DataType,
+    types::ChangeType,
+    types::EntryType,
+    &str,
+)] = &[
     (
         "Vehicle.Cabin.Seat.Row1.Pos1.Position",
         types::DataType::Uint32,
         types::ChangeType::OnChange,
+        types::EntryType::Actuator,
         "Vehicle cabin seat position. Row 1 Position 1",
     ),
     (
         "Vehicle.Cabin.Seat.Row1.Pos2.Position",
         types::DataType::Uint32,
         types::ChangeType::OnChange,
+        types::EntryType::Actuator,
         "Vehicle cabin seat position. Row 1 Position 2",
     ),
     (
         "Vehicle.Speed",
         types::DataType::Float,
         types::ChangeType::Continuous,
+        types::EntryType::Sensor,
         "Vehicle speed",
     ),
     (
         "Vehicle.ADAS.ABS.Error",
         types::DataType::String,
         types::ChangeType::OnChange,
+        types::EntryType::Attribute,
         "ADAS ABS error message",
     ),
     (
         "Vehicle.ADAS.ABS.IsActive",
         types::DataType::Bool,
         types::ChangeType::OnChange,
+        types::EntryType::Actuator,
         "Whether ADAS ABS is active",
     ),
     (
         "Vehicle.ADAS.ABS.IsEngaged",
         types::DataType::Bool,
         types::ChangeType::OnChange,
+        types::EntryType::Actuator,
         "Whether ADAS ABS is engaged",
     ),
     (
         "Vehicle.ADAS.CruiseControl.Error",
         types::DataType::String,
         types::ChangeType::OnChange,
+        types::EntryType::Attribute,
         "ADAS Cruise control error message",
     ),
     (
         "Vehicle.ADAS.CruiseControl.IsActive",
         types::DataType::Bool,
         types::ChangeType::OnChange,
+        types::EntryType::Actuator,
         "Whether ADAS Cruise control is active",
     ),
     (
         "Vehicle.ADAS.CruiseControl.SpeedSet",
         types::DataType::Bool,
         types::ChangeType::OnChange,
+        types::EntryType::Actuator,
         "Whether ADAS Cruise control has the speed set",
     ),
     (
         "Vehicle.TestArray",
         types::DataType::StringArray,
         types::ChangeType::OnChange,
+        types::EntryType::Sensor,
         "Run of the mill test array",
     ),
 ];
@@ -198,12 +214,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if args.is_present("dummy-metadata") {
         info!("Populating (hardcoded) metadata");
-        for (name, data_type, change_type, description) in DATAPOINTS {
+        for (name, data_type, change_type, entry_type, description) in DATAPOINTS {
             if let Ok(id) = broker
                 .add_entry(
                     name.to_string(),
                     data_type.clone(),
                     change_type.clone(),
+                    entry_type.clone(),
                     description.to_string(),
                 )
                 .await
@@ -254,6 +271,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     entry.name.clone(),
                     entry.data_type,
                     databroker::types::ChangeType::OnChange,
+                    entry.entry_type,
                     entry.description.unwrap_or_else(|| "".to_owned()),
                 )
                 .await;

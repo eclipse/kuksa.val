@@ -445,6 +445,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
                             metadata.name.clone(),
                             DataType::from(&value_type),
                             ChangeType::from(&change_type),
+                            broker::types::EntryType::Sensor,
                             metadata.description,
                         )
                         .await
