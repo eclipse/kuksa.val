@@ -41,6 +41,7 @@ pub struct Metadata {
     pub id: i32,
     pub path: String,
     pub data_type: DataType,
+    pub entry_type: EntryType,
     pub change_type: ChangeType,
     pub description: String,
 }
@@ -518,6 +519,7 @@ impl Entries {
         name: String,
         data_type: DataType,
         change_type: ChangeType,
+        entry_type: EntryType,
         description: String,
         datapoint: Option<Datapoint>,
     ) -> Result<i32, RegistrationError> {
@@ -541,6 +543,7 @@ impl Entries {
                     path: name,
                     data_type,
                     change_type,
+                    entry_type,
                     description,
                 },
                 datapoint: match datapoint {
@@ -602,12 +605,13 @@ impl DataBroker {
         name: String,
         data_type: DataType,
         change_type: ChangeType,
+        entry_type: EntryType,
         description: String,
     ) -> Result<i32, RegistrationError> {
         self.entries
             .write()
             .await
-            .add(name, data_type, change_type, description, None)
+            .add(name, data_type, change_type, entry_type, description, None)
     }
 
     pub async fn get_id_by_path(&self, name: &str) -> Option<i32> {
@@ -769,6 +773,7 @@ async fn test_register_datapoint() {
             "test.datapoint1".to_owned(),
             DataType::Bool,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Test datapoint 1".to_owned(),
         )
         .await
@@ -793,6 +798,7 @@ async fn test_register_datapoint() {
             "test.datapoint2".to_owned(),
             DataType::String,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Test datapoint 2".to_owned(),
         )
         .await
@@ -817,6 +823,7 @@ async fn test_register_datapoint() {
             "test.datapoint1".to_owned(),
             DataType::Bool,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Test datapoint 1 (modified)".to_owned(),
         )
         .await
@@ -834,6 +841,7 @@ async fn test_get_set_datapoint() {
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Test datapoint 1".to_owned(),
         )
         .await
@@ -888,6 +896,7 @@ async fn test_subscribe_and_get() {
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Test datapoint 1".to_owned(),
         )
         .await
@@ -962,6 +971,7 @@ async fn test_multi_subscribe() {
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Test datapoint 1".to_owned(),
         )
         .await
@@ -1058,6 +1068,7 @@ async fn test_subscribe_after_new_registration() {
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Test datapoint 1".to_owned(),
         )
         .await
@@ -1124,6 +1135,7 @@ async fn test_subscribe_after_new_registration() {
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Test datapoint 1 (new description)".to_owned(),
         )
         .await
@@ -1180,6 +1192,7 @@ async fn test_subscribe_set_multiple() {
             "test.datapoint1".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Test datapoint 1".to_owned(),
         )
         .await
@@ -1190,6 +1203,7 @@ async fn test_subscribe_set_multiple() {
             "test.datapoint2".to_owned(),
             DataType::Int32,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Test datapoint 2".to_owned(),
         )
         .await
@@ -1280,6 +1294,7 @@ async fn test_bool_array() {
             "Vehicle.TestArray".to_owned(),
             DataType::BoolArray,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Run of the mill test array".to_owned(),
         )
         .await
@@ -1332,6 +1347,7 @@ async fn test_string_array() {
             "Vehicle.TestArray".to_owned(),
             DataType::StringArray,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Run of the mill test array".to_owned(),
         )
         .await
@@ -1394,6 +1410,7 @@ async fn test_int8_array() {
             "Vehicle.TestArray".to_owned(),
             DataType::Int8Array,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Run of the mill test array".to_owned(),
         )
         .await
@@ -1464,6 +1481,7 @@ async fn test_uint8_array() {
             "Vehicle.TestArray".to_owned(),
             DataType::Uint8Array,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Run of the mill test array".to_owned(),
         )
         .await
@@ -1537,6 +1555,7 @@ async fn test_float_array() {
             "Vehicle.TestArray".to_owned(),
             DataType::FloatArray,
             ChangeType::OnChange,
+            EntryType::Sensor,
             "Run of the mill test array".to_owned(),
         )
         .await
