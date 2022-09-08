@@ -3,6 +3,8 @@ use std::pin::Pin;
 use std::time::SystemTime;
 
 use databroker_api::kuksa::val::v1 as proto;
+use tokio_stream::Stream;
+use tokio_stream::StreamExt;
 use tracing::debug;
 
 use crate::broker;
@@ -159,7 +161,7 @@ impl proto::val_server::Val for broker::DataBroker {
 
     type SubscribeStream = Pin<
         Box<
-            dyn tokio_stream::Stream<Item = Result<proto::SubscribeResponse, tonic::Status>>
+            dyn Stream<Item = Result<proto::SubscribeResponse, tonic::Status>>
                 + Send
                 + Sync
                 + 'static,
@@ -170,7 +172,44 @@ impl proto::val_server::Val for broker::DataBroker {
         &self,
         request: tonic::Request<proto::SubscribeRequest>,
     ) -> Result<tonic::Response<Self::SubscribeStream>, tonic::Status> {
-        unimplemented!("Subscribe is not implemented, request: {:?}", request)
+        let request = request.into_inner();
+        let mut paths = Vec::new();
+        let mut fields = HashSet::new();
+        for entry in request.entries {
+            paths.push(entry.path.clone());
+            for id in entry.fields {
+                match proto::Field::from_i32(id) {
+                    Some(field) => match field {
+                        proto::Field::Value => {
+                            fields.insert(broker::Field::Value);
+                        }
+                        proto::Field::ActuatorTarget => {
+                            fields.insert(broker::Field::ActuatorTarget);
+                        }
+                        _ => {
+                            // Just ignore other fields for now
+                        }
+                    },
+                    None => {
+                        return Err(tonic::Status::invalid_argument(format!(
+                            "Invalid Field (id: {})",
+                            id
+                        )))
+                    }
+                };
+            }
+        }
+        match self.subscribe(paths, fields).await {
+            Ok(stream) => {
+                let stream = convert_to_proto_stream(stream);
+                debug!("Subscribed to new query");
+                Ok(tonic::Response::new(Box::pin(stream)))
+            }
+            Err(e) => Err(tonic::Status::new(
+                tonic::Code::InvalidArgument,
+                format!("{:?}", e),
+            )),
+        }
     }
 
     async fn get_server_info(
@@ -183,6 +222,22 @@ impl proto::val_server::Val for broker::DataBroker {
         };
         Ok(tonic::Response::new(server_info))
     }
+}
+
+fn convert_to_proto_stream(
+    input: impl Stream<Item = broker::ChangeNotificationResponse>,
+) -> impl Stream<Item = Result<proto::SubscribeResponse, tonic::Status>> {
+    input.map(move |item| {
+        let mut notifications = Vec::new();
+        for notification in item.notifications {
+            notifications.push(proto::ChangeNotification {
+                entry: Some(proto_entry_from_update(notification.update)),
+                fields: proto_fields_from_fields(notification.fields),
+            });
+        }
+        let response = proto::SubscribeResponse { notifications };
+        Ok(response)
+    })
 }
 
 fn proto_entry_from_entry_and_fields(
@@ -609,4 +664,30 @@ impl broker::EntryUpdate {
             description: None,
         }
     }
+}
+
+fn proto_entry_from_update(update: broker::EntryUpdate) -> proto::DataEntry {
+    proto::DataEntry {
+        path: update.path.unwrap(),
+        value: match update.datapoint {
+            Some(datapoint) => proto_datapoint_from_datapoint(datapoint),
+            None => None,
+        },
+        actuator_target: match update.actuator_target {
+            Some(Some(actuator_target)) => proto_datapoint_from_value(actuator_target),
+            Some(None) => None,
+            None => None,
+        },
+        metadata: None,
+    }
+}
+
+fn proto_fields_from_fields(fields: impl IntoIterator<Item = broker::Field>) -> Vec<i32> {
+    fields
+        .into_iter()
+        .map(|field| match field {
+            broker::Field::Value => proto::Field::Value as i32,
+            broker::Field::ActuatorTarget => proto::Field::ActuatorTarget as i32,
+        })
+        .collect()
 }

@@ -22,6 +22,7 @@ use tokio_stream::Stream;
 
 use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
+use std::iter::FromIterator;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -59,9 +60,9 @@ pub struct Entry {
     pub metadata: Metadata,
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Field {
-    Datapoint,
+    Value,
     ActuatorTarget,
 }
 
@@ -74,7 +75,8 @@ pub struct Entries {
 
 #[derive(Default)]
 pub struct Subscriptions {
-    subscriptions: Vec<Subscription>,
+    query_subscriptions: Vec<QuerySubscription>,
+    change_subscriptions: Vec<ChangeSubscription>,
 }
 
 #[derive(Debug, Clone)]
@@ -89,8 +91,25 @@ pub struct QueryField {
 }
 
 #[derive(Debug)]
-pub enum SubscriptionError {
+pub struct ChangeNotification {
+    pub update: EntryUpdate,
+    pub fields: HashSet<Field>,
+}
+
+#[derive(Debug, Default)]
+pub struct ChangeNotificationResponse {
+    pub notifications: Vec<ChangeNotification>,
+}
+
+#[derive(Debug)]
+pub enum QueryError {
     CompilationError(String),
+    InternalError,
+}
+
+#[derive(Debug)]
+pub enum SubscriptionError {
+    NotFound,
     InternalError,
 }
 
@@ -101,9 +120,15 @@ pub struct DataBroker {
     shutdown_trigger: broadcast::Sender<()>,
 }
 
-pub struct Subscription {
+pub struct QuerySubscription {
     query: query::CompiledQuery,
     sender: mpsc::Sender<QueryResponse>,
+}
+
+pub struct ChangeSubscription {
+    ids: HashSet<i32>,
+    fields: HashSet<Field>,
+    sender: mpsc::Sender<ChangeNotificationResponse>,
 }
 
 #[derive(Debug)]
@@ -357,19 +382,19 @@ impl Entry {
     }
 
     pub fn apply(&mut self, update: EntryUpdate) -> HashSet<Field> {
-        let mut updated = HashSet::new();
+        let mut changed = HashSet::new();
         if let Some(datapoint) = update.datapoint {
             self.datapoint = datapoint;
-            updated.insert(Field::Datapoint);
+            changed.insert(Field::Value);
         }
         if let Some(actuator_target) = update.actuator_target {
             self.actuator_target = actuator_target;
-            updated.insert(Field::ActuatorTarget);
+            changed.insert(Field::ActuatorTarget);
         }
 
         // TODO: Apply the other fields as well
 
-        updated
+        changed
     }
 }
 
@@ -380,22 +405,57 @@ pub enum SuccessfulUpdate {
 }
 
 impl Subscriptions {
-    pub fn push(&mut self, subscription: Subscription) {
-        self.subscriptions.push(subscription)
+    pub fn add_query_subscription(&mut self, subscription: QuerySubscription) {
+        self.query_subscriptions.push(subscription)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Subscription> + '_ {
-        self.subscriptions.iter()
+    pub fn add_change_subscription(&mut self, subscription: ChangeSubscription) {
+        self.change_subscriptions.push(subscription)
+    }
+
+    pub async fn notify(
+        &self,
+        changed: Option<&HashMap<i32, HashSet<Field>>>,
+        entries: &Entries,
+    ) -> Result<(), NotificationError> {
+        let mut error = None;
+        for sub in &self.query_subscriptions {
+            match sub.notify(changed, entries).await {
+                Ok(_) => {}
+                Err(err) => error = Some(err),
+            }
+        }
+
+        for sub in &self.change_subscriptions {
+            match sub.notify(changed, entries).await {
+                Ok(_) => {}
+                Err(err) => error = Some(err),
+            }
+        }
+
+        match error {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
     }
 
     pub fn clear(&mut self) {
-        self.subscriptions.clear()
+        self.query_subscriptions.clear();
+        self.change_subscriptions.clear();
     }
 
     pub fn cleanup(&mut self) {
-        self.subscriptions.retain(|sub| {
+        self.query_subscriptions.retain(|sub| {
             if sub.sender.is_closed() {
-                info!("Subscription ended: removing");
+                info!("Subscriber gone: removing subscription");
+                false
+            } else {
+                true
+            }
+        });
+        self.change_subscriptions.retain(|sub| {
+            if sub.sender.is_closed() {
+                info!("Subscriber gone: removing subscription");
                 false
             } else {
                 true
@@ -404,20 +464,82 @@ impl Subscriptions {
     }
 }
 
-impl Subscription {
+impl ChangeSubscription {
+    async fn notify(
+        &self,
+        changed: Option<&HashMap<i32, HashSet<Field>>>,
+        entries: &Entries,
+    ) -> Result<(), NotificationError> {
+        match changed {
+            Some(changed) => {
+                let mut matches = false;
+                for (id, fields) in changed {
+                    if self.ids.contains(id) && !self.fields.is_disjoint(fields) {
+                        matches = true;
+                        break;
+                    }
+                }
+                if matches {
+                    // notify
+                    let notifications = {
+                        let mut notifications = ChangeNotificationResponse::default();
+
+                        for (id, fields) in changed {
+                            if self.ids.contains(id) && !self.fields.is_disjoint(fields) {
+                                match entries.get_by_id(*id) {
+                                    Some(entry) => {
+                                        let mut update = EntryUpdate::default();
+                                        let mut updated_fields = HashSet::new();
+                                        // TODO: Perhaps make path optional
+                                        update.path = Some(entry.metadata.path.clone());
+                                        if self.fields.contains(&Field::Value) {
+                                            update.datapoint = Some(entry.datapoint.clone());
+                                            updated_fields.insert(Field::Value);
+                                        }
+                                        if self.fields.contains(&Field::ActuatorTarget) {
+                                            update.actuator_target =
+                                                Some(entry.actuator_target.clone());
+                                            updated_fields.insert(Field::ActuatorTarget);
+                                        }
+
+                                        notifications.notifications.push(ChangeNotification {
+                                            update,
+                                            fields: updated_fields,
+                                        });
+                                    }
+                                    None => {}
+                                }
+                            }
+                        }
+                        notifications
+                    };
+                    match self.sender.send(notifications).await {
+                        Ok(()) => Ok(()),
+                        Err(_) => Err(NotificationError {}),
+                    }
+                } else {
+                    Ok(())
+                }
+            }
+            None => Ok(()),
+        }
+    }
+}
+
+impl QuerySubscription {
     fn generate_input(
         &self,
-        changed: Option<&Vec<(i32, HashSet<Field>)>>,
-        all: &Entries,
+        changed: Option<&HashMap<i32, HashSet<Field>>>,
+        entries: &Entries,
     ) -> Option<impl query::ExecutionInput> {
         let id_used_in_query = {
             let mut query_uses_id = false;
             match changed {
                 Some(changed) => {
                     for (id, fields) in changed {
-                        if let Some(entry) = all.get_by_id(*id) {
+                        if let Some(entry) = entries.get_by_id(*id) {
                             if self.query.input_spec.contains(&entry.metadata.path)
-                                && fields.contains(&Field::Datapoint)
+                                && fields.contains(&Field::Value)
                             {
                                 query_uses_id = true;
                                 break;
@@ -436,7 +558,7 @@ impl Subscription {
         if id_used_in_query {
             let mut input = query::ExecutionInputImpl::new();
             for name in self.query.input_spec.iter() {
-                match all.get_by_path(name) {
+                match entries.get_by_path(name) {
                     Some(entry) => input.add(name.to_owned(), entry.datapoint.value.to_owned()),
                     None => {
                         // TODO: This should probably generate an error
@@ -450,33 +572,43 @@ impl Subscription {
         }
     }
 
-    async fn notify(&self, input: &impl query::ExecutionInput) -> Result<(), NotificationError> {
-        // Execute query (if anything queued)
-        match self.query.execute(input) {
-            Ok(result) => match result {
-                Some(fields) => match self
-                    .sender
-                    .send(QueryResponse {
-                        fields: fields
-                            .iter()
-                            .map(|e| QueryField {
-                                name: e.0.to_owned(),
-                                value: e.1.to_owned(),
+    async fn notify(
+        &self,
+        changed: Option<&HashMap<i32, HashSet<Field>>>,
+        entries: &Entries,
+    ) -> Result<(), NotificationError> {
+        match self.generate_input(changed, entries) {
+            Some(input) =>
+            // Execute query (if anything queued)
+            {
+                match self.query.execute(&input) {
+                    Ok(result) => match result {
+                        Some(fields) => match self
+                            .sender
+                            .send(QueryResponse {
+                                fields: fields
+                                    .iter()
+                                    .map(|e| QueryField {
+                                        name: e.0.to_owned(),
+                                        value: e.1.to_owned(),
+                                    })
+                                    .collect(),
                             })
-                            .collect(),
-                    })
-                    .await
-                {
-                    Ok(()) => Ok(()),
-                    Err(_) => Err(NotificationError {}),
-                },
-                None => Ok(()),
-            },
-            Err(e) => {
-                // TODO: send error to subscriber
-                debug!("{:?}", e);
-                Ok(()) // no cleanup needed
+                            .await
+                        {
+                            Ok(()) => Ok(()),
+                            Err(_) => Err(NotificationError {}),
+                        },
+                        None => Ok(()),
+                    },
+                    Err(e) => {
+                        // TODO: send error to subscriber
+                        debug!("{:?}", e);
+                        Ok(()) // no cleanup needed
+                    }
+                }
             }
+            None => Ok(()),
         }
     }
 }
@@ -682,41 +814,40 @@ impl DataBroker {
         let mut entries = self.entries.write().await;
 
         let cleanup_needed = {
-            let updated: Vec<(i32, HashSet<Field>)> = updates
-                .into_iter()
-                .filter_map(|(id, update)| {
+            let changed = {
+                let mut changed = HashMap::<i32, HashSet<Field>>::new();
+                for (id, update) in updates {
                     debug!("setting id {} to {:?}", id, update);
                     match entries.update(id, update) {
-                        Ok(updated_fields) => {
-                            if updated_fields.is_empty() {
-                                None
-                            } else {
-                                Some((id, updated_fields))
+                        Ok(changed_fields) => {
+                            if !changed_fields.is_empty() {
+                                changed.insert(id, changed_fields);
                             }
                         }
                         Err(err) => {
                             errors.push((id, err));
-                            None
                         }
                     }
-                })
-                .collect();
-
+                }
+                changed
+            };
             // Downgrade to reader (to allow other readers) while holding on
             // to a read lock in order to ensure a consistent state while
             // notifying subscribers (no writes in between)
             let entries = entries.downgrade();
 
             // Notify
-            let mut cleanup_needed = false;
-            for sub in self.subscriptions.read().await.iter() {
-                if let Some(input) = sub.generate_input(Some(&updated), &entries) {
-                    match sub.notify(&input).await {
-                        Ok(()) => {}
-                        Err(_) => cleanup_needed = true,
-                    }
-                }
-            }
+            let cleanup_needed = match self
+                .subscriptions
+                .read()
+                .await
+                .notify(Some(&changed), &entries)
+                .await
+            {
+                Ok(()) => false,
+                Err(_) => true,
+            };
+
             cleanup_needed
         };
 
@@ -735,8 +866,40 @@ impl DataBroker {
 
     pub async fn subscribe(
         &self,
+        paths: impl IntoIterator<Item = impl AsRef<str>>,
+        fields: impl IntoIterator<Item = Field>,
+    ) -> Result<impl Stream<Item = ChangeNotificationResponse>, SubscriptionError> {
+        let ids = {
+            let mut ids = HashSet::new();
+            for path in paths {
+                match self.get_id_by_path(path.as_ref()).await {
+                    Some(id) => {
+                        ids.insert(id);
+                    }
+                    None => return Err(SubscriptionError::NotFound),
+                }
+            }
+            ids
+        };
+
+        let (sender, receiver) = mpsc::channel(10);
+        self.subscriptions
+            .write()
+            .await
+            .add_change_subscription(ChangeSubscription {
+                ids,
+                fields: HashSet::from_iter(fields),
+                sender,
+            });
+
+        let stream = ReceiverStream::new(receiver);
+        Ok(stream)
+    }
+
+    pub async fn subscribe_query(
+        &self,
         query: &str,
-    ) -> Result<impl Stream<Item = QueryResponse>, SubscriptionError> {
+    ) -> Result<impl Stream<Item = QueryResponse>, QueryError> {
         let reader = self.entries.read().await;
         let compiled_query = query::compile(query, &*reader);
 
@@ -744,23 +907,25 @@ impl DataBroker {
             Ok(compiled_query) => {
                 let (sender, receiver) = mpsc::channel(10);
 
-                // Send the initial execution of query
-                let subscription = Subscription {
+                let subscription = QuerySubscription {
                     query: compiled_query,
                     sender,
                 };
 
-                match subscription.generate_input(None, &reader) {
-                    Some(input) => match subscription.notify(&input).await {
-                        Ok(_) => self.subscriptions.write().await.push(subscription),
-                        Err(_) => return Err(SubscriptionError::InternalError),
-                    },
-                    None => return Err(SubscriptionError::InternalError),
+                // Send the initial execution of query
+                match subscription.notify(None, &reader).await {
+                    Ok(_) => self
+                        .subscriptions
+                        .write()
+                        .await
+                        .add_query_subscription(subscription),
+                    Err(_) => return Err(QueryError::InternalError),
                 };
+
                 let stream = ReceiverStream::new(receiver);
                 Ok(stream)
             }
-            Err(e) => Err(SubscriptionError::CompilationError(format!("{:?}", e))),
+            Err(e) => Err(QueryError::CompilationError(format!("{:?}", e))),
         }
     }
 
@@ -906,7 +1071,7 @@ async fn test_get_set_datapoint() {
 }
 
 #[tokio::test]
-async fn test_subscribe_and_get() {
+async fn test_subscribe_query_and_get() {
     use tokio_stream::StreamExt;
 
     let datapoints = DataBroker::new();
@@ -922,7 +1087,7 @@ async fn test_subscribe_and_get() {
         .expect("Register datapoint should succeed");
 
     let mut stream = datapoints
-        .subscribe("SELECT test.datapoint1")
+        .subscribe_query("SELECT test.datapoint1")
         .await
         .expect("Setup subscription");
 
@@ -997,12 +1162,12 @@ async fn test_multi_subscribe() {
         .expect("Register datapoint should succeed");
 
     let mut subscription1 = datapoints
-        .subscribe("SELECT test.datapoint1")
+        .subscribe_query("SELECT test.datapoint1")
         .await
         .expect("setup first subscription");
 
     let mut subscription2 = datapoints
-        .subscribe("SELECT test.datapoint1")
+        .subscribe_query("SELECT test.datapoint1")
         .await
         .expect("setup second subscription");
 
@@ -1094,7 +1259,7 @@ async fn test_subscribe_after_new_registration() {
         .expect("Register datapoint should succeed");
 
     let mut subscription = datapoints
-        .subscribe("SELECT test.datapoint1")
+        .subscribe_query("SELECT test.datapoint1")
         .await
         .expect("Setup subscription");
 
@@ -1229,7 +1394,7 @@ async fn test_subscribe_set_multiple() {
         .expect("Register datapoint should succeed");
 
     let mut subscription = datapoints
-        .subscribe("SELECT test.datapoint1, test.datapoint2")
+        .subscribe_query("SELECT test.datapoint1, test.datapoint2")
         .await
         .expect("setup first subscription");
 
@@ -1616,5 +1781,78 @@ async fn test_float_array() {
             );
         }
         None => panic!("Expected get_datapoint to return a datapoint, instead got: None"),
+    }
+}
+
+#[tokio::test]
+async fn test_subscribe_and_get() {
+    use tokio_stream::StreamExt;
+
+    let datapoints = DataBroker::new();
+    let id1 = datapoints
+        .add_entry(
+            "test.datapoint1".to_owned(),
+            DataType::Int32,
+            ChangeType::OnChange,
+            EntryType::Sensor,
+            "Test datapoint 1".to_owned(),
+        )
+        .await
+        .expect("Register datapoint should succeed");
+
+    let mut stream = datapoints
+        .subscribe(&["test.datapoint1"], vec![Field::Value])
+        .await
+        .expect("Setup subscription");
+
+    datapoints
+        .update_entries([(
+            id1,
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts: SystemTime::now(),
+                    value: DataValue::Int32(101),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
+            },
+        )])
+        .await
+        .expect("setting datapoint #1");
+
+    // Value has been set, expect the next item in stream to match.
+    match stream.next().await {
+        Some(next) => {
+            assert_eq!(next.notifications.len(), 1);
+            assert_eq!(
+                next.notifications[0].update.path,
+                Some("test.datapoint1".to_string())
+            );
+            assert_eq!(
+                next.notifications[0]
+                    .update
+                    .datapoint
+                    .as_ref()
+                    .unwrap()
+                    .value,
+                DataValue::Int32(101)
+            );
+        }
+        None => {
+            panic!("did not expect stream end")
+        }
+    }
+
+    // Check that the data point has been stored as well
+    match datapoints.get_datapoint(id1).await {
+        Some(datapoint) => {
+            assert_eq!(datapoint.value, DataValue::Int32(101));
+        }
+        None => {
+            panic!("data point expected to exist");
+        }
     }
 }
