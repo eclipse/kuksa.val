@@ -19,9 +19,14 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-databroker-api = { path = "../databroker-api" }
+databroker-proto = { path = "../databroker-proto" }
 tonic = "0.6.2"
 prost = "0.9.0"
 prost-types = "0.9.0"
-tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread", "time", "signal"] }
+tokio = { version = "1.17.0", features = [
+    "macros",
+    "rt-multi-thread",
+    "time",
+    "signal",
+] }
 tokio-stream = { version = "0.1.8", features = ["sync"] }

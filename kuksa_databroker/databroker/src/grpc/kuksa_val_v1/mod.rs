@@ -11,18 +11,5 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::configure()
-        .compile_well_known_types(false)
-        .compile(
-            &[
-                "proto/sdv/databroker/v1/broker.proto",
-                "proto/sdv/databroker/v1/types.proto",
-                "proto/sdv/databroker/v1/collector.proto",
-                "proto/kuksa/val/v1/val.proto",
-                "proto/kuksa/val/v1/types.proto",
-            ],
-            &["proto"],
-        )?;
-    Ok(())
-}
+mod conversions;
+mod val;

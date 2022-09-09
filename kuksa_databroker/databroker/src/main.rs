@@ -22,86 +22,84 @@ use tokio::signal::unix::{signal, SignalKind};
 
 use clap::{Arg, Command};
 
-use databroker::grpc;
-use databroker::types;
-use databroker::{broker, vss};
+use databroker::{broker, grpc, vss};
 
 // Hardcoded datapoints
 const DATAPOINTS: &[(
     &str,
-    types::DataType,
-    types::ChangeType,
-    types::EntryType,
+    broker::DataType,
+    broker::ChangeType,
+    broker::EntryType,
     &str,
 )] = &[
     (
         "Vehicle.Cabin.Seat.Row1.Pos1.Position",
-        types::DataType::Uint32,
-        types::ChangeType::OnChange,
-        types::EntryType::Actuator,
+        broker::DataType::Uint32,
+        broker::ChangeType::OnChange,
+        broker::EntryType::Actuator,
         "Vehicle cabin seat position. Row 1 Position 1",
     ),
     (
         "Vehicle.Cabin.Seat.Row1.Pos2.Position",
-        types::DataType::Uint32,
-        types::ChangeType::OnChange,
-        types::EntryType::Actuator,
+        broker::DataType::Uint32,
+        broker::ChangeType::OnChange,
+        broker::EntryType::Actuator,
         "Vehicle cabin seat position. Row 1 Position 2",
     ),
     (
         "Vehicle.Speed",
-        types::DataType::Float,
-        types::ChangeType::Continuous,
-        types::EntryType::Sensor,
+        broker::DataType::Float,
+        broker::ChangeType::Continuous,
+        broker::EntryType::Sensor,
         "Vehicle speed",
     ),
     (
         "Vehicle.ADAS.ABS.Error",
-        types::DataType::String,
-        types::ChangeType::OnChange,
-        types::EntryType::Attribute,
+        broker::DataType::String,
+        broker::ChangeType::OnChange,
+        broker::EntryType::Attribute,
         "ADAS ABS error message",
     ),
     (
         "Vehicle.ADAS.ABS.IsActive",
-        types::DataType::Bool,
-        types::ChangeType::OnChange,
-        types::EntryType::Actuator,
+        broker::DataType::Bool,
+        broker::ChangeType::OnChange,
+        broker::EntryType::Actuator,
         "Whether ADAS ABS is active",
     ),
     (
         "Vehicle.ADAS.ABS.IsEngaged",
-        types::DataType::Bool,
-        types::ChangeType::OnChange,
-        types::EntryType::Actuator,
+        broker::DataType::Bool,
+        broker::ChangeType::OnChange,
+        broker::EntryType::Actuator,
         "Whether ADAS ABS is engaged",
     ),
     (
         "Vehicle.ADAS.CruiseControl.Error",
-        types::DataType::String,
-        types::ChangeType::OnChange,
-        types::EntryType::Attribute,
+        broker::DataType::String,
+        broker::ChangeType::OnChange,
+        broker::EntryType::Attribute,
         "ADAS Cruise control error message",
     ),
     (
         "Vehicle.ADAS.CruiseControl.IsActive",
-        types::DataType::Bool,
-        types::ChangeType::OnChange,
-        types::EntryType::Actuator,
+        broker::DataType::Bool,
+        broker::ChangeType::OnChange,
+        broker::EntryType::Actuator,
         "Whether ADAS Cruise control is active",
     ),
     (
         "Vehicle.ADAS.CruiseControl.SpeedSet",
-        types::DataType::Bool,
-        types::ChangeType::OnChange,
-        types::EntryType::Actuator,
+        broker::DataType::Bool,
+        broker::ChangeType::OnChange,
+        broker::EntryType::Actuator,
         "Whether ADAS Cruise control has the speed set",
     ),
     (
         "Vehicle.TestArray",
-        types::DataType::StringArray,
-        types::ChangeType::OnChange,
-        types::EntryType::Sensor,
+        broker::DataType::StringArray,
+        broker::ChangeType::OnChange,
+        broker::EntryType::Sensor,
         "Run of the mill test array",
     ),
 ];
@@ -233,7 +231,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 path: None,
                                 datapoint: Some(broker::Datapoint {
                                     ts: std::time::SystemTime::now(),
-                                    value: databroker::types::DataValue::StringArray(vec![
+                                    value: databroker::broker::DataValue::StringArray(vec![
                                         String::from("yes"),
                                         String::from("no"),
                                         String::from("maybe"),
@@ -270,7 +268,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .add_entry(
                     entry.name.clone(),
                     entry.data_type,
-                    databroker::types::ChangeType::OnChange,
+                    databroker::broker::ChangeType::OnChange,
                     entry.entry_type,
                     entry.description.unwrap_or_else(|| "".to_owned()),
                 )

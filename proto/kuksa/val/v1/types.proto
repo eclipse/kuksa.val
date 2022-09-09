@@ -56,35 +56,37 @@ message Datapoint {
 }
 
 message Metadata {
+  // Data type
   // The VSS data type of the entry (i.e. the value, min, max etc).
   //
-  // NOTE: protobuf doesn't have int8, int16, uint8 or uint16 so the actual
-  // value will be serialized as int32 and uint32 respectively
-  // (in the `value` field).
-  optional DataType data_type = 11;  // [field: FIELD_METADATA_DATA_TYPE]
-
-  // Describes the meaning and content of the entry.
-  optional string description = 12;  // [field: FIELD_METADATA_DESCRIPTION]
+  // NOTE: protobuf doesn't have int8, int16, uint8 or uint16 which means
+  // that these values must be serialized as int32 and uint32 respectively.
+  DataType data_type = 11;  // [field: FIELD_METADATA_DATA_TYPE]
 
   // Entry type
-  optional EntryType entry_type = 13;  // [field: FIELD_METADATA_ENTRY_TYPE]
+  EntryType entry_type = 12;  // [field: FIELD_METADATA_ENTRY_TYPE]
 
-  // [optional]
+  // Description
+  // Describes the meaning and content of the entry.
+  optional string description = 13;  // [field: FIELD_METADATA_DESCRIPTION]
+
+  // Comment [optional]
   // A comment can be used to provide additional informal information
   // on a entry.
   optional string comment = 14;  // [field: FIELD_METADATA_COMMENT]
 
-  // [optional]
-  // Whether this entry is deprecated.
+  // Deprecation [optional]
+  // Whether this entry is deprecated. Can contain recommendations of what
+  // to use instead.
   optional string deprecation = 15;  // [field: FIELD_METADATA_DEPRECATION]
 
-  // [optional]
+  // Unit [optional]
   // The unit of measurement
   optional string unit = 16;  // [field: FIELD_METADATA_UNIT]
 
-  // [optional]
+  // Value restrictions [optional]
   // Restrict which values are allowed.
-  // Only restrictions matching the DataType {datatype} above is valid/used.
+  // Only restrictions matching the DataType {datatype} above are valid.
   ValueRestriction value_restriction = 17;  // [field: FIELD_METADATA_VALUE_RESTRICTION]
 
   // Entry type specific metadata
@@ -119,14 +121,14 @@ message Attribute {
 // they don't make sense unless the types match
 //
 message ValueRestriction {
-  oneof restriction_type {
-    ValueRestrictionsString string_restriction = 21;
+  oneof type {
+    ValueRestrictionString string = 21;
     // For signed VSS integers
-    ValueRestrictionInt int_restriction = 22;
+    ValueRestrictionInt signed = 22;
     // For unsigned VSS integers
-    ValueRestrictionUint uint_restriction = 23;
+    ValueRestrictionUint unsigned = 23;
     // For floating point VSS values (float and double)
-    ValueRestrictionFloat float_restriction = 24;
+    ValueRestrictionFloat floating_point = 24;
   }
 }
 
@@ -150,15 +152,8 @@ message ValueRestrictionFloat {
   repeated double allowed_values = 3;
 }
 
-message ValueRestrictionDouble {
-  optional double min = 1;
-  optional double max = 2;
-
-  repeated double allowed_values = 3;
-}
-
 // min, max doesn't make much sense for a string
-message ValueRestrictionsString {
+message ValueRestrictionString {
   repeated string allowed_values = 3;
 }
 
