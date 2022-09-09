@@ -62,7 +62,7 @@ pub struct Entry {
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Field {
-    Value,
+    Datapoint,
     ActuatorTarget,
 }
 
@@ -97,8 +97,8 @@ pub struct ChangeNotification {
 }
 
 #[derive(Debug, Default)]
-pub struct ChangeNotificationResponse {
-    pub notifications: Vec<ChangeNotification>,
+pub struct EntryUpdates {
+    pub updates: Vec<ChangeNotification>,
 }
 
 #[derive(Debug)]
@@ -128,7 +128,7 @@ pub struct QuerySubscription {
 pub struct ChangeSubscription {
     ids: HashSet<i32>,
     fields: HashSet<Field>,
-    sender: mpsc::Sender<ChangeNotificationResponse>,
+    sender: mpsc::Sender<EntryUpdates>,
 }
 
 #[derive(Debug)]
@@ -152,17 +152,6 @@ pub struct EntryUpdate {
     pub entry_type: Option<EntryType>,
     pub data_type: Option<DataType>,
     pub description: Option<String>,
-}
-
-impl EntryUpdate {
-    pub fn is_empty(self) -> bool {
-        self.path.is_none()
-            && self.datapoint.is_none()
-            && self.actuator_target.is_none()
-            && self.entry_type.is_none()
-            && self.data_type.is_none()
-            && self.description.is_none()
-    }
 }
 
 impl Entry {
@@ -385,7 +374,7 @@ impl Entry {
         let mut changed = HashSet::new();
         if let Some(datapoint) = update.datapoint {
             self.datapoint = datapoint;
-            changed.insert(Field::Value);
+            changed.insert(Field::Datapoint);
         }
         if let Some(actuator_target) = update.actuator_target {
             self.actuator_target = actuator_target;
@@ -482,7 +471,7 @@ impl ChangeSubscription {
                 if matches {
                     // notify
                     let notifications = {
-                        let mut notifications = ChangeNotificationResponse::default();
+                        let mut notifications = EntryUpdates::default();
 
                         for (id, fields) in changed {
                             if self.ids.contains(id) && !self.fields.is_disjoint(fields) {
@@ -492,17 +481,16 @@ impl ChangeSubscription {
                                         let mut updated_fields = HashSet::new();
                                         // TODO: Perhaps make path optional
                                         update.path = Some(entry.metadata.path.clone());
-                                        if self.fields.contains(&Field::Value) {
+                                        if self.fields.contains(&Field::Datapoint) {
                                             update.datapoint = Some(entry.datapoint.clone());
-                                            updated_fields.insert(Field::Value);
+                                            updated_fields.insert(Field::Datapoint);
                                         }
                                         if self.fields.contains(&Field::ActuatorTarget) {
                                             update.actuator_target =
                                                 Some(entry.actuator_target.clone());
                                             updated_fields.insert(Field::ActuatorTarget);
                                         }
-
-                                        notifications.notifications.push(ChangeNotification {
+                                        notifications.updates.push(ChangeNotification {
                                             update,
                                             fields: updated_fields,
                                         });
@@ -539,7 +527,7 @@ impl QuerySubscription {
                     for (id, fields) in changed {
                         if let Some(entry) = entries.get_by_id(*id) {
                             if self.query.input_spec.contains(&entry.metadata.path)
-                                && fields.contains(&Field::Value)
+                                && fields.contains(&Field::Datapoint)
                             {
                                 query_uses_id = true;
                                 break;
@@ -837,7 +825,7 @@ impl DataBroker {
             let entries = entries.downgrade();
 
             // Notify
-            let cleanup_needed = match self
+            match self
                 .subscriptions
                 .read()
                 .await
@@ -845,10 +833,8 @@ impl DataBroker {
                 .await
             {
                 Ok(()) => false,
-                Err(_) => true,
-            };
-
-            cleanup_needed
+                Err(_) => true, // Cleanup needed
+            }
         };
 
         // Cleanup closed subscriptions
@@ -868,7 +854,7 @@ impl DataBroker {
         &self,
         paths: impl IntoIterator<Item = impl AsRef<str>>,
         fields: impl IntoIterator<Item = Field>,
-    ) -> Result<impl Stream<Item = ChangeNotificationResponse>, SubscriptionError> {
+    ) -> Result<impl Stream<Item = EntryUpdates>, SubscriptionError> {
         let ids = {
             let mut ids = HashSet::new();
             for path in paths {
@@ -1801,7 +1787,7 @@ async fn test_subscribe_and_get() {
         .expect("Register datapoint should succeed");
 
     let mut stream = datapoints
-        .subscribe(&["test.datapoint1"], vec![Field::Value])
+        .subscribe(&["test.datapoint1"], vec![Field::Datapoint])
         .await
         .expect("Setup subscription");
 
@@ -1826,18 +1812,13 @@ async fn test_subscribe_and_get() {
     // Value has been set, expect the next item in stream to match.
     match stream.next().await {
         Some(next) => {
-            assert_eq!(next.notifications.len(), 1);
+            assert_eq!(next.updates.len(), 1);
             assert_eq!(
-                next.notifications[0].update.path,
+                next.updates[0].update.path,
                 Some("test.datapoint1".to_string())
             );
             assert_eq!(
-                next.notifications[0]
-                    .update
-                    .datapoint
-                    .as_ref()
-                    .unwrap()
-                    .value,
+                next.updates[0].update.datapoint.as_ref().unwrap().value,
                 DataValue::Int32(101)
             );
         }

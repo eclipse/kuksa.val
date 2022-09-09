@@ -175,7 +175,7 @@ version = "0.17.0"
 dependencies = [
  "anyhow",
  "clap",
- "databroker-api",
+ "databroker-proto",
  "prost",
  "prost-types",
  "serde_json",
@@ -189,21 +189,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "databroker-api"
-version = "0.17.0"
-dependencies = [
- "prost",
- "prost-types",
- "tonic",
- "tonic-build",
-]
-
-[[package]]
 name = "databroker-cli"
 version = "0.17.0"
 dependencies = [
  "ansi_term",
- "databroker-api",
+ "databroker-proto",
  "linefeed",
  "prost",
  "prost-types",
@@ -216,12 +206,22 @@ dependencies = [
 name = "databroker-examples"
 version = "0.17.0"
 dependencies = [
- "databroker-api",
+ "databroker-proto",
  "prost",
  "prost-types",
  "tokio",
  "tokio-stream",
  "tonic",
+]
+
+[[package]]
+name = "databroker-proto"
+version = "0.17.0"
+dependencies = [
+ "prost",
+ "prost-types",
+ "tonic",
+ "tonic-build",
 ]
 
 [[package]]

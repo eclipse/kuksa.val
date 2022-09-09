@@ -23,18 +23,33 @@ name = "databroker"
 path = "src/lib.rs"
 
 [dependencies]
-databroker-api = { path = "../databroker-api" }
+databroker-proto = { path = "../databroker-proto" }
 tonic = "0.6.2"
 prost = "0.9.0"
 prost-types = "0.9.0"
-tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread", "time", "signal"] }
+tokio = { version = "1.17.0", features = [
+    "macros",
+    "rt-multi-thread",
+    "time",
+    "signal",
+] }
 tokio-stream = { version = "0.1.8", features = ["sync", "net"] }
 tracing = "0.1.34"
-tracing-subscriber = { version = "0.3.11", default-features = false, features = ["fmt", "env-filter", "ansi"] }
-clap = { version = "3.1.10", default-features = false, features = ["std", "env"] }
+tracing-subscriber = { version = "0.3.11", default-features = false, features = [
+    "fmt",
+    "env-filter",
+    "ansi",
+] }
+clap = { version = "3.1.10", default-features = false, features = [
+    "std",
+    "env",
+] }
 sqlparser = "0.16.0"
 serde_json = "1.0"
 
 [build-dependencies]
 anyhow = "1.0"
-vergen = { version = "7", default-features = false, features = ["cargo", "git"] }
+vergen = { version = "7", default-features = false, features = [
+    "cargo",
+    "git",
+] }

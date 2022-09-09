@@ -11,7 +11,7 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-use databroker_api::sdv::databroker as proto;
+use databroker_proto::sdv::databroker as proto;
 
 use prost_types::Timestamp;
 

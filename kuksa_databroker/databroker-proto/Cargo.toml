@@ -12,7 +12,7 @@
 #*******************************************************************************/
 
 [package]
-name = "databroker-api"
+name = "databroker-proto"
 version = "0.17.0"
 authors = ["Robert Bosch GmbH"]
 edition = "2018"

@@ -71,9 +71,8 @@ message GetResponse {
 
 // Define the data we want to set
 message EntryUpdate {
-  string path           = 1;
-  DataEntry entry       = 2;
-  repeated Field fields = 3;
+  DataEntry entry       = 1;
+  repeated Field fields = 2;
 }
 
 // A list of entries to be updated
@@ -100,16 +99,9 @@ message SubscribeRequest {
   repeated SubscribeEntry entries = 1;
 }
 
-// The updated entry
-// `fields` specify which fields where changed.
-message ChangeNotification {
-  DataEntry entry       = 1;
-  repeated Field fields = 2;
-}
-
 // A subscription response
 message SubscribeResponse {
-  repeated ChangeNotification notifications = 1;
+  repeated EntryUpdate updates = 1;
 }
 
 message GetServerInfoRequest {
