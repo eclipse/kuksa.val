@@ -21,46 +21,7 @@ use crate::broker;
 
 impl From<&proto::Datapoint> for broker::Datapoint {
     fn from(datapoint: &proto::Datapoint) -> Self {
-        let value = match &datapoint.value {
-            Some(value) => match value {
-                proto::datapoint::Value::StringValue(value) => {
-                    broker::DataValue::String(value.to_owned())
-                }
-                proto::datapoint::Value::BoolValue(value) => broker::DataValue::Bool(*value),
-                proto::datapoint::Value::Int32Value(value) => broker::DataValue::Int32(*value),
-                proto::datapoint::Value::Int64Value(value) => broker::DataValue::Int64(*value),
-                proto::datapoint::Value::Uint32Value(value) => broker::DataValue::Uint32(*value),
-                proto::datapoint::Value::Uint64Value(value) => broker::DataValue::Uint64(*value),
-                proto::datapoint::Value::FloatValue(value) => broker::DataValue::Float(*value),
-                proto::datapoint::Value::DoubleValue(value) => broker::DataValue::Double(*value),
-                proto::datapoint::Value::StringArray(array) => {
-                    broker::DataValue::StringArray(array.values.clone())
-                }
-                proto::datapoint::Value::BoolArray(array) => {
-                    broker::DataValue::BoolArray(array.values.clone())
-                }
-                proto::datapoint::Value::Int32Array(array) => {
-                    broker::DataValue::Int32Array(array.values.clone())
-                }
-                proto::datapoint::Value::Int64Array(array) => {
-                    broker::DataValue::Int64Array(array.values.clone())
-                }
-                proto::datapoint::Value::Uint32Array(array) => {
-                    broker::DataValue::Uint32Array(array.values.clone())
-                }
-                proto::datapoint::Value::Uint64Array(array) => {
-                    broker::DataValue::Uint64Array(array.values.clone())
-                }
-                proto::datapoint::Value::FloatArray(array) => {
-                    broker::DataValue::FloatArray(array.values.clone())
-                }
-                proto::datapoint::Value::DoubleArray(array) => {
-                    broker::DataValue::DoubleArray(array.values.clone())
-                }
-                proto::datapoint::Value::FailureValue(_) => broker::DataValue::NotAvailable,
-            },
-            None => broker::DataValue::NotAvailable,
-        };
+        let value = broker::DataValue::from(datapoint);
 
         let ts = match &datapoint.timestamp {
             Some(ts) => ts.clone().try_into().unwrap_or_else(|_| SystemTime::now()),
@@ -230,6 +191,51 @@ impl From<&proto::DataType> for broker::DataType {
             proto::DataType::FloatArray => broker::DataType::FloatArray,
             proto::DataType::DoubleArray => broker::DataType::DoubleArray,
             proto::DataType::TimestampArray => broker::DataType::TimestampArray,
+        }
+    }
+}
+
+impl From<&proto::Datapoint> for broker::DataValue {
+    fn from(datapoint: &proto::Datapoint) -> Self {
+        match &datapoint.value {
+            Some(value) => match value {
+                proto::datapoint::Value::StringValue(value) => {
+                    broker::DataValue::String(value.to_owned())
+                }
+                proto::datapoint::Value::BoolValue(value) => broker::DataValue::Bool(*value),
+                proto::datapoint::Value::Int32Value(value) => broker::DataValue::Int32(*value),
+                proto::datapoint::Value::Int64Value(value) => broker::DataValue::Int64(*value),
+                proto::datapoint::Value::Uint32Value(value) => broker::DataValue::Uint32(*value),
+                proto::datapoint::Value::Uint64Value(value) => broker::DataValue::Uint64(*value),
+                proto::datapoint::Value::FloatValue(value) => broker::DataValue::Float(*value),
+                proto::datapoint::Value::DoubleValue(value) => broker::DataValue::Double(*value),
+                proto::datapoint::Value::StringArray(array) => {
+                    broker::DataValue::StringArray(array.values.clone())
+                }
+                proto::datapoint::Value::BoolArray(array) => {
+                    broker::DataValue::BoolArray(array.values.clone())
+                }
+                proto::datapoint::Value::Int32Array(array) => {
+                    broker::DataValue::Int32Array(array.values.clone())
+                }
+                proto::datapoint::Value::Int64Array(array) => {
+                    broker::DataValue::Int64Array(array.values.clone())
+                }
+                proto::datapoint::Value::Uint32Array(array) => {
+                    broker::DataValue::Uint32Array(array.values.clone())
+                }
+                proto::datapoint::Value::Uint64Array(array) => {
+                    broker::DataValue::Uint64Array(array.values.clone())
+                }
+                proto::datapoint::Value::FloatArray(array) => {
+                    broker::DataValue::FloatArray(array.values.clone())
+                }
+                proto::datapoint::Value::DoubleArray(array) => {
+                    broker::DataValue::DoubleArray(array.values.clone())
+                }
+                proto::datapoint::Value::FailureValue(_) => broker::DataValue::NotAvailable,
+            },
+            None => broker::DataValue::NotAvailable,
         }
     }
 }
