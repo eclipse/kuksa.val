@@ -33,6 +33,7 @@ const TIMEOUT: Duration = Duration::from_millis(500);
 const CLI_COMMANDS: &[(&str, &str)] = &[
     ("get", "Get a HAL property"),
     ("set", "Set a HAL property"),
+    ("feed", "Set a HAL property (from vehicle side)"),
     ("connect", "Connect"),
     ("subscribe", "Subscribe to properties"),
     ("metadata", "Get datapoint metadata"),
@@ -213,6 +214,105 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 match &channel {
                                     Some(channel) => {
                                         let mut client =
+                                            proto::v1::broker_client::BrokerClient::new(
+                                                channel.clone(),
+                                            );
+                                        let ts = Timestamp::from(SystemTime::now());
+                                        let datapoints = HashMap::from([(
+                                            metadata.name.clone(),
+                                            proto::v1::Datapoint {
+                                                timestamp: Some(ts),
+                                                value: Some(data_value.unwrap()),
+                                            },
+                                        )]);
+                                        let request =
+                                            tonic::Request::new(proto::v1::SetDatapointsRequest {
+                                                datapoints,
+                                            });
+
+                                        match client.set_datapoints(request).await {
+                                            Ok(response) => {
+                                                let message = response.into_inner();
+                                                if message.errors.is_empty() {
+                                                    println!("-> Ok")
+                                                } else {
+                                                    for (id, error) in message.errors {
+                                                        match proto::v1::DatapointError::from_i32(
+                                                            error,
+                                                        ) {
+                                                            Some(error) => {
+                                                                println!(
+                                                                    "-> Error setting id {}: {:?}",
+                                                                    id, error
+                                                                )
+                                                            }
+                                                            None => {
+                                                                println!(
+                                                                    "-> Error setting id {}",
+                                                                    id
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                // interface.set_prompt(&connected_prompt)?;
+                                            }
+                                            Err(err) => {
+                                                println!(
+                                                    "-> status: {}",
+                                                    code_to_text(&err.code())
+                                                );
+                                                println!("{}", err.message());
+                                                // interface.set_prompt(&disconnected_prompt)?;
+                                            }
+                                        }
+                                    }
+                                    None => println!("Not connected"),
+                                }
+                            }
+                        }
+                        "feed" => {
+                            interface.add_history_unique(line.clone());
+
+                            let (prop, value) = split_first_word(args);
+
+                            if value.is_empty() {
+                                println!("Usage: feed ID VALUE");
+                                continue;
+                            }
+
+                            let datapoint_metadata = {
+                                let mut datapoint_metadata = None;
+                                for metadata in properties.iter() {
+                                    if metadata.name == prop {
+                                        datapoint_metadata = Some(metadata)
+                                    }
+                                }
+                                datapoint_metadata
+                            };
+
+                            if datapoint_metadata.is_none() {
+                                println!("Could not map name to id");
+                                continue;
+                            }
+
+                            if let Some(metadata) = datapoint_metadata {
+                                let data_value = try_into_data_value(
+                                    value,
+                                    proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
+                                );
+                                if data_value.is_err() {
+                                    println!(
+                                        "Could not parse \"{}\" as {:?}",
+                                        value,
+                                        proto::v1::DataType::from_i32(metadata.data_type).unwrap()
+                                    );
+                                    continue;
+                                }
+                                match &channel {
+                                    Some(channel) => {
+                                        let mut client =
                                             proto::v1::collector_client::CollectorClient::new(
                                                 channel.clone(),
                                             );
@@ -227,7 +327,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         let request = tonic::Request::new(
                                             proto::v1::UpdateDatapointsRequest { datapoints },
                                         );
-
                                         match client.update_datapoints(request).await {
                                             Ok(response) => {
                                                 let message = response.into_inner();
@@ -270,7 +369,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 }
                             }
                         }
-
                         "subscribe" => {
                             interface.add_history_unique(line.clone());
 
@@ -365,7 +463,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 Some(channel) => {
                                     if let Some(metadata) = get_metadata(channel).await {
                                         for entry in &metadata {
-                                            println!("{} -> id({})", entry.name, entry.id);
+                                            println!(
+                                                "{}, data_type: {}",
+                                                entry.name, entry.data_type
+                                            );
                                         }
                                         properties = metadata;
                                         interface.set_completer(Arc::new(

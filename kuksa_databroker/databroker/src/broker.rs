@@ -495,7 +495,9 @@ impl ChangeSubscription {
                                             fields: updated_fields,
                                         });
                                     }
-                                    None => {}
+                                    None => {
+                                        debug!("notify: could not find entry with id {}", id)
+                                    }
                                 }
                             }
                         }

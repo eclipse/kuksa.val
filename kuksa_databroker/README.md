@@ -15,24 +15,32 @@
     - [Build and run databroker container](#build-and-run-databroker-container)
   - [Limitations](#limitations)
   - [GRPC overview](#grpc-overview)
- 
+
 ## Intro
 
 Kuksa Data Broker is a GRPC service acting as a broker of vehicle data / data points / signals.
 
-## Interface
+## GRPC Interface(s)
 
-The main interface, used by clients is defined as follows (see [file](proto/sdv/databroker/v1/broker.proto) in the proto folder):
+Databroker implements a couple of GRPC interfaces.
+### `kuksa.val.v1.VAL`
+This GRPC interface is under development and is meant to be used by kuksa-databroker, kuksa-val-server and the feeders.
+
+### `sdv.databroker.v1.Broker`
+This interface is currently used by databroker clients. It is defined as follows (see [file](proto/sdv/databroker/v1/broker.proto) in the proto folder):
 
 ```protobuf
 service Broker {
     rpc GetDatapoints(GetDatapointsRequest) returns (GetDatapointsReply);
+    rpc SetDatapoints(SetDatapointsRequest) returns (SetDatapointsReply);
+
     rpc Subscribe(SubscribeRequest) returns (stream Notification);
 
     rpc GetMetadata(GetMetadataRequest) returns (GetMetadataReply);
 }
 ```
 
+### `sdv.databroker.v1.Collector`
 There is also a [Collector](proto/sdv/databroker/v1/collector.proto) interface which is used by data point providers to feed data into the broker.
 
 ```protobuf
@@ -152,7 +160,7 @@ client> subscribe
 SELECT
   Vehicle.ADAS.ABS.Error
 WHERE
-  Vehicle.ADAS.ABS.IsActive 
+  Vehicle.ADAS.ABS.IsActive
 
 -> status: OK
 ```

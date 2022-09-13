@@ -67,6 +67,71 @@ impl proto::broker_server::Broker for broker::DataBroker {
         }
     }
 
+    async fn set_datapoints(
+        &self,
+        request: tonic::Request<proto::SetDatapointsRequest>,
+    ) -> Result<tonic::Response<proto::SetDatapointsReply>, Status> {
+        // Collect errors encountered
+        let mut errors = HashMap::<String, i32>::new();
+        let mut id_to_path = HashMap::<i32, String>::new(); // Map id to path for errors
+        let message = request.into_inner();
+
+        let ids = {
+            let mut ids = Vec::new();
+            for (path, datapoint) in message.datapoints {
+                match self.get_entry_by_path(&path).await {
+                    Some(entry) => {
+                        match entry.metadata.entry_type {
+                            broker::EntryType::Sensor | broker::EntryType::Attribute => {
+                                // Cannot set sensor / attribute through the `Broker` API.
+                                debug!("Cannot set sensor / attribute through the `Broker` API.");
+                                errors.insert(
+                                    path.clone(),
+                                    proto::DatapointError::AccessDenied as i32,
+                                );
+                            }
+                            broker::EntryType::Actuator => {
+                                ids.push((
+                                    entry.metadata.id,
+                                    broker::EntryUpdate {
+                                        path: None,
+                                        datapoint: None,
+                                        actuator_target: Some(Some(broker::DataValue::from(
+                                            &datapoint,
+                                        ))),
+                                        entry_type: None,
+                                        data_type: None,
+                                        description: None,
+                                    },
+                                ));
+                            }
+                        }
+                        id_to_path.insert(entry.metadata.id, path);
+                    }
+                    None => {
+                        errors.insert(path.clone(), proto::DatapointError::UnknownDatapoint as i32);
+                    }
+                };
+            }
+            ids
+        };
+
+        match self.update_entries(ids).await {
+            Ok(()) => {}
+            Err(err) => {
+                debug!("Failed to set datapoint: {:?}", err);
+                errors.extend(err.iter().map(|(id, error)| {
+                    (
+                        id_to_path[id].clone(),
+                        proto::DatapointError::from(error) as i32,
+                    )
+                }))
+            }
+        }
+
+        Ok(Response::new(proto::SetDatapointsReply { errors }))
+    }
+
     type SubscribeStream =
         Pin<Box<dyn Stream<Item = Result<proto::SubscribeReply, Status>> + Send + Sync + 'static>>;
 
