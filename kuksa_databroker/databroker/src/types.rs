@@ -43,7 +43,7 @@ pub enum DataType {
     TimestampArray,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EntryType {
     Sensor,
     Attribute,

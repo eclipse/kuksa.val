@@ -16,7 +16,6 @@
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use std::fmt::Write;
-use std::io::Read;
 
 use tracing::{debug, info};
 use tracing_subscriber::filter::EnvFilter;
@@ -143,21 +142,18 @@ async fn read_metadata_file(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let path = filename.trim();
     info!("Populating metadata from file '{}'", path);
-    let mut metadata_file = std::fs::OpenOptions::new().read(true).open(path)?;
-    // metadata_file
-    let mut data = String::new();
-    metadata_file.read_to_string(&mut data)?;
-    let entries = vss::parse_vss(&data)?;
-    for entry in entries {
-        debug!("Adding VSS datapoint type {}", entry.name);
+    let metadata_file = std::fs::OpenOptions::new().read(true).open(filename)?;
+    let entries = vss::parse_vss_from_reader(&metadata_file)?;
+    for (path, entry) in entries {
+        debug!("Adding VSS datapoint type {}", path);
 
         let id = broker
             .add_entry(
-                entry.name.clone(),
+                path.clone(),
                 entry.data_type,
                 databroker::broker::ChangeType::OnChange,
                 entry.entry_type,
-                entry.description.unwrap_or_else(|| "".to_owned()),
+                entry.description,
             )
             .await;
 
@@ -179,10 +175,7 @@ async fn read_metadata_file(
             if let Err(errors) = broker.update_entries(ids).await {
                 // There's only one error (since we're only trying to set one)
                 if let Some(error) = errors.get(0) {
-                    info!(
-                        "Failed to set default value for {}: {:?}",
-                        entry.name, error.1
-                    );
+                    info!("Failed to set default value for {}: {:?}", path, error.1);
                 }
             }
         }
