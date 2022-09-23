@@ -29,11 +29,7 @@ DEFAULT_SERVER_ADDR = "127.0.0.1"
 DEFAULT_SERVER_PORT = 8090
 DEFAULT_SERVER_PROTOCOL = "ws"
 
-from grpc.tools import command
-# Generate the proto Stubs
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-command.build_package_protos(os.path.join(scriptDir, "kuksa.proto"))
-
 sys.path.append(os.path.join(scriptDir, ".."))
 
 from kuksa_client import KuksaClientThread
