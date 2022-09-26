@@ -1,3 +1,2 @@
 include  *.py
-include logo
 global-exclude *.pyc

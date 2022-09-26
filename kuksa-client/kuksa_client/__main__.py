@@ -30,7 +30,6 @@ DEFAULT_SERVER_PORT = 8090
 DEFAULT_SERVER_PROTOCOL = "ws"
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, ".."))
 
 from kuksa_client import KuksaClientThread
 from kuksa_client._metadata import *
