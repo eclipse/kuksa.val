@@ -26,8 +26,8 @@ from google.protobuf.json_format import MessageToJson
 import jsonpath_ng
 import uuid, time, threading
 
-from . import kuksa_pb2
-from . import kuksa_pb2_grpc
+from kuksa.val import kuksa_pb2
+from kuksa.val import kuksa_pb2_grpc
 
 class KuksaGrpcComm:
 

@@ -18,11 +18,9 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
-import os, sys, threading, queue, ssl, json, time 
+import os, sys, threading, queue, ssl, json, time
 import uuid
 import asyncio
-scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, ".."))
 from kuksa_client._metadata import *
 from .KuksaWsComm import KuksaWsComm
 from .KuksaGrpcComm import KuksaGrpcComm
@@ -32,7 +30,7 @@ class KuksaClientThread(threading.Thread):
     # Constructor
     def __init__(self, config):
         super(KuksaClientThread, self).__init__()
-        
+
         self.serverProtocol = config.get("protocol", "ws")
         self.KuksaClientObject = None
         if self.serverProtocol == "ws":
@@ -44,13 +42,13 @@ class KuksaClientThread(threading.Thread):
         return self.KuksaClientObject.checkConnection()
 
     def stop(self):
-        self.KuksaClientObject.stop() 
+        self.KuksaClientObject.stop()
 
     # Do authorization by passing a jwt token or a token file
     def authorize(self, token=None, timeout = 2):
         return self.KuksaClientObject.authorize(token)
 
-    # Update VSS Tree Entry 
+    # Update VSS Tree Entry
     def updateVSSTree(self, jsonStr, timeout = 5):
         return self.KuksaClientObject.updateVSSTree(jsonStr, timeout)
 

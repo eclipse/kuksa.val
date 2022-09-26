@@ -13,7 +13,7 @@ class BuildCommand(distutils.command.build.build):
         # https://github.com/protocolbuffers/protobuf/issues/1491
 
         # we will just patch directly
-        os.system('sed -i "s/import kuksa_pb2 as kuksa__pb2/from . import kuksa_pb2 as kuksa__pb2/g" kuksa_pb2_grpc.py')
+        os.system('sed -i "s/import kuksa_pb2 as kuksa__pb2/from . import kuksa_pb2 as kuksa__pb2/g" kuksa/val/kuksa_pb2_grpc.py')
         # Run the original build command
         distutils.command.build.build.run(self)
 
@@ -28,8 +28,6 @@ setuptools.setup(
         "version_file": None,
         "count_commits_from_version_file": False
     },
-    package_dir={'kuksa_client': '.' , 'kuksa_certificates': '../kuksa_certificates'},
-    packages=['kuksa_client', 'kuksa_certificates'],
     package_data={ "kuksa_client": ["logo"], "kuksa_certificates": ["*", "jwt/*"]},
     setup_requires=['setuptools-git-versioning', 'grpcio', 'grpcio-tools'],
     cmdclass={
