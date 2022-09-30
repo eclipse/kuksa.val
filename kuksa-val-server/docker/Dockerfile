@@ -5,23 +5,14 @@
 # accompanies this distribution, and is available at
 # http://www.eclipse.org/org/documents/edl-v10.php
 
-FROM alpine:3.11 as build
+FROM python:3.10-slim-bullseye as build
 
 LABEL maintainer="Sebastian Schildt <sebastian.schildt@de.bosch.com>"
 
 
 
-RUN apk update && apk add cmake wget alpine-sdk linux-headers openssl-dev libstdc++ mosquitto-dev
+RUN apt-get update -qqy && apt-get upgrade -qqy && apt-get install -qqy git cmake build-essential libssl-dev libmosquitto-dev libboost-all-dev
 
-
-#Build Boost 1.75
-ENV BOOST_VER=1.75.0
-ENV BOOST_VER_=1_75_0
-RUN wget   https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER}/source/boost_${BOOST_VER_}.tar.bz2
-RUN tar xvjf boost_${BOOST_VER_}.tar.bz2
-WORKDIR /boost_${BOOST_VER_}
-RUN ./bootstrap.sh
-RUN ./b2 -j 6 install
 
 WORKDIR /
 # Build and install grpc
@@ -47,7 +38,7 @@ RUN ls
 RUN /kuksa.val/kuksa-val-server/docker/collect-deployment-artifacts.sh
 
 
-FROM alpine:3.11
+FROM python:3.10-slim-bullseye
 
 COPY --from=build /deploy /kuksa.val
 WORKDIR /kuksa.val

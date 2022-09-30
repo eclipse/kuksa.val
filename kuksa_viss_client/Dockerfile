@@ -8,8 +8,7 @@
 
 # Note: This dockerfile needs to be executed one level above in the root folder
 
-FROM python:3.10-alpine as build
-RUN apk update && apk add git alpine-sdk linux-headers
+FROM python:3.10-slim-bullseye as build
 COPY kuksa_viss_client /kuksa.val/kuksa_viss_client/
 COPY kuksa_certificates /kuksa.val/kuksa_certificates/
 COPY kuksa-val-server/protos/kuksa.proto /kuksa.val/kuksa_viss_client/kuksa.proto
@@ -20,9 +19,8 @@ RUN python3 setup.py bdist_wheel
 RUN mkdir /kuksa_viss_client
 RUN pip install --target /kuksa_viss_client --no-cache-dir dist/*.whl 
 
-FROM python:3.10-alpine
+FROM python:3.10-slim-bullseye
 
-RUN apk add --no-cache libstdc++
 COPY --from=build /kuksa_viss_client /kuksa_viss_client
 ENV PYTHONUNBUFFERED=yes
 ENV GRPC_ENABLE_FORK_SUPPORT=false
