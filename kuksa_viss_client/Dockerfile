@@ -6,6 +6,7 @@
 # http://www.eclipse.org/org/documents/edl-v10.php
 #
 
+
 # Note: This dockerfile needs to be executed one level above in the root folder
 
 FROM python:3.10-alpine as build
@@ -14,7 +15,8 @@ COPY kuksa_viss_client /kuksa.val/kuksa_viss_client/
 COPY kuksa_certificates /kuksa.val/kuksa_certificates/
 COPY kuksa-val-server/protos/kuksa.proto /kuksa.val/kuksa_viss_client/kuksa.proto
 WORKDIR /kuksa.val/kuksa_viss_client
-RUN pip install --upgrade pip build grpcio grpcio-tools
+# Eat your own dog food, use grpcio from requirement.txt
+RUN pip install --upgrade pip build
 RUN rm -rf dist 
 RUN python3 setup.py bdist_wheel
 RUN mkdir /kuksa_viss_client
