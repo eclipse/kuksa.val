@@ -329,6 +329,7 @@ class KuksaGrpcComm:
         if self.insecure:
             # Insecure mode
             async with grpc.aio.insecure_channel(serverAddr) as channel:
+                await channel.channel_ready()
                 print("gRPC channel connected.")
                 # Use the gRPC stubs
                 clientStub = kuksa_pb2_grpc.kuksa_grpc_ifStub(channel)
@@ -347,7 +348,8 @@ class KuksaGrpcComm:
 
             creds = grpc.ssl_channel_credentials(root_certificates=caCert, private_key=clientKey, certificate_chain=clientCert)
             async with grpc.aio.secure_channel(serverAddr, creds) as channel:
-                print("Secure gRPC channel created.")
+                await channel.channel_ready()
+                print("Secure gRPC channel connected.")
                 # Use the gRPC Stubs
                 clientStub = kuksa_pb2_grpc.kuksa_grpc_ifStub(channel)
                 await self._grpcHandler(clientStub)
