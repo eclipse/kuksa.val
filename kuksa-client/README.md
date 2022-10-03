@@ -224,3 +224,13 @@ def getValue(self, path, timeout = 5)
 def subscribe(self, path, callback, timeout = 5)
 ```
 
+## Troubleshooting
+
+1. The server/data broker is listening on its port but my client is unable to connect to it and returns an error:
+```
+Error: Websocket could not be connected or the gRPC channel could not be created.
+```
+If you're running both client and server on your local host, make sure that:
+- 'localhost' domain name resolution is configured properly on your host.
+- You are not using any proxies for localhost e.g. setting the `no_proxy` environment variable to `localhost,127.0.0.1`.
+- If you are using the `gRPC` protocol in secure mode, the server certificate should have `CN = localhost` in its subject.
