@@ -63,8 +63,28 @@ fn set_disconnected_prompt(interface: &Arc<Interface<DefaultTerminal>>) {
     interface.set_prompt(&disconnected_prompt).unwrap();
 }
 
-async fn connect(interface: &Arc<Interface<DefaultTerminal>>) -> Option<tonic::transport::Channel> {
-    match tonic::transport::Channel::from_static("http://127.0.0.1:55555")
+fn addr_to_uri(addr: impl AsRef<str>) -> Option<tonic::transport::Uri> {
+    match addr.as_ref().parse::<tonic::transport::Uri>() {
+        Ok(uri) => {
+            let mut parts = uri.into_parts();
+
+            if parts.scheme.is_none() {
+                parts.scheme = Some("http".parse().unwrap());
+            }
+            if parts.path_and_query.is_none() {
+                parts.path_and_query = Some("".parse().unwrap());
+            }
+            Some(tonic::transport::Uri::from_parts(parts).unwrap())
+        }
+        Err(_) => None,
+    }
+}
+
+async fn connect(
+    uri: &tonic::transport::Uri,
+    interface: &Arc<Interface<DefaultTerminal>>,
+) -> Option<tonic::transport::Channel> {
+    match tonic::transport::Channel::builder(uri.clone())
         .connect()
         .await
     {
@@ -110,7 +130,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     interface.bind_sequence("\r", Command::from_str("enter-function"));
     interface.bind_sequence("\n", Command::from_str("enter-function"));
 
-    let mut channel = connect(&interface).await;
+    let addr = std::env::var("KUKSA_DATA_BROKER_ADDR").unwrap_or_else(|_| "127.0.0.1".to_owned());
+    let port = std::env::var("KUKSA_DATA_BROKER_PORT").unwrap_or_else(|_| "55555".to_owned());
+    let mut uri = match addr_to_uri(format!("{}:{}", addr, port)) {
+        Some(uri) => uri,
+        None => return Err(Box::new(ParseError {}).into()),
+    };
+
+    let mut channel = connect(&uri, &interface).await;
+
     if let Some(connection) = &channel {
         if let Some(metadata) = get_metadata(connection).await {
             interface.set_completer(Arc::new(CliCompleter::from_metadata(&metadata)));
@@ -445,8 +473,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                         "connect" => {
                             interface.add_history_unique(line.clone());
-                            if channel.is_none() {
-                                channel = connect(&interface).await;
+                            if channel.is_none() || !args.is_empty() {
+                                if args.is_empty() {
+                                    channel = connect(&uri, &interface).await
+                                } else {
+                                    match addr_to_uri(args) {
+                                        Some(valid_uri) => {
+                                            uri = valid_uri;
+                                            channel = connect(&uri, &interface).await
+                                        }
+                                        None => println!("Failed to parse endpoint address"),
+                                    }
+                                };
                                 if let Some(connection) = &channel {
                                     if let Some(metadata) = get_metadata(connection).await {
                                         interface.set_completer(Arc::new(
@@ -712,6 +750,14 @@ impl fmt::Display for DisplayDatapoint {
 
 #[derive(Debug)]
 struct ParseError {}
+
+impl std::error::Error for ParseError {}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("parse error")
+    }
+}
 
 fn try_into_data_value(
     input: &str,
