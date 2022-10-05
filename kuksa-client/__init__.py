@@ -23,7 +23,7 @@ import uuid
 import asyncio
 scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, ".."))
-from kuksa_viss_client._metadata import *
+from kuksa_client._metadata import *
 from .KuksaWsComm import KuksaWsComm
 from .KuksaGrpcComm import KuksaGrpcComm
 

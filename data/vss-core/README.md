@@ -32,15 +32,15 @@ This is the process for introducing support for a new VSS version:
 ### Kuksa-val-server smoke test
 * Build and start kuksa-val-server with new VSS release as described in the [README](https://github.com/eclipse/kuksa.val/blob/master/kuksa-val-server/README.md)
 * If needed [generate new certificates](https://github.com/eclipse/kuksa.val/tree/master/kuksa_certificates)
-* [Start the VISS client](https://github.com/eclipse/kuksa.val/blob/master/kuksa_viss_client/README.md) and perform some basic tests that VSS changes are present
+* [Start the VISS client](https://github.com/eclipse/kuksa.val/blob/master/kuksa-client/README.md) and perform some basic tests that VSS changes are present
 
 Examples:
 
 Start and authorize with generated token:
 
 ```
-$ python -m kuksa_viss_client
-Welcome to kuksa viss client version 0.2.1
+$ python -m kuksa_client
+Welcome to kuksa-client version 0.2.1
 
                   `-:+o/shhhs+:`                  
                 ./oo/+o/``.-:ohhs-                
@@ -103,7 +103,7 @@ VERBOSE: SubscriptionHandler::publishForVSSPath: set value 8.927633333 for path 
 VERBOSE: SubscriptionHandler::publishForVSSPath: set value 12.244000434875488 for path Vehicle.Speed
 ```
 
-The [VISS client](https://github.com/eclipse/kuksa.val/blob/master/kuksa_viss_client/README.md) can be used to verify that data actually is correctly interpreted.
+The [VISS client](https://github.com/eclipse/kuksa.val/blob/master/kuksa-client/README.md) can be used to verify that data actually is correctly interpreted.
 
 ```
 Test Client> getValue Vehicle.CurrentLocation.Latitude

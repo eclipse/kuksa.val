@@ -1,3 +1,3 @@
-kuksa-viss-client
+kuksa-client
 boto3~=1.16.5
 pyarrow~=3.0.0
