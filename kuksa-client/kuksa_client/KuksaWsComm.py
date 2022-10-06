@@ -36,6 +36,7 @@ class KuksaWsComm:
         self.cacertificate = config.get('cacertificate', os.path.join(scriptDir, "../kuksa_certificates/CA.pem"))
         self.certificate = config.get('certificate', os.path.join(scriptDir, "../kuksa_certificates/Client.pem"))
         self.keyfile = config.get('key', os.path.join(scriptDir, "../kuksa_certificates/Client.key"))
+        self.tokenfile = config.get('token', os.path.join(scriptDir, "../kuksa_certificates/jwt/all-read-write.json.token"))
         self.wsConnected = False
 
         self.subscriptionCallbacks = {}
@@ -116,7 +117,9 @@ class KuksaWsComm:
         print("Server disconnected.")
 
     # Function to authorize against the kuksa.val server
-    def authorize(self, token="", timeout=2):
+    def authorize(self, token=None, timeout=2):
+        if token == None:
+            token = self.tokenfile
         token = os.path.expanduser(token)
         if os.path.isfile(token):
             with open(token, "r") as f:
