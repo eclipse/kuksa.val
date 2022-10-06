@@ -133,7 +133,7 @@ cd kuksa_viss_client
 pipenv shell
 pipenv lock
 pipenv sync
-python __main.py__
+python __main__.py
 ```
 
 After testing you can use `quit` to exit the client and `exit`to exit the pipenv shell. In subsequent runs some parts can be skipped:
@@ -141,7 +141,7 @@ After testing you can use `quit` to exit the client and `exit`to exit the pipenv
 ```bash
 cd kuksa_viss_client
 pipenv shell
-python __main.py__
+python __main__.py
 ```
 
 ## Using Docker
