@@ -22,7 +22,7 @@ import argparse
 import time
 from pickle import FALSE
 
-from kuksa_viss_client import *
+from kuksa_client import *
 
 class StressClient():
 

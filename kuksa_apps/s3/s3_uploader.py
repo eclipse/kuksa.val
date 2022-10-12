@@ -38,7 +38,7 @@ import pyarrow_mapping
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, "../../"))
-from kuksa_viss_client import KuksaClientThread
+from kuksa_client import KuksaClientThread
 
 class S3_Client():
 
