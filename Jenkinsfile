@@ -27,13 +27,13 @@ node('docker') {
         parallel arm64: {
                 stage('arm64') {
                     sh "docker buildx build --platform=linux/arm64 -f ./kuksa-val-server/docker/Dockerfile -t arm64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-arm64.tar ."
-                    sh "docker buildx build --platform=linux/arm64 -f ./kuksa_viss_client/Dockerfile -t arm64/kuksa-client:${versiontag} --output type=docker,dest=./artifacts/kuksa-client-${versiontag}-arm64.tar ."
+                    sh "docker buildx build --platform=linux/arm64 -f ./kuksa-client/Dockerfile -t arm64/kuksa-client:${versiontag} --output type=docker,dest=./artifacts/kuksa-client-${versiontag}-arm64.tar ."
                 }
                 }, 
                 amd64: {
                 stage('amd64') {
                     sh "docker buildx build --platform=linux/amd64 -f ./kuksa-val-server/docker/Dockerfile -t amd64/kuksa-val:${versiontag} --output type=docker,dest=./artifacts/kuksa-val-${versiontag}-amd64.tar ."
-                    sh "docker buildx build --platform=linux/amd64 -f ./kuksa_viss_client/Dockerfile -t amd64/kuksa-client:${versiontag} --output type=docker,dest=./artifacts/kuksa-client-${versiontag}-amd64.tar ."
+                    sh "docker buildx build --platform=linux/amd64 -f ./kuksa-client/Dockerfile -t amd64/kuksa-client:${versiontag} --output type=docker,dest=./artifacts/kuksa-client-${versiontag}-amd64.tar ."
                     //Build to check it is working and for unit tests, but no need to archive                   
                     sh "docker build -t kuksa-val-dev-ubuntu20.04:${versiontag} -f ./kuksa-val-server/docker/Dockerfile.dev ."
             }
