@@ -17,7 +17,7 @@ extern crate linefeed;
 use databroker_proto::sdv::databroker as proto;
 use prost_types::Timestamp;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use std::{fmt, io};
@@ -574,24 +574,132 @@ fn code_to_text(code: &tonic::Code) -> &str {
 }
 
 struct CliCompleter {
-    properties: HashSet<String>,
+    paths: PathPart,
 }
 
+#[derive(Debug)]
+struct PathPart {
+    rel_path: String,
+    full_path: String,
+    children: HashMap<String, PathPart>,
+}
+
+impl PathPart {
+    fn new() -> Self {
+        PathPart {
+            rel_path: "".into(),
+            full_path: "".into(),
+            children: HashMap::new(),
+        }
+    }
+}
 impl CliCompleter {
     fn new() -> CliCompleter {
         CliCompleter {
-            properties: HashSet::<String>::new(),
+            paths: PathPart::new(),
         }
     }
 
     fn from_metadata(metadata: &[proto::v1::Metadata]) -> CliCompleter {
-        let mut properties = HashSet::<String>::new();
+        let mut root = PathPart::new();
         for entry in metadata {
-            properties.insert(entry.name.to_owned());
+            let mut parent = &mut root;
+            let mut parts = entry.name.split('.');
+            loop {
+                let path = parts.next();
+                match path {
+                    Some(path) => {
+                        let full_path = match parent.full_path.as_str() {
+                            "" => path.to_owned(),
+                            _ => format!("{}.{}", parent.full_path, path),
+                        };
+                        let entry =
+                            parent
+                                .children
+                                .entry(path.to_lowercase())
+                                .or_insert(PathPart {
+                                    rel_path: path.to_owned(),
+                                    full_path,
+                                    children: HashMap::new(),
+                                });
+
+                        parent = entry;
+                    }
+                    None => break,
+                };
+            }
         }
-        CliCompleter { properties }
+        CliCompleter { paths: root }
+    }
+
+    fn complete_entry_path(&self, word: &str) -> Option<Vec<Completion>> {
+        if !self.paths.children.is_empty() {
+            let mut res = Vec::new();
+
+            let lowercase_word = word.to_lowercase();
+            let mut parts = lowercase_word.split('.');
+            let mut path = &self.paths;
+            loop {
+                match parts.next() {
+                    Some(part) => {
+                        match path.children.get(part) {
+                            Some(matching_path) => {
+                                path = matching_path;
+                            }
+                            None => {
+                                // match partial
+                                for (path_part_lower, path_spec) in &path.children {
+                                    if path_part_lower.starts_with(&part) {
+                                        if !path_spec.children.is_empty() {
+                                            // This is a branch
+                                            res.push(Completion {
+                                                completion: format!("{}.", path_spec.full_path),
+                                                display: Some(format!("{}.", path_spec.rel_path)),
+                                                suffix: Suffix::None,
+                                            });
+                                        } else {
+                                            res.push(Completion {
+                                                completion: path_spec.full_path.to_owned(),
+                                                display: Some(path_spec.rel_path.to_owned()),
+                                                suffix: Suffix::Default,
+                                            });
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    None => {
+                        for path_spec in path.children.values() {
+                            if !path_spec.children.is_empty() {
+                                // This is a branch
+                                res.push(Completion {
+                                    completion: format!("{}.", path_spec.full_path),
+                                    display: Some(format!("{}.", path_spec.rel_path)),
+                                    suffix: Suffix::None,
+                                });
+                            } else {
+                                res.push(Completion {
+                                    completion: path_spec.full_path.to_owned(),
+                                    display: Some(path_spec.rel_path.to_owned()),
+                                    suffix: Suffix::Default,
+                                });
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            res.sort_by(|a, b| a.display().cmp(&b.display()));
+            Some(res)
+        } else {
+            None
+        }
     }
 }
+
 impl<Term: Terminal> Completer<Term> for CliCompleter {
     fn complete(
         &self,
@@ -622,16 +730,9 @@ impl<Term: Terminal> Completer<Term> for CliCompleter {
                 Some(compls)
             }
             // Complete command parameters
-            Some("get") | Some("set") => {
+            Some("get") | Some("set") | Some("feed") => {
                 if words.count() == 0 {
-                    let mut res = Vec::new();
-
-                    for name in self.properties.iter() {
-                        if name.to_lowercase().starts_with(&word.to_lowercase()) {
-                            res.push(Completion::simple(name.to_string()));
-                        }
-                    }
-                    Some(res)
+                    self.complete_entry_path(word)
                 } else {
                     None
                 }
@@ -640,18 +741,7 @@ impl<Term: Terminal> Completer<Term> for CliCompleter {
                 None => Some(vec![Completion::simple("SELECT".to_owned())]),
                 Some(next) => {
                     if next == "SELECT" {
-                        let mut res = Vec::new();
-
-                        for name in self.properties.iter() {
-                            if name.to_lowercase().starts_with(&word.to_lowercase()) {
-                                res.push(Completion::simple(name.to_string()));
-                            }
-                        }
-
-                        // if res.len() == 1 {
-                        //     res[0].suffix = Suffix::Some(',');
-                        // }
-                        Some(res)
+                        self.complete_entry_path(word)
                     } else {
                         None
                     }
@@ -888,4 +978,70 @@ fn test_parse_values() {
         try_into_data_value("-32000.1", proto::v1::DataType::Int16),
         Err(_)
     ));
+}
+
+#[test]
+fn test_entry_path_completion() {
+    let metadata = &[
+        proto::v1::Metadata {
+            id: 1,
+            name: "Vehicle.Test.Test1".into(),
+            data_type: proto::v1::DataType::Bool as i32,
+            change_type: proto::v1::ChangeType::OnChange as i32,
+            description: "".into(),
+        },
+        proto::v1::Metadata {
+            id: 2,
+            name: "Vehicle.AnotherTest.AnotherTest1".into(),
+            data_type: proto::v1::DataType::Bool as i32,
+            change_type: proto::v1::ChangeType::OnChange as i32,
+            description: "".into(),
+        },
+        proto::v1::Metadata {
+            id: 3,
+            name: "Vehicle.AnotherTest.AnotherTest2".into(),
+            data_type: proto::v1::DataType::Bool as i32,
+            change_type: proto::v1::ChangeType::OnChange as i32,
+            description: "".into(),
+        },
+    ];
+
+    let completer = CliCompleter::from_metadata(metadata);
+
+    assert_eq!(completer.paths.children.len(), 1);
+    assert_eq!(completer.paths.children["vehicle"].children.len(), 2);
+
+    match completer.complete_entry_path("") {
+        Some(completions) => {
+            assert_eq!(completions.len(), 1);
+            assert_eq!(completions[0].display(), "Vehicle.");
+        }
+        None => panic!("expected completions, got None"),
+    }
+
+    match completer.complete_entry_path("v") {
+        Some(completions) => {
+            assert_eq!(completions.len(), 1);
+            assert_eq!(completions[0].display(), "Vehicle.");
+        }
+        None => panic!("expected completions, got None"),
+    }
+
+    match completer.complete_entry_path("vehicle.") {
+        Some(completions) => {
+            assert_eq!(completions.len(), 2);
+            assert_eq!(completions[0].display(), "AnotherTest.");
+            assert_eq!(completions[1].display(), "Test.");
+        }
+        None => panic!("expected completions, got None"),
+    }
+
+    match completer.complete_entry_path("vehicle") {
+        Some(completions) => {
+            assert_eq!(completions.len(), 2);
+            assert_eq!(completions[0].display(), "AnotherTest.");
+            assert_eq!(completions[1].display(), "Test.");
+        }
+        None => panic!("expected completions, got None"),
+    }
 }
