@@ -36,8 +36,8 @@ command.build_package_protos(os.path.join(scriptDir, "kuksa.proto"))
 
 sys.path.append(os.path.join(scriptDir, ".."))
 
-from kuksa_viss_client import KuksaClientThread
-from kuksa_viss_client._metadata import *
+from kuksa_client import KuksaClientThread
+from kuksa_client._metadata import *
 import kuksa_certificates
 
 class TestClient(Cmd):
@@ -55,7 +55,7 @@ class TestClient(Cmd):
                 childVssTree = childVssTree[path]
             elif 'children' in childVssTree and path in childVssTree['children']:
                 childVssTree = childVssTree['children'][path]
-            else: 
+            else:
                 # This else-branch is reached when one of the path components is invalid
                 # In that case stop parsing further and return an empty tree
                 # Autocompletion can't help here.
@@ -71,7 +71,7 @@ class TestClient(Cmd):
             return
         if len(self.pathCompletionItems) == 0:
             tree = json.loads(self.getMetaData("*"))
-                
+
             if 'metadata' in tree:
                 self.vssTree = tree['metadata']
 
@@ -114,9 +114,9 @@ class TestClient(Cmd):
         for id in self.subscribeIdToPath.keys():
             self.pathCompletionItems.append(CompletionItem(id))
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
-    
+
     COMM_SETUP_COMMANDS = "Communication Set-up Commands"
-    VISS_COMMANDS = "Kuksa Interaction Commands"
+    VSS_COMMANDS = "Kuksa Interaction Commands"
     INFO_COMMANDS = "Info Commands"
 
     ap_getServerAddr = argparse.ArgumentParser()
@@ -128,9 +128,9 @@ class TestClient(Cmd):
         path_filter=lambda path: (os.path.isdir(path) or path.endswith(".token")))
     ap_authorize.add_argument('Token', help='JWT(or the file storing the token) for authorizing the client.', completer_method=tokenfile_completer_method)
     ap_setServerAddr = argparse.ArgumentParser()
-    ap_setServerAddr.add_argument('IP', help='VISS Server IP Address', default=DEFAULT_SERVER_ADDR)
-    ap_setServerAddr.add_argument('Port', type=int, help='VISS Server Port', default=DEFAULT_SERVER_PORT)
-    ap_setServerAddr.add_argument('-p', "--protocol", help='VISS Server Communication Protocol (ws or grpc)', default=DEFAULT_SERVER_PROTOCOL)
+    ap_setServerAddr.add_argument('IP', help='VISS/gRPC Server IP Address', default=DEFAULT_SERVER_ADDR)
+    ap_setServerAddr.add_argument('Port', type=int, help='VISS/gRPC Server Port', default=DEFAULT_SERVER_PORT)
+    ap_setServerAddr.add_argument('-p', "--protocol", help='VISS/gRPC Server Communication Protocol (ws or grpc)', default=DEFAULT_SERVER_PROTOCOL)
 
     ap_setValue = argparse.ArgumentParser()
     ap_setValue.add_argument("Path", help="Path to be set", completer_method=path_completer)
@@ -177,13 +177,13 @@ class TestClient(Cmd):
         self.serverProtocol = DEFAULT_SERVER_PROTOCOL
         # Supported set of protocols
         self.supportedProtocols = ["ws", "grpc"]
-        
+
         self.vssTree = {}
         self.pathCompletionItems = []
         self.subscribeFileDesc = {}
         self.subscribeIdToPath = {}
 
-        print("Welcome to kuksa viss client version " + str(__version__))
+        print("Welcome to Kuksa Client version " + str(__version__))
         print()
         with open(os.path.join(scriptDir, 'logo'), 'r') as f:
             print(f.read())
@@ -200,7 +200,7 @@ class TestClient(Cmd):
             resp = self.commThread.authorize(args.Token)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
-    @with_category(VISS_COMMANDS)
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_setValue)
     def do_setValue(self, args):
         """Set the value of a path"""
@@ -209,7 +209,7 @@ class TestClient(Cmd):
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
-    @with_category(VISS_COMMANDS)
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_setTargetValue)
     def do_setTargetValue(self, args):
         """Set the value of a path"""
@@ -218,7 +218,7 @@ class TestClient(Cmd):
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
-    @with_category(VISS_COMMANDS)
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_getValue)
     def do_getValue(self, args):
         """Get the value of a path"""
@@ -227,7 +227,7 @@ class TestClient(Cmd):
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
-    @with_category(VISS_COMMANDS)
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_getTargetValue)
     def do_getTargetValue(self, args):
         """Get the value of a path"""
@@ -236,14 +236,14 @@ class TestClient(Cmd):
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
-    @with_category(VISS_COMMANDS)
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_subscribe)
     def do_subscribe(self, args):
         """Subscribe the value of a path"""
         if self.checkConnection():
-            
+
             resp = self.commThread.subscribe(args.Path, lambda msg: self.subscribeCallback(args.Path, args.attribute, msg), args.attribute)
-            resJson =  json.loads(resp) 
+            resJson =  json.loads(resp)
             if "subscriptionId" in resJson:
                 fileName = os.getcwd() + "/log_"+args.Path.replace("/", ".")+"_"+args.attribute+"_"+str(time.time())
                 self.subscribeFileDesc[(args.Path, args.attribute)] = open(fileName, "w")
@@ -256,7 +256,7 @@ class TestClient(Cmd):
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
-    @with_category(VISS_COMMANDS)
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_unsubscribe)
     def do_unsubscribe(self, args):
         """Unsubscribe an existing subscription"""
@@ -286,7 +286,7 @@ class TestClient(Cmd):
         else:
             return "{}"
 
-    @with_category(VISS_COMMANDS)
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_updateVSSTree)
     def do_updateVSSTree(self, args):
         """Update VSS Tree Entry"""
@@ -294,7 +294,7 @@ class TestClient(Cmd):
             resp =  self.commThread.updateVSSTree(args.Json)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
-    @with_category(VISS_COMMANDS)
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_updateMetaData)
     def do_updateMetaData(self, args):
         """Update MetaData of a given path"""
@@ -302,7 +302,7 @@ class TestClient(Cmd):
             resp =  self.commThread.updateMetaData(args.Path, args.Json)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
-    @with_category(VISS_COMMANDS)
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_getMetaData)
     def do_getMetaData(self, args):
         """Get MetaData of the path"""
@@ -314,19 +314,19 @@ class TestClient(Cmd):
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_disconnect)
     def do_disconnect(self, args):
-        """Disconnect from the VISS Server"""
+        """Disconnect from the VISS/gRPC Server"""
         if hasattr(self, "commThread"):
             if self.commThread != None:
                 self.commThread.stop()
                 self.commThread = None
 
     def checkConnection(self):
-        if None == self.commThread or not self.commThread.checkConnection(): 
+        if None == self.commThread or not self.commThread.checkConnection():
             self.connect()
         return self.commThread.checkConnection()
 
     def connect(self, insecure=False):
-        """Connect to the VISS Server"""
+        """Connect to the VISS/gRPC Server"""
         if hasattr(self, "commThread"):
             if self.commThread != None:
                 self.commThread.stop()
@@ -359,7 +359,7 @@ class TestClient(Cmd):
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_setServerAddr)
     def do_setServerAddress(self, args):
-        """Sets the IP Address for the VISS Server"""
+        """Sets the IP Address for the VISS/gRPC Server"""
         try:
             self.serverIP = args.IP
             self.serverPort = args.Port
@@ -373,7 +373,7 @@ class TestClient(Cmd):
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_getServerAddr)
     def do_getServerAddress(self, args):
-        """Gets the IP Address for the VISS Server"""
+        """Gets the IP Address for the VISS/gRPC Server"""
         if hasattr(self, "serverIP") and hasattr(self, "serverPort"):
             print(self.serverIP + ":" + str(self.serverPort))
         else:
@@ -391,7 +391,7 @@ class TestClient(Cmd):
     @with_category(INFO_COMMANDS)
     def do_info(self, args):
         """Show summary info of the client"""
-        print("Kuksa viss client version " + __version__)
+        print("kuksa-client version " + __version__)
         print("Uri: " + __uri__)
         print("Author: " + __author__)
         print("Copyright: " + __copyright__)

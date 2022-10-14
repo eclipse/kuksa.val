@@ -1,4 +1,4 @@
-name: kuksa_viss_client_docker
+name: kuksa_client_docker
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [ master ]
     paths:
-    - ".github/workflows/kuksa_viss_client.yml"
-    - "kuksa_viss_client/**"
+    - ".github/workflows/kuksa-client.yml"
+    - "kuksa-client/**"
   workflow_dispatch:
 
     
@@ -55,7 +55,7 @@ jobs:
           linux/amd64
           linux/arm64
         context: .
-        file: kuksa_viss_client/Dockerfile
+        file: kuksa-client/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
@@ -68,7 +68,7 @@ jobs:
           linux/amd64
           linux/arm64
         context: .
-        file: kuksa_viss_client/Dockerfile
+        file: kuksa-client/Dockerfile
         push: true
         tags: "ttl.sh/kuksa.val/kuksa-client:8h"
         labels: ${{ steps.meta.outputs.labels }}

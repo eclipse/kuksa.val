@@ -1,4 +1,4 @@
-# Kuksa VISS Client
+# Kuksa Client
 ![kuksa.val Logo](https://raw.githubusercontent.com/eclipse/kuksa.val/0.2.5/doc/pictures/logo.png)
 
 `kuksa.val` is a part of the opensource project [eclipse kuksa](https://www.eclipse.org/kuksa/).
@@ -6,41 +6,41 @@ More about `kuksa.val` can be found in the [repository](https://github.com/eclip
 
 ## Introduction
 
-`kuksa_viss_client` is a command-line test client which can be used to interact with the [KUKSA val server](https://github.com/eclipse/kuksa.val/tree/0.2.5/kuksa-val-server)
+`kuksa-client` is a command-line test client which can be used to interact with the [KUKSA val server](https://github.com/eclipse/kuksa.val/tree/0.2.5/kuksa-val-server)
 
 ## Installing and Starting the client
 
-The fastest way to start using the kuksa-viss-client is to install a pre-built version with pip.
+The fastest way to start using the kuksa-client is to install a pre-built version with pip.
 Instructions on how to build and run locally can be found further down in this document.
 
 ```
-pip install kuksa-viss-client
+pip install kuksa-client
 ```
 
 
-After you have installed the kuksa-viss-client package via pip you can run the test client directly by executing
+After you have installed the kuksa-client package via pip you can run the test client directly by executing
 
 ```bash
-$ kuksa_viss_client
+$ kuksa-client
 ```
 If everything works as expected and the server can be contacted you will get an output similar to below.
 
 
 ```bash
-Welcome to kuksa viss client version <some_version>
+Welcome to Kuksa Client version <some_version>
 
-                  `-:+o/shhhs+:`                  
-                ./oo/+o/``.-:ohhs-                
-              `/o+-  /o/  `..  :yho`              
-              +o/    /o/  oho    ohy`             
-             :o+     /o/`+hh.     sh+             
-             +o:     /oo+o+`      /hy             
-             +o:     /o+/oo-      +hs             
-             .oo`    oho `oo-    .hh:             
-              :oo.   oho  -+:   -hh/              
-               .+o+-`oho     `:shy-               
-                 ./o/ohy//+oyhho-                 
-                    `-/+oo+/:.             
+                  `-:+o/shhhs+:`
+                ./oo/+o/``.-:ohhs-
+              `/o+-  /o/  `..  :yho`
+              +o/    /o/  oho    ohy`
+             :o+     /o/`+hh.     sh+
+             +o:     /oo+o+`      /hy
+             +o:     /o+/oo-      +hs
+             .oo`    oho `oo-    .hh:
+              :oo.   oho  -+:   -hh/
+               .+o+-`oho     `:shy-
+                 ./o/ohy//+oyhho-
+                    `-/+oo+/:.
 
 Default tokens directory: /some/path/kuksa_certificates/jwt
 
@@ -50,12 +50,12 @@ Test Client>
 ```
 
 The next step is to authorize against the server.
-The jwt tokens for testing can either be found under [kuksa_certificates/jwt](https://github.com/eclipse/kuksa.val/tree/0.2.5/kuksa_certificates/jwt) or you can also use following command inside `kuksa_viss_client` to find the via `pip` installed certificate directory.
+The jwt tokens for testing can either be found under [kuksa_certificates/jwt](https://github.com/eclipse/kuksa.val/tree/0.2.5/kuksa_certificates/jwt) or you can also use following command inside `kuksa-client` to find the via `pip` installed certificate directory.
 
 ```bash
 Test Client> printTokenDir
 ```
-Select one of the tokens and use the `authorize` command like below. 
+Select one of the tokens and use the `authorize` command like below.
 
 ```bash
 Test Client> authorize /some/path/kuksa_certificates/jwt/super-admin.json.token
@@ -72,7 +72,7 @@ Documented commands (use 'help -v' for verbose/'help <topic>' for details):
 Communication Set-up Commands
 ================================================================================
 authorize           Authorize the client to interact with the server
-connect             
+connect
 disconnect          Disconnect from the VSS Server
 getServerAddress    Gets the IP Address for the VSS Server
 setServerAddress    Sets the IP Address for the VSS Server
@@ -89,12 +89,12 @@ getMetaData         Get MetaData of the path
 getValue            Get the value of a path
 setValue            Set the value of a path
 updateMetaData      Update MetaData of a given path
-updateVISSTree      Update VISS Tree Entry
+updateVSSTree      Update VSS Tree Entry
 ```
 
 This is an example showing how some of the commands can be used:
 
-![try kuksa_viss_client out](https://raw.githubusercontent.com/eclipse/kuksa.val/0.2.5/doc/pictures/testclient_basic.gif "test client usage")
+![try kuksa-client out](https://raw.githubusercontent.com/eclipse/kuksa.val/0.2.5/doc/pictures/testclient_basic.gif "test client usage")
 
 ### Updating VSS Structure
 
@@ -105,15 +105,15 @@ Using the testclient, it is also possible to update and extend the VSS data stru
 ```
 Test Client> setValue Vehicle.OBD.DTCList ["dtc1","dtc2"]
 {
-    "action": "set", 
-    "requestId": "f7b199ce-4d86-4759-8d9a-d6f8f935722d", 
+    "action": "set",
+    "requestId": "f7b199ce-4d86-4759-8d9a-d6f8f935722d",
     "ts": "2022-03-22T17:19:34.1647965974Z"
 }
 
 Test Client> setValue Vehicle.OBD.DTCList '["dtc1", "dtc2"]'
 {
-    "action": "set", 
-    "requestId": "d4a19322-67d8-4fad-aa8a-2336404414be", 
+    "action": "set",
+    "requestId": "d4a19322-67d8-4fad-aa8a-2336404414be",
     "ts": "2022-03-22T17:19:44.1647965984Z"
 }
 
@@ -129,28 +129,28 @@ For development purposes it may be necessary to customize the code for the clien
 The commands below can be used for that purpose. this will assure that local `*.py` files will be used when running the client.
 
 ```bash
-cd kuksa_viss_client
+cd kuksa-client
 pipenv shell
 pipenv lock
 pipenv sync
-python __main.py__
+python __main__.py
 ```
 
 After testing you can use `quit` to exit the client and `exit`to exit the pipenv shell. In subsequent runs some parts can be skipped:
 
 ```bash
-cd kuksa_viss_client
+cd kuksa-client
 pipenv shell
-python __main.py__
+python __main__.py
 ```
 
 ## Using Docker
-You can build a docker image of the testclient using the [`Dockerfile`](./Dockerfile). Not the most effcient way to pack a small python script, but it is easy to get started. The Dockerfile needs to be executed on the parent directory (so it include the needed certificates and `pip` package configuration). 
+You can build a docker image of the testclient using the [`Dockerfile`](./Dockerfile). Not the most effcient way to pack a small python script, but it is easy to get started. The Dockerfile needs to be executed on the parent directory (so it include the needed certificates and `pip` package configuration).
 
 
 ```bash
 cd /some/dir/kuksa.val
-docker build -f kuksa_viss_client/Dockerfile -t kuksa-client:latest .
+docker build -f kuksa-client/Dockerfile -t kuksa-client:latest .
 ```
 
 To run the builded image:
@@ -171,8 +171,8 @@ you can use the python sdk to interact with the `kuksa.val` server in a very eas
 
 import the sdk
 ```
->>> import kuksa_viss_client
->>> kuksa_viss_client.__version__
+>>> import kuksa_client
+>>> kuksa_client.__version__
 '<your version, e.g. 0.1.7>'
 ```
 
@@ -186,9 +186,9 @@ The following properties for the connection can be configured:
 - `key` default: "../kuksa_certificates/Client.key"
 
 ```
->>> config = {} 
->>> client = kuksa_viss_client.KuksaClientThread(config)
->>> 
+>>> config = {}
+>>> client = kuksa_client.KuksaClientThread(config)
+>>>
 >>> # Start the client thread to connect with configured server
 >>> client.start()
 >>>
@@ -202,8 +202,8 @@ You have the following methods to interact with the `kuksa.val` server:
 # Do authorization by passing a jwt token or a token file
 def authorize(self, token, timeout = 2)
 
-# Update VISS Tree Entry 
-def updateVISSTree(self, jsonStr, timeout = 5)
+# Update VSS Tree Entry
+def updateVSSTree(self, jsonStr, timeout = 5)
 
 # Update Meta Data of a given path
 def updateMetaData(self, path, jsonStr, timeout = 5)

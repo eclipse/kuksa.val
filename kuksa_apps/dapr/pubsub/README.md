@@ -16,7 +16,7 @@ pip3 install -r requirements.txt
 
 ## Run the example
 
-At first, you need to start `kuksa.val` and [kuksa viss client](../../../kuksa_viss_client) to feed data into `kuksa.val`.
+At first, you need to start `kuksa.val` and [kuksa-client](../../../kuksa-client) to feed data into `kuksa.val`.
 This dapr app `kuksavalstorage` subscribes the given vss pathes and publishes the value, if the value is changed.
 To configure the subscribed vss path and the address of `kuksa.val`, you can use the config file [`config.ini`](./config.ini).
 

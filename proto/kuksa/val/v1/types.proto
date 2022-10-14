@@ -203,7 +203,7 @@ enum EntryType {
 // A `View` specifies a set of fields which should
 // be populated in a `DataEntry` (in a response message)
 enum View {
-  VIEW_UNSPECIFIED   = 0;   // Unspecified. Equivalent to VIEW_VALUE unless `fields` are explicitly set.
+  VIEW_UNSPECIFIED   = 0;   // Unspecified. Equivalent to VIEW_CURRENT_VALUE unless `fields` are explicitly set.
   VIEW_CURRENT_VALUE = 1;   // Populate DataEntry with value.
   VIEW_TARGET_VALUE  = 2;   // Populate DataEntry with actuator target.
   VIEW_METADATA      = 3;   // Populate DataEntry with metadata.

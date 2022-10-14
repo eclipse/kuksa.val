@@ -10,21 +10,21 @@
 
 FROM python:3.10-alpine as build
 RUN apk update && apk add git alpine-sdk linux-headers
-COPY kuksa_viss_client /kuksa.val/kuksa_viss_client/
+COPY kuksa-client /kuksa.val/kuksa-client/
 COPY kuksa_certificates /kuksa.val/kuksa_certificates/
-COPY kuksa-val-server/protos/kuksa.proto /kuksa.val/kuksa_viss_client/kuksa.proto
-WORKDIR /kuksa.val/kuksa_viss_client
+COPY kuksa-val-server/protos/kuksa.proto /kuksa.val/kuksa-client/kuksa.proto
+WORKDIR /kuksa.val/kuksa-client
 RUN pip install --upgrade pip build grpcio grpcio-tools
-RUN rm -rf dist 
+RUN rm -rf dist
 RUN python3 setup.py bdist_wheel
-RUN mkdir /kuksa_viss_client
-RUN pip install --target /kuksa_viss_client --no-cache-dir dist/*.whl 
+RUN mkdir /kuksa-client
+RUN pip install --target /kuksa-client --no-cache-dir dist/*.whl
 
 FROM python:3.10-alpine
 
 RUN apk add --no-cache libstdc++
-COPY --from=build /kuksa_viss_client /kuksa_viss_client
+COPY --from=build /kuksa-client /kuksa-client
 ENV PYTHONUNBUFFERED=yes
 ENV GRPC_ENABLE_FORK_SUPPORT=false
-WORKDIR /kuksa_viss_client
-CMD ["/usr/local/bin/python", "-m", "kuksa_viss_client"]
+WORKDIR /kuksa-client
+CMD ["/usr/local/bin/python", "-m", "kuksa_client"]
