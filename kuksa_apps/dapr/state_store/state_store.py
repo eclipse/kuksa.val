@@ -28,7 +28,7 @@ from dapr.clients.grpc._state import StateItem
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(scriptDir, "../../../"))
-from kuksa_viss_client import KuksaClientThread
+from kuksa_client import KuksaClientThread
 
 class Kuksa_Client():
 

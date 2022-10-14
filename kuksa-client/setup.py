@@ -28,9 +28,9 @@ setuptools.setup(
         "version_file": None,
         "count_commits_from_version_file": False
     },
-    package_dir={'kuksa_viss_client': '.' , 'kuksa_certificates': '../kuksa_certificates'},
-    packages=['kuksa_viss_client', 'kuksa_certificates'],
-    package_data={ "kuksa_viss_client": ["logo"], "kuksa_certificates": ["*", "jwt/*"]},
+    package_dir={'kuksa_client': '.' , 'kuksa_certificates': '../kuksa_certificates'},
+    packages=['kuksa_client', 'kuksa_certificates'],
+    package_data={ "kuksa_client": ["logo"], "kuksa_certificates": ["*", "jwt/*"]},
     setup_requires=['setuptools-git-versioning', 'grpcio', 'grpcio-tools'],
     cmdclass={
     'build': BuildCommand,
