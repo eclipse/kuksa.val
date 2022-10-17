@@ -11,6 +11,7 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::pin::Pin;
@@ -169,10 +170,17 @@ impl proto::val_server::Val for broker::DataBroker {
         request: tonic::Request<proto::SubscribeRequest>,
     ) -> Result<tonic::Response<Self::SubscribeStream>, tonic::Status> {
         let request = request.into_inner();
-        let mut paths = Vec::new();
-        let mut fields = HashSet::new();
+
+        if request.entries.is_empty() {
+            return Err(tonic::Status::invalid_argument(
+                "Subscription request must contain at least one entry.",
+            ));
+        }
+
+        let mut entries = HashMap::new();
+
         for entry in request.entries {
-            paths.push(entry.path.clone());
+            let mut fields = HashSet::new();
             for id in entry.fields {
                 match proto::Field::from_i32(id) {
                     Some(field) => match field {
@@ -194,11 +202,12 @@ impl proto::val_server::Val for broker::DataBroker {
                     }
                 };
             }
+            entries.insert(entry.path.clone(), fields);
         }
-        match self.subscribe(paths, fields).await {
+
+        match self.subscribe(entries).await {
             Ok(stream) => {
                 let stream = convert_to_proto_stream(stream);
-                debug!("Subscribed to new query");
                 Ok(tonic::Response::new(Box::pin(stream)))
             }
             Err(e) => Err(tonic::Status::new(
