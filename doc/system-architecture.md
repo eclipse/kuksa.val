@@ -1,6 +1,6 @@
 # System Architecture and Deployment
 
-The KUKSA.val aims to provide a consistent view of all signals inside a vehicle. The data model follows the [COVESA Vehicle Signal Specification](https://github.com/COVESA/vehicle_signal_specification) while the data is accessed using either a variant of the [W3C VISS protocol](https://github.com/w3c/automotive) or a [GRPC](https://grpc.io)-based protocol.
+The KUKSA.val aims to provide a consistent view of all signals inside a vehicle. The data model follows the [COVESA Vehicle Signal Specification](https://github.com/COVESA/vehicle_signal_specification) while the data is accessed using either a variant of the [W3C VISS protocol](https://github.com/w3c/automotive) or a [GRPC](https://grpc.io)-based protocol. The KUKSA.val contains two slightly different server-client systems - the [data broker](../kuksa_databroker/) and the [server](../kuksa-val-server/). For the differences of the two go [here](./server-vs-broker.md).
 
 The following picture shows the basic system architecture:
 
