@@ -21,11 +21,11 @@ set(SERVER_EXE_NAME "${PROJECT_NAME}" )
 set(SERVER_OBJ_LIB_NAME ${SERVER_EXE_NAME}-object )
 set(SERVER_LIB_NAME ${SERVER_EXE_NAME}-core )
 set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
-set(GRPC_GENERATED_LIB_NAME kuksa_viss_grpc_generated-object) 
-set(GRPC_CLIENT_EXE_NAME kuksa_viss_grpc_client) 
+set(GRPC_GENERATED_LIB_NAME kuksa_grpc_client_generated-object)
+set(GRPC_CLIENT_EXE_NAME kuksa_grpc_client)
 
 
-### 
+###
 # Setup grpc
 set(proto_gen_dir "${CMAKE_BINARY_DIR}/proto")
 set(kuksa_proto "${CMAKE_CURRENT_SOURCE_DIR}/../protos/kuksa.proto")

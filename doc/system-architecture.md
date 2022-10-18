@@ -25,7 +25,7 @@ Some data might originate in the same compute unit running the KUKSA.val. In thi
 
 Finally, there may be other  processor based platforms in a vehicle such as another vehicle computer, a domain, or zone controller or an infotainment system (VCU). These systems can feed data by interacting with the remote KUKSA.val server by using the VISS protocol directly. 
 
-Any feeder can make use of the [KUKSA.val client library](../kuksa_viss_client/) to interact with KUKSA.val using VISS or GRPC.
+Any feeder can make use of the [KUKSA.val client library](../kuksa-client/) to interact with KUKSA.val using VISS or GRPC.
 
 ## Applications
 Applications are accessing vehicle signals through KUKSA.val. The following figure shows common patterns:
@@ -38,7 +38,7 @@ Often data needs to be made available in the cloud, or other vehicle-external sy
 
 As a VSS data catalogue can contain signals of different abstraction levels, often higher level signals depend on lower level ones. Thus a KUKSA.val application might use data from some signals to calculate the value of of others (Signal Refinement). An example is, taking current battery voltage and other low level signals from the battery system to calculate a state-of-charge and pushing it back. Another service might use state of-charge, system and ambient temperature to calculate remaining range.
 
-Any application can make use of the [KUKSA.val client library](../kuksa_viss_client/) to interact with KUKSA.val using VISS or GRPC.
+Any application can make use of the [KUKSA.val client library](../kuksa-client/) to interact with KUKSA.val using VISS or GRPC.
 
 ## Where to deploy KUKSA.val in a vehicle
 

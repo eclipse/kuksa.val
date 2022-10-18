@@ -1,7 +1,7 @@
 # KUKSA.VAL
 ![kuksa.val Logo](../doc/pictures/logo.png)
 
-kuksa-val-server is a reature rich in-vehicle data server written in C++ providing authorized access to vehicle data.
+kuksa-val-server is a feature rich in-vehicle data server written in C++ providing authorized access to vehicle data.
 
 
 Check [System Architecture](doc/system-architecture.md) for an overview how KUKSA.val can be used and deployed in a modern Software Defined Vehicle.
@@ -14,9 +14,9 @@ See [Supported Protocol](../doc/protocol/README.md) for a detailled overview of 
  - Websocket interface, TLS-secured or plain
  - [Fine-grained authorisation](../doc/jwt.md) based on JSON Webtokens (RFC 7519)
  - Built-in MQTT publisher
- - [Python viss client](../kuksa_viss_client) to interactively explore and modify the VISS data points and data structure
- - Multiple [example apps](../kuksa_apps) in different programming languages to communicate with different frameworks 
- - Multiple [feeders](../kuksa-feeders) to provide vehicle data for the `kuksa.val` server
+ - Python [Kuksa Client](../kuksa-client) to interactively explore and modify the VSS data points and data structure
+ - Multiple [example apps](../kuksa_apps) in different programming languages to communicate with different frameworks
+ - Multiple [feeders](https://github.com/eclipse/kuksa.val.feeders/tree/main) to provide vehicle data for the `kuksa.val` server
  - Support most of data types, which is specified in [COVESA VSS data model](https://covesa.github.io/vehicle_signal_specification/rule_set/data_entry/data_types/).
 
 
@@ -78,7 +78,7 @@ Once the devcontainer is running you can continue with [compiling](#compiling).
 First install the required packages. On Ubuntu 20.04 this can be achieved by
 
 ```
-sudo apt install cmake build-essential libssl-dev libmosquitto-dev 
+sudo apt install cmake build-essential libssl-dev libmosquitto-dev
 ```
 
 **Note**: If you use `cmake >= 3.14`, you do not need to install boost on your system. `cmake` will download the required boost for building. Otherwise you need install the [`boost==1.75`](https://www.boost.org/users/history/version_1_75_0.html) on the system.
@@ -123,34 +123,34 @@ if no other config file is specified using the command line option `-c/--config-
 For more information check [usage](../doc/usage.md).
 
 ## Using kuksa.val
-The easiest way to try `kuksa-val-server` out, is to use the test client [`kuksa_viss_client`](../kuksa_viss_client):
+The easiest way to try `kuksa-val-server` out, is to use the test client [`kuksa-client`](../kuksa-client):
 
 ```
-pip install kuksa-viss-client
-kuksa_viss_client
+pip install kuksa-client
+kuksa-client
 ```
 
-![try kuksa_viss_client out](../doc/pictures/testclient_basic.gif "test client usage")
+![try kuksa-client out](../doc/pictures/testclient_basic.gif "test client usage")
 
 The jwt tokens for testing can also be found under [kuksa_certificates/jwt](../kuksa_certificates/jwt).
 
-You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa_viss_client` can be found [here](../kuksa_viss_client). 
+You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa-client` can be found [here](../kuksa-client).
 
-Additionally, you can use the [example apps](../kuksa_apps) and [feeders](../kuksa-feeders) to handle vehicle data, interacting with `kuksa-val-server`.
+Additionally, you can use the [example apps](../kuksa_apps) and [feeders](https://github.com/eclipse/kuksa.val.feeders/tree/main) to handle vehicle data, interacting with `kuksa-val-server`.
 
 ## Using kuksa.val with a gRPC Client
-Aditionally theres exists a experimental gRPC server. The easist way to test the server is the kuksa_viss_grpc_client.
+Additionally theres exists an experimental gRPC server. The easiest way to test the server is the kuksa_grpc_client.
 To run the client follow these steps:
 
 ```
 cd build/src
-./kuksa_viss_grpc_client
+./kuksa_grpc_client
 ```
 
 If you do not know how to use the client:
 
 ```
-./kuksa_viss_grpc_client --help
+./kuksa_grpc_client --help
 ```
 
 
