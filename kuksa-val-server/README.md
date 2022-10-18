@@ -1,7 +1,7 @@
 # KUKSA.VAL
 ![kuksa.val Logo](../doc/pictures/logo.png)
 
-kuksa-val-server is a reature rich in-vehicle data server written in C++ providing authorized access to vehicle data.
+kuksa-val-server is a feature rich in-vehicle data server written in C++ providing authorized access to vehicle data.
 
 
 Check [System Architecture](doc/system-architecture.md) for an overview how KUKSA.val can be used and deployed in a modern Software Defined Vehicle.
@@ -16,7 +16,7 @@ See [Supported Protocol](../doc/protocol/README.md) for a detailled overview of 
  - Built-in MQTT publisher
  - Python [Kuksa Client](../kuksa-client) to interactively explore and modify the VSS data points and data structure
  - Multiple [example apps](../kuksa_apps) in different programming languages to communicate with different frameworks
- - Multiple [feeders](../kuksa-feeders) to provide vehicle data for the `kuksa.val` server
+ - Multiple [feeders](https://github.com/eclipse/kuksa.val.feeders/tree/main) to provide vehicle data for the `kuksa.val` server
  - Support most of data types, which is specified in [COVESA VSS data model](https://covesa.github.io/vehicle_signal_specification/rule_set/data_entry/data_types/).
 
 
@@ -136,7 +136,7 @@ The jwt tokens for testing can also be found under [kuksa_certificates/jwt](../k
 
 You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa-client` can be found [here](../kuksa-client).
 
-Additionally, you can use the [example apps](../kuksa_apps) and [feeders](../kuksa-feeders) to handle vehicle data, interacting with `kuksa-val-server`.
+Additionally, you can use the [example apps](../kuksa_apps) and [feeders](https://github.com/eclipse/kuksa.val.feeders/tree/main) to handle vehicle data, interacting with `kuksa-val-server`.
 
 ## Using kuksa.val with a gRPC Client
 Additionally theres exists an experimental gRPC server. The easiest way to test the server is the kuksa_grpc_client.
