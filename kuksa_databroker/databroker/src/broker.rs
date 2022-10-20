@@ -645,6 +645,20 @@ impl QuerySubscription {
     }
 }
 
+impl ChangeNotification {
+    pub(crate) fn get_actuator_target(&self) -> Option<DataValue> {
+        if self.fields.contains(&Field::ActuatorTarget) {
+            if let Some(actuator_target) = &self.update.actuator_target {
+                actuator_target.clone()
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
 impl Entries {
     pub fn new() -> Self {
         Self {

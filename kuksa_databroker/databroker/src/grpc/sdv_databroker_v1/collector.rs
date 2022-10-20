@@ -12,12 +12,15 @@
 ********************************************************************************/
 
 use std::collections::HashMap;
+use std::pin::Pin;
 
 use databroker_proto::sdv::databroker::v1 as proto;
 
 use tokio::select;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::{Stream, StreamExt};
+
 use tonic::{Code, Response, Status};
 use tracing::debug;
 
@@ -205,4 +208,41 @@ impl proto::collector_server::Collector for broker::DataBroker {
             None => Ok(Response::new(proto::RegisterDatapointsReply { results })),
         }
     }
+
+    type SubscribeActuatorTargetsStream = Pin<Box<dyn Stream<Item = Result<proto::SubscribeActuatorTargetReply, Status>> + Send + Sync + 'static>>;
+    async fn subscribe_actuator_targets(
+            &self,
+            request: tonic::Request<proto::SubscribeActuatorTargetRequest>,
+        ) -> Result<tonic::Response<Self::SubscribeActuatorTargetsStream>, tonic::Status> {
+            debug!("{:?}", request);
+            let request = request.into_inner();
+            let paths = request.paths;
+            match self.subscribe(paths, vec![broker::Field::ActuatorTarget]).await {
+                Ok(stream) => {
+                    let stream = convert_to_proto_stream(stream);
+                    debug!("Subscribed to new query");
+                    Ok(tonic::Response::new(Box::pin(stream)))
+                }
+                Err(e) => Err(tonic::Status::new(
+                    tonic::Code::InvalidArgument,
+                    format!("{:?}", e),
+                )),
+            }
+        }
+}
+
+fn convert_to_proto_stream(
+    input: impl Stream<Item = broker::EntryUpdates>,
+) -> impl tokio_stream::Stream<Item = Result<proto::SubscribeActuatorTargetReply, tonic::Status>> {
+    input.map(move |item| {
+        let mut actuator_targets = HashMap::new();
+        for update in item.updates {
+            if let (Some(path), Some(actuator_target)) = (&update.update.path, update.get_actuator_target()) {
+                actuator_targets.insert(path.to_owned(), proto::Datapoint::from(&actuator_target));
+            }
+
+        }
+        let response = proto::SubscribeActuatorTargetReply { actuator_targets };
+        Ok(response)
+    })
 }
