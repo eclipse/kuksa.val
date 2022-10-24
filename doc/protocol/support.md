@@ -14,20 +14,10 @@ x = supported; x/o = partly supported; o = not supported
 
 
 ### Server and VISS v1
-#### Support for described actions and objects in [VISS V1](https://www.w3.org/TR/vehicle-information-service/)
-Support of Request Object - Request Responses:
+#### Support for [VISS v1](https://www.w3.org/TR/vehicle-information-service/)
+KUKSA.val supports the semantic of VISS v1 but only the new syntax of VISS v2.
 
-| Request Object                |      Request Response                                                                                                 |
-|:------------:                   |:----------------                                                                                                    |
-| authorizeRequest [x]          |authorizeSuccessResponse [x] authorizeErrorResponse [x]                                                                |
-| metadataRequest [x]           |metadataSuccessResponse [x] metadataErrorResponse [x]                                                                  |
-| getRequest [x]                |getSuccessResponse [x] getErrorResponse [x]                                                                            |
-| setRequest [x]                |setSuccessResponse [x] setErrorResponse [x]                                                                            |
-| subscribeRequest [x]          |subscribeSuccessResponse [x] subscribeErrorResponse [x] subscriptionNotification [x] subscriptionNotificationError [x] |
-| unsubscribeRequest [x]        |unsubscribeSuccessResponse [x] unsubscribeErrorResponse [x]                                                            |
-| unsubscribeAllRequest [x]     |unsubscribeAllSuccessResponse [x] unsubscribeAllErrorResponse [x]                                                      |
-
-Support of client actions:
+Support of semantic for client actions:
 
 | Action        |    Support      |
 |-----------    |:---------------:|
@@ -44,16 +34,16 @@ x = supported; o = not supported
 
 ### Server and VISS v2
 
-#### Implementation of described components in [VISS V2 Core](https://www.w3.org/TR/viss2-core/):
+#### Implementation of described components in [VISS v2 Core](https://www.w3.org/TR/viss2-core/):
 | component             |Implementation |
 |-----------            |:-------------:|
 | Access Grant Server   |       o       |
 | Access Token Server   |       o       |
 | VISS v2 Server        |      x/o      |
 
-x = implemnted; x/o = partly implemented; o = not implemented
+x = implemented; x/o = partly implemented; o = not implemented
 
-#### supported methods of [VISS V2 Core](https://www.w3.org/TR/viss2-core/):
+#### supported methods of [VISS v2 Core](https://www.w3.org/TR/viss2-core/):
 
 | method            |   Support                     |
 |-----------        |:-------------:                |
@@ -74,6 +64,8 @@ x = implemnted; x/o = partly implemented; o = not implemented
 | Subscription      |             x                 |
 | Error messages    |             x                 |
 | Timestamps        |             x                 |
+
+For a more detailed view of the supported JSON-schemas [click here](https://github.com/eclipse/kuksa.val/blob/master/kuksa-val-server/include/VSSRequestJsonSchema.hpp)
 
 ### gRPC Server
 The VISS Standard is not applicable for gRPC protocol. Here is an overview what the gRPC Server is capable of:
