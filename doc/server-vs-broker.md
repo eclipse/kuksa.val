@@ -1,5 +1,6 @@
 ## Why is there a need for the broker?
-The existing VISS implementation is not as leightweight as a gRPC implementation. The existing gRPC server was built on the logic of the Websockt VISS Server. This has let to many workarounds, so the new broker is an approach to provide an user friendly API for In-Vehicle communication over the leightweighted gRPC protocol. The broker is able to resolve query like request. This gives the ability to use the advantages of bidirectional streaming of the gRPC protocol. 
+The KUKSA.val server started as a C++ VISS implementation, that later evolved and gained gRPC support. KUKSA.val databroker was a similar project trying to build a modern rust server for VSS data using a binary efficient gRPC protocol. Currently both projects are being joined, and will support the same GRPC API and Python library so you can exchange feeders and apps.
+Check below for the difference in feature set. 
 
 ## What is the difference between the KUKSA.val server and broker?
 
@@ -10,6 +11,7 @@ Main differences:
 * gRPC API support: server and broker do support a gRPC API (not unified yet but planned)
 * Filtering is only support in the broker (e.g. range filtering, change filtering etc.)
 * feeder support: planned is support for all feeders; currently the server supports all feeders and the broker supports the dbc feeder
+* security: The KUKSA.val security model with JWT based authentication is currently only supported in server. Support for dataroker is on the roadmap
 
 For a detailed overview what the KUKSA.val server and data broker support look [here](protocol/support.md)
 
@@ -17,3 +19,4 @@ For a detailed overview what the KUKSA.val server and data broker support look [
 Last updated: October 2022 <br>
 The server will still be available for those who want to use the VISS.
 The broker and the server will support one unified gRPC API.
+The broker will be extended to support the kuksa.val server security model.
