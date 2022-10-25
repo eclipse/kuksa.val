@@ -1,5 +1,5 @@
-# What do the KUKSA.val server and data broker support?
-This file contains a clear overview what the KUKSA.val server and data broker each supports. It focuses on gRPC and VISS support and also what feeders are supported.
+# What do the KUKSA.val Server and data Broker support?
+This file contains a clear overview what the KUKSA.val Server and data Broker each supports. It focuses on gRPC and VISS support and also what feeders are supported.
 
 ## Supported protocols
 
@@ -65,7 +65,7 @@ x = implemented; x/o = partly implemented; o = not implemented
 | Error messages    |             x                 |
 | Timestamps        |             x                 |
 
-For a more detailed view of the supported JSON-schemas [click here](https://github.com/eclipse/kuksa.val/blob/master/kuksa-val-server/include/VSSRequestJsonSchema.hpp)
+For a more detailed view of the supported JSON-schemas [click here](https://github.com/eclipse/kuksa.val/blob/master/kuksa-val-Server/include/VSSRequestJsonSchema.hpp)
 
 ### gRPC Server
 The VISS Standard is not applicable for gRPC protocol. Here is an overview what the gRPC Server is capable of:
@@ -90,10 +90,10 @@ The VISS Standard is not applicable for gRPC protocol. Here is an overview what 
 | Error messages    |             x                 |
 | Timestamps        |             x                 |
 
-The gRPC Server uses the logic behind the KUKSA.val websocket server.
+The gRPC Server uses the logic behind the KUKSA.val websocket Server.
 
 ### gRPC Broker
-The VISS Standard is not applicable for gRPC protocol. Here is an overview what the gRPC Server is capable of:
+The VISS Standard is not applicable for gRPC protocol. Here is an overview what the gRPC Broker is capable of:
 
 | method            |   Support                     |
 |-----------        |:-------------:                |

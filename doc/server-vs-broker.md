@@ -9,9 +9,9 @@ Main differences:
 * programming languages: server is written in C++, broker is written in Rust
 * VISS support: server does support VISS over Websocket, broker does not
 * gRPC API support: server and broker do support a gRPC API (not unified yet but planned)
-* Filtering is only support in the broker (e.g. range filtering, change filtering etc.)
+* Filtering is only supported in the broker (e.g. range filtering, change filtering etc.)
 * feeder support: planned is support for all feeders; currently the server supports all feeders and the broker supports the dbc feeder
-* security: The KUKSA.val security model with JWT based authentication is currently only supported in server. Support for dataroker is on the roadmap
+* security: The KUKSA.val security model with JWT based authentication is currently only supported in server. Support for data broker is on the roadmap
 
 For a detailed overview what the KUKSA.val server and data broker support look [here](protocol/support.md)
 
