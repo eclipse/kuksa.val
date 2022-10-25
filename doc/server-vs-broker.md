@@ -19,4 +19,4 @@ For a detailed overview what the KUKSA.val server and data broker support look [
 Last updated: October 2022 <br>
 The server will still be available for those who want to use the VISS.
 The broker and the server will support one unified gRPC API.
-The broker will be extended to support the kuksa.val server security model.
+The broker will be extended to support the kuksa.val server security model over JWT Tokens or similar.
