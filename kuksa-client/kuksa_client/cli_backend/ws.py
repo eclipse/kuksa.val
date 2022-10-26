@@ -38,6 +38,7 @@ class Backend(cli_backend.Backend):
         self.subscriptionCallbacks = {}
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueues = {}
+        self.run = False
 
     async def _receiver_handler(self, webSocket):
         while self.run:
@@ -46,14 +47,13 @@ class Backend(cli_backend.Backend):
             if "requestId" in resJson:
                 try:
                     self.recvMsgQueues[resJson["requestId"]].put(message)
-                    del(self.recvMsgQueues[resJson["requestId"]])
-                except:
-                    del(self.recvMsgQueues[resJson["requestId"]])
+                finally:
+                    del self.recvMsgQueues[resJson["requestId"]]
             else:
                 if "subscriptionId" in resJson and resJson["subscriptionId"] in self.subscriptionCallbacks:
                     try:
                         self.subscriptionCallbacks[resJson["subscriptionId"]](message)
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-except
                         print(e)
 
     async def _sender_handler(self, webSocket):
@@ -63,7 +63,7 @@ class Backend(cli_backend.Backend):
                 await webSocket.send(req)
             except queue.Empty:
                 await asyncio.sleep(0.01)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 print(e)
                 return
 
@@ -115,7 +115,7 @@ class Backend(cli_backend.Backend):
     def authorize(self, token="", timeout=2):
         token = os.path.expanduser(token)
         if os.path.isfile(token):
-            with open(token, "r") as f:
+            with open(token, "r", encoding="utf-8") as f:
                 token = f.readline()
 
         req = {}
@@ -128,7 +128,7 @@ class Backend(cli_backend.Backend):
         req = {}
         req["action"]= "updateVSSTree"
         if os.path.isfile(jsonStr):
-            with open(jsonStr, "r") as f:
+            with open(jsonStr, "r", encoding="utf-8") as f:
                 req["metadata"] = json.load(f)
         else:
             req["metadata"] = json.loads(jsonStr)
@@ -153,8 +153,7 @@ class Backend(cli_backend.Backend):
     # Set value to a given path
     def setValue(self, path, value, attribute="value", timeout=5):
         if 'nan' == value:
-            print(path + " has an invalid value " + str(value))
-            return
+            return json.dumps({"error": path + " has an invalid value " + str(value)}, indent=2)
         req = {}
         req["action"]= "set"
         req["path"] = path
@@ -184,7 +183,7 @@ class Backend(cli_backend.Backend):
     # The given callback function will be called then, if the given path is updated:
     #   updateMessage = await webSocket.recv()
     #   callback(updateMessage)
-    def subscribe(self, path, callback, attribute = "value", timeout=5):
+    def subscribe(self, path, callback, attribute="value", timeout=5):
         req = {}
         req["action"]= "subscribe"
         req["path"] = path
@@ -197,16 +196,16 @@ class Backend(cli_backend.Backend):
 
     # Unsubscribe value changes of to a given path.
     # The subscription id from the response of the corresponding subscription request will be required
-    def unsubscribe(self, id, timeout=5):
+    def unsubscribe(self, subId, timeout=5):
         req = {}
         req["action"]= "unsubscribe"
-        req["subscriptionId"] = id
+        req["subscriptionId"] = subId
 
         res = {}
-        # Check if the subscription id exists
-        if id in self.subscriptionCallbacks.keys():
+        # Check if the subscription subId exists
+        if subId in self.subscriptionCallbacks:
             # No matter what happens, remove the callback
-            del(self.subscriptionCallbacks[id])
+            del self.subscriptionCallbacks[subId]
             res = self._sendReceiveMsg(req, timeout)
         else:
             errMsg = {}
@@ -220,10 +219,7 @@ class Backend(cli_backend.Backend):
 
     # Function to check connection
     def checkConnection(self):
-        if self.wsConnected:
-            return True
-        else:
-            return False
+        return self.wsConnected
 
     # Main loop for handling websocket communication
     async def mainLoop(self):
@@ -241,7 +237,6 @@ class Backend(cli_backend.Backend):
                     await self._msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))
-                pass
         else:
             try:
                 print("connect to ws://"+self.serverIP+":"+str(self.serverPort))
@@ -250,4 +245,3 @@ class Backend(cli_backend.Backend):
                     await self._msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))
-                pass

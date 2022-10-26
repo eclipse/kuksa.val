@@ -649,7 +649,7 @@ class VSSClient:
         resp_stream = self.client_stub.Subscribe(req)
         try:
             # We expect the first SubscribeResponse to be immediately available and to only hold a status
-            resp = await resp_stream.__aiter__().__anext__()
+            resp = await resp_stream.__aiter__().__anext__()  # pylint: disable=unnecessary-dunder-call
             logger.debug("%s: %s", type(resp).__name__, resp)
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc

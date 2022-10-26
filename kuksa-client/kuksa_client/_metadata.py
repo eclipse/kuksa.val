@@ -56,4 +56,3 @@ try:
 except importlib_metadata.PackageNotFoundError as e:
     print(e)
     print("skip configuring metadata")
-
