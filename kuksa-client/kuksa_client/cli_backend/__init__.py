@@ -37,11 +37,13 @@ class Backend:
     def from_config(config):
         protocol = config['protocol']
 
+        # pylint: disable=cyclic-import,import-outside-toplevel
         if protocol == 'ws':
             from . import ws as backend_module
         elif protocol == 'grpc':
             from . import grpc as backend_module
         else:
             raise ValueError(f"Protocol {protocol!r} is not supported")
+        # pylint: enable=cyclic-import,import-outside-toplevel
 
         return backend_module.Backend(config)

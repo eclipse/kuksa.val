@@ -18,9 +18,15 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
-import os, sys, threading, queue, ssl, json, time
-import uuid
 import asyncio
+import json
+import os
+import queue
+import ssl
+import sys
+import threading
+import time
+import uuid
 
 from kuksa_client._metadata import *
 
@@ -30,10 +36,11 @@ class KuksaClientThread(threading.Thread):
 
     # Constructor
     def __init__(self, config):
-        super(KuksaClientThread, self).__init__()
+        super().__init__()
 
         self.serverProtocol = config.get("protocol", "ws")
         self.backend = cli_backend.Backend.from_config(config)
+        self.loop = None
 
     def checkConnection(self):
         return self.backend.checkConnection()
@@ -74,8 +81,8 @@ class KuksaClientThread(threading.Thread):
 
     # Unsubscribe value changes of to a given path.
     # The subscription id from the response of the corresponding subscription request will be required
-    def unsubscribe(self, id, timeout=5):
-        return self.backend.unsubscribe(id, timeout)
+    def unsubscribe(self, sub_id, timeout=5):
+        return self.backend.unsubscribe(sub_id, timeout)
 
     # Thread function: Start the asyncio loop
     def run(self):

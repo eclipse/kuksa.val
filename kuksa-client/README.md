@@ -149,6 +149,11 @@ Now in order to ensure local `*.py` files will be used when running the client, 
 (kuksa-client) $ pip install --editable .
 ```
 
+If you wish to also install test dependencies, run instead:
+```console
+(kuksa-client) $ pip install --editable ".[test]"
+```
+
 Now you should be able to start using `kuksa-client`:
 ```console
 (kuksa-client) $ kuksa-client --help

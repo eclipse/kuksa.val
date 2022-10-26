@@ -12,3 +12,21 @@ starting_version = "0.1.6"
 template = "{tag}"
 dev_template = "{tag}-{ccount}"
 dirty_template = "{tag}-{ccount}"
+
+[tool.pylint.design]
+max-args = 8
+max-attributes = 12
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.messages_control]
+disable = [
+    "fixme",
+    "invalid-name",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "missing-module-docstring",
+    "no-member",
+    "too-few-public-methods",
+]
