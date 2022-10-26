@@ -117,10 +117,10 @@ The VISS Standard is not applicable for gRPC protocol. Here is an overview what 
 
 ## Supported feeders
 
-| Feeder     |      Server      |  Broker   |
-|------------|:----------------:|----------:|
-| CAN        |      x           |  planned  |
-| SOME/IP    |     planned      |     x     |
-| GPS        |      x           |  planned  |
+| Feeder     |   Server (VISS)  | Server (gRPC) |  Broker   |
+|------------|:----------------:|:-------------:|----------:|
+| CAN        |      x           |  x            | x   |
+| SOME/IP    |     planned      |  planned      | x         |
+| GPS        |      x           |  x            | x   |
 
 x = supported; o = not supported
