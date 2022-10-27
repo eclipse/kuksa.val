@@ -164,12 +164,6 @@ impl Entry {
             }
         }
 
-        if let Some(actuator_target) = &update.actuator_target {
-            if actuator_target == &self.actuator_target {
-                update.actuator_target = None;
-            }
-        }
-
         // TODO: Implement for .path
         //                     .entry_type
         //                     .data_type
