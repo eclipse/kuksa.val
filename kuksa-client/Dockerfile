@@ -12,7 +12,7 @@ FROM python:3.10-alpine as build
 RUN apk update && apk add git alpine-sdk linux-headers
 COPY kuksa-client /kuksa.val/kuksa-client/
 COPY kuksa_certificates /kuksa.val/kuksa_certificates/
-COPY kuksa-val-server/protos/kuksa.proto /kuksa.val/kuksa-client/kuksa/val/kuksa.proto
+COPY proto/kuksa/val/v1/*.proto /kuksa.val/kuksa-client/kuksa/val/v1/
 WORKDIR /kuksa.val/kuksa-client
 RUN pip install --upgrade pip build
 RUN rm -rf dist
