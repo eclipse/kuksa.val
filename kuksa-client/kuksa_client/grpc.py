@@ -22,6 +22,7 @@ import dataclasses
 import datetime
 import enum
 import http
+import logging
 from typing import Any
 from typing import AsyncIterable
 from typing import Callable
@@ -38,6 +39,9 @@ from grpc.aio import AioRpcError
 from kuksa.val.v1 import types_pb2
 from kuksa.val.v1 import val_pb2
 from kuksa.val.v1 import val_pb2_grpc
+
+
+logger = logging.getLogger(__name__)
 
 
 class DataType(enum.IntEnum):
@@ -464,10 +468,12 @@ class VSSClient:
             for field in entry.fields:
                 entry_request.fields.append(field.value)
             req.entries.append(entry_request)
+        logger.debug("%s: %s", type(req).__name__, req)
         try:
             resp = await self.client_stub.Get(req)
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
+        logger.debug("%s: %s", type(resp).__name__, resp)
         self.raise_if_invalid(resp)
         return [DataEntry.from_message(entry) for entry in resp.entries]
 
@@ -490,10 +496,12 @@ class VSSClient:
             if Field.ACTUATOR_TARGET in update.fields or Field.VALUE in update.fields:
                 update.entry.value_type = value_types[update.entry.path]
             req.updates.append(update.to_message())
+        logger.debug("%s: %s", type(req).__name__, req)
         try:
             resp = await self.client_stub.Set(req)
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
+        logger.debug("%s: %s", type(resp).__name__, resp)
         self.raise_if_invalid(resp)
 
     async def authorize(self, *, token: str) -> str:
@@ -509,10 +517,12 @@ class VSSClient:
             for field in entry.fields:
                 entry_request.fields.append(field.value)
             req.entries.append(entry_request)
+        logger.debug("%s: %s", type(req).__name__, req)
         resp_stream = self.client_stub.Subscribe(req)
         try:
             # We expect the first SubscribeResponse to be immediately available and to only hold a status
-            await resp_stream.__aiter__().__anext__()
+            resp = await resp_stream.__aiter__().__anext__()
+            logger.debug("%s: %s", type(resp).__name__, resp)
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
 

@@ -18,6 +18,7 @@
 ########################################################################
 
 import argparse, json, sys
+import logging.config
 from re import sub
 from typing import Dict, List
 import queue, time, os, threading
@@ -413,8 +414,12 @@ def main():
         default=DEFAULT_SERVER_PROTOCOL,
     )
     parser.add_argument('--insecure', default=False, action='store_true', help='Connect in insecure mode')
+    parser.add_argument(
+        '--logging-config', default=os.path.join(scriptDir, 'logging.ini'), help="Path to logging configuration file",
+    )
     args = parser.parse_args()
 
+    logging.config.fileConfig(args.logging_config)
     clientApp = TestClient(args.ip, args.port, args.protocol, args.insecure)
     clientApp.cmdloop()
 
