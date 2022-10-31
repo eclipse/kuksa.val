@@ -71,6 +71,9 @@ class Backend(cli_backend.Backend):
     def getMetaData(self, path, timeout=5):
         return self.getValue(path, "metadata", timeout)
 
+    def updateMetaData(self, path, jsonStr, timeout=5):
+        return self.setValue(path, jsonStr, "metadata", timeout)
+
     # Function to implement get
     def getValue(self, path, attribute="value", timeout=5):
         if attribute in self.AttrDict:
