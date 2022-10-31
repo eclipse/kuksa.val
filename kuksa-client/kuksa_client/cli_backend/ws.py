@@ -18,24 +18,21 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
-import json, queue, time, uuid, os, ssl
-import asyncio, websockets
+import asyncio
+import json
+import os.path
+import queue
+import ssl
+import time
+import uuid
 
-class KuksaWsComm:
+import websockets
 
-    # Constructor
+from kuksa_client import cli_backend
+
+class Backend(cli_backend.Backend):
     def __init__(self, config):
-
-        scriptDir= os.path.dirname(os.path.realpath(__file__))
-        self.serverIP = config.get('ip', "127.0.0.1")
-        self.serverPort = config.get('port', 8090)
-        try:
-            self.insecure = config.getboolean('insecure', False)
-        except AttributeError:
-            self.insecure = config.get('insecure', False)
-        self.cacertificate = config.get('cacertificate', os.path.join(scriptDir, "../kuksa_certificates/CA.pem"))
-        self.certificate = config.get('certificate', os.path.join(scriptDir, "../kuksa_certificates/Client.pem"))
-        self.keyfile = config.get('key', os.path.join(scriptDir, "../kuksa_certificates/Client.key"))
+        super().__init__(config)
         self.wsConnected = False
 
         self.subscriptionCallbacks = {}
@@ -45,7 +42,7 @@ class KuksaWsComm:
     async def _receiver_handler(self, webSocket):
         while self.run:
             message = await webSocket.recv()
-            resJson = json.loads(message) 
+            resJson = json.loads(message)
             if "requestId" in resJson:
                 try:
                     self.recvMsgQueues[resJson["requestId"]].put(message)
@@ -59,7 +56,6 @@ class KuksaWsComm:
                     except Exception as e:
                         print(e)
 
-
     async def _sender_handler(self, webSocket):
         while self.run:
             try:
@@ -70,7 +66,7 @@ class KuksaWsComm:
             except Exception as e:
                 print(e)
                 return
-    
+
     async def _msgHandler(self, webSocket):
         self.wsConnected = True
         self.run = True
@@ -80,11 +76,11 @@ class KuksaWsComm:
         await asyncio.wait([recv, send], return_when=asyncio.FIRST_COMPLETED)
         recv.cancel()
         send.cancel()
-        
+
         await webSocket.close()
 
     # Internal function to send and receive messages on websocket
-    def _sendReceiveMsg(self, req, timeout): 
+    def _sendReceiveMsg(self, req, timeout):
         req["requestId"] = str(uuid.uuid4())
         jsonDump = json.dumps(req)
         sent = False
@@ -100,9 +96,9 @@ class KuksaWsComm:
                 time.sleep(0.01)
 
         # Wait on the receive queue
-        try: 
+        try:
             res = recvQueue.get(timeout=timeout)
-            resJson =  json.loads(res) 
+            resJson =  json.loads(res)
             if "requestId" in res and str(req["requestId"]) == str(resJson["requestId"]):
                 return json.dumps(resJson, indent=2)
         except queue.Empty:
@@ -127,7 +123,7 @@ class KuksaWsComm:
         req["tokens"] = token
         return self._sendReceiveMsg(req, timeout)
 
-    # Update VSS Tree Entry 
+    # Update VSS Tree Entry
     def updateVSSTree(self, jsonStr, timeout = 5):
         req = {}
         req["action"]= "updateVSSTree"
@@ -135,7 +131,7 @@ class KuksaWsComm:
             with open(jsonStr, "r") as f:
                 req["metadata"] = json.load(f)
         else:
-            req["metadata"] = json.loads(jsonStr) 
+            req["metadata"] = json.loads(jsonStr)
         return self._sendReceiveMsg(req, timeout)
 
    # Update Meta Data of a given path
@@ -143,7 +139,7 @@ class KuksaWsComm:
         req = {}
         req["action"]= "updateMetaData"
         req["path"] = path
-        req["metadata"] = json.loads(jsonStr) 
+        req["metadata"] = json.loads(jsonStr)
         return self._sendReceiveMsg(req, timeout)
 
     # Get Meta Data of a given path
@@ -151,7 +147,7 @@ class KuksaWsComm:
         """Get MetaData of the parameter"""
         req = {}
         req["action"]= "getMetaData"
-        req["path"] = path 
+        req["path"] = path
         return self._sendReceiveMsg(req, timeout)
 
     # Set value to a given path
@@ -166,7 +162,7 @@ class KuksaWsComm:
         try:
             jsonValue = json.loads(value)
             if isinstance(jsonValue, list):
-                req[attribute] = [] 
+                req[attribute] = []
                 for v in jsonValue:
                     req[attribute].append(str(v))
             else:
@@ -194,9 +190,9 @@ class KuksaWsComm:
         req["path"] = path
         req["attribute"] = attribute
         res = self._sendReceiveMsg(req, timeout)
-        resJson =  json.loads(res) 
+        resJson =  json.loads(res)
         if "subscriptionId" in resJson:
-            self.subscriptionCallbacks[resJson["subscriptionId"]] = callback 
+            self.subscriptionCallbacks[resJson["subscriptionId"]] = callback
         return res
 
     # Unsubscribe value changes of to a given path.
@@ -210,16 +206,16 @@ class KuksaWsComm:
         # Check if the subscription id exists
         if id in self.subscriptionCallbacks.keys():
             # No matter what happens, remove the callback
-            del(self.subscriptionCallbacks[id]) 
+            del(self.subscriptionCallbacks[id])
             res = self._sendReceiveMsg(req, timeout)
         else:
             errMsg = {}
             errMsg["number"] = "404"
-            errMsg["message"] = "Could not unsubscribe" 
-            errMsg["reason"] = "Subscription ID does not exist" 
+            errMsg["message"] = "Could not unsubscribe"
+            errMsg["reason"] = "Subscription ID does not exist"
             res["error"] = errMsg
             res = json.dumps(res)
-            
+
         return res
 
     # Function to check connection
