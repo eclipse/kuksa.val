@@ -22,20 +22,17 @@ import json
 import pathlib
 import queue
 from typing import Callable
+from typing import Iterable
 import uuid
 
 from kuksa_client import cli_backend
 import kuksa_client.grpc
-from kuksa_client.grpc import VSSValue
+from kuksa_client.grpc import EntryUpdate
 
 
-def callback_wrapper(callback: Callable[[str], None]) -> Callable[[VSSValue], None]:
-    def wrapper(value: VSSValue) -> None:
-        callback(json.dumps({
-            'path': value.path,
-            'val': value.val,
-            'timestamp': value.timestamp.isoformat() if value.timestamp else value.timestamp,
-        }))
+def callback_wrapper(callback: Callable[[str], None]) -> Callable[[Iterable[EntryUpdate]], None]:
+    def wrapper(updates: Iterable[EntryUpdate]) -> None:
+        callback(json.dumps([update.to_dict() for update in updates]))
     return wrapper
 
 
@@ -54,9 +51,9 @@ class Backend(cli_backend.Backend):
         self.run = False
 
         self.AttrDict = {
-            "value": kuksa_client.grpc.RequestType.CURRENT_VALUE,
-            "targetValue": kuksa_client.grpc.RequestType.TARGET_VALUE,
-            "metadata": kuksa_client.grpc.RequestType.METADATA,
+            "value": (kuksa_client.grpc.Field.VALUE, kuksa_client.grpc.View.CURRENT_VALUE),
+            "targetValue": (kuksa_client.grpc.Field.ACTUATOR_TARGET, kuksa_client.grpc.View.TARGET_VALUE),
+            "metadata": (kuksa_client.grpc.Field.METADATA, kuksa_client.grpc.View.METADATA),
         }
 
     # Function to check connection status
@@ -77,7 +74,8 @@ class Backend(cli_backend.Backend):
     # Function to implement get
     def getValue(self, path, attribute="value", timeout=5):
         if attribute in self.AttrDict:
-            requestArgs = {'type': self.AttrDict[attribute], 'paths': (path,)}
+            field, view = self.AttrDict[attribute]
+            requestArgs = {'entries': (kuksa_client.grpc.EntryRequest(path=path, view=view, fields=(field,)),)}
             return self._sendReceiveMsg(("get", requestArgs), timeout)
 
         return json.dumps({"error": "Invalid Attribute"})
@@ -85,7 +83,22 @@ class Backend(cli_backend.Backend):
     # Function to implement set
     def setValue(self, path, value, attribute="value", timeout=5):
         if attribute in self.AttrDict:
-            requestArgs = {'type': self.AttrDict[attribute], 'values': (kuksa_client.grpc.VSSValue(path=path, val=value),)}
+            field, _ = self.AttrDict[attribute]
+            if field is kuksa_client.grpc.Field.VALUE:
+                entry = kuksa_client.grpc.DataEntry(path=path, value=kuksa_client.grpc.Datapoint(value=value))
+            elif field is kuksa_client.grpc.Field.ACTUATOR_TARGET:
+                entry = kuksa_client.grpc.ActuatorDataEntry(
+                    path=path, actuator_target=kuksa_client.grpc.Datapoint(value=value),
+                )
+            elif field is kuksa_client.grpc.Field.METADATA:
+                try:
+                    metadata_dict = json.loads(value)
+                except json.JSONDecodeError:
+                    return json.dumps({"error": "Metadata value needs to be a valid JSON object"})
+                entry = kuksa_client.grpc.DataEntry(
+                    path=path, metadata=kuksa_client.grpc.Metadata.from_dict(metadata_dict),
+                )
+            requestArgs = {'updates': (kuksa_client.grpc.EntryUpdate(entry=entry, fields=(field,)),)}
             return self._sendReceiveMsg(("set", requestArgs), timeout)
 
         return json.dumps({"error": "Invalid Attribute"})
@@ -101,9 +114,13 @@ class Backend(cli_backend.Backend):
 
     # Subscribe value changes of to a given path.
     # The given callback function will be called then, if the given path is updated.
-    def subscribe(self, path, callback, attribute = "value", timeout = 5):
+    def subscribe(self, path, callback, attribute="value", timeout=5):
         if attribute in self.AttrDict:
-            requestArgs = {'path': path, 'type': self.AttrDict[attribute], 'callback': callback_wrapper(callback), 'start': True}
+            field, view = self.AttrDict[attribute]
+            requestArgs = {
+                'entries': (kuksa_client.grpc.SubscribeEntry(path=path, view=view, fields=(field,)),),
+                'callback': callback_wrapper(callback),
+            }
             return self._sendReceiveMsg(("subscribe", requestArgs), timeout)
 
         return json.dumps({"error": "Invalid Attribute"})
@@ -125,9 +142,9 @@ class Backend(cli_backend.Backend):
         try:
             resp, error = recvQueue.get(timeout=timeout)
             if error:
-                respJson = json.dumps({"error": error})
+                respJson = json.dumps(error, indent=4)
             elif resp:
-                respJson = json.dumps(resp, cls=kuksa_client.grpc.VSSJSONEncoder, indent=4)
+                respJson = json.dumps(resp, indent=4)
             else:
                 respJson = "OK"
         except queue.Empty:
@@ -146,23 +163,23 @@ class Backend(cli_backend.Backend):
                 continue
             try:
                 if call == "get":
-                    respObj = await vss_client.get(**requestArgs)
-                    respObj = respObj[0] if respObj else None
+                    resp = await vss_client.get(**requestArgs)
+                    resp = resp[0].to_dict() if resp else None
                 elif call == "set":
-                    respObj = await vss_client.set(**requestArgs)
+                    resp = await vss_client.set(**requestArgs)
                 elif call == "authorize":
-                    respObj = await vss_client.authorize(**requestArgs)
+                    resp = await vss_client.authorize(**requestArgs)
                 elif call == "subscribe":
-                    respObj = await vss_client.subscribe(**requestArgs)
-                    respObj = {"subscriptionId": str(respObj)}
+                    resp = await vss_client.subscribe(**requestArgs)
+                    resp = {"subscriptionId": str(resp)}
                 elif call == "unsubscribe":
-                    respObj = await vss_client.unsubscribe(**requestArgs)
+                    resp = await vss_client.unsubscribe(**requestArgs)
                 else:
                     raise Exception("Not Implemented.")
 
-                responseQueue.put((respObj, None))
-            except Exception as exc:  # pylint: disable=broad-except
-                responseQueue.put((None, str(exc)))
+                responseQueue.put((resp, None))
+            except kuksa_client.grpc.VSSClientError as exc:
+                responseQueue.put((None, exc.to_dict()))
 
         self.grpcConnected = False
 
