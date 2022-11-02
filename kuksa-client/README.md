@@ -184,6 +184,19 @@ Notes:
 - `--rm` ensures we do not keep the docker container lying around after closing kuksa-client and `--net=host` makes sure you can reach locally running kuksa.val-server or kuksa-val docker with port forwarding on the host using the default `127.0.0.1` address.
 - CLI arguments that follow image name (e.g. `kuksa-client:latest`) will be passed through to kuksa-client entry point (e.g. `--help`).
 
+## Running test suite & quality checks
+
+This project uses pytest as its test framework and pylint as its linter.
+To run the test suite:
+
+```console
+$ pytest
+```
+
+To run the linter:
+```console
+$ pylint kuksa_client
+```
 
 ## Python SDK
 
