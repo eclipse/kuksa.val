@@ -43,7 +43,7 @@ x = supported; o = not supported
 
 x = implemented; x/o = partly implemented; o = not implemented
 
-#### supported methods of [VISS v2 Core](https://www.w3.org/TR/viss2-core/):
+#### Supported methods of [VISS v2 Core](https://www.w3.org/TR/viss2-core/):
 
 | method            |   Support                     |
 |-----------        |:-------------:                |
@@ -65,9 +65,9 @@ x = implemented; x/o = partly implemented; o = not implemented
 | Error messages    |             x                 |
 | Timestamps        |             x                 |
 
-For a more detailed view of the supported JSON-schemas [click here](https://github.com/eclipse/kuksa.val/blob/master/kuksa-val-Server/include/VSSRequestJsonSchema.hpp)
+For a more detailed view of the supported JSON-schemas [click here](https://github.com/eclipse/kuksa.val/blob/master/kuksa-val-server/include/VSSRequestJsonSchema.hpp)
 
-### gRPC Server
+### Sever and gRPC
 The VISS Standard is not applicable for gRPC protocol. Here is an overview what the gRPC Server is capable of:
 
 | method            |   Support                     |
@@ -92,7 +92,7 @@ The VISS Standard is not applicable for gRPC protocol. Here is an overview what 
 
 The gRPC Server uses the logic behind the KUKSA.val websocket Server.
 
-### gRPC Broker
+### KUKSA.val data broker
 The VISS Standard is not applicable for gRPC protocol. Here is an overview what the gRPC Broker is capable of:
 
 | method            |   Support                     |
