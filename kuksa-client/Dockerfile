@@ -26,5 +26,6 @@ RUN apk add --no-cache libstdc++
 COPY --from=build /kuksa-client /kuksa-client
 ENV PYTHONUNBUFFERED=yes
 ENV GRPC_ENABLE_FORK_SUPPORT=false
+ENV PYTHONPATH=/kuksa-client
 WORKDIR /kuksa-client
-CMD ["/usr/local/bin/python", "-m", "kuksa_client"]
+ENTRYPOINT ["bin/kuksa-client"]
