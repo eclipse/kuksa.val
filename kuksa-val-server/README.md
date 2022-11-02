@@ -4,7 +4,7 @@
 kuksa-val-server is a feature rich in-vehicle data server written in C++ providing authorized access to vehicle data.
 
 
-Check [System Architecture](doc/system-architecture.md) for an overview how KUKSA.val can be used and deployed in a modern Software Defined Vehicle.
+Check [System Architecture](../doc/system-architecture.md) for an overview how KUKSA.val can be used and deployed in a modern Software Defined Vehicle.
 
 kuksa-val-server serves signals described using the [COVESA VSS data model](https://github.com/COVESA/vehicle_signal_specification). VSS data is provided to applications using a variant based on the W3C VISS Interface or GRPC. KUKSA.val supports VISS V1 https://www.w3.org/TR/vehicle-information-service/ and extensions as well as parts of the upcomming VISS2 standard ([Gen2 Core](https://raw.githack.com/w3c/automotive/gh-pages/spec/VISSv2_Core.html), [Gen2 Transport](https://raw.githack.com/w3c/automotive/gh-pages/spec/VISSv2_Transport.html)), that are applicable to in-vehicle VSS servers.
 
@@ -12,7 +12,7 @@ See [Supported Protocol](../doc/protocol/README.md) for a detailled overview of 
 
 ## Features
  - Websocket interface, TLS-secured or plain
- - [Fine-grained authorisation](../doc/jwt.md) based on JSON Webtokens (RFC 7519)
+ - [Fine-grained authorisation](../doc/KUKSA.val_server/jwt.md) based on JSON Webtokens (RFC 7519)
  - Built-in MQTT publisher
  - Python [Kuksa Client](../kuksa-client) to interactively explore and modify the VSS data points and data structure
  - Multiple [example apps](../kuksa_apps) in different programming languages to communicate with different frameworks
@@ -53,9 +53,9 @@ docker run -it --rm -v $HOME/kuksaval.config:/config  -p 127.0.0.1:8090:8090 -e 
 
 ```
 
-More information on using the docker images can be found [here](../doc/run-docker.md).
+More information on using the docker images can be found [here](../doc/KUKSA.val_server/run-docker.md).
 
-To learn, how to build your own docker image see [doc/build-docker.md](../doc/build-docker.md).
+To learn, how to build your own docker image see [doc/build-docker.md](../doc/KUKSA.val_server/build-docker.md).
 
 If this is succesful you can skip to [using kuksa.val](#using-kuksaval).
 
@@ -120,7 +120,7 @@ Setting log level to `ALL` gives you some more information about what is going o
 You can also edit [config.ini](./config.ini) file to configure kuksa val server. This file will be copied to the build directory and used als default config,
 if no other config file is specified using the command line option `-c/--config-file`.
 
-For more information check [usage](../doc/usage.md).
+For more information check [usage](../doc/KUKSA.val_server/usage.md).
 
 ## Using kuksa.val
 The easiest way to try `kuksa-val-server` out, is to use the test client [`kuksa-client`](../kuksa-client):
