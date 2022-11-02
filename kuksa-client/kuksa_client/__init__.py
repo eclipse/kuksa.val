@@ -42,39 +42,39 @@ class KuksaClientThread(threading.Thread):
         self.backend.stop()
 
     # Do authorization by passing a jwt token or a token file
-    def authorize(self, token=None, timeout = 2):
-        return self.backend.authorize(token)
+    def authorize(self, token=None, timeout=5):
+        return self.backend.authorize(token, timeout)
 
     # Update VSS Tree Entry
-    def updateVSSTree(self, jsonStr, timeout = 5):
+    def updateVSSTree(self, jsonStr, timeout=5):
         return self.backend.updateVSSTree(jsonStr, timeout)
 
     # Update Meta Data of a given path
-    def updateMetaData(self, path, jsonStr, timeout = 5):
+    def updateMetaData(self, path, jsonStr, timeout=5):
         return self.backend.updateMetaData(path, jsonStr, timeout)
 
     # Get Meta Data of a given path
-    def getMetaData(self, path, timeout = 1):
+    def getMetaData(self, path, timeout=5):
         return self.backend.getMetaData(path, timeout)
 
     # Set value to a given path
-    def setValue(self, path, value, attribute="value", timeout = 1):
+    def setValue(self, path, value, attribute="value", timeout=5):
         return self.backend.setValue(path, value, attribute, timeout)
 
     # Get value to a given path
-    def getValue(self, path, attribute="value", timeout = 5):
+    def getValue(self, path, attribute="value", timeout=5):
         return self.backend.getValue(path, attribute, timeout)
 
     # Subscribe value changes of to a given path.
     # The given callback function will be called then, if the given path is updated:
     #   updateMessage = await webSocket.recv()
     #   callback(updateMessage)
-    def subscribe(self, path, callback, attribute = "value", timeout = 5):
+    def subscribe(self, path, callback, attribute = "value", timeout=5):
         return self.backend.subscribe(path, callback, attribute, timeout)
 
     # Unsubscribe value changes of to a given path.
     # The subscription id from the response of the corresponding subscription request will be required
-    def unsubscribe(self, id, timeout = 5):
+    def unsubscribe(self, id, timeout=5):
         return self.backend.unsubscribe(id, timeout)
 
     # Thread function: Start the asyncio loop

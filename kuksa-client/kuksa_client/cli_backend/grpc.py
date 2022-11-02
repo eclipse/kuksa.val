@@ -107,7 +107,7 @@ class Backend(cli_backend.Backend):
         return json.dumps({"error": "Invalid Attribute"})
 
     # Function for authorization
-    def authorize(self, tokenfile=None, timeout=2):
+    def authorize(self, tokenfile=None, timeout=5):
         if tokenfile is None:
             tokenfile = self.tokenfile
         tokenfile = pathlib.Path(tokenfile)
@@ -130,7 +130,7 @@ class Backend(cli_backend.Backend):
 
     # Unsubscribe value changes of to a given path.
     # The subscription id from the response of the corresponding subscription request will be required
-    def unsubscribe(self, sub_id, timeout = 5):
+    def unsubscribe(self, sub_id, timeout=5):
         try:
             sub_id = uuid.UUID(sub_id)
         except ValueError as exc:
