@@ -1,5 +1,5 @@
-# What do the KUKSA.val Server and data Broker support?
-This file contains an overview what the KUKSA.val Server and data Broker each supports. It focuses on gRPC and VISS support and also what feeders are supported.
+# What do the KUKSA.val Server and databroker support?
+This file contains an overview what the KUKSA.val Server and databroker each supports. It focuses on gRPC and VISS support and also what feeders are supported.
 
 ## Supported protocols
 
@@ -26,33 +26,32 @@ KUKSA.val does not support the VISS V2 security model and currently we are not p
 
 ### Supported VISS (v2) calls
 
+| method                        |   Support                     | Comment                                                                                                           |
+|-------------------------------|:-----------------------------:|-------------------------------------------------------------------------------------------------------------------|
+| Read                          |            x/o                ||
+|   - Authorized Read           |             x                 | Authorization must be performed as standalone call, do not support "in-lining" authorization in read call         |
+|   - Search Read               |             o                 ||
+|   - History Read              |             o                 ||
+|   - Signal Discovery Read     |             o                 ||
+|   - Dynamic Metadata Read     |             o                 ||
+| Update                        |             x                 ||
+|   - Authorized Update         |             x                 | Authorization must be performed as standalone call, do not support "in-lining" authorization in update call       |
+| Subscribe                     |             x                 ||
+|   - Authorized Subscribe      |             x                 | Authorization must be performed as standalone call, do not support "in-lining" authorization in subscribe call    |
+|   - Curve Logging Subscribe   |             o                 ||
+|   - Range Subscribe           |             o                 ||
+|   - Change Subscribe          |             o                 ||
+| Unsubscribe                   |             x                 ||
+| Subscription                  |             x                 ||
+| Error messages                |             x                 ||
+| Timestamps                    |             x                 ||
+
 x = implemented; x/o = partly implemented; o = not implemented
-
-
-| method            |   Support                     | Comment |
-|-----------        |:-------------:                | --- |
-| Read              |            x/o                | |
-|   - Authorized Read |             x               | Authorization must be performed as standalone call, do not support "in-lining" authorization in read call |
-|   - Search Read   |             o                 | |
-|   - History Read  |             o                 | |
-|   - Signal Discovery Read |             o            |     |
-|   - Dynamic Metadata Read |             o             |    |
-| Update            |             x                 ||
-|   - Authorized Update |             x               | Authorization must be performed as standalone call, do not support "in-lining" authorization in update call  |
-| Subscribe         |             x                 ||
-|   - Authorized Subscribe |             x            |  Authorization must be performed as standalone call, do not support "in-lining" authorization in subscribe call    |
-|   - Curve Logging Subscribe |             o          |       |
-|   - Range Subscribe |             o                 ||
-|   - Change Subscribe |             o                 ||
-| Unsubscribe       |             x                 ||
-| Subscription      |             x                 ||
-| Error messages    |             x                 ||
-| Timestamps        |             x                 ||
 
 For a more detailed view of the supported JSON-schemas [click here](https://github.com/eclipse/kuksa.val/blob/master/kuksa-val-server/include/VSSRequestJsonSchema.hpp)
 
 
-### KUKSA.val data broker GRPC API
+### KUKSA.val databroker gRPC API
 The VISS Standard is not applicable for gRPC protocol. Here is an overview what the gRPC API in KUKSA.val databroker is capable of:
 
   * Read: Reading VSS datapoints 
