@@ -1,4 +1,5 @@
 # KUKSA.VAL JWT authorization
+This exists only in kuksa.val server
 
 The kuksa.val server uses JSON Web Tokens (JWT) to authorize clients.
 
