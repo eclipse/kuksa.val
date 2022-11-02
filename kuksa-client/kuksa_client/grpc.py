@@ -125,7 +125,7 @@ class MetadataField(enum.Enum):
 
 
 class VSSClientError(Exception):
-    def __init__(self, error: Dict[str, Any], errors: Iterable[Dict[str, Any]]):
+    def __init__(self, error: Dict[str, Any], errors: List[Dict[str, Any]]):
         super().__init__(error, errors)
         self.error = error
         self.errors = errors
@@ -145,7 +145,7 @@ class VSSClientError(Exception):
 class ValueRestriction:
     min: Optional[Any] = None
     max: Optional[Any] = None
-    allowed_values: Optional[Any] = None
+    allowed_values: Optional[List[Any]] = None
 
 
 @dataclasses.dataclass
@@ -168,19 +168,22 @@ class Metadata:
         if message.HasField('value_restriction'):
             value_restriction = getattr(message.value_restriction, message.value_restriction.WhichOneof('type'))
             metadata.value_restriction = ValueRestriction()
-            for field in ('min', 'max', 'allowed_values'):
+            for field in ('min', 'max'):
                 if value_restriction.HasField(field):
                     setattr(metadata.value_restriction, field, getattr(value_restriction, field))
+            if value_restriction.allowed_values:
+                metadata.value_restriction.allowed_values = list(value_restriction.allowed_values)
         return metadata
 
-    def to_message(self) -> types_pb2.Metadata:
+    # pylint: disable=too-many-branches
+    def to_message(self, value_type: DataType = DataType.UNSPECIFIED) -> types_pb2.Metadata:
         message = types_pb2.Metadata(data_type=self.data_type.value, entry_type=self.entry_type.value)
         for field in ('description', 'comment', 'deprecation', 'unit'):
             field_value = getattr(self, field, None)
             if field_value is not None:
                 setattr(message, field, field_value)
         if self.value_restriction is not None:
-            if self.data_type in (
+            if value_type in (
                 DataType.INT8,
                 DataType.INT16,
                 DataType.INT32,
@@ -190,12 +193,15 @@ class Metadata:
                 DataType.INT32_ARRAY,
                 DataType.INT64_ARRAY,
             ):
-                message.value_restriction.signed.min = int(self.value_restriction.min)
-                message.value_restriction.signed.max = int(self.value_restriction.max)
-                message.value_restriction.signed.allowed_values.extend(
-                    (int(value) for value in self.value_restriction.allowed_values),
-                )
-            elif self.data_type in (
+                if self.value_restriction.min is not None:
+                    message.value_restriction.signed.min = int(self.value_restriction.min)
+                if self.value_restriction.max is not None:
+                    message.value_restriction.signed.max = int(self.value_restriction.max)
+                if self.value_restriction.allowed_values is not None:
+                    message.value_restriction.signed.allowed_values.extend(
+                        (int(value) for value in self.value_restriction.allowed_values),
+                    )
+            elif value_type in (
                 DataType.UINT8,
                 DataType.UINT16,
                 DataType.UINT32,
@@ -205,30 +211,40 @@ class Metadata:
                 DataType.UINT32_ARRAY,
                 DataType.UINT64_ARRAY,
             ):
-                message.value_restriction.unsigned.min = int(self.value_restriction.min)
-                message.value_restriction.unsigned.max = int(self.value_restriction.max)
-                message.value_restriction.unsigned.allowed_values.extend(
-                    (int(value) for value in self.value_restriction.allowed_values),
-                )
-            elif self.data_type in (
+                if self.value_restriction.min is not None:
+                    message.value_restriction.unsigned.min = int(self.value_restriction.min)
+                if self.value_restriction.max is not None:
+                    message.value_restriction.unsigned.max = int(self.value_restriction.max)
+                if self.value_restriction.allowed_values is not None:
+                    message.value_restriction.unsigned.allowed_values.extend(
+                        (int(value) for value in self.value_restriction.allowed_values),
+                    )
+            elif value_type in (
                 DataType.FLOAT,
                 DataType.DOUBLE,
                 DataType.FLOAT_ARRAY,
                 DataType.DOUBLE_ARRAY,
             ):
-                message.value_restriction.floating_point.min = float(self.value_restriction.min)
-                message.value_restriction.floating_point.max = float(self.value_restriction.max)
-                message.value_restriction.floating_point.allowed_values.extend(
-                    (float(value) for value in self.value_restriction.allowed_values),
-                )
-            elif self.data_type in (
+                if self.value_restriction.min is not None:
+                    message.value_restriction.floating_point.min = float(self.value_restriction.min)
+                if self.value_restriction.max is not None:
+                    message.value_restriction.floating_point.max = float(self.value_restriction.max)
+                if self.value_restriction.allowed_values is not None:
+                    message.value_restriction.floating_point.allowed_values.extend(
+                        (float(value) for value in self.value_restriction.allowed_values),
+                    )
+            elif value_type in (
                 DataType.STRING,
                 DataType.STRING_ARRAY,
             ):
-                message.value_restriction.string.allowed_values.extend(
-                    (str(value) for value in self.value_restriction.allowed_values),
-                )
+                if self.value_restriction.allowed_values is not None:
+                    message.value_restriction.string.allowed_values.extend(
+                        (str(value) for value in self.value_restriction.allowed_values),
+                    )
+            else:
+                raise ValueError(f"Cannot set value_restriction from data type {value_type.name}")
         return message
+    # pylint: enable=too-many-branches
 
     @classmethod
     def from_dict(cls, metadata_dict: Dict[str, Any]):
@@ -249,7 +265,7 @@ class Metadata:
                 setattr(instance, field, str(field_value))
         value_restriction = metadata_dict.get('value_restriction')
         if value_restriction is not None:
-            instance.value_restriction = {}
+            instance.value_restriction = ValueRestriction()
             for field in ('min', 'max', 'allowed_values'):
                 field_value = value_restriction.get(field)
                 if field_value is not None:
@@ -278,14 +294,19 @@ class Datapoint:
 
     @classmethod
     def from_message(cls, message: types_pb2.Datapoint):
-        return cls(value=getattr(message, message.WhichOneof('value')), timestamp=message.timestamp.ToDatetime())
+        return cls(
+            value=getattr(message, message.WhichOneof('value')),
+            timestamp=message.timestamp.ToDatetime(
+                tzinfo=datetime.timezone.utc,
+            ) if message.HasField('timestamp') else None,
+        )
 
     def to_message(self, value_type: DataType) -> types_pb2.Datapoint:
         message = types_pb2.Datapoint()
-        def set_array_attr(obj, attr, value):
+        def set_array_attr(obj, attr, values):
             array = getattr(obj, attr)
             array.Clear()
-            array.values.extend(value)
+            array.values.extend(values)
 
         def cast_array_values(cast, array):
             for item in array:
@@ -322,13 +343,16 @@ class Datapoint:
             DataType.BOOLEAN_ARRAY: ('bool_array', set_array_attr, lambda array: cast_array_values(cast_bool, array)),
             DataType.STRING_ARRAY: ('string_array', set_array_attr, lambda array: cast_array_values(str, array)),
         }.get(value_type, (None, None, None))
-        if all((field, set_field, cast_field)):
-            set_field(message, field, cast_field(self.value))
-        else:
-            # Either DataType.TIMESTAMP, DataType.TIMESTAMP_ARRAY or DataType.UNSPECIFIED...
-            raise ValueError(f"Cannot set field {field} with data type {value_type} from value {self.value}")
+        if self.value is not None:
+            if all((field, set_field, cast_field)):
+                set_field(message, field, cast_field(self.value))
+            else:
+                # Either DataType.TIMESTAMP, DataType.TIMESTAMP_ARRAY or DataType.UNSPECIFIED...
+                raise ValueError(
+                    f"Cannot determine which field to set with data type {value_type} from value {self.value}",
+                )
         if self.timestamp is not None:
-            message.value.timestamp.FromTimestamp(self.timestamp)
+            message.timestamp.FromDatetime(self.timestamp)
         return message
 
     def to_dict(self) -> Dict[str, Any]:
@@ -347,7 +371,7 @@ class DataEntry:
     actuator_target: Optional[Datapoint] = None
     metadata: Optional[Metadata] = None
 
-    value_type: Optional[DataType] = None  # Useful for serialisation, won't appear directly in serialised object
+    value_type: DataType = DataType.UNSPECIFIED  # Useful for serialisation, won't appear directly in serialised object
 
     @classmethod
     def from_message(cls, message: types_pb2.DataEntry):
@@ -367,7 +391,7 @@ class DataEntry:
         if self.actuator_target is not None:
             message.actuator_target.MergeFrom(self.actuator_target.to_message(self.value_type))
         if self.metadata is not None:
-            message.metadata.MergeFrom(self.metadata.to_message())
+            message.metadata.MergeFrom(self.metadata.to_message(self.value_type))
         return message
 
     def to_dict(self) -> Dict[str, Any]:
@@ -501,7 +525,7 @@ class VSSClient:
             ], MetadataField.UNIT)
             speed_unit = metadata['Vehicle.Speed'].unit
         """
-        entries = await self.get(entries=(EntryRequest(path, View.METADATA, (field,)) for path in paths))
+        entries = await self.get(entries=(EntryRequest(path, View.METADATA, (Field(field.value),)) for path in paths))
         return {entry.path: entry.metadata for entry in entries}
 
     async def set_current_values(self, updates: Dict[str, Datapoint]) -> None:
@@ -530,7 +554,9 @@ class VSSClient:
                 'Vehicle.Cabin.Door.Row1.Left.Shade.Position': Metadata(data_type=DataType.FLOAT),
             })
         """
-        await self.set(updates=[EntryUpdate(DataEntry(path, metadata=md), (field,)) for path, md in updates.items()])
+        await self.set(updates=[EntryUpdate(
+            DataEntry(path, metadata=md), (Field(field.value),),
+        ) for path, md in updates.items()])
 
     async def subscribe_current_values(
         self, paths: Iterable[str], callback: Callable[[Dict[str, Datapoint]], None],
@@ -585,7 +611,7 @@ class VSSClient:
             ], on_metadata_updated)
         """
         return await self.subscribe(
-            entries=(SubscribeEntry(path, View.METADATA, (field,)) for path in paths),
+            entries=(SubscribeEntry(path, View.METADATA, (Field(field.value),)) for path in paths),
             callback=self._subscriber_metadata_callback_wrapper(callback),
         )
 
@@ -610,9 +636,13 @@ class VSSClient:
         value_types = {}
         paths_without_type = []
         for update in updates:
-            # We need a data type in order to set sensor/actuator value
-            if Field.ACTUATOR_TARGET in update.fields or Field.VALUE in update.fields:
-                metadata = update.entry.metadata
+            metadata = update.entry.metadata
+            # We need a data type in order to set sensor/actuator value or metadata's value restriction
+            if (
+                Field.ACTUATOR_TARGET in update.fields or
+                Field.VALUE in update.fields or
+                (metadata is not None and metadata.value_restriction is not None)
+            ):
                 # If the update holds a new data type, we assume it will be applied before
                 # setting the sensor/actuator value.
                 if metadata is None or metadata.data_type is DataType.UNSPECIFIED:
@@ -621,7 +651,7 @@ class VSSClient:
                     value_types[update.entry.path] = metadata.data_type
         value_types.update(await self.get_value_types(paths_without_type))
         for update in updates:
-            if Field.ACTUATOR_TARGET in update.fields or Field.VALUE in update.fields:
+            if update.entry.path in value_types:
                 update.entry.value_type = value_types[update.entry.path]
             req.updates.append(update.to_message())
         logger.debug("%s: %s", type(req).__name__, req)
