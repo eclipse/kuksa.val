@@ -124,7 +124,7 @@ class Backend(cli_backend.Backend):
         return self._sendReceiveMsg(req, timeout)
 
     # Update VSS Tree Entry
-    def updateVSSTree(self, jsonStr, timeout = 5):
+    def updateVSSTree(self, jsonStr, timeout=5):
         req = {}
         req["action"]= "updateVSSTree"
         if os.path.isfile(jsonStr):
@@ -135,7 +135,7 @@ class Backend(cli_backend.Backend):
         return self._sendReceiveMsg(req, timeout)
 
    # Update Meta Data of a given path
-    def updateMetaData(self, path, jsonStr, timeout = 5):
+    def updateMetaData(self, path, jsonStr, timeout=5):
         req = {}
         req["action"]= "updateMetaData"
         req["path"] = path
@@ -143,7 +143,7 @@ class Backend(cli_backend.Backend):
         return self._sendReceiveMsg(req, timeout)
 
     # Get Meta Data of a given path
-    def getMetaData(self, path, timeout = 1):
+    def getMetaData(self, path, timeout=5):
         """Get MetaData of the parameter"""
         req = {}
         req["action"]= "getMetaData"
@@ -151,7 +151,7 @@ class Backend(cli_backend.Backend):
         return self._sendReceiveMsg(req, timeout)
 
     # Set value to a given path
-    def setValue(self, path, value, attribute="value", timeout = 1):
+    def setValue(self, path, value, attribute="value", timeout=5):
         if 'nan' == value:
             print(path + " has an invalid value " + str(value))
             return
@@ -173,7 +173,7 @@ class Backend(cli_backend.Backend):
         return self._sendReceiveMsg(req, timeout)
 
     # Get value to a given path
-    def getValue(self, path, attribute="value", timeout = 5):
+    def getValue(self, path, attribute="value", timeout=5):
         req = {}
         req["action"] = "get"
         req["path"] = path
@@ -184,7 +184,7 @@ class Backend(cli_backend.Backend):
     # The given callback function will be called then, if the given path is updated:
     #   updateMessage = await webSocket.recv()
     #   callback(updateMessage)
-    def subscribe(self, path, callback, attribute = "value", timeout = 5):
+    def subscribe(self, path, callback, attribute = "value", timeout=5):
         req = {}
         req["action"]= "subscribe"
         req["path"] = path
@@ -197,7 +197,7 @@ class Backend(cli_backend.Backend):
 
     # Unsubscribe value changes of to a given path.
     # The subscription id from the response of the corresponding subscription request will be required
-    def unsubscribe(self, id, timeout = 5):
+    def unsubscribe(self, id, timeout=5):
         req = {}
         req["action"]= "unsubscribe"
         req["subscriptionId"] = id
