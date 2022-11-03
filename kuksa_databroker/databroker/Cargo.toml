@@ -47,6 +47,9 @@ clap = { version = "3.1.10", default-features = false, features = [
 sqlparser = "0.16.0"
 serde_json = "1.0"
 
+[target.'cfg(all(target_env = "musl", target_pointer_width = "64"))'.dependencies.jemallocator]
+version = "0.5.0"
+
 [build-dependencies]
 anyhow = "1.0"
 vergen = { version = "7", default-features = false, features = [
