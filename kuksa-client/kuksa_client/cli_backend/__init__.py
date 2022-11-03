@@ -16,7 +16,9 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
-import importlib.resources
+import pathlib
+
+import kuksa_certificates
 
 class Backend:
     def __init__(self, config):
@@ -26,11 +28,10 @@ class Backend:
             self.insecure = config.getboolean('insecure', False)
         except AttributeError:
             self.insecure = config.get('insecure', False)
-        with importlib.resources.path('kuksa_certificates', '') as default_cert_path:
-            self.default_cert_path = default_cert_path
-        self.cacertificate = config.get('cacertificate', str(default_cert_path / 'CA.pem'))
-        self.certificate = config.get('certificate', str(default_cert_path / 'Client.pem'))
-        self.keyfile = config.get('key', str(default_cert_path / 'Client.key'))
+        self.default_cert_path = pathlib.Path(kuksa_certificates.__path__[0])
+        self.cacertificate = config.get('cacertificate', str(self.default_cert_path / 'CA.pem'))
+        self.certificate = config.get('certificate', str(self.default_cert_path / 'Client.pem'))
+        self.keyfile = config.get('key', str(self.default_cert_path / 'Client.key'))
 
     @staticmethod
     def from_config(config):
