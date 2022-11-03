@@ -1,4 +1,4 @@
-# Advanced kuksa.val cmake information
+# Advanced KUKSA.val cmake information
 
 For a simple compilation howto see the [main readme](../README.md). Here we have collected some additional details regarding our cmake setup, that are not needed if you "just want to compile".
 
