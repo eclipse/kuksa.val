@@ -424,6 +424,16 @@ class SubscribeEntry:
     fields: Iterable[Field]
 
 
+@dataclasses.dataclass
+class ServerInfo:
+    name: str
+    version: str
+
+    @classmethod
+    def from_message(cls, message: val_pb2.GetServerInfoResponse):
+        return cls(name=message.name, version=message.version)
+
+
 class VSSClient:
     def __init__(
         self,
@@ -432,11 +442,14 @@ class VSSClient:
         root_certificates: Optional[Path] = None,
         private_key: Optional[Path] = None,
         certificate_chain: Optional[Path] = None,
+        *,
+        ensure_startup_connection: bool = True,
     ):
         self.target_host = f'{host}:{port}'
         self.root_certificates = root_certificates
         self.private_key = private_key
         self.certificate_chain = certificate_chain
+        self.ensure_startup_connection = ensure_startup_connection
         self.channel = None
         self.client_stub = None
         self.exit_stack = contextlib.AsyncExitStack()
@@ -452,8 +465,9 @@ class VSSClient:
         else:
             channel = grpc.aio.insecure_channel(self.target_host)
         self.channel = await self.exit_stack.enter_async_context(channel)
-        await self.channel.channel_ready()
         self.client_stub = val_pb2_grpc.VALStub(self.channel)
+        if self.ensure_startup_connection:
+            logger.debug("Connected to server: %s", await self.get_server_info())
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
@@ -541,6 +555,17 @@ class VSSClient:
             await subscriber_task
         except asyncio.CancelledError:
             pass
+
+    async def get_server_info(self) -> ServerInfo:
+        req = val_pb2.GetServerInfoRequest()
+        logger.debug("%s: %s", type(req).__name__, req)
+        try:
+            resp = await self.client_stub.GetServerInfo(req)
+        except AioRpcError as exc:
+            raise VSSClientError.from_grpc_error(exc) from exc
+        logger.debug("%s: %s", type(resp).__name__, resp)
+
+        return ServerInfo.from_message(resp)
 
     async def _subscriber_loop(
         self,
