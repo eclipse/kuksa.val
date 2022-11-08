@@ -90,7 +90,7 @@ class Backend(cli_backend.Backend):
             if field is kuksa_client.grpc.Field.VALUE:
                 entry = kuksa_client.grpc.DataEntry(path=path, value=kuksa_client.grpc.Datapoint(value=value))
             elif field is kuksa_client.grpc.Field.ACTUATOR_TARGET:
-                entry = kuksa_client.grpc.ActuatorDataEntry(
+                entry = kuksa_client.grpc.DataEntry(
                     path=path, actuator_target=kuksa_client.grpc.Datapoint(value=value),
                 )
             elif field is kuksa_client.grpc.Field.METADATA:
