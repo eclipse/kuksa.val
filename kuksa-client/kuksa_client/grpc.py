@@ -328,6 +328,7 @@ class Datapoint:
 class DataEntry:
     path: str
     value: Optional[Datapoint] = None
+    actuator_target: Optional[Datapoint] = None
     metadata: Optional[Metadata] = None
 
     value_type: Optional[DataType] = None  # Useful for serialisation, won't appear directly in serialised object
@@ -335,22 +336,20 @@ class DataEntry:
     @classmethod
     def from_message(cls, message: types_pb2.DataEntry):
         entry_kwargs = {'path': message.path}
-        if message.HasField('actuator_target') or message.metadata.entry_type == EntryType.ACTUATOR.value:
-            entry_class = ActuatorDataEntry
-        else:
-            entry_class = cls
+        if message.HasField('value'):
+            entry_kwargs['value'] = Datapoint.from_message(message.value)
         if message.HasField('actuator_target'):
             entry_kwargs['actuator_target'] = Datapoint.from_message(message.actuator_target)
         if message.HasField('metadata'):
             entry_kwargs['metadata'] = Metadata.from_message(message.metadata)
-        if message.HasField('value'):
-            entry_kwargs['value'] = Datapoint.from_message(message.value)
-        return entry_class(**entry_kwargs)
+        return cls(**entry_kwargs)
 
     def to_message(self) -> types_pb2.DataEntry:
         message = types_pb2.DataEntry(path=self.path)
         if self.value is not None:
             message.value.MergeFrom(self.value.to_message(self.value_type))
+        if self.actuator_target is not None:
+            message.actuator_target.MergeFrom(self.actuator_target.to_message(self.value_type))
         if self.metadata is not None:
             message.metadata.MergeFrom(self.metadata.to_message())
         return message
@@ -359,33 +358,10 @@ class DataEntry:
         out_dict = {'path': self.path}
         if self.value is not None:
             out_dict['value'] = self.value.to_dict()
-        if self.metadata is not None:
-            out_dict['metadata'] = self.metadata.to_dict()
-        return out_dict
-
-
-
-@dataclasses.dataclass
-class ActuatorDataEntry(DataEntry):
-    actuator_target: Optional[Datapoint] = None
-
-    @classmethod
-    def from_message(cls, message: types_pb2.DataEntry):
-        instance = super().from_message(message)
-        if message.HasField('actuator_target'):
-            instance.actuator_target = Datapoint.from_message(message.actuator_target)
-        return instance
-
-    def to_message(self) -> types_pb2.DataEntry:
-        message = super().to_message()
-        if self.actuator_target is not None:
-            message.actuator_target.MergeFrom(self.actuator_target.to_message(self.value_type))
-        return message
-
-    def to_dict(self) -> Dict[str, Any]:
-        out_dict = super().to_dict()
         if self.actuator_target is not None:
             out_dict['actuator_target'] = self.actuator_target.to_dict()
+        if self.metadata is not None:
+            out_dict['metadata'] = self.metadata.to_dict()
         return out_dict
 
 
