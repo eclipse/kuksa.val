@@ -17,15 +17,20 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
+'''Hook for applying some sanitation to make further processing easier'''
 
-# Applying some sanitation to make further processing easier
-# Use sparingly. Comment what you are doing
-# Use narrow matching (name and complete license string) to catch
-# changes
 def apply_quirks(component):
-    if component["name"] == "wasi" and component["license"] == "Apache-2.0 OR Apache-2.0 WITH LLVM-exception OR MIT":
-        # All licenses are "OR", we already ship Apache-2.0 and MIT. The LLVM exception does not apply to us
-        # so lets keep it clean.
+    '''
+    Takes one component entry from cargo license and might return
+    a modified/extended entry.
+    Use sparingly. Comment what you are doing
+    Use narrow matching (name and complete license string) to catch
+    changes
+    '''
+    if component["name"] == "wasi" \
+        and component["license"] == "Apache-2.0 OR Apache-2.0 WITH LLVM-exception OR MIT":
+        # All licenses are "OR", we already ship Apache-2.0 and MIT. The LLVM exception
+        # does not apply to us, so lets keep it clean.
         component["license"] = "Apache-2.0 OR MIT"
         return component
     return component

@@ -17,9 +17,12 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
-# This will take a target folder with a RUST project as argument
-# It will generate a list of all dependencies and licenses and 
-# populate a folder thirdparty with all licenses
+'''
+Thid will generate a list of all dependencies and licenses of a
+Rust project. It will create a folder called thirdparty in that
+project folder containing a list of dependencies and a copy
+of each license used in dependencies
+'''
 
 import argparse
 import sys
@@ -28,38 +31,48 @@ import re
 import os
 import gzip
 
-from subprocess import check_output
+from subprocess import check_output, CalledProcessError
 
-import maplicensefile
-import quirks
+from bomutil import maplicensefile
+from bomutil import quirks
 
-def extract_license_list(license_list, component):
-    # We do not care whether it is "AND" or "OR" currently, we currently assume we are
-    # compatible to all "OR" variants, and thus include all
+def extract_license_list(all_license_list, component):
+    '''Extract valid licenses for each dependency. We most of the time
+    do not care whether it is "AND" or "OR" currently, we currently assume we are
+    compatible to all "OR" variants, and thus include all'''
     component = quirks.apply_quirks(component)
     licenses = re.split(r'\s*AND\s*|\s*OR\s*|\(|\)', component["license"])
     licenses = list(filter(None, licenses))
     print(f"Licenses for {component['name']}: {licenses}")
 
     del component['license_file']
-    
-    for license in licenses:
-        if license not in maplicensefile.MAP:
-            print(f"BOM creation failed, can not find license text for {license} used in dependency {component['name']}")
+
+    for license_id in licenses:
+        if license_id not in maplicensefile.MAP:
+            print(f"BOM creation failed, can not find license text for {license_id} \
+                 used in dependency {component['name']}")
             sys.exit(-100)
-        if maplicensefile.MAP[license] not in license_list:
-            license_list.append(maplicensefile.MAP[license])
+        if maplicensefile.MAP[license_id] not in license_list:
+            all_license_list.append(maplicensefile.MAP[license_id])
 
 parser = argparse.ArgumentParser()
 parser.add_argument("dir", help="Rust project directory")
 args = parser.parse_args()
 
-fullpath : os.path = os.path.abspath(args.dir)
-print(f"Generating BOM for project in {fullpath}")
+sourcepath = os.path.abspath(args.dir)
+targetpath = os.path.join(sourcepath,"thirdparty")
+
+print(f"Generating BOM for project in {sourcepath}")
+
+if os.path.exists(targetpath):
+    print(f"Folder {targetpath} already exists. Remove it before running this script.")
+    sys.exit(-2)
+
 
 try:
-    cargo_output=check_output(["cargo", "license", "--json", "--avoid-build-deps", "--current-dir", fullpath])
-except Exception as e:
+    cargo_output=check_output(\
+        ["cargo", "license", "--json", "--avoid-build-deps", "--current-dir", sourcepath])
+except CalledProcessError as e:
     print(f"Error running cargo license: {e}")
     sys.exit(-1)
 
@@ -71,20 +84,15 @@ for entry in licensedict:
     extract_license_list(license_list,entry)
 
 # Exporting
-print(f"Path {fullpath} Will be {os.path.join(fullpath,'thirdparty')}")
-os.mkdir(os.path.join(fullpath,"thirdparty"))
+os.mkdir(targetpath)
 
-for license in license_list:
-    print(f"Copying {license[:-2]}")
-    with gzip.open("licensestore/"+license, 'rb') as inf:
+for licensefile in license_list:
+    print(f"Copying {licensefile[:-2]}")
+    with gzip.open("licensestore/"+licensefile, 'rb') as inf:
         content = inf.read()
-    with open(os.path.join(fullpath,"thirdparty/"+license[:-3]),'wb') as outf:
+    with open(os.path.join(targetpath,licensefile[:-3]),'wb') as outf:
         outf.write(content)
 
-with open(os.path.join(fullpath,"thirdparty/thirdparty_components.txt"),'w') as jsonout:
+print("Writing thirdparty_components.txt")
+with open(os.path.join(targetpath,"thirdparty_components.txt"),'w',encoding="utf-8") as jsonout:
     json.dump(licensedict,jsonout, indent=4)
-
-
-
-
-

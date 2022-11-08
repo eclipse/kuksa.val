@@ -17,9 +17,10 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
+'''Mapping of liense identifiers of cargo license to the filenames of the actual license texts.'''
 
 MAP = {
-    "Apache-2.0": "Apache2.txt.gz",
+    "Apache-2.0": "Apache-2.0.txt.gz",
     "MIT": "MIT.txt.gz",
     "Unlicense": "Unlicense.txt.gz",
     "BSL-1.0": "BSL-1.0.txt.gz",
