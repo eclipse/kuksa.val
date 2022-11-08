@@ -134,8 +134,8 @@ class ValueRestriction:
 
 @dataclasses.dataclass
 class Metadata:
-    data_type: DataType
-    entry_type: EntryType
+    data_type: DataType = DataType.UNSPECIFIED
+    entry_type: EntryType = EntryType.UNSPECIFIED
     description: Optional[str] = None
     comment: Optional[str] = None
     deprecation: Optional[str] = None
