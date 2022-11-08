@@ -110,6 +110,20 @@ class Field(enum.IntEnum):
     METADATA_ATTRIBUTE         = types_pb2.FIELD_METADATA_ATTRIBUTE
 
 
+class MetadataField(enum.Enum):
+    ALL = Field.METADATA
+    DATA_TYPE = Field.METADATA_DATA_TYPE
+    DESCRIPTION = Field.METADATA_DESCRIPTION
+    ENTRY_TYPE = Field.METADATA_ENTRY_TYPE
+    COMMENT = Field.METADATA_COMMENT
+    DEPRECATION = Field.METADATA_DEPRECATION
+    UNIT = Field.METADATA_UNIT
+    VALUE_RESTRICTION = Field.METADATA_VALUE_RESTRICTION
+    ACTUATOR = Field.METADATA_ACTUATOR
+    SENSOR = Field.METADATA_SENSOR
+    ATTRIBUTE = Field.METADATA_ATTRIBUTE
+
+
 class VSSClientError(Exception):
     def __init__(self, error: Dict[str, Any], errors: Iterable[Dict[str, Any]]):
         super().__init__(error, errors)
@@ -453,6 +467,128 @@ class VSSClient:
         self.client_stub = None
         self.channel = None
 
+    async def get_current_values(self, paths: Iterable[str]) -> Dict[str, Datapoint]:
+        """
+        Example:
+            current_values = await client.get_current_values([
+                'Vehicle.Speed',
+                'Vehicle.ADAS.ABS.IsActive',
+            ])
+            speed_value = current_values['Vehicle.Speed'].value
+        """
+        entries = await self.get(entries=(EntryRequest(path, View.CURRENT_VALUE, (Field.VALUE,)) for path in paths))
+        return {entry.path: entry.value for entry in entries}
+
+    async def get_target_values(self, paths: Iterable[str]) -> Dict[str, Datapoint]:
+        """
+        Example:
+            target_values = await client.get_target_values([
+                'Vehicle.ADAS.ABS.IsActive',
+            ])
+            is_abs_to_become_active = target_values['Vehicle.ADAS.ABS.IsActive'].value
+        """
+        entries = await self.get(entries=(
+            EntryRequest(path, View.TARGET_VALUE, (Field.ACTUATOR_TARGET,),
+        ) for path in paths))
+        return {entry.path: entry.actuator_target for entry in entries}
+
+    async def get_metadata(self, paths: Iterable[str], field: MetadataField = MetadataField.ALL) -> Dict[str, Metadata]:
+        """
+        Example:
+            metadata = await client.get_metadata([
+                'Vehicle.Speed',
+                'Vehicle.ADAS.ABS.IsActive',
+            ], MetadataField.UNIT)
+            speed_unit = metadata['Vehicle.Speed'].unit
+        """
+        entries = await self.get(entries=(EntryRequest(path, View.METADATA, (field,)) for path in paths))
+        return {entry.path: entry.metadata for entry in entries}
+
+    async def set_current_values(self, updates: Dict[str, Datapoint]) -> None:
+        """
+        Example:
+            await client.set_current_values({
+                'Vehicle.Speed': Datapoint(42),
+                'Vehicle.ADAS.ABS.IsActive': Datapoint(False),
+            })
+        """
+        await self.set(updates=[EntryUpdate(DataEntry(path, value=dp), (Field.VALUE,)) for path, dp in updates.items()])
+
+    async def set_target_values(self, updates: Dict[str, Datapoint]) -> None:
+        """
+        Example:
+            await client.set_target_values({'Vehicle.ADAS.ABS.IsActive': Datapoint(True)})
+        """
+        await self.set(updates=[EntryUpdate(
+            DataEntry(path, actuator_target=dp), (Field.ACTUATOR_TARGET,),
+        ) for path, dp in updates.items()])
+
+    async def set_metadata(self, updates: Dict[str, Metadata], field: MetadataField = MetadataField.ALL) -> None:
+        """
+        Example:
+            await client.set_metadata({
+                'Vehicle.Cabin.Door.Row1.Left.Shade.Position': Metadata(data_type=DataType.FLOAT),
+            })
+        """
+        await self.set(updates=[EntryUpdate(DataEntry(path, metadata=md), (field,)) for path, md in updates.items()])
+
+    async def subscribe_current_values(
+        self, paths: Iterable[str], callback: Callable[[Dict[str, Datapoint]], None],
+    ) -> uuid.UUID:
+        """
+        Example:
+            def on_current_values_updated(updates: Dict[str, Datapoint]):
+                for path, dp in updates.items():
+                    print(f"Current value for {path} is now: {dp.value}")
+
+            subscription_id = await client.subscribe_current_values([
+                'Vehicle.Speed', 'Vehicle.ADAS.ABS.IsActive',
+            ], on_current_values_updated)
+        """
+        return await self.subscribe(
+            entries=(SubscribeEntry(path, View.CURRENT_VALUE, (Field.VALUE,)) for path in paths),
+            callback=self._subscriber_current_values_callback_wrapper(callback),
+        )
+
+    async def subscribe_target_values(
+        self, paths: Iterable[str], callback: Callable[[Dict[str, Datapoint]], None],
+    ) -> uuid.UUID:
+        """
+        Example:
+            def on_target_values_updated(updates: Dict[str, Datapoint]):
+                for path, dp in updates.items():
+                    print(f"Target value for {path} is now: {dp.value}")
+
+            subscription_id = await client.subscribe_target_values([
+                'Vehicle.ADAS.ABS.IsActive',
+            ], on_target_values_updated)
+        """
+        return await self.subscribe(
+            entries=(SubscribeEntry(path, View.TARGET_VALUE, (Field.ACTUATOR_TARGET,)) for path in paths),
+            callback=self._subscriber_target_values_callback_wrapper(callback),
+        )
+
+    async def subscribe_metadata(
+        self, paths: Iterable[str],
+        callback: Callable[[Dict[str, Metadata]], None],
+        field: MetadataField = MetadataField.ALL,
+    ) -> uuid.UUID:
+        """
+        Example:
+            def on_metadata_updated(updates: Dict[str, Metadata]):
+                for path, md in updates.items():
+                    print(f"Metadata for {path} are now: {md.to_dict()}")
+
+            subscription_id = await client.subscribe_metadata([
+                'Vehicle.Speed',
+                'Vehicle.ADAS.ABS.IsActive',
+            ], on_metadata_updated)
+        """
+        return await self.subscribe(
+            entries=(SubscribeEntry(path, View.METADATA, (field,)) for path in paths),
+            callback=self._subscriber_metadata_callback_wrapper(callback),
+        )
+
     async def get(self, *, entries: Iterable[EntryRequest]) -> List[DataEntry]:
         req = val_pb2.GetRequest(entries=[])
         for entry in entries:
@@ -553,6 +689,30 @@ class VSSClient:
     ):
         async for resp in message_stream:
             callback(EntryUpdate.from_message(update) for update in resp.updates)
+
+    @staticmethod
+    def _subscriber_current_values_callback_wrapper(
+        callback: Callable[[Dict[str, Datapoint]], None],
+    ) -> Callable[[Iterable[EntryUpdate]], None]:
+        def wrapper(updates: Iterable[EntryUpdate]) -> None:
+            callback({update.entry.path: update.entry.value for update in updates})
+        return wrapper
+
+    @staticmethod
+    def _subscriber_target_values_callback_wrapper(
+        callback: Callable[[Dict[str, Datapoint]], None],
+    ) -> Callable[[Iterable[EntryUpdate]], None]:
+        def wrapper(updates: Iterable[EntryUpdate]) -> None:
+            callback({update.entry.path: update.entry.actuator_target for update in updates})
+        return wrapper
+
+    @staticmethod
+    def _subscriber_metadata_callback_wrapper(
+        callback: Callable[[Dict[str, Metadata]], None],
+    ) -> Callable[[Iterable[EntryUpdate]], None]:
+        def wrapper(updates: Iterable[EntryUpdate]) -> None:
+            callback({update.entry.path: update.entry.metadata for update in updates})
+        return wrapper
 
     def raise_if_invalid(self, response):
         if response.HasField('error'):
