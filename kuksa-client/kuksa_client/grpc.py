@@ -26,8 +26,10 @@ import logging
 from typing import Any
 from typing import AsyncIterable
 from typing import Callable
+from typing import Collection
 from typing import Dict
 from typing import Iterable
+from typing import List
 from typing import Optional
 from pathlib import Path
 import uuid
@@ -451,7 +453,7 @@ class VSSClient:
         self.client_stub = None
         self.channel = None
 
-    async def get(self, *, entries: Iterable[EntryRequest]) -> Iterable[DataEntry]:
+    async def get(self, *, entries: Iterable[EntryRequest]) -> List[DataEntry]:
         req = val_pb2.GetRequest(entries=[])
         for entry in entries:
             entry_request = val_pb2.EntryRequest(path=entry.path, view=entry.view.value, fields=[])
@@ -467,7 +469,7 @@ class VSSClient:
         self.raise_if_invalid(resp)
         return [DataEntry.from_message(entry) for entry in resp.entries]
 
-    async def set(self, *, updates: Iterable[EntryUpdate]) -> None:
+    async def set(self, *, updates: Collection[EntryUpdate]) -> None:
         req = val_pb2.SetRequest(updates=[])
         value_types = {}
         paths_without_type = []
