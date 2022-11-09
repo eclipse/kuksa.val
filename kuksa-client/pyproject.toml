@@ -12,6 +12,7 @@ starting_version = "0.1.6"
 template = "{tag}"
 dev_template = "{tag}-{ccount}"
 dirty_template = "{tag}-{ccount}"
+tag_filter = "[0-9]+.[0-9]+.[0-9]+"
 
 [tool.pylint.design]
 max-args = 8
