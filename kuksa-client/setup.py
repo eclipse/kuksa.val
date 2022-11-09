@@ -1,12 +1,15 @@
 import setuptools
-from setuptools.command import build
+try:
+    from setuptools.command import build
+except ImportError:
+    from distutils.command import build  # pylint: disable=deprecated-module
 from setuptools.command import build_py
 from setuptools.command import sdist
 
 
 class BuildPackageProtos:
     def run(self):
-        from grpc_tools import command
+        from grpc_tools import command  # pylint: disable=import-outside-toplevel
         command.build_package_protos('.')
         super().run()
 
@@ -15,7 +18,7 @@ class BuildCommand(BuildPackageProtos, build.build):
     ...
 
 
-class BuildPyCommand(BuildPackageProtos, build_py.build_py):
+class BuildPyCommand(BuildPackageProtos, build_py.build_py):  # pylint: disable=too-many-ancestors
     ...
 
 
