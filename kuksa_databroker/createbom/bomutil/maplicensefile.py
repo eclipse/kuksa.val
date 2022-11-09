@@ -24,5 +24,9 @@ MAP = {
     "MIT": "MIT.txt.gz",
     "Unlicense": "Unlicense.txt.gz",
     "BSL-1.0": "BSL-1.0.txt.gz",
-    "Unicode-DFS-2016": "Unicode-DFS-2016.txt.gz"
+    "Unicode-DFS-2016": "Unicode-DFS-2016.txt.gz",
+    "BSD-2-Clause": "BSD-2-Clause.txt.gz",
+    "CC0-1.0": "CC0-1.0.txt.gz",
+    "WTFPL": "WTFPL.txt.gz",
+    "Zlib": "Zlib.txt.gz"
 }
