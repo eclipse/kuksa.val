@@ -25,6 +25,7 @@ import queue
 import ssl
 import time
 import uuid
+import pathlib
 
 import websockets
 
@@ -112,10 +113,12 @@ class Backend(cli_backend.Backend):
         print("Server disconnected.")
 
     # Function to authorize against the kuksa.val server
-    def authorize(self, token="", timeout=2):
-        token = os.path.expanduser(token)
-        if os.path.isfile(token):
-            with open(token, "r", encoding="utf-8") as f:
+    def authorize(self, tokenfile=None, timeout=2):
+        if tokenfile is None:
+            tokenfile = self.tokenfile
+        tokenfile = pathlib.Path(tokenfile)
+        if os.path.isfile(tokenfile.expanduser()):
+            with open(tokenfile.expanduser(), "r") as f:
                 token = f.readline()
 
         req = {}
