@@ -9,9 +9,10 @@ def stressServer(num, path, file):
     start = time.time_ns()
     for count in range(0, num):
         Stressclient.commThread.setValue('Vehicle.Speed', str(count))
-    measure_time.toc()
-    print('Elapsed time: %s ns' % measure_time.telapsed_ns)
-    one = (measure_time.telapsed_ns / num)
+    end = time.time_ns()
+    elapsed_ns = end - start
+    print('Elapsed time: %s ns' % elapsed_ns)
+    one = (elapsed_ns / num)
     print('One message is sent all %s ns' % one)
     ratio = 1e9 / one
     print('Pushed %s total messages ' % num, '(%s / s)' % ratio)
