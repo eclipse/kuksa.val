@@ -42,9 +42,6 @@ class Backend(cli_backend.Backend):
         self.cacertificate = pathlib.Path(self.cacertificate)
         self.keyfile = pathlib.Path(self.keyfile)
         self.certificate = pathlib.Path(self.certificate)
-        self.tokenfile = pathlib.Path(
-            config.get('token', str(self.default_cert_path / 'jwt/all-read-write.json.token')),
-        )
         self.grpcConnected = False
 
         self.sendMsgQueue = queue.Queue()

@@ -32,6 +32,7 @@ class Backend:
         self.cacertificate = config.get('cacertificate', str(self.default_cert_path / 'CA.pem'))
         self.certificate = config.get('certificate', str(self.default_cert_path / 'Client.pem'))
         self.keyfile = config.get('key', str(self.default_cert_path / 'Client.key'))
+        self.tokenfile = config.get('token', str(self.default_cert_path / 'jwt/all-read-write.json.token'))
 
     @staticmethod
     def from_config(config):
