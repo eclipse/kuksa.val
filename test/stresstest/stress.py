@@ -1,5 +1,6 @@
 import client
-import timer
+import time
+import config
 
 def stressServer(num, path, file):
     print('stress testing kuksa.val server with setValue')
