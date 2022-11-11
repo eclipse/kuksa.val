@@ -112,6 +112,19 @@ OPTIONS:
 
 ```
 
+### :warning: Default port not working on Mac OS
+The databroker default port `55555` is not usable in many versions of Mac OS. You can not bind it, or if it seems bound you still can not receive messages. Therefore, on Mac OS you need to start databroker on another port, e.g.
+
+```
+databroker --port 55556
+```
+
+Please note, this also applies if you use a container environment like K3S or Docker on Mac OS. If you forward the port or exposing the host network interfaces, the same problem occurs.
+
+For more information see also https://developer.apple.com/forums/thread/671197 
+
+Currently, to run databroker-cli (see below), you do need to change the port it connects to in databroker-cli code and recompile it.
+
 ### Test the databroker - run client/cli
 
 Run the cli with:
