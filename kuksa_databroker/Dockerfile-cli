@@ -1,0 +1,48 @@
+# /********************************************************************************
+# * Copyright (c) 2022 Contributors to the Eclipse Foundation
+# *
+# * See the NOTICE file(s) distributed with this work for additional
+# * information regarding copyright ownership.
+# *
+# * This program and the accompanying materials are made available under the
+# * terms of the Apache License 2.0 which is available at
+# * http://www.apache.org/licenses/LICENSE-2.0
+# *
+# * SPDX-License-Identifier: Apache-2.0
+# ********************************************************************************/
+
+# This is expected to be executed in the kuksa.val top-level directory
+# This builds the databroker-cli
+
+FROM rust:1.63 as builder
+
+
+RUN rustup component add rustfmt
+
+RUN mkdir /build
+WORKDIR /build
+
+ADD kuksa_databroker kuksa_databroker
+ADD proto proto
+ADD Cargo.toml Cargo.toml
+
+# Creating BOM
+RUN cargo install cargo-license
+WORKDIR /build/kuksa_databroker/createbom
+RUN rm -rf ../thirdparty
+RUN python3 createbom.py ../databroker-cli
+
+WORKDIR /build/kuksa_databroker/databroker-cli
+
+ENV RUSTFLAGS='-C link-arg=-s'
+RUN cargo build  --bin databroker-cli --release
+
+
+
+FROM  debian:buster-slim
+
+COPY --from=builder /build//target/release/databroker-cli /app/databroker-cli
+COPY --from=builder /build/kuksa_databroker/databroker-cli/thirdparty /app/thirdparty
+
+
+ENTRYPOINT [ "/app/databroker-cli" ]
