@@ -47,6 +47,12 @@ SUPPORTED_SERVER_PROTOCOLS = ("ws", "grpc")
 
 scriptDir= os.path.dirname(os.path.realpath(__file__))
 
+
+def assignment_statement(arg):
+    path, value = arg.split('=', maxsplit=1)
+    return (path, value)
+
+
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-public-methods
 class TestClient(Cmd):
@@ -165,12 +171,27 @@ class TestClient(Cmd):
     ap_setTargetValue.add_argument("Path", help="Path whose target value to be set", completer_method=path_completer)
     ap_setTargetValue.add_argument("Value", help="Value to be set")
 
+    ap_setTargetValues = argparse.ArgumentParser()
+    ap_setTargetValues.add_argument(
+        "Path=Value",
+        help="Path and new target value this path is to be set with",
+        nargs='+',
+        type=assignment_statement,
+    )
+
     ap_getTargetValue = argparse.ArgumentParser()
-    ap_getTargetValue.add_argument("Path", help="Path whose target value to be read", completer_method=path_completer)
+    ap_getTargetValue.add_argument("Path", help="Path whose target value is to be read", completer_method=path_completer)
+
+    ap_getTargetValues = argparse.ArgumentParser()
+    ap_getTargetValues.add_argument("Path", help="Path whose target value is to be read", nargs='+', completer_method=path_completer)
 
     ap_subscribe = argparse.ArgumentParser()
-    ap_subscribe.add_argument("Path", help="Path to be subscribed", completer_method=path_completer)
-    ap_subscribe.add_argument("-a", "--attribute", help="Attribute to be subscribed", default="value")
+    ap_subscribe.add_argument("Path", help="Path to subscribe to", completer_method=path_completer)
+    ap_subscribe.add_argument("-a", "--attribute", help="Attribute to subscribe to", default="value")
+
+    ap_subscribeMultiple = argparse.ArgumentParser()
+    ap_subscribeMultiple.add_argument("Path", help="Path to subscribe to", nargs='+', completer_method=path_completer)
+    ap_subscribeMultiple.add_argument("-a", "--attribute", help="Attribute to subscribe to", default="value")
 
     ap_unsubscribe = argparse.ArgumentParser()
     ap_unsubscribe.add_argument(
@@ -245,6 +266,15 @@ class TestClient(Cmd):
         self.pathCompletionItems = []
 
     @with_category(VSS_COMMANDS)
+    @with_argparser(ap_setTargetValues)
+    def do_setTargetValues(self, args):
+        """Set the value of a path"""
+        if self.checkConnection():
+            resp = self.commThread.setValues(dict(getattr(args, 'Path=Value')), "targetValue")
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
+
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_getValue)
     def do_getValue(self, args):
         """Get the value of a path"""
@@ -263,6 +293,15 @@ class TestClient(Cmd):
         self.pathCompletionItems = []
 
     @with_category(VSS_COMMANDS)
+    @with_argparser(ap_getTargetValues)
+    def do_getTargetValues(self, args):
+        """Get the value of given paths"""
+        if self.checkConnection():
+            resp = self.commThread.getValues(args.Path, "targetValue")
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
+
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_subscribe)
     def do_subscribe(self, args):
         """Subscribe the value of a path"""
@@ -271,6 +310,23 @@ class TestClient(Cmd):
             logPath = pathlib.Path.cwd() / f"log_{args.Path.replace('/', '.')}_{args.attribute}_{str(time.time())}"
             callback = functools.partial(self.subscribeCallback, logPath)
             resp = self.commThread.subscribe(args.Path, callback, args.attribute)
+            resJson =  json.loads(resp)
+            if "subscriptionId" in resJson:
+                self.subscribeIds.add(resJson["subscriptionId"])
+                logPath.touch()
+                print(f"Subscription log available at {logPath}")
+                print(f"Execute tail -f {logPath} on another Terminal instance")
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
+
+    @with_category(VSS_COMMANDS)
+    @with_argparser(ap_subscribeMultiple)
+    def do_subscribeMultiple(self, args):
+        """Subscribe to updates of given paths"""
+        if self.checkConnection():
+            logPath = pathlib.Path.cwd() / f"subscribeMultiple_{args.attribute}_{str(time.time())}.log"
+            callback = functools.partial(self.subscribeCallback, logPath)
+            resp = self.commThread.subscribeMultiple(args.Path, callback, args.attribute)
             resJson =  json.loads(resp)
             if "subscriptionId" in resJson:
                 self.subscribeIds.add(resJson["subscriptionId"])

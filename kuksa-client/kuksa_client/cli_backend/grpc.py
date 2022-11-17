@@ -21,7 +21,9 @@ import asyncio
 import json
 import pathlib
 import queue
+from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import Iterable
 import uuid
 
@@ -74,34 +76,43 @@ class Backend(cli_backend.Backend):
 
     # Function to implement get
     def getValue(self, path, attribute="value", timeout=5):
+        return self.getValues((path,), attribute, timeout)
+
+    def getValues(self, paths, attribute="value", timeout=5):
         if attribute in self.AttrDict:
             field, view = self.AttrDict[attribute]
-            requestArgs = {'entries': (kuksa_client.grpc.EntryRequest(path=path, view=view, fields=(field,)),)}
+            entries = [kuksa_client.grpc.EntryRequest(path=path, view=view, fields=(field,)) for path in paths]
+            requestArgs = {'entries': entries}
             return self._sendReceiveMsg(("get", requestArgs), timeout)
 
         return json.dumps({"error": "Invalid Attribute"})
 
     # Function to implement set
     def setValue(self, path, value, attribute="value", timeout=5):
+        return self.setValues({path: value}, attribute, timeout)
+
+    def setValues(self, updates: Dict[str, Any], attribute="value", timeout=5):
         if attribute in self.AttrDict:
             field, _ = self.AttrDict[attribute]
-            if field is kuksa_client.grpc.Field.VALUE:
-                entry = kuksa_client.grpc.DataEntry(path=path, value=kuksa_client.grpc.Datapoint(value=value))
-            elif field is kuksa_client.grpc.Field.ACTUATOR_TARGET:
-                entry = kuksa_client.grpc.DataEntry(
-                    path=path, actuator_target=kuksa_client.grpc.Datapoint(value=value),
-                )
-            elif field is kuksa_client.grpc.Field.METADATA:
-                try:
-                    metadata_dict = json.loads(value)
-                except json.JSONDecodeError:
-                    return json.dumps({"error": "Metadata value needs to be a valid JSON object"})
-                entry = kuksa_client.grpc.DataEntry(
-                    path=path, metadata=kuksa_client.grpc.Metadata.from_dict(metadata_dict),
-                )
-            requestArgs = {'updates': (kuksa_client.grpc.EntryUpdate(entry=entry, fields=(field,)),)}
+            entry_updates = []
+            for path, value in updates.items():
+                if field is kuksa_client.grpc.Field.VALUE:
+                    entry = kuksa_client.grpc.DataEntry(path=path, value=kuksa_client.grpc.Datapoint(value=value))
+                elif field is kuksa_client.grpc.Field.ACTUATOR_TARGET:
+                    entry = kuksa_client.grpc.DataEntry(
+                        path=path, actuator_target=kuksa_client.grpc.Datapoint(value=value),
+                    )
+                elif field is kuksa_client.grpc.Field.METADATA:
+                    try:
+                        metadata_dict = json.loads(value)
+                    except json.JSONDecodeError:
+                        return json.dumps({"error": "Metadata value needs to be a valid JSON object"})
+                    entry = kuksa_client.grpc.DataEntry(
+                        path=path, metadata=kuksa_client.grpc.Metadata.from_dict(metadata_dict),
+                    )
+                entry_updates.append(kuksa_client.grpc.EntryUpdate(entry=entry, fields=(field,)))
+            requestArgs = {'updates': entry_updates}
             return self._sendReceiveMsg(("set", requestArgs), timeout)
-
         return json.dumps({"error": "Invalid Attribute"})
 
     # Function for authorization
@@ -116,10 +127,14 @@ class Backend(cli_backend.Backend):
     # Subscribe value changes of to a given path.
     # The given callback function will be called then, if the given path is updated.
     def subscribe(self, path, callback, attribute="value", timeout=5):
+        return self.subscribeMultiple((path,), callback, attribute, timeout)
+
+    def subscribeMultiple(self, paths, callback, attribute="value", timeout=5):
         if attribute in self.AttrDict:
             field, view = self.AttrDict[attribute]
+            entries = [kuksa_client.grpc.SubscribeEntry(path=path, view=view, fields=(field,)) for path in paths]
             requestArgs = {
-                'entries': (kuksa_client.grpc.SubscribeEntry(path=path, view=view, fields=(field,)),),
+                'entries': entries,
                 'callback': callback_wrapper(callback),
             }
             return self._sendReceiveMsg(("subscribe", requestArgs), timeout)
@@ -165,7 +180,8 @@ class Backend(cli_backend.Backend):
             try:
                 if call == "get":
                     resp = await vss_client.get(**requestArgs)
-                    resp = resp[0].to_dict() if resp else None
+                    resp = [entry.to_dict() for entry in resp]
+                    resp = resp[0] if len(resp) == 1 else resp
                 elif call == "set":
                     resp = await vss_client.set(**requestArgs)
                 elif call == "authorize":
