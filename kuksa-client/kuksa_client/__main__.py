@@ -116,13 +116,13 @@ class TestClient(Cmd):
 
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
-    def subscribeCallback(self, path, attr, resp):
-        with self.subscribeLogPaths[(path,attr)].open('a', encoding='utf-8') as logFile:
+    def subscribeCallback(self, logPath, resp):
+        with logPath.open('a', encoding='utf-8') as logFile:
             logFile.write(resp + "\n")
 
     def subscriptionIdCompleter(self, text, line, begidx, endidx):
         self.pathCompletionItems = []
-        for sub_id in self.subscribeIdToPath:
+        for sub_id in self.subscribeIds:
             self.pathCompletionItems.append(CompletionItem(sub_id))
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
@@ -206,8 +206,7 @@ class TestClient(Cmd):
         self.supportedProtocols = SUPPORTED_SERVER_PROTOCOLS
         self.vssTree = {}
         self.pathCompletionItems = []
-        self.subscribeLogPaths = {}
-        self.subscribeIdToPath = {}
+        self.subscribeIds = set()
         self.commThread = None
 
         print("Welcome to Kuksa Client version " + str(_metadata.__version__))
@@ -269,17 +268,15 @@ class TestClient(Cmd):
         """Subscribe the value of a path"""
         if self.checkConnection():
 
-            resp = self.commThread.subscribe(
-                args.Path, lambda msg: self.subscribeCallback(args.Path, args.attribute, msg), args.attribute,
-            )
+            logPath = pathlib.Path.cwd() / f"log_{args.Path.replace('/', '.')}_{args.attribute}_{str(time.time())}"
+            callback = functools.partial(self.subscribeCallback, logPath)
+            resp = self.commThread.subscribe(args.Path, callback, args.attribute)
             resJson =  json.loads(resp)
             if "subscriptionId" in resJson:
-                logPath = pathlib.Path.cwd() / f"log_{args.Path.replace('/', '.')}_{args.attribute}_{str(time.time())}"
+                self.subscribeIds.add(resJson["subscriptionId"])
                 logPath.touch()
-                self.subscribeLogPaths[(args.Path, args.attribute)] = logPath
-                self.subscribeIdToPath[resJson["subscriptionId"]] = (args.Path, args.attribute)
-                print("Subscription log available at " + logPath)
-                print("Execute tail -f " + logPath + " on another Terminal instance")
+                print(f"Subscription log available at {logPath}")
+                print(f"Execute tail -f {logPath} on another Terminal instance")
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
@@ -290,11 +287,7 @@ class TestClient(Cmd):
         if self.checkConnection():
             resp = self.commThread.unsubscribe(args.SubscribeId)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
-            if args.SubscribeId in self.subscribeIdToPath:
-                (path,attr) = self.subscribeIdToPath[args.SubscribeId]
-                if path in self.subscribeLogPaths:
-                    del self.subscribeLogPaths[(path,attr)]
-                del self.subscribeIdToPath[args.SubscribeId]
+            self.subscribeIds.discard(args.SubscribeId)
             self.pathCompletionItems = []
 
     def do_quit(self, args):
