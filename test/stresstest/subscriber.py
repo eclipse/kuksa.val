@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 ########################################################################
 # Copyright (c) 2022 Robert Bosch GmbH
 #
@@ -18,7 +16,6 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
->>>>>>> a9a2d75 (fixup! Add a subscriber client to see the stress test and stress test subscriptions)
 import client
 import config
 
