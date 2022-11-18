@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 ########################################################################
 # Copyright (c) 2022 Robert Bosch GmbH
 #
@@ -18,7 +16,6 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
->>>>>>> f5e277d (fixup! Add an instance of KUKSA.val databroker/server to stress test it)
 import subprocess
 import config
 import signal

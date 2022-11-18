@@ -16,11 +16,7 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
-<<<<<<< HEAD
-import threading
-=======
 import multiprocessing
->>>>>>> da7fe9e (fixup! Perform the stresstest)
 import stress
 import subscriber
 import config
