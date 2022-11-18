@@ -318,7 +318,7 @@ impl From<proto::Datapoint> for broker::Datapoint {
 impl From<broker::EntryUpdate> for proto::DataEntry {
     fn from(from: broker::EntryUpdate) -> Self {
         Self {
-            path: from.path.unwrap_or_else(|| "".to_string()),
+            path: from.path.unwrap_or_default(),
             value: match from.datapoint {
                 Some(datapoint) => Option::<proto::Datapoint>::from(datapoint),
                 None => None,

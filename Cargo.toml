@@ -23,7 +23,7 @@ members = [
 [profile.release]
 lto = true                 # Link time optimization (dead code removal etc...)
 opt-level = "s"
-split-debuginfo = "packed"
 codegen-units = 1
 incremental = false
 # debug = true               # for profiling (turn off otherwise)
+# split-debuginfo = "packed" # only enable when `debug = true``

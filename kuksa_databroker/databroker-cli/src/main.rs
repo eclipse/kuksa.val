@@ -604,29 +604,22 @@ impl CliCompleter {
         let mut root = PathPart::new();
         for entry in metadata {
             let mut parent = &mut root;
-            let mut parts = entry.name.split('.');
-            loop {
-                let path = parts.next();
-                match path {
-                    Some(path) => {
-                        let full_path = match parent.full_path.as_str() {
-                            "" => path.to_owned(),
-                            _ => format!("{}.{}", parent.full_path, path),
-                        };
-                        let entry =
-                            parent
-                                .children
-                                .entry(path.to_lowercase())
-                                .or_insert(PathPart {
-                                    rel_path: path.to_owned(),
-                                    full_path,
-                                    children: HashMap::new(),
-                                });
-
-                        parent = entry;
-                    }
-                    None => break,
+            let parts = entry.name.split('.');
+            for part in parts {
+                let full_path = match parent.full_path.as_str() {
+                    "" => part.to_owned(),
+                    _ => format!("{}.{}", parent.full_path, part),
                 };
+                let entry = parent
+                    .children
+                    .entry(part.to_lowercase())
+                    .or_insert(PathPart {
+                        rel_path: part.to_owned(),
+                        full_path,
+                        children: HashMap::new(),
+                    });
+
+                parent = entry;
             }
         }
         CliCompleter { paths: root }
@@ -649,7 +642,7 @@ impl CliCompleter {
                             None => {
                                 // match partial
                                 for (path_part_lower, path_spec) in &path.children {
-                                    if path_part_lower.starts_with(&part) {
+                                    if path_part_lower.starts_with(part) {
                                         if !path_spec.children.is_empty() {
                                             // This is a branch
                                             res.push(Completion {
