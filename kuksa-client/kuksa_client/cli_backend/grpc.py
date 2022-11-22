@@ -27,6 +27,7 @@ import uuid
 
 from kuksa_client import cli_backend
 import kuksa_client.grpc
+import kuksa_client.grpc.aio
 from kuksa_client.grpc import EntryUpdate
 
 
@@ -186,11 +187,11 @@ class Backend(cli_backend.Backend):
     # Main loop for handling gRPC communication
     async def mainLoop(self):
         if self.insecure:
-            async with kuksa_client.grpc.VSSClient(self.serverIP, self.serverPort) as vss_client:
+            async with kuksa_client.grpc.aio.VSSClient(self.serverIP, self.serverPort) as vss_client:
                 print("gRPC channel connected.")
                 await self._grpcHandler(vss_client)
         else:
-            async with kuksa_client.grpc.VSSClient(
+            async with kuksa_client.grpc.aio.VSSClient(
                 self.serverIP,
                 self.serverPort,
                 root_certificates=self.cacertificate,

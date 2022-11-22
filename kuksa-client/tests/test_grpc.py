@@ -43,8 +43,8 @@ from kuksa_client.grpc import ServerInfo
 from kuksa_client.grpc import SubscribeEntry
 from kuksa_client.grpc import ValueRestriction
 from kuksa_client.grpc import View
-from kuksa_client.grpc import VSSClient
 from kuksa_client.grpc import VSSClientError
+from kuksa_client.grpc.aio import VSSClient
 
 
 def generate_error(code: grpc.StatusCode, details: str):
@@ -683,7 +683,7 @@ class TestVSSClient:
     @pytest.mark.usefixtures('val_server')
     async def test_get_no_entries_requested(self, unused_tcp_port, val_servicer):
         val_servicer.Get.side_effect = generate_error(grpc.StatusCode.INVALID_ARGUMENT, 'No datapoints requested')
-        async with kuksa_client.grpc.VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
             with pytest.raises(kuksa_client.grpc.VSSClientError) as exc_info:
                 await client.get(entries=[])
 
