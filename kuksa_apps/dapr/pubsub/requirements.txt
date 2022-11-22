@@ -1,3 +1,0 @@
-kuksa-client
-dapr                                          
-dapr-ext-grpc
