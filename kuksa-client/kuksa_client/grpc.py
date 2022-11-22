@@ -450,7 +450,7 @@ class ServerInfo:
         return cls(name=message.name, version=message.version)
 
 
-class VSSClient:
+class BaseVSSClient:
     def __init__(
         self,
         host: str,
@@ -466,17 +466,83 @@ class VSSClient:
         self.private_key = private_key
         self.certificate_chain = certificate_chain
         self.ensure_startup_connection = ensure_startup_connection
-        self.channel = None
         self.client_stub = None
-        self.exit_stack = contextlib.AsyncExitStack()
         self.subscribers = {}
 
-    async def __aenter__(self):
+    def _load_creds(self) -> Optional[grpc.ChannelCredentials]:
         if all((self.root_certificates, self.private_key, self.certificate_chain)):
             root_certificates = self.root_certificates.read_bytes()
             private_key = self.private_key.read_bytes()
             certificate_chain = self.certificate_chain.read_bytes()
-            creds = grpc.ssl_channel_credentials(root_certificates, private_key, certificate_chain)
+            return grpc.ssl_channel_credentials(root_certificates, private_key, certificate_chain)
+        return None
+
+    def _prepare_get_request(self, entries: Iterable[EntryRequest]) -> val_pb2.GetRequest:
+        req = val_pb2.GetRequest(entries=[])
+        for entry in entries:
+            entry_request = val_pb2.EntryRequest(path=entry.path, view=entry.view.value, fields=[])
+            for field in entry.fields:
+                entry_request.fields.append(field.value)
+            req.entries.append(entry_request)
+        logger.debug("%s: %s", type(req).__name__, req)
+        return req
+
+    def _process_get_response(self, response: val_pb2.GetResponse) -> List[DataEntry]:
+        logger.debug("%s: %s", type(response).__name__, response)
+        self._raise_if_invalid(response)
+        return [DataEntry.from_message(entry) for entry in response.entries]
+
+    def _get_paths_with_required_type(self, updates: Collection[EntryUpdate]) -> Dict[str, DataType]:
+        paths_with_required_type = {}
+        for update in updates:
+            metadata = update.entry.metadata
+            # We need a data type in order to set sensor/actuator value or metadata's value restriction
+            if (
+                Field.ACTUATOR_TARGET in update.fields or
+                Field.VALUE in update.fields or
+                (metadata is not None and metadata.value_restriction is not None)
+            ):
+                # If the update holds a new data type, we assume it will be applied before
+                # setting the sensor/actuator value.
+                paths_with_required_type[update.entry.path] = metadata.data_type if metadata is not None else DataType.UNSPECIFIED
+        return paths_with_required_type
+
+    def _prepare_set_request(self, updates: Collection[EntryUpdate], paths_with_required_type: Dict[str, DataType]) -> val_pb2.SetRequest:
+        req = val_pb2.SetRequest(updates=[])
+        for update in updates:
+            value_type = paths_with_required_type.get(update.entry.path)
+            if value_type is not None:
+                update.entry.value_type = value_type
+            req.updates.append(update.to_message())
+        logger.debug("%s: %s", type(req).__name__, req)
+        return req
+
+    def _process_set_response(self, response: val_pb2.SetResponse) -> None:
+        logger.debug("%s: %s", type(response).__name__, response)
+        self._raise_if_invalid(response)
+
+    def _raise_if_invalid(self, response):
+        if response.HasField('error'):
+            error = json_format.MessageToDict(response.error, preserving_proto_field_name=True)
+        else:
+            error = None
+        if response.errors:
+            errors = [json_format.MessageToDict(err, preserving_proto_field_name=True) for err in response.errors]
+        else:
+            errors = []
+        if error and error['code'] != http.HTTPStatus.OK:
+            raise VSSClientError(error, errors)
+
+
+class VSSClient(BaseVSSClient):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.channel = None
+        self.exit_stack = contextlib.AsyncExitStack()
+
+    async def __aenter__(self):
+        creds = self._load_creds()
+        if creds is not None:
             channel = grpc.aio.secure_channel(self.target_host, creds)
         else:
             channel = grpc.aio.insecure_channel(self.target_host)
@@ -616,51 +682,25 @@ class VSSClient:
         )
 
     async def get(self, *, entries: Iterable[EntryRequest]) -> List[DataEntry]:
-        req = val_pb2.GetRequest(entries=[])
-        for entry in entries:
-            entry_request = val_pb2.EntryRequest(path=entry.path, view=entry.view.value, fields=[])
-            for field in entry.fields:
-                entry_request.fields.append(field.value)
-            req.entries.append(entry_request)
-        logger.debug("%s: %s", type(req).__name__, req)
+        req = self._prepare_get_request(entries)
         try:
             resp = await self.client_stub.Get(req)
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
-        logger.debug("%s: %s", type(resp).__name__, resp)
-        self.raise_if_invalid(resp)
-        return [DataEntry.from_message(entry) for entry in resp.entries]
+        return self._process_get_response(resp)
 
     async def set(self, *, updates: Collection[EntryUpdate]) -> None:
-        req = val_pb2.SetRequest(updates=[])
-        value_types = {}
-        paths_without_type = []
-        for update in updates:
-            metadata = update.entry.metadata
-            # We need a data type in order to set sensor/actuator value or metadata's value restriction
-            if (
-                Field.ACTUATOR_TARGET in update.fields or
-                Field.VALUE in update.fields or
-                (metadata is not None and metadata.value_restriction is not None)
-            ):
-                # If the update holds a new data type, we assume it will be applied before
-                # setting the sensor/actuator value.
-                if metadata is None or metadata.data_type is DataType.UNSPECIFIED:
-                    paths_without_type.append(update.entry.path)
-                else:
-                    value_types[update.entry.path] = metadata.data_type
-        value_types.update(await self.get_value_types(paths_without_type))
-        for update in updates:
-            if update.entry.path in value_types:
-                update.entry.value_type = value_types[update.entry.path]
-            req.updates.append(update.to_message())
-        logger.debug("%s: %s", type(req).__name__, req)
+        paths_with_required_type = self._get_paths_with_required_type(updates)
+        paths_without_type = [
+            path for path, data_type in paths_with_required_type.items() if data_type is DataType.UNSPECIFIED
+        ]
+        paths_with_required_type.update(await self.get_value_types(paths_without_type))
+        req = self._prepare_set_request(updates, paths_with_required_type)
         try:
             resp = await self.client_stub.Set(req)
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
-        logger.debug("%s: %s", type(resp).__name__, resp)
-        self.raise_if_invalid(resp)
+        self._process_set_response(resp)
 
     async def authorize(self, *, token: str) -> str:
         raise NotImplementedError('"authorize" is not yet implemented')
@@ -744,19 +784,7 @@ class VSSClient:
             callback({update.entry.path: update.entry.metadata for update in updates})
         return wrapper
 
-    def raise_if_invalid(self, response):
-        if response.HasField('error'):
-            error = json_format.MessageToDict(response.error, preserving_proto_field_name=True)
-        else:
-            error = None
-        if response.errors:
-            errors = [json_format.MessageToDict(err, preserving_proto_field_name=True) for err in response.errors]
-        else:
-            errors = []
-        if error and error['code'] != http.HTTPStatus.OK:
-            raise VSSClientError(error, errors)
-
-    async def get_value_types(self, paths: Iterable[str]) -> Dict[str, DataType]:
+    async def get_value_types(self, paths: Collection[str]) -> Dict[str, DataType]:
         if paths:
             entry_requests = (EntryRequest(
                 path=path, view=View.METADATA, fields=(Field.METADATA_DATA_TYPE,),
