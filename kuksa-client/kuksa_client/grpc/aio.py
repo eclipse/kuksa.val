@@ -73,8 +73,11 @@ class VSSClient(BaseVSSClient):
         self.client_stub = None
         self.channel = None
 
-    async def get_current_values(self, paths: Iterable[str]) -> Dict[str, Datapoint]:
+    async def get_current_values(self, paths: Iterable[str], **rpc_kwargs) -> Dict[str, Datapoint]:
         """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
             current_values = await client.get_current_values([
                 'Vehicle.Speed',
@@ -82,11 +85,17 @@ class VSSClient(BaseVSSClient):
             ])
             speed_value = current_values['Vehicle.Speed'].value
         """
-        entries = await self.get(entries=(EntryRequest(path, View.CURRENT_VALUE, (Field.VALUE,)) for path in paths))
+        entries = await self.get(
+            entries=(EntryRequest(path, View.CURRENT_VALUE, (Field.VALUE,)) for path in paths),
+            **rpc_kwargs,
+        )
         return {entry.path: entry.value for entry in entries}
 
-    async def get_target_values(self, paths: Iterable[str]) -> Dict[str, Datapoint]:
+    async def get_target_values(self, paths: Iterable[str], **rpc_kwargs) -> Dict[str, Datapoint]:
         """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
             target_values = await client.get_target_values([
                 'Vehicle.ADAS.ABS.IsActive',
@@ -95,11 +104,17 @@ class VSSClient(BaseVSSClient):
         """
         entries = await self.get(entries=(
             EntryRequest(path, View.TARGET_VALUE, (Field.ACTUATOR_TARGET,),
+            **rpc_kwargs,
         ) for path in paths))
         return {entry.path: entry.actuator_target for entry in entries}
 
-    async def get_metadata(self, paths: Iterable[str], field: MetadataField = MetadataField.ALL) -> Dict[str, Metadata]:
+    async def get_metadata(
+        self, paths: Iterable[str], field: MetadataField = MetadataField.ALL, **rpc_kwargs,
+    ) -> Dict[str, Metadata]:
         """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
             metadata = await client.get_metadata([
                 'Vehicle.Speed',
@@ -107,30 +122,47 @@ class VSSClient(BaseVSSClient):
             ], MetadataField.UNIT)
             speed_unit = metadata['Vehicle.Speed'].unit
         """
-        entries = await self.get(entries=(EntryRequest(path, View.METADATA, (Field(field.value),)) for path in paths))
+        entries = await self.get(
+            entries=(EntryRequest(path, View.METADATA, (Field(field.value),)) for path in paths),
+            **rpc_kwargs,
+        )
         return {entry.path: entry.metadata for entry in entries}
 
-    async def set_current_values(self, updates: Dict[str, Datapoint]) -> None:
+    async def set_current_values(self, updates: Dict[str, Datapoint], **rpc_kwargs) -> None:
         """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
             await client.set_current_values({
                 'Vehicle.Speed': Datapoint(42),
                 'Vehicle.ADAS.ABS.IsActive': Datapoint(False),
             })
         """
-        await self.set(updates=[EntryUpdate(DataEntry(path, value=dp), (Field.VALUE,)) for path, dp in updates.items()])
+        await self.set(
+            updates=[EntryUpdate(DataEntry(path, value=dp), (Field.VALUE,)) for path, dp in updates.items()],
+            **rpc_kwargs,
+        )
 
-    async def set_target_values(self, updates: Dict[str, Datapoint]) -> None:
+    async def set_target_values(self, updates: Dict[str, Datapoint], **rpc_kwargs) -> None:
         """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
             await client.set_target_values({'Vehicle.ADAS.ABS.IsActive': Datapoint(True)})
         """
         await self.set(updates=[EntryUpdate(
             DataEntry(path, actuator_target=dp), (Field.ACTUATOR_TARGET,),
-        ) for path, dp in updates.items()])
+        ) for path, dp in updates.items()], **rpc_kwargs)
 
-    async def set_metadata(self, updates: Dict[str, Metadata], field: MetadataField = MetadataField.ALL) -> None:
+    async def set_metadata(
+        self, updates: Dict[str, Metadata], field: MetadataField = MetadataField.ALL, **rpc_kwargs,
+    ) -> None:
         """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
             await client.set_metadata({
                 'Vehicle.Cabin.Door.Row1.Left.Shade.Position': Metadata(data_type=DataType.FLOAT),
@@ -138,12 +170,15 @@ class VSSClient(BaseVSSClient):
         """
         await self.set(updates=[EntryUpdate(
             DataEntry(path, metadata=md), (Field(field.value),),
-        ) for path, md in updates.items()])
+        ) for path, md in updates.items()], **rpc_kwargs)
 
     async def subscribe_current_values(
-        self, paths: Iterable[str], callback: Callable[[Dict[str, Datapoint]], None],
+        self, paths: Iterable[str], callback: Callable[[Dict[str, Datapoint]], None], **rpc_kwargs,
     ) -> uuid.UUID:
         """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
             def on_current_values_updated(updates: Dict[str, Datapoint]):
                 for path, dp in updates.items():
@@ -156,12 +191,16 @@ class VSSClient(BaseVSSClient):
         return await self.subscribe(
             entries=(SubscribeEntry(path, View.CURRENT_VALUE, (Field.VALUE,)) for path in paths),
             callback=self._subscriber_current_values_callback_wrapper(callback),
+            **rpc_kwargs,
         )
 
     async def subscribe_target_values(
-        self, paths: Iterable[str], callback: Callable[[Dict[str, Datapoint]], None],
+        self, paths: Iterable[str], callback: Callable[[Dict[str, Datapoint]], None], **rpc_kwargs,
     ) -> uuid.UUID:
         """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
             def on_target_values_updated(updates: Dict[str, Datapoint]):
                 for path, dp in updates.items():
@@ -174,14 +213,19 @@ class VSSClient(BaseVSSClient):
         return await self.subscribe(
             entries=(SubscribeEntry(path, View.TARGET_VALUE, (Field.ACTUATOR_TARGET,)) for path in paths),
             callback=self._subscriber_target_values_callback_wrapper(callback),
+            **rpc_kwargs,
         )
 
     async def subscribe_metadata(
         self, paths: Iterable[str],
         callback: Callable[[Dict[str, Metadata]], None],
         field: MetadataField = MetadataField.ALL,
+        **rpc_kwargs,
     ) -> uuid.UUID:
         """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
             def on_metadata_updated(updates: Dict[str, Metadata]):
                 for path, md in updates.items():
@@ -195,25 +239,36 @@ class VSSClient(BaseVSSClient):
         return await self.subscribe(
             entries=(SubscribeEntry(path, View.METADATA, (Field(field.value),)) for path in paths),
             callback=self._subscriber_metadata_callback_wrapper(callback),
+            **rpc_kwargs,
         )
 
-    async def get(self, *, entries: Iterable[EntryRequest]) -> List[DataEntry]:
+    async def get(self, *, entries: Iterable[EntryRequest], **rpc_kwargs) -> List[DataEntry]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        """
         req = self._prepare_get_request(entries)
         try:
-            resp = await self.client_stub.Get(req)
+            resp = await self.client_stub.Get(req, **rpc_kwargs)
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
         return self._process_get_response(resp)
 
-    async def set(self, *, updates: Collection[EntryUpdate]) -> None:
+    async def set(self, *, updates: Collection[EntryUpdate], **rpc_kwargs) -> None:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        """
         paths_with_required_type = self._get_paths_with_required_type(updates)
         paths_without_type = [
             path for path, data_type in paths_with_required_type.items() if data_type is DataType.UNSPECIFIED
         ]
-        paths_with_required_type.update(await self.get_value_types(paths_without_type))
+        paths_with_required_type.update(await self.get_value_types(paths_without_type, **rpc_kwargs))
         req = self._prepare_set_request(updates, paths_with_required_type)
         try:
-            resp = await self.client_stub.Set(req)
+            resp = await self.client_stub.Set(req, **rpc_kwargs)
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
         self._process_set_response(resp)
@@ -224,7 +279,13 @@ class VSSClient(BaseVSSClient):
     async def subscribe(self, *,
         entries: Iterable[SubscribeEntry],
         callback: Callable[[Iterable[EntryUpdate]], None],
+        **rpc_kwargs,
     ) -> uuid.UUID:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        """
         req = val_pb2.SubscribeRequest()
         for entry in entries:
             entry_request = val_pb2.SubscribeEntry(path=entry.path, view=entry.view.value, fields=[])
@@ -232,7 +293,7 @@ class VSSClient(BaseVSSClient):
                 entry_request.fields.append(field.value)
             req.entries.append(entry_request)
         logger.debug("%s: %s", type(req).__name__, req)
-        resp_stream = self.client_stub.Subscribe(req)
+        resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
         try:
             # We expect the first SubscribeResponse to be immediately available and to only hold a status
             resp = await resp_stream.__aiter__().__anext__()  # pylint: disable=unnecessary-dunder-call
@@ -256,11 +317,16 @@ class VSSClient(BaseVSSClient):
         except asyncio.CancelledError:
             pass
 
-    async def get_server_info(self) -> ServerInfo:
+    async def get_server_info(self, **rpc_kwargs) -> ServerInfo:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        """
         req = val_pb2.GetServerInfoRequest()
         logger.debug("%s: %s", type(req).__name__, req)
         try:
-            resp = await self.client_stub.GetServerInfo(req)
+            resp = await self.client_stub.GetServerInfo(req, **rpc_kwargs)
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
         logger.debug("%s: %s", type(resp).__name__, resp)
@@ -300,11 +366,16 @@ class VSSClient(BaseVSSClient):
             callback({update.entry.path: update.entry.metadata for update in updates})
         return wrapper
 
-    async def get_value_types(self, paths: Collection[str]) -> Dict[str, DataType]:
+    async def get_value_types(self, paths: Collection[str], **rpc_kwargs) -> Dict[str, DataType]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        """
         if paths:
             entry_requests = (EntryRequest(
                 path=path, view=View.METADATA, fields=(Field.METADATA_DATA_TYPE,),
             ) for path in paths)
-            entries = await self.get(entries=entry_requests)
+            entries = await self.get(entries=entry_requests, **rpc_kwargs)
             return {entry.path: DataType(entry.metadata.data_type) for entry in entries}
         return {}
