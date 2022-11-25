@@ -523,10 +523,12 @@ class BaseVSSClient:
         if response.HasField('error'):
             error = json_format.MessageToDict(response.error, preserving_proto_field_name=True)
         else:
-            error = None
+            error = {}
         if response.errors:
             errors = [json_format.MessageToDict(err, preserving_proto_field_name=True) for err in response.errors]
         else:
             errors = []
-        if error and error['code'] != http.HTTPStatus.OK:
+        if (error and error['code'] != http.HTTPStatus.OK) or any(
+            sub_error['error']['code'] != http.HTTPStatus.OK for sub_error in errors
+        ):
             raise VSSClientError(error, errors)
