@@ -16,6 +16,7 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
+import contextlib
 import dataclasses
 import datetime
 import enum
@@ -35,6 +36,7 @@ from grpc import RpcError
 
 from kuksa.val.v1 import types_pb2
 from kuksa.val.v1 import val_pb2
+from kuksa.val.v1 import val_pb2_grpc
 
 
 logger = logging.getLogger(__name__)
@@ -532,3 +534,185 @@ class BaseVSSClient:
             sub_error['error']['code'] != http.HTTPStatus.OK for sub_error in errors
         ):
             raise VSSClientError(error, errors)
+
+
+class VSSClient(BaseVSSClient):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.channel = None
+        self.exit_stack = contextlib.ExitStack()
+
+    def __enter__(self):
+        creds = self._load_creds()
+        if creds is not None:
+            channel = grpc.secure_channel(self.target_host, creds)
+        else:
+            channel = grpc.insecure_channel(self.target_host)
+        self.channel = self.exit_stack.enter_context(channel)
+        self.client_stub = val_pb2_grpc.VALStub(self.channel)
+        if self.ensure_startup_connection:
+            logger.debug("Connected to server: %s", self.get_server_info())
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.exit_stack.close()
+        self.client_stub = None
+        self.channel = None
+
+    def get_current_values(self, paths: Iterable[str], **rpc_kwargs) -> Dict[str, Datapoint]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        Example:
+            current_values = client.get_current_values([
+                'Vehicle.Speed',
+                'Vehicle.ADAS.ABS.IsActive',
+            ])
+            speed_value = current_values['Vehicle.Speed'].value
+        """
+        entries = self.get(
+            entries=(EntryRequest(path, View.CURRENT_VALUE, (Field.VALUE,)) for path in paths), **rpc_kwargs,
+        )
+        return {entry.path: entry.value for entry in entries}
+
+    def get_target_values(self, paths: Iterable[str], **rpc_kwargs) -> Dict[str, Datapoint]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        Example:
+            target_values = client.get_target_values([
+                'Vehicle.ADAS.ABS.IsActive',
+            ])
+            is_abs_to_become_active = target_values['Vehicle.ADAS.ABS.IsActive'].value
+        """
+        entries = self.get(entries=(
+            EntryRequest(path, View.TARGET_VALUE, (Field.ACTUATOR_TARGET,),
+        ) for path in paths), **rpc_kwargs)
+        return {entry.path: entry.actuator_target for entry in entries}
+
+    def get_metadata(
+        self, paths: Iterable[str], field: MetadataField = MetadataField.ALL, **rpc_kwargs,
+    ) -> Dict[str, Metadata]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        Example:
+            metadata = client.get_metadata([
+                'Vehicle.Speed',
+                'Vehicle.ADAS.ABS.IsActive',
+            ], MetadataField.UNIT)
+            speed_unit = metadata['Vehicle.Speed'].unit
+        """
+        entries = self.get(
+            entries=(EntryRequest(path, View.METADATA, (Field(field.value),)) for path in paths), **rpc_kwargs,
+        )
+        return {entry.path: entry.metadata for entry in entries}
+
+    def set_current_values(self, updates: Dict[str, Datapoint], **rpc_kwargs) -> None:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        Example:
+            client.set_current_values({
+                'Vehicle.Speed': Datapoint(42),
+                'Vehicle.ADAS.ABS.IsActive': Datapoint(False),
+            })
+        """
+        self.set(
+            updates=[EntryUpdate(DataEntry(path, value=dp), (Field.VALUE,)) for path, dp in updates.items()],
+            **rpc_kwargs,
+        )
+
+    def set_target_values(self, updates: Dict[str, Datapoint], **rpc_kwargs) -> None:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        Example:
+            client.set_target_values({'Vehicle.ADAS.ABS.IsActive': Datapoint(True)})
+        """
+        self.set(updates=[EntryUpdate(
+            DataEntry(path, actuator_target=dp), (Field.ACTUATOR_TARGET,),
+        ) for path, dp in updates.items()], **rpc_kwargs)
+
+    def set_metadata(
+        self, updates: Dict[str, Metadata], field: MetadataField = MetadataField.ALL, **rpc_kwargs,
+    ) -> None:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        Example:
+            client.set_metadata({
+                'Vehicle.Cabin.Door.Row1.Left.Shade.Position': Metadata(data_type=DataType.FLOAT),
+            })
+        """
+        self.set(updates=[EntryUpdate(
+            DataEntry(path, metadata=md), (Field(field.value),),
+        ) for path, md in updates.items()], **rpc_kwargs)
+
+    def get(self, *, entries: Iterable[EntryRequest], **rpc_kwargs) -> List[DataEntry]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        """
+        req = self._prepare_get_request(entries)
+        try:
+            resp = self.client_stub.Get(req, **rpc_kwargs)
+        except RpcError as exc:
+            raise VSSClientError.from_grpc_error(exc) from exc
+        return self._process_get_response(resp)
+
+    def set(self, *, updates: Collection[EntryUpdate], **rpc_kwargs) -> None:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        """
+        paths_with_required_type = self._get_paths_with_required_type(updates)
+        paths_without_type = [
+            path for path, data_type in paths_with_required_type.items() if data_type is DataType.UNSPECIFIED
+        ]
+        paths_with_required_type.update(self.get_value_types(paths_without_type, **rpc_kwargs))
+        req = self._prepare_set_request(updates, paths_with_required_type)
+        try:
+            resp = self.client_stub.Set(req, **rpc_kwargs)
+        except RpcError as exc:
+            raise VSSClientError.from_grpc_error(exc) from exc
+        self._process_set_response(resp)
+
+    def get_server_info(self, **rpc_kwargs) -> ServerInfo:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        """
+        req = val_pb2.GetServerInfoRequest()
+        logger.debug("%s: %s", type(req).__name__, req)
+        try:
+            resp = self.client_stub.GetServerInfo(req, **rpc_kwargs)
+        except RpcError as exc:
+            raise VSSClientError.from_grpc_error(exc) from exc
+        logger.debug("%s: %s", type(resp).__name__, resp)
+
+        return ServerInfo.from_message(resp)
+
+    def get_value_types(self, paths: Collection[str], **rpc_kwargs) -> Dict[str, DataType]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        req = self._prepare_get_request(entries)
+        """
+        if paths:
+            entry_requests = (EntryRequest(
+                path=path, view=View.METADATA, fields=(Field.METADATA_DATA_TYPE,),
+            ) for path in paths)
+            entries = self.get(entries=entry_requests, **rpc_kwargs)
+            return {entry.path: DataType(entry.metadata.data_type) for entry in entries}
+        return {}
