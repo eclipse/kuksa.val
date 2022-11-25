@@ -276,3 +276,10 @@ If you're running both client and server on your local host, make sure that:
 - `localhost` domain name resolution is configured properly on your host.
 - You are not using any proxies for localhost e.g. setting the `no_proxy` environment variable to `localhost,127.0.0.1`.
 - If you are using the `gRPC` protocol in secure mode, the server certificate should have `CN = localhost` in its subject.
+
+2. ``ImportError: cannot import name 'types_pb2' from 'kuksa.val.v1'``:
+It sometimes happens that ``_pb2*.py`` files are not generated on editable installations of kuksa_client.
+In order to manually generate those files and get more details if anything fails, run:
+```console
+python setup.py build_pb2
+```
