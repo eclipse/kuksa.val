@@ -21,11 +21,11 @@
 import asyncio
 import json
 import os.path
+import pathlib
 import queue
 import ssl
 import time
 import uuid
-import pathlib
 
 import websockets
 
@@ -117,9 +117,7 @@ class Backend(cli_backend.Backend):
         if tokenfile is None:
             tokenfile = self.tokenfile
         tokenfile = pathlib.Path(tokenfile)
-        if os.path.isfile(tokenfile.expanduser()):
-            with open(tokenfile.expanduser(), "r") as f:
-                token = f.readline()
+        token = tokenfile.expanduser().read_text(encoding='utf-8')
 
         req = {}
         req["action"]= "authorize"
