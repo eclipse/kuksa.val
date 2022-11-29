@@ -25,32 +25,23 @@ See [Supported Protocol](../doc/protocol/README.md) for a detailled overview of 
 ### Using  Docker Image
 If you prefer to build kuksa.val yourself skip to [Building KUKSA.val](#Building-kuksaval).
 
-Download a current docker image from one of our CI server:
+Download a current KUKSA.val server docker image from one of our container registry:
 
-- https://ci.eclipse.org/kuksa/job/kuksa.val/job/master/
-- https://kuksaval.northeurope.cloudapp.azure.com/job/kuksaval-upstream/
+- https://github.com/eclipse/kuksa.val/pkgs/container/kuksa.val%2Fkuksa-val
 
 The container images should work with any OCI compliant container runtime, in this document we assume you are using docker
 
-Import the docker image
+Pull the docker image
 
 ```
-docker load -i kuksa-val-b3084b9-amd64.tar.xz
+docker pull ghcr.io/eclipse/kuksa.val/kuksa-val:latest
 ```
 
-Your build tag may vary, and for ARM machines you need to choose an arm64 images.
 
-Prepare an empty directory `$HOME/kuksaval.config`.  Run the docker image using the tag reported by `docker load`:
+Prepare an empty directory `$HOME/kuksaval.config`.  Run the desired docker image using `docker run`:
 
 ```bash
-docker run -it --rm -v $HOME/kuksaval.config:/config  -p 127.0.0.1:8090:8090 -e LOG_LEVEL=ALL amd64/kuksa-val:b3084b9
-```
-
-Alternatively you can run a released version directly from the ghcr.io registry, i.e.
-
-```bash
-docker run -it --rm -v $HOME/kuksaval.config:/config  -p 127.0.0.1:8090:8090 -e LOG_LEVEL=ALL ghcr.io/eclipse/kuksa.val/kuksa-val:0.2.1-amd64
-
+docker run -it --rm --net=host -v $HOME/kuksaval.config:/config  -p 127.0.0.1:8090:8090 -e LOG_LEVEL=ALL ghcr.io/eclipse/kuksa.val/kuksa-val:master
 ```
 
 More information on using the docker images can be found [here](../doc/KUKSA.val_server/run-docker.md).
