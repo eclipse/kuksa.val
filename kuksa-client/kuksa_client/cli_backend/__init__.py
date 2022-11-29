@@ -36,7 +36,7 @@ class Backend:
 
     @staticmethod
     def from_config(config):
-        protocol = config['protocol']
+        protocol = config.get('protocol', 'ws')
 
         # pylint: disable=cyclic-import,import-outside-toplevel
         if protocol == 'ws':

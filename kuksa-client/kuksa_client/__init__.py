@@ -41,7 +41,6 @@ class KuksaClientThread(threading.Thread):
     def __init__(self, config):
         super().__init__()
 
-        self.serverProtocol = config.get("protocol", "ws")
         self.backend = cli_backend.Backend.from_config(config)
         self.loop = None
 
