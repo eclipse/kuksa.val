@@ -163,9 +163,22 @@ class TestClient(Cmd):
     ap_setValue.add_argument("Value", help="Value to be set")
     ap_setValue.add_argument("-a", "--attribute", help="Attribute to be set", default="value")
 
+    ap_setValues = argparse.ArgumentParser()
+    ap_setValues.add_argument(
+        "Path=Value",
+        help="Path and new value this path is to be set with",
+        nargs='+',
+        type=assignment_statement,
+    )
+    ap_setValues.add_argument("-a", "--attribute", help="Attribute to be set", default="value")
+
     ap_getValue = argparse.ArgumentParser()
     ap_getValue.add_argument("Path", help="Path to be read", completer_method=path_completer)
     ap_getValue.add_argument("-a", "--attribute", help="Attribute to be get", default="value")
+
+    ap_getValues = argparse.ArgumentParser()
+    ap_getValues.add_argument("Path", help="Path whose value is to be read", nargs='+', completer_method=path_completer)
+    ap_getValues.add_argument("-a", "--attribute", help="Attribute to be get", default="value")
 
     ap_setTargetValue = argparse.ArgumentParser()
     ap_setTargetValue.add_argument("Path", help="Path whose target value to be set", completer_method=path_completer)
@@ -257,9 +270,18 @@ class TestClient(Cmd):
         self.pathCompletionItems = []
 
     @with_category(VSS_COMMANDS)
+    @with_argparser(ap_setValues)
+    def do_setValues(self, args):
+        """Set the value of given paths"""
+        if self.checkConnection():
+            resp = self.commThread.setValues(dict(getattr(args, 'Path=Value')), args.attribute)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
+
+    @with_category(VSS_COMMANDS)
     @with_argparser(ap_setTargetValue)
     def do_setTargetValue(self, args):
-        """Set the value of a path"""
+        """Set the target value of a path"""
         if self.checkConnection():
             resp = self.commThread.setValue(args.Path, args.Value, "targetValue")
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
@@ -268,7 +290,7 @@ class TestClient(Cmd):
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_setTargetValues)
     def do_setTargetValues(self, args):
-        """Set the value of a path"""
+        """Set the target value of given paths"""
         if self.checkConnection():
             resp = self.commThread.setValues(dict(getattr(args, 'Path=Value')), "targetValue")
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
@@ -280,6 +302,15 @@ class TestClient(Cmd):
         """Get the value of a path"""
         if self.checkConnection():
             resp = self.commThread.getValue(args.Path, args.attribute)
+            print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
+        self.pathCompletionItems = []
+
+    @with_category(VSS_COMMANDS)
+    @with_argparser(ap_getValues)
+    def do_getValues(self, args):
+        """Get the value of given paths"""
+        if self.checkConnection():
+            resp = self.commThread.getValues(args.Path, args.attribute)
             print(highlight(resp, lexers.JsonLexer(), formatters.TerminalFormatter()))
         self.pathCompletionItems = []
 
