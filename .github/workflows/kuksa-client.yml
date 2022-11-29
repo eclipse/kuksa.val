@@ -1,3 +1,16 @@
+# /********************************************************************************
+# * Copyright (c) 2022 Contributors to the Eclipse Foundation
+# *
+# * See the NOTICE file(s) distributed with this work for additional
+# * information regarding copyright ownership.
+# *
+# * This program and the accompanying materials are made available under the
+# * terms of the Apache License 2.0 which is available at
+# * http://www.apache.org/licenses/LICENSE-2.0
+# *
+# * SPDX-License-Identifier: Apache-2.0
+# ********************************************************************************/
+
 name: kuksa_client_docker
 
 on:
@@ -21,9 +34,7 @@ jobs:
     needs: checkrights
 
     steps:
-    - uses: actions/checkout@v2
-      with: 
-        submodules: recursive
+    - uses: actions/checkout@v3
     - name: Docker meta
       id: meta
       uses: docker/metadata-action@v3.5.0
@@ -38,17 +49,27 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
-
+          
+    # only needed for runners without buildx setup, will be slow 
+    #- name: Set up QEMU
+    #  uses: docker/setup-qemu-action@v2
+      
+    #- name: Set up Docker Buildx
+    #  id: buildx
+    #  uses: docker/setup-buildx-action@v2
+    
     - name: Log in to the Container registry
       if: needs.checkrights.outputs.have_secrets == 'true'
       uses: docker/login-action@v2
       with:
           registry: ${{ needs.checkrights.outputs.registry }}
-          username: kuksa-bot
-          password: ${{ secrets.PUSH_CONTAINER_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          #username: kuksa-bot #keep it for now, maybe the standard token can not push to same package
+          #password: ${{ secrets.PUSH_CONTAINER_TOKEN }}
 
     - name: Build kuksa command line client docker and push to ghcr.io
-      if: needs.checkrights.outputs.have_secrets == 'true'
+      if: ${{ needs.checkrights.outputs.have_secrets == 'true' && github.event_name != 'pull_request' }}
       uses: docker/build-push-action@v2
       with:
         platforms: |
@@ -57,11 +78,13 @@ jobs:
         context: .
         file: kuksa-client/Dockerfile
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
+        tags: |
+          ${{ steps.meta.outputs.tags }}
+          ttl.sh/kuksa.val/kuksa-client-${{github.sha}}:1h
         labels: ${{ steps.meta.outputs.labels }}
 
     - name: Build ephemereal kuksa command line client docker and push to ttl.sh
-      if: needs.checkrights.outputs.have_secrets == 'false'
+      if:  ${{ needs.checkrights.outputs.have_secrets == 'false' || github.event_name == 'pull_request' }}
       uses: docker/build-push-action@v2
       with:
         platforms: |
@@ -70,5 +93,5 @@ jobs:
         context: .
         file: kuksa-client/Dockerfile
         push: true
-        tags: "ttl.sh/kuksa.val/kuksa-client:8h"
+        tags: "ttl.sh/kuksa.val/kuksa-client-${{github.sha}}:1h"
         labels: ${{ steps.meta.outputs.labels }}
