@@ -6,9 +6,12 @@ More about `kuksa.val` can be found in the [repository](https://github.com/eclip
 
 ## Introduction
 
-`kuksa-client` is a command-line test client which can be used to interact with the [KUKSA val server](https://github.com/eclipse/kuksa.val/tree/0.2.5/kuksa-val-server)
+`kuksa-client` provides both a command-line interface (CLI) and a standalone library to interact with either
+[KUKSA.val server](https://github.com/eclipse/kuksa.val/tree/master/kuksa-val-server) or
+[KUKSA databroker](https://github.com/eclipse/kuksa.val/tree/master/kuksa_databroker).
 
-## Installing and Starting the client
+
+## Installing the client and starting its CLI
 
 The fastest way to start using the kuksa-client is to install a pre-built version with pip.
 Instructions on how to build and run locally can be found further down in this document.
@@ -18,7 +21,7 @@ $ pip install kuksa-client
 ```
 
 
-After you have installed the kuksa-client package via pip you can run the test client directly by executing
+After you have installed the kuksa-client package via pip you can run the test client CLI directly by executing:
 
 ```console
 $ kuksa-client
@@ -198,73 +201,24 @@ To run the linter:
 $ pylint kuksa_client
 ```
 
-## Python SDK
+## Python library
 
-If you would like to develop your own `kuksa.val` client,
-you can use the python sdk to interact with the `kuksa.val` server in a very easy way.
+`kuksa-client` also provides a library to allow you to develop your own application that interacts with either
+`kuksa-val-server` or `kuksa_databroker`.
 
 
 ### Usage
 
-Import the sdk
+Import library's main package.
 ```python
 >>> import kuksa_client
 >>> kuksa_client.__version__
 '<your version, e.g. 0.1.7>'
 ```
 
-Setup a thread to connect with the `kuksa.val` server.
-The following properties for the connection can be configured:
-- `ip` default: "127.0.0.1"
-- `port` default: 8090
-- `insecure` default: `False`
-- `cacertificate` default: "../kuksa_certificates/CA.pem"
-- `certificate` default: "../kuksa_certificates/Client.pem"
-- `key` default: "../kuksa_certificates/Client.key"
+This package holds different APIs depending on your application's requirements.
+For more information, see ([Documentation](https://github.com/eclipse/kuksa.val/blob/master/kuksa-client/docs/main.md)).
 
-```python
->>> config = {}
->>> client = kuksa_client.KuksaClientThread(config)
->>>
->>> # Start the client thread to connect with configured server
->>> client.start()
->>>
->>> # Close the connection and stop the client thread
->>> client.stop()
-```
-
-You have the following methods to interact with `kuksa-val-server` or `kuksa-databroker`:
-
-```python
-# Do authorization by passing a jwt token or a token file
-def authorize(self, token, timeout=2):
-    ...
-
-# Update VSS Tree Entry
-def updateVSSTree(self, jsonStr, timeout=5):
-    ...
-
-# Update Meta Data of a given path
-def updateMetaData(self, path, jsonStr, timeout=5):
-    ...
-
-# Get Meta Data of a given path
-def getMetaData(self, path, timeout=1):
-    ...
-
-# Set value to a given path
-def setValue(self, path, value, timeout=1):
-    ...
-
-# Get value to a given path
-def getValue(self, path, timeout=5):
-    ...
-
-# Subscribe value changes of to a given path.
-# The given callback function will be called then, if the given path is updated.
-def subscribe(self, path, callback, timeout=5):
-    ...
-```
 
 ## Troubleshooting
 
