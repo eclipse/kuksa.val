@@ -32,3 +32,10 @@ tokio = { version = "1.17.0", features = [
 tokio-stream = { version = "0.1.8", features = ["sync"] }
 linefeed = "0.6"
 ansi_term = "0.12"
+clap = { version = "3.1.10", default-features = false, features = [
+    "std",
+    "env",
+    "derive",
+] }
+regex = "1.6.0"
+http = "0.2.8"
