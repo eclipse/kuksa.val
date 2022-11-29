@@ -59,6 +59,13 @@ enum DatapointError {
   OUT_OF_BOUNDS     = 4;
 }
 
+enum EntryType {
+  ENTRY_TYPE_UNSPECIFIED = 0;
+  ENTRY_TYPE_SENSOR      = 1;
+  ENTRY_TYPE_ACTUATOR    = 2;
+  ENTRY_TYPE_ATTRIBUTE   = 3;
+}
+
 enum ChangeType {
   STATIC    = 0;   // Value never changes
   ON_CHANGE = 1;   // Updates are provided every time the value changes (i.e.
@@ -142,6 +149,7 @@ message Metadata {
   // Id to be used in "get" and "subscribe" requests. Ids stay valid during
   // one power cycle, only.
   int32 id               = 1;
+  EntryType entry_type   = 2;
   string name            = 4;
   DataType data_type     = 5;
   ChangeType change_type = 6;  // CONTINUOUS or STATIC or ON_CHANGE

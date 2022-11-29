@@ -273,6 +273,16 @@ impl From<&broker::DataType> for proto::DataType {
     }
 }
 
+impl From<&broker::EntryType> for proto::EntryType {
+    fn from(entry_type: &broker::EntryType) -> Self {
+        match entry_type {
+            broker::EntryType::Sensor => proto::EntryType::Sensor,
+            broker::EntryType::Attribute => proto::EntryType::Attribute,
+            broker::EntryType::Actuator => proto::EntryType::Actuator,
+        }
+    }
+}
+
 impl From<&proto::ChangeType> for broker::ChangeType {
     fn from(change_type: &proto::ChangeType) -> Self {
         match change_type {
@@ -287,6 +297,7 @@ impl From<&broker::Metadata> for proto::Metadata {
     fn from(metadata: &broker::Metadata) -> Self {
         proto::Metadata {
             id: metadata.id,
+            entry_type: proto::EntryType::from(&metadata.entry_type) as i32,
             name: metadata.path.to_owned(),
             data_type: proto::DataType::from(&metadata.data_type) as i32,
             change_type: proto::ChangeType::Continuous as i32, // TODO: Add to metadata
