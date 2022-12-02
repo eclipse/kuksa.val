@@ -1,7 +1,7 @@
-# Deployment blueprints
+# Deployment Blueprints
 
 
-* [Deployment blueprints](#deployment-blueprints)
+* [Deployment Blueprints](#deployment-blueprints)
 * [Deployed Elements](#deployed-elements)
    * [KUKSA.val databroker (or server)](#kuksaval-databroker-or-server)
    * [VSS model](#vss-model)
@@ -26,15 +26,18 @@ KUKSA.val needs to know the VSS datapoints it shall server. This can be configur
 (Currently databroker only supports adding individual datapoints, server also allows loading complete JSON as overlay during runtime)
 
 ## KUKSA.val Clients
-KUKSA.val clients are basically all software components using the KUKSA.val API. Conceptually there are three kinds of KUKSA.val clients
+KUKSA.val clients are basically all software components using the KUKSA.val API. Conceptually there are three kinds of KUKSA.val clients.
+
+![Deployment artifacts](./pictures/deployment_artifacts.svg)
+
  * **Northbound App**:
  An application interacting with the VSS tree to read and potentially write VSS signals
  * **Southbound Feeder**: A component that is acquiring data from another system (e.g. a CAN bus) transforming it to conform to the desired VSS model and setting it in the tree managed by KUKSA.val
  * **Southbound Service**: A component that subscribes to VSS signals, and depending on their change effects some change in another system (e.g. sending some CAN frames)
 
-Technically these clients are all the same, and a single executable may fulfill all or serveral of these roles at the same time. Conceptuially it makes sense to do this differentation when thinking about different intents of interacting with the VSS tree.
+Technically these clients are all the same, and a single executable may fulfill several or all of these roles at the same time. Conceptuially it makes sense to do this differentation between different intents of interacting with the VSS tree.
 
-Intuitively it can be seen that the security and safety loads and requirements on an end-2-end system differ for these roles.
+Intuitively, it can be seen that the security and safety loads and requirements in an end-2-end system differ for these roles.
 
 
 # Deployment Blueprint 1: Internal API
