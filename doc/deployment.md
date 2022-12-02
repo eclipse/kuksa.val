@@ -18,14 +18,14 @@ KUKSA.val offers you an efficient way to provide VSS signals in a vehicle comput
 In the examples we will also point out topics that need to be solved outside of KUKSA.val. For example KUKSA.val provides you the means to use mechanisms such as TLS or cryptograhically signed authorisation tokens, however solutions and processes for key management of such cryptographic material are out of scope.
 
 # Deployed Elements
-On a high level the following (deployment) artifacts are relevant in a KUKSA.val system
+On a high level the following (deployment) artifacts are relevant in a KUKSA.val system.
 
 ## KUKSA.val databroker (or server)
 This is the main component. It provides the API to access and manage VSS datapoints and knows the complete VSS tree. It can be easily deployed as OCI container, as we provide as release but of course you can likewise deploy it as package bake it into your (e.g. Yocto) Linux distribution.
 
 ## VSS model
-KUKSA.val needs to know the VSS datapoints it shall server. This can be configured upon startup (using a COVESA VSS compliant JSON), or during runtime by adding/extending the tree.
-(Currently databroker only supports adding individual datapoints, server also allows loading complete JSON as overlay during runtime)
+KUKSA.val needs to know the VSS datapoints it shall serve. This can be configured upon startup (using a COVESA VSS compliant JSON), or during runtime by adding/extending the tree.
+(Currently databroker only supports adding individual datapoints, server also allows loading complete JSONs as overlay during runtime).
 
 ## KUKSA.val Clients
 KUKSA.val clients are basically all software components using the KUKSA.val API. Conceptually there are three kinds of KUKSA.val clients.
@@ -33,9 +33,9 @@ KUKSA.val clients are basically all software components using the KUKSA.val API.
 ![Deployment artifacts](./pictures/deployment_artifacts.svg)
 
  * **Northbound App**:
- An application interacting with the VSS tree to read and potentially write VSS signals
- * **Southbound Feeder**: A component that is acquiring data from another system (e.g. a CAN bus) transforming it to conform to the desired VSS model and setting it in the tree managed by KUKSA.val
- * **Southbound Service**: A component that subscribes to VSS signals, and depending on their change effects some change in another system (e.g. sending some CAN frames)
+ An application interacting with the VSS tree to read and potentially write VSS signals.
+ * **Southbound Feeder**: A component that is acquiring data from another system (e.g. a CAN bus) transforming it to conform to the desired VSS model and setting it in the tree managed by KUKSA.val.
+ * **Southbound Service**: A component that subscribes to VSS signals, and depending on their change effects some change in another system (e.g. sending some CAN frames).
 
 Technically these clients are all the same, and a single executable may fulfill several or all of these roles at the same time. Conceptuially it makes sense to do this differentation between different intents of interacting with the VSS tree.
 
