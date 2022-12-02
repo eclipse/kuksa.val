@@ -82,10 +82,11 @@ If the token is time limited, the foreign platform needs to be provided with a n
 
 You control the system ruinning KUKSA.val. You expose VSS as API but intend to integrate applictions from different vendors/classes of users. There may be you own "trusted" application as in the *Internal API* blueprint, applications from partners (e.g. pay as you drive insurance) or applications from other third parties.
 
+![Deployment Blueprint 2: Individual Applications](./pictures/deployment_blueprint3.svg)
+
 | Aspect         | Design Choice           |
 | -------------- | ------------- |
-| Users          | 3rd parties           |
-| Openess        | Available to 3rd parties        | 
+| Users          | 3rd parties           |     | 
 | System Updates | App-level      | 
 | Security       | Individual App  tokens    | 
 | VSS            | Static        | 
