@@ -82,7 +82,7 @@ If the token is time limited, the foreign platform needs to be provided with a n
 
 You control the system ruinning KUKSA.val. You expose VSS as API but intend to integrate applictions from different vendors/classes of users. There may be you own "trusted" application as in the *Internal API* blueprint, applications from partners (e.g. pay as you drive insurance) or applications from other third parties.
 
-![Deployment Blueprint 2: Individual Applications](./pictures/deployment_blueprint3.svg)
+![Deployment Blueprint 3: Individual Applications](./pictures/deployment_blueprint3.svg)
 
 | Aspect         | Design Choice           |
 | -------------- | ------------- |
@@ -105,25 +105,29 @@ In this blueprint you expose an attack surface to a larger group of potential ad
 
 This is similar to the *Indiviudal Applications* Use Case with the added capability, that applications might bring their own datapoints. This may be a connected app that gathers data from the cloud and provides some new weather and road condition datapoints, or maybe an app for controlling a trailer or implement. To work this application may need to include/require additional feeders and VSS services.
 
+
+![Deployment Blueprint 4: Dynamic Applications and VSS extensions](./pictures/deployment_blueprint4.svg)
+
 | Aspect         | Design Choice           |
 | -------------- | ------------- |
 | Users          | 3rd parties           |
-| Openess        | Available to 3rd parties        | 
 | System Updates | App-level      | 
 | Security       | Individual App  tokens    | 
 | VSS            | Dynamic        | 
 | KUKSA.val deployment | Software package        | 
 
 The main difference to the previous use case is the ability allowing applications to add datapoints to the VSS tree managed by KUKSA.val.
-This could be a very elegant setup, even in more static deployment, where KUKSA.val starts with an empty tree, and once the relevant software components come up, it is extended step by step. 
-However the security and safety implications in such a scenario are the highest: While the security aspect can be handled by KUKSA.val, giving specific applications the right to extend the tree (not yet implemented, on roadmap), the overall requirments on system design get harder
 
- * Deploying components that interact with a vehicle raises safety issues
- * Your SOTA mechanism must make sure, that only "valid" combinations of components are deployed (e.g. the right feeder for a specific vehicle enabling a certain application, not interfering with another app/feeder/service)
- * As neither (all) the "correct"/valid composite VSS tree and software combinations are known, it is harder for the system to ascertain it is in a safe state
+This could be a very elegant setup, even in more static deployment, where KUKSA.val starts with an empty tree, and once the relevant software components come up, it is extended step by step. 
+
+However the security and safety implications in such a scenario are the highest: While the security aspect can be handled by KUKSA.val, giving specific applications the right to extend the tree (not yet implemented, on roadmap), the overall requirements on system design get harder:
+
+ * Deploying components that interact with a vehicle raises safety issues.
+ * Your SOTA mechanism must make sure, that only "valid" combinations of components are deployed (e.g. the right feeder for a specific vehicle enabling a certain application, not interfering with another app/feeder/service).
+ * As neither (all) the "correct"/valid composite VSS tree and software combinations are known a-priori, it is harder for the system to ascertain it is in a safe and usable state.
 
 
  # Mixing
- The aforementioned blueprints are examples and a specific deplyoment might combine aspects from several of them.
+ The aforementioned blueprints are examples and any specific deplyoment might combine aspects from several of them.
  
- There may be domains in a vehicle, where a fully static "walled" deployment as described in Blueprint 1 is the right thing to do, while there may be use cases in the same car where you want to have the capabilties of Blueprint 4. In that case it might be a valid design choice to deploy several KUKSA.val instances in a car as sketched in [System Architecture -> Where to deploy KUKSA.val](./system-architecture#where-to-deploy-kuksaval-in-a-vehicle).
+ It might be common there are domains in a vehicle, where a fully static "walled" deployment as described in Blueprint 1 is the right thing to do, while other use cases in the same vehicle require  the capabilties of Blueprint 4. In that case it might be a valid design choice to deploy several KUKSA.val instances in a car as sketched in [System Architecture -> Where to deploy KUKSA.val](./system-architecture#where-to-deploy-kuksaval-in-a-vehicle).
