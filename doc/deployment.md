@@ -7,13 +7,15 @@
    * [VSS model](#vss-model)
    * [KUKSA.val Clients](#kuksaval-clients)
 * [Deployment Blueprint 1: Internal API](#deployment-blueprint-1-internal-api)
-* [Deployment Blueprint 2: Exposing a subset of API to another system](#deployment-blueprint-2-exposing-a-subset-of-api-to-another-system)
+* [Deployment Blueprint 2: Exposing a subset of VSS to another system](#deployment-blueprint-2-exposing-a-subset-of-vss-to-another-system)
 * [Deployment Blueprint 3: Individual Applications](#deployment-blueprint-3-individual-applications)
 * [Deployment Blueprint 4: Dynamic Applications and VSS extensions](#deployment-blueprint-4-dynamic-applications-and-vss-extensions)
 * [Mixing](#mixing)
 
 
 KUKSA.val offers you an efficient way to provide VSS signals in a vehicle computer. It aims to offer great flexibility how to use and configure it. While we do not know your use case, we want to discuss some "deployment blueprints" based on some exemplary use cases that vary in terms of static/dynamic configuration and security setup.
+
+In the examples we will also point out topics that need to be solved outside of KUKSA.val. For example KUKSA.val provides you the means to use mechanisms such as TLS or cryptograhically signed authorisation tokens, however solutions and processes for key management of such cryptographic material are out of scope.
 
 # Deployed Elements
 On a high level the following (deployment) artifacts are relevant in a KUKSA.val system
@@ -44,10 +46,11 @@ Intuitively, it can be seen that the security and safety loads and requirements 
 
 You are using VSS and KUKSA.val as an internal API in your system to ease system development. You control the whole system/system integration. 
 
+![Deployment Blueprint 1: Internal API](./pictures/deployment_blueprint1.svg)
+
 | Aspect         | Design Choice           |
 | -------------- | ------------- |
-| Users          | You           |
-| Openess        | Closed        | 
+| Users          | You           | 
 | System Updates | Complete      | 
 | Security       | None/Fixed    | 
 | VSS model      | Static        | 
@@ -55,22 +58,25 @@ You are using VSS and KUKSA.val as an internal API in your system to ease system
 
 You are not exposing any VSS API to other players, you control all components interacting with VSS, the system is state/composition is under your control. In this case you would make KUKSA.val available only within your system. You might even forego security such as disabling encryption for higher performance and not using any tokens for authentication. We would still recommend leaving basic security measures intact, but this does not need fine-grained control of permission rights or fast rotation/revocation of tokens.
 
-# Deployment Blueprint 2: Exposing a subset of API to another system
+# Deployment Blueprint 2: Exposing a subset of VSS to another system
 
-You control the system (e.g. Vehicle Computer), that has KUKSA.val deployed. You want to make a subset of capabilites available to another system (e.g. Android IVI), that may have its own API/security mechanisms. 
+You control the system (e.g. Vehicle Computer), that has KUKSA.val deployed. You want to make a subset of capabilites available to another system (e.g. an Android IVI), that may have its own API/security mechanisms. 
+
+From the perspective of the KUKSA.val deployment you already know the consumer at deployment time.
+
+![Deployment Blueprint 2: Exposing a subset of VSS to another system](./pictures/deployment_blueprint2.svg)
 
 | Aspect         | Design Choice           |
 | -------------- | ------------- |
-| Users          | Other patform           |
-| Openess        | Subset open to one trusted user        | 
+| Users          | Other trusted patform           |
 | System Updates | N/A      | 
 | Security       | Foreign platform token    | 
 | VSS            | Static        | 
 | KUKSA.val deploymment      | Firmware or Software package       | 
 
-From KUKSA.val perspective the other system is "one client", which we has a certain level of access and trust. Whether that system restricts access further for certain hosted apps is opaqe to KUKSA.val. In this case you need to enable TLS and configure it accordingly, as well as providing a single token limiting the access of the foreign platform.
+In this deployment the foreign system is treated as a single client, which we has a certain level of access and trust. Whether that system restricts access further for certain hosted apps is opaqe to KUKSA.val. In this deployment you need to enable TLS and configure it accordingly, as well as providing a single token limiting the access of the foreign platform.
 
-If the token is time limited, the foreing platform needs to be provided with a new token in time, in case certificates in the KUKSA.val side are changed, the foreign system needs to be updated accordingly. 
+If the token is time limited, the foreign platform needs to be provided with a new token in time, in case certificates in the KUKSA.val side are changed, the foreign system needs to be updated accordingly. 
 
 # Deployment Blueprint 3: Individual Applications
 
