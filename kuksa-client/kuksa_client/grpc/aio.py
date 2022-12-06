@@ -19,7 +19,7 @@
 import asyncio
 import contextlib
 import logging
-from typing import AsyncIterable
+from typing import AsyncIterator
 from typing import Callable
 from typing import Collection
 from typing import Dict
@@ -172,75 +172,64 @@ class VSSClient(BaseVSSClient):
             DataEntry(path, metadata=md), (Field(field.value),),
         ) for path, md in updates.items()], **rpc_kwargs)
 
-    async def subscribe_current_values(
-        self, paths: Iterable[str], callback: Callable[[Dict[str, Datapoint]], None], **rpc_kwargs,
-    ) -> uuid.UUID:
+    async def subscribe_current_values(self, paths: Iterable[str], **rpc_kwargs) -> AsyncIterator[Dict[str, Datapoint]]:
         """
         Parameters:
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
-            def on_current_values_updated(updates: Dict[str, Datapoint]):
+            async for updates in client.subscribe_current_values([
+                'Vehicle.Speed', 'Vehicle.ADAS.ABS.IsActive',
+            ]):
                 for path, dp in updates.items():
                     print(f"Current value for {path} is now: {dp.value}")
-
-            subscription_id = await client.subscribe_current_values([
-                'Vehicle.Speed', 'Vehicle.ADAS.ABS.IsActive',
-            ], on_current_values_updated)
         """
-        return await self.subscribe(
+        async for updates in self.subscribe(
             entries=(SubscribeEntry(path, View.CURRENT_VALUE, (Field.VALUE,)) for path in paths),
-            callback=self._subscriber_current_values_callback_wrapper(callback),
             **rpc_kwargs,
-        )
+        ):
+            yield {update.entry.path: update.entry.value for update in updates}
 
-    async def subscribe_target_values(
-        self, paths: Iterable[str], callback: Callable[[Dict[str, Datapoint]], None], **rpc_kwargs,
-    ) -> uuid.UUID:
+    async def subscribe_target_values(self, paths: Iterable[str], **rpc_kwargs) -> AsyncIterator[Dict[str, Datapoint]]:
         """
         Parameters:
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
-            def on_target_values_updated(updates: Dict[str, Datapoint]):
+            async for updates in client.subscribe_target_values([
+                'Vehicle.ADAS.ABS.IsActive',
+            ]):
                 for path, dp in updates.items():
                     print(f"Target value for {path} is now: {dp.value}")
-
-            subscription_id = await client.subscribe_target_values([
-                'Vehicle.ADAS.ABS.IsActive',
-            ], on_target_values_updated)
         """
-        return await self.subscribe(
+        async for updates in self.subscribe(
             entries=(SubscribeEntry(path, View.TARGET_VALUE, (Field.ACTUATOR_TARGET,)) for path in paths),
-            callback=self._subscriber_target_values_callback_wrapper(callback),
             **rpc_kwargs,
-        )
+        ):
+            yield {update.entry.path: update.entry.actuator_target for update in updates}
 
     async def subscribe_metadata(
         self, paths: Iterable[str],
-        callback: Callable[[Dict[str, Metadata]], None],
         field: MetadataField = MetadataField.ALL,
         **rpc_kwargs,
-    ) -> uuid.UUID:
+    ) -> AsyncIterator[Dict[str, Metadata]]:
         """
         Parameters:
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         Example:
-            def on_metadata_updated(updates: Dict[str, Metadata]):
-                for path, md in updates.items():
-                    print(f"Metadata for {path} are now: {md.to_dict()}")
-
-            subscription_id = await client.subscribe_metadata([
+            async for updates in client.subscribe_metadata([
                 'Vehicle.Speed',
                 'Vehicle.ADAS.ABS.IsActive',
-            ], on_metadata_updated)
+            ]):
+                for path, md in updates.items():
+                    print(f"Metadata for {path} are now: {md.to_dict()}")
         """
-        return await self.subscribe(
+        async for updates in self.subscribe(
             entries=(SubscribeEntry(path, View.METADATA, (Field(field.value),)) for path in paths),
-            callback=self._subscriber_metadata_callback_wrapper(callback),
             **rpc_kwargs,
-        )
+        ):
+            yield {update.entry.path: update.entry.metadata for update in updates}
 
     async def get(self, *, entries: Iterable[EntryRequest], **rpc_kwargs) -> List[DataEntry]:
         """
@@ -278,9 +267,8 @@ class VSSClient(BaseVSSClient):
 
     async def subscribe(self, *,
         entries: Iterable[SubscribeEntry],
-        callback: Callable[[Iterable[EntryUpdate]], None],
         **rpc_kwargs,
-    ) -> uuid.UUID:
+    ) -> AsyncIterator[List[EntryUpdate]]:
         """
         Parameters:
             rpc_kwargs
@@ -295,27 +283,11 @@ class VSSClient(BaseVSSClient):
         logger.debug("%s: %s", type(req).__name__, req)
         resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
         try:
-            # We expect the first SubscribeResponse to be immediately available and to only hold a status
-            resp = await resp_stream.__aiter__().__anext__()  # pylint: disable=unnecessary-dunder-call
-            logger.debug("%s: %s", type(resp).__name__, resp)
+            async for resp in resp_stream:
+                logger.debug("%s: %s", type(resp).__name__, resp)
+                yield [EntryUpdate.from_message(update) for update in resp.updates]
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
-
-        sub_id = uuid.uuid4()
-        new_sub_task = asyncio.create_task(self._subscriber_loop(message_stream=resp_stream, callback=callback))
-        self.subscribers[sub_id] = new_sub_task
-        return sub_id
-
-    async def unsubscribe(self, subscription_id: uuid.UUID):
-        try:
-            subscriber_task = self.subscribers.pop(subscription_id)
-        except KeyError as exc:
-            raise ValueError(f"Could not find subscription {str(subscription_id)}") from exc
-        subscriber_task.cancel()
-        try:
-            await subscriber_task
-        except asyncio.CancelledError:
-            pass
 
     async def get_server_info(self, **rpc_kwargs) -> ServerInfo:
         """
@@ -333,39 +305,6 @@ class VSSClient(BaseVSSClient):
 
         return ServerInfo.from_message(resp)
 
-    async def _subscriber_loop(
-        self,
-        *,
-        message_stream: AsyncIterable[val_pb2.SubscribeResponse],
-        callback: Callable[[Iterable[EntryUpdate]], None],
-    ):
-        async for resp in message_stream:
-            callback(EntryUpdate.from_message(update) for update in resp.updates)
-
-    @staticmethod
-    def _subscriber_current_values_callback_wrapper(
-        callback: Callable[[Dict[str, Datapoint]], None],
-    ) -> Callable[[Iterable[EntryUpdate]], None]:
-        def wrapper(updates: Iterable[EntryUpdate]) -> None:
-            callback({update.entry.path: update.entry.value for update in updates})
-        return wrapper
-
-    @staticmethod
-    def _subscriber_target_values_callback_wrapper(
-        callback: Callable[[Dict[str, Datapoint]], None],
-    ) -> Callable[[Iterable[EntryUpdate]], None]:
-        def wrapper(updates: Iterable[EntryUpdate]) -> None:
-            callback({update.entry.path: update.entry.actuator_target for update in updates})
-        return wrapper
-
-    @staticmethod
-    def _subscriber_metadata_callback_wrapper(
-        callback: Callable[[Dict[str, Metadata]], None],
-    ) -> Callable[[Iterable[EntryUpdate]], None]:
-        def wrapper(updates: Iterable[EntryUpdate]) -> None:
-            callback({update.entry.path: update.entry.metadata for update in updates})
-        return wrapper
-
     async def get_value_types(self, paths: Collection[str], **rpc_kwargs) -> Dict[str, DataType]:
         """
         Parameters:
@@ -379,3 +318,40 @@ class VSSClient(BaseVSSClient):
             entries = await self.get(entries=entry_requests, **rpc_kwargs)
             return {entry.path: DataType(entry.metadata.data_type) for entry in entries}
         return {}
+
+
+class SubscriberManager:
+    def __init__(self, client: VSSClient):
+        self.client = client
+        self.subscribers = {}
+
+    async def add_subscriber(self,
+        subscribe_response_stream: AsyncIterator[List[EntryUpdate]],
+        callback: Callable[[Iterable[EntryUpdate]], None],
+    ) -> uuid.UUID:
+        # We expect the first SubscribeResponse to be immediately available and to only hold a status
+        await subscribe_response_stream.__aiter__().__anext__()  # pylint: disable=unnecessary-dunder-call
+
+        sub_id = uuid.uuid4()
+        new_sub_task = asyncio.create_task(self._subscriber_loop(subscribe_response_stream, callback))
+        self.subscribers[sub_id] = new_sub_task
+        return sub_id
+
+    async def remove_subscriber(self, subscription_id: uuid.UUID):
+        try:
+            subscriber_task = self.subscribers.pop(subscription_id)
+        except KeyError as exc:
+            raise ValueError(f"Could not find subscription {str(subscription_id)}") from exc
+        subscriber_task.cancel()
+        try:
+            await subscriber_task
+        except asyncio.CancelledError:
+            pass
+
+    async def _subscriber_loop(
+        self,
+        subscribe_response_stream: AsyncIterator[List[EntryUpdate]],
+        callback: Callable[[Iterable[EntryUpdate]], None],
+    ):
+        async for updates in subscribe_response_stream:
+            callback(updates)
