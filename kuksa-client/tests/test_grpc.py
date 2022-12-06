@@ -45,6 +45,7 @@ from kuksa_client.grpc import ValueRestriction
 from kuksa_client.grpc import View
 from kuksa_client.grpc import VSSClientError
 from kuksa_client.grpc.aio import VSSClient
+from kuksa_client.grpc.aio import SubscriberManager
 
 
 def generate_error(code: grpc.StatusCode, details: str):
@@ -443,28 +444,27 @@ class TestVSSClient:
 
     async def test_subscribe_current_values(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
-        mocker.patch.object(client, 'subscribe')
-        received_updates = {}
-        def callback(updates):
-            received_updates.update(updates)
+        async def subscribe_response_stream(**kwargs):
+            yield [
+                EntryUpdate(DataEntry('Vehicle.Speed', value=Datapoint(
+                    42.0, datetime.datetime(2022, 11, 7, 16, 18, 35, 247307, tzinfo=datetime.timezone.utc),
+                )), (Field.VALUE,)),
+                EntryUpdate(DataEntry('Vehicle.ADAS.ABS.IsActive', value=Datapoint(True)), (Field.VALUE,)),
+                EntryUpdate(DataEntry('Vehicle.Chassis.Height', value=Datapoint(666)), (Field.VALUE,)),
+            ]
+        mocker.patch.object(client, 'subscribe', side_effect=subscribe_response_stream)
 
-        await client.subscribe_current_values([
+        received_updates = {}
+        async for updates in client.subscribe_current_values([
             'Vehicle.Speed', 'Vehicle.ADAS.ABS.IsActive', 'Vehicle.Chassis.Height',
-        ], callback)
+        ]):
+            received_updates.update(updates)
 
         assert list(client.subscribe.call_args_list[0][1]['entries']) == [
             SubscribeEntry('Vehicle.Speed', View.CURRENT_VALUE, (Field.VALUE,)),
             SubscribeEntry('Vehicle.ADAS.ABS.IsActive', View.CURRENT_VALUE, (Field.VALUE,)),
             SubscribeEntry('Vehicle.Chassis.Height', View.CURRENT_VALUE, (Field.VALUE,)),
         ]
-        # Simulate subscription updates
-        client.subscribe.call_args_list[0][1]['callback']([
-            EntryUpdate(DataEntry('Vehicle.Speed', value=Datapoint(
-                42.0, datetime.datetime(2022, 11, 7, 16, 18, 35, 247307, tzinfo=datetime.timezone.utc),
-            )), (Field.VALUE,)),
-            EntryUpdate(DataEntry('Vehicle.ADAS.ABS.IsActive', value=Datapoint(True)), (Field.VALUE,)),
-            EntryUpdate(DataEntry('Vehicle.Chassis.Height', value=Datapoint(666)), (Field.VALUE,)),
-        ])
         assert received_updates == {
             'Vehicle.Speed': Datapoint(42.0, datetime.datetime(2022, 11, 7, 16, 18, 35, 247307, tzinfo=datetime.timezone.utc)),
             'Vehicle.ADAS.ABS.IsActive': Datapoint(True),
@@ -473,26 +473,25 @@ class TestVSSClient:
 
     async def test_subscribe_target_values(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
-        mocker.patch.object(client, 'subscribe')
-        received_updates = {}
-        def callback(updates):
-            received_updates.update(updates)
+        async def subscribe_response_stream(**kwargs):
+            yield [
+                EntryUpdate(DataEntry('Vehicle.ADAS.ABS.IsActive', actuator_target=Datapoint(
+                    True, datetime.datetime(2022, 11, 7, tzinfo=datetime.timezone.utc),
+                )), (Field.ACTUATOR_TARGET,)),
+                EntryUpdate(DataEntry('Vehicle.Chassis.SteeringWheel.Tilt', actuator_target=Datapoint(42)), (Field.ACTUATOR_TARGET,)),
+            ]
+        mocker.patch.object(client, 'subscribe', side_effect=subscribe_response_stream)
 
-        await client.subscribe_target_values([
+        received_updates = {}
+        async for updates in client.subscribe_target_values([
             'Vehicle.ADAS.ABS.IsActive', 'Vehicle.Chassis.SteeringWheel.Tilt',
-        ], callback)
+        ]):
+            received_updates.update(updates)
 
         assert list(client.subscribe.call_args_list[0][1]['entries']) == [
             SubscribeEntry('Vehicle.ADAS.ABS.IsActive', View.TARGET_VALUE, (Field.ACTUATOR_TARGET,)),
             SubscribeEntry('Vehicle.Chassis.SteeringWheel.Tilt', View.TARGET_VALUE, (Field.ACTUATOR_TARGET,)),
         ]
-        # Simulate subscription updates
-        client.subscribe.call_args_list[0][1]['callback']([
-            EntryUpdate(DataEntry('Vehicle.ADAS.ABS.IsActive', actuator_target=Datapoint(
-                True, datetime.datetime(2022, 11, 7, tzinfo=datetime.timezone.utc),
-            )), (Field.ACTUATOR_TARGET,)),
-            EntryUpdate(DataEntry('Vehicle.Chassis.SteeringWheel.Tilt', actuator_target=Datapoint(42)), (Field.ACTUATOR_TARGET,)),
-        ])
         assert received_updates == {
             'Vehicle.ADAS.ABS.IsActive': Datapoint(True, datetime.datetime(2022, 11, 7, tzinfo=datetime.timezone.utc)),
             'Vehicle.Chassis.SteeringWheel.Tilt': Datapoint(42),
@@ -500,32 +499,31 @@ class TestVSSClient:
 
     async def test_subscribe_metadata(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
-        mocker.patch.object(client, 'subscribe')
-        received_updates = {}
-        def callback(updates):
-            received_updates.update(updates)
+        async def subscribe_response_stream(**kwargs):
+            yield [
+                EntryUpdate(DataEntry(
+                    'Vehicle.Speed', metadata=Metadata(entry_type=EntryType.SENSOR),
+                ), (Field.METADATA_ENTRY_TYPE,)),
+                EntryUpdate(DataEntry(
+                    'Vehicle.ADAS.ABS.IsActive', metadata=Metadata(entry_type=EntryType.ACTUATOR),
+                ), (Field.METADATA_ENTRY_TYPE,)),
+                EntryUpdate(DataEntry(
+                    'Vehicle.Chassis.Height', metadata=Metadata(entry_type=EntryType.ATTRIBUTE),
+                ), (Field.METADATA_ENTRY_TYPE,)),
+            ]
+        mocker.patch.object(client, 'subscribe', side_effect=subscribe_response_stream)
 
-        await client.subscribe_metadata([
+        received_updates = {}
+        async for updates in client.subscribe_metadata([
             'Vehicle.Speed', 'Vehicle.ADAS.ABS.IsActive', 'Vehicle.Chassis.Height',
-        ], callback, field=MetadataField.ENTRY_TYPE)
+        ], field=MetadataField.ENTRY_TYPE):
+            received_updates.update(updates)
 
         assert list(client.subscribe.call_args_list[0][1]['entries']) == [
             SubscribeEntry('Vehicle.Speed', View.METADATA, (Field.METADATA_ENTRY_TYPE,)),
             SubscribeEntry('Vehicle.ADAS.ABS.IsActive', View.METADATA, (Field.METADATA_ENTRY_TYPE,)),
             SubscribeEntry('Vehicle.Chassis.Height', View.METADATA, (Field.METADATA_ENTRY_TYPE,)),
         ]
-        # Simulate subscription updates
-        client.subscribe.call_args_list[0][1]['callback']([
-            EntryUpdate(DataEntry(
-                'Vehicle.Speed', metadata=Metadata(entry_type=EntryType.SENSOR),
-            ), (Field.METADATA_ENTRY_TYPE,)),
-            EntryUpdate(DataEntry(
-                'Vehicle.ADAS.ABS.IsActive', metadata=Metadata(entry_type=EntryType.ACTUATOR),
-            ), (Field.METADATA_ENTRY_TYPE,)),
-            EntryUpdate(DataEntry(
-                'Vehicle.Chassis.Height', metadata=Metadata(entry_type=EntryType.ATTRIBUTE),
-            ), (Field.METADATA_ENTRY_TYPE,)),
-        ])
         assert received_updates == {
             'Vehicle.Speed': Metadata(entry_type=EntryType.SENSOR),
             'Vehicle.ADAS.ABS.IsActive': Metadata(entry_type=EntryType.ACTUATOR),
@@ -905,7 +903,7 @@ class TestVSSClient:
                         ),
                     ), fields=(Field.METADATA_DATA_TYPE,)),
                 ]),
-                # Remaining responses are actual events that should invoke callback.
+                # Remaining responses are actual events.
                 val_pb2.SubscribeResponse(updates=[
                     val_pb2.EntryUpdate(entry=types_pb2.DataEntry(
                         path='Vehicle.Speed',
@@ -930,20 +928,30 @@ class TestVSSClient:
                     ), fields=(Field.METADATA_DATA_TYPE,)),
                 ]),
             )
-            callback = mocker.Mock()
             val_servicer.Subscribe.return_value = (response for response in responses)
 
-            sub_uid = await client.subscribe(entries=(entry for entry in (  # generator is intentional (Iterable)
+            actual_responses = []
+            async for updates in client.subscribe(entries=(entry for entry in (  # generator is intentional (Iterable)
                 EntryRequest('Vehicle.Speed', View.CURRENT_VALUE, (Field.VALUE,)),
                 EntryRequest('Vehicle.ADAS.ABS.IsActive', View.TARGET_VALUE, (Field.ACTUATOR_TARGET,)),
                 EntryRequest('Vehicle.Chassis.Height', View.METADATA, (Field.METADATA_DATA_TYPE,)),
-            )), callback=callback)
+            ))):
+                actual_responses.append(updates)
 
-            assert isinstance(sub_uid, uuid.UUID)
-            while callback.call_count < 3:
-                await asyncio.sleep(0.01)
-            actual_updates = [list(call_args[0][0]) for call_args in callback.call_args_list]
-            assert actual_updates == [
+            assert actual_responses == [
+                [
+                    EntryUpdate(entry=DataEntry(path='Vehicle.Speed', value=Datapoint(
+                        value=42.0,
+                        timestamp=datetime.datetime(2022, 11, 7, 16, 18, 35, 247307, tzinfo=datetime.timezone.utc),
+                    )), fields=[Field.VALUE]),
+                    EntryUpdate(
+                        entry=DataEntry(path='Vehicle.ADAS.ABS.IsActive', actuator_target=Datapoint(value=True)),
+                        fields=[Field.ACTUATOR_TARGET],
+                    ),
+                    EntryUpdate(entry=DataEntry(path='Vehicle.Chassis.Height', metadata=Metadata(
+                        data_type=DataType.UINT16,
+                    )), fields=[Field.METADATA_DATA_TYPE])
+                ],
                 [EntryUpdate(entry=DataEntry(path='Vehicle.Speed', value=Datapoint(
                     value=43.0,
                     timestamp=datetime.datetime(2022, 11, 7, 16, 18, 32, 247307, tzinfo=datetime.timezone.utc),
@@ -963,45 +971,18 @@ class TestVSSClient:
         )
         async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
             with pytest.raises(VSSClientError):
-                await client.subscribe(entries=(), callback=mocker.Mock())
+                async for _ in client.subscribe(entries=()):
+                    pass
 
     @pytest.mark.usefixtures('val_server')
     async def test_subscribe_nonexistent_entries(self, mocker, unused_tcp_port, val_servicer):
         val_servicer.Subscribe.side_effect = generate_error(grpc.StatusCode.INVALID_ARGUMENT, 'NotFound')
         async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
             with pytest.raises(VSSClientError):
-                await client.subscribe(entries=(entry for entry in (  # generator is intentional (Iterable)
+                async for _ in client.subscribe(entries=(entry for entry in (  # generator is intentional (Iterable)
                     EntryRequest('Does.Not.Exist', View.CURRENT_VALUE, (Field.VALUE,)),
-                )), callback=mocker.Mock())
-
-    @pytest.mark.usefixtures('val_server')
-    async def test_unsubscribe(self, mocker, unused_tcp_port, val_servicer):
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
-            responses = (
-                val_pb2.SubscribeResponse(updates=[
-                    val_pb2.EntryUpdate(entry=types_pb2.DataEntry(
-                        path='Vehicle.Speed',
-                        value=types_pb2.Datapoint(
-                            timestamp=timestamp_pb2.Timestamp(seconds=1667837915, nanos=247307674),
-                            float=42.0,
-                        ),
-                    ), fields=(Field.VALUE,)),
-                ]),
-            )
-            val_servicer.Subscribe.return_value = (response for response in responses)
-            sub_uid = await client.subscribe(entries=(
-                EntryRequest('Vehicle.Speed', View.CURRENT_VALUE, (Field.VALUE,)),
-            ), callback=mocker.Mock())
-            subscriber = client.subscribers.get(sub_uid)
-
-            await client.unsubscribe(sub_uid)
-
-            assert client.subscribers.get(sub_uid) is None
-            assert subscriber.done()
-
-            with pytest.raises(ValueError) as exc_info:
-                await client.unsubscribe(sub_uid)
-            assert exc_info.value.args[0] == f"Could not find subscription {str(sub_uid)}"
+                ))):
+                    pass
 
     @pytest.mark.usefixtures('val_server')
     async def test_get_server_info(self, unused_tcp_port, val_servicer):
@@ -1016,3 +997,82 @@ class TestVSSClient:
         async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
             with pytest.raises(VSSClientError):
                 await client.get_server_info()
+
+
+@pytest.mark.asyncio
+class TestSubscriberManager:
+    @pytest.mark.usefixtures('val_server')
+    async def test_add_subscriber(self, mocker, unused_tcp_port, val_servicer):
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+            subscriber_manager = SubscriberManager(client)
+            responses = (
+                # 1st response is subscription ack
+                val_pb2.SubscribeResponse(updates=[
+                    val_pb2.EntryUpdate(entry=types_pb2.DataEntry(
+                        path='Vehicle.Speed',
+                        value=types_pb2.Datapoint(
+                            timestamp=timestamp_pb2.Timestamp(seconds=1667837915, nanos=247307674),
+                            float=42.0,
+                        ),
+                    ), fields=(Field.VALUE,)),
+                ]),
+                # Remaining responses are actual events that should invoke callback.
+                val_pb2.SubscribeResponse(updates=[
+                    val_pb2.EntryUpdate(entry=types_pb2.DataEntry(
+                        path='Vehicle.Speed',
+                        value=types_pb2.Datapoint(
+                            timestamp=timestamp_pb2.Timestamp(seconds=1667837912, nanos=247307674),
+                            float=43.0,
+                        ),
+                    ), fields=(Field.VALUE,)),
+                ]),
+            )
+            callback = mocker.Mock()
+            val_servicer.Subscribe.return_value = (response for response in responses)
+
+            subscribe_response_stream = client.subscribe(entries=(
+                EntryRequest('Vehicle.Speed', View.CURRENT_VALUE, (Field.VALUE,)),
+            ))
+            sub_uid = await subscriber_manager.add_subscriber(subscribe_response_stream, callback=callback)
+
+            assert isinstance(sub_uid, uuid.UUID)
+            while callback.call_count < 1:
+                await asyncio.sleep(0.01)
+            actual_updates = [list(call_args[0][0]) for call_args in callback.call_args_list]
+            assert actual_updates == [
+                [EntryUpdate(entry=DataEntry(path='Vehicle.Speed', value=Datapoint(
+                    value=43.0,
+                    timestamp=datetime.datetime(2022, 11, 7, 16, 18, 32, 247307, tzinfo=datetime.timezone.utc),
+                )), fields=[Field.VALUE])],
+            ]
+
+    @pytest.mark.usefixtures('val_server')
+    async def test_remove_subscriber(self, mocker, unused_tcp_port, val_servicer):
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+            subscriber_manager = SubscriberManager(client)
+            responses = (
+                val_pb2.SubscribeResponse(updates=[
+                    val_pb2.EntryUpdate(entry=types_pb2.DataEntry(
+                        path='Vehicle.Speed',
+                        value=types_pb2.Datapoint(
+                            timestamp=timestamp_pb2.Timestamp(seconds=1667837915, nanos=247307674),
+                            float=42.0,
+                        ),
+                    ), fields=(Field.VALUE,)),
+                ]),
+            )
+            val_servicer.Subscribe.return_value = (response for response in responses)
+            subscribe_response_stream = client.subscribe(entries=(
+                EntryRequest('Vehicle.Speed', View.CURRENT_VALUE, (Field.VALUE,)),
+            ))
+            sub_uid = await subscriber_manager.add_subscriber(subscribe_response_stream, callback=mocker.Mock())
+            subscriber = subscriber_manager.subscribers.get(sub_uid)
+
+            await subscriber_manager.remove_subscriber(sub_uid)
+
+            assert subscriber_manager.subscribers.get(sub_uid) is None
+            assert subscriber.done()
+
+            with pytest.raises(ValueError) as exc_info:
+                await subscriber_manager.remove_subscriber(sub_uid)
+            assert exc_info.value.args[0] == f"Could not find subscription {str(sub_uid)}"

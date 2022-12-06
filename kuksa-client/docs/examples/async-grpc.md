@@ -57,24 +57,18 @@ import asyncio
 from kuksa_client.grpc import Datapoint
 from kuksa_client.grpc.aio import VSSClient
 
-def on_current_values_updated(updates):
-    current_position = updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'].value
-    print(f"Current wiper position is: {current_position}")
-
 async def main():
     async with VSSClient('127.0.0.1', 55555) as client:
-        subscription_id = await client.subscribe_current_values([
-            'Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition',
-        ], on_current_values_updated)
-
         await client.set_target_values({
             'Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition': Datapoint(45),
         })
 
-        # Monitor wiper position for one hour
-        await asyncio.sleep(3600)
+        async for updates in client.subscribe_current_values([
+            'Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition',
+        ]):
+            current_position = updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'].value
+            print(f"Current wiper position is: {current_position}")
 
-        await client.unsubscribe(subscription_id)
 
 asyncio.run(main())
 ```
@@ -154,25 +148,18 @@ from kuksa_client.grpc.aio import SubscribeEntry
 from kuksa_client.grpc.aio import View
 from kuksa_client.grpc.aio import VSSClient
 
-def on_values_updated(updates):
-    for update in updates:
-        if update.entry.value is not None:
-            print(f"Current value for {update.entry.path} is now: {update.entry.value}")
-        if update.entry.actuator_target is not None:
-            print(f"Target value for {update.entry.path} is now: {update.entry.actuator_target}")
-
 async def main():
     async with VSSClient('127.0.0.1', 55555) as client:
-        subscription_id = await client.subscribe(entries=[
+        async for updates in client.subscribe(entries=[
             SubscribeEntry('Vehicle.Body.Windshield.Front.Wiping.System.Frequency', View.FIELDS, (Field.VALUE, Field.ACTUATOR_TARGET)),
             SubscribeEntry('Vehicle.Body.Windshield.Front.Wiping.System.Mode', View.FIELDS, (Field.VALUE, Field.ACTUATOR_TARGET)),
             SubscribeEntry('Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition', View.FIELDS, (Field.VALUE, Field.ACTUATOR_TARGET)),
-        ], callback=on_values_updated)
-
-        # Monitor wiper actuators/sensors for one hour
-        await asyncio.sleep(3600)
-
-        await client.unsubscribe(subscription_id)
+        ]):
+            for update in updates:
+                if update.entry.value is not None:
+                    print(f"Current value for {update.entry.path} is now: {update.entry.value}")
+                if update.entry.actuator_target is not None:
+                    print(f"Target value for {update.entry.path} is now: {update.entry.actuator_target}")
 
 asyncio.run(main())
 ```

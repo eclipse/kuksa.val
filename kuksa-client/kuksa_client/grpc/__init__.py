@@ -463,7 +463,6 @@ class BaseVSSClient:
         self.certificate_chain = certificate_chain
         self.ensure_startup_connection = ensure_startup_connection
         self.client_stub = None
-        self.subscribers = {}
 
     def _load_creds(self) -> Optional[grpc.ChannelCredentials]:
         if all((self.root_certificates, self.private_key, self.certificate_chain)):

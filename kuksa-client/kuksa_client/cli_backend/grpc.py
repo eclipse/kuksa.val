@@ -171,6 +171,7 @@ class Backend(cli_backend.Backend):
     async def _grpcHandler(self, vss_client):
         self.grpcConnected = True
         self.run = True
+        subscriber_manager = kuksa_client.grpc.aio.SubscriberManager(vss_client)
         while self.run:
             try:
                 (call, requestArgs, responseQueue) = self.sendMsgQueue.get_nowait()
@@ -187,10 +188,12 @@ class Backend(cli_backend.Backend):
                 elif call == "authorize":
                     resp = await vss_client.authorize(**requestArgs)
                 elif call == "subscribe":
-                    resp = await vss_client.subscribe(**requestArgs)
+                    callback = requestArgs.pop('callback')
+                    subscriber_response_stream = vss_client.subscribe(**requestArgs)
+                    resp = await subscriber_manager.add_subscriber(subscriber_response_stream, callback)
                     resp = {"subscriptionId": str(resp)}
                 elif call == "unsubscribe":
-                    resp = await vss_client.unsubscribe(**requestArgs)
+                    resp = await subscriber_manager.remove_subscriber(**requestArgs)
                 else:
                     raise Exception("Not Implemented.")
 
