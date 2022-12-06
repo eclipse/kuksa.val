@@ -26,6 +26,7 @@ from typing import Any
 from typing import Collection
 from typing import Dict
 from typing import Iterable
+from typing import Iterator
 from typing import List
 from typing import Optional
 from pathlib import Path
@@ -520,6 +521,18 @@ class BaseVSSClient:
         logger.debug("%s: %s", type(response).__name__, response)
         self._raise_if_invalid(response)
 
+    def _prepare_subscribe_request(
+        self, entries: Iterable[SubscribeEntry],
+    ) -> val_pb2.SubscribeRequest:
+        req = val_pb2.SubscribeRequest()
+        for entry in entries:
+            entry_request = val_pb2.SubscribeEntry(path=entry.path, view=entry.view.value, fields=[])
+            for field in entry.fields:
+                entry_request.fields.append(field.value)
+            req.entries.append(entry_request)
+        logger.debug("%s: %s", type(req).__name__, req)
+        return req
+
     def _raise_if_invalid(self, response):
         if response.HasField('error'):
             error = json_format.MessageToDict(response.error, preserving_proto_field_name=True)
@@ -654,6 +667,66 @@ class VSSClient(BaseVSSClient):
             DataEntry(path, metadata=md), (Field(field.value),),
         ) for path, md in updates.items()], **rpc_kwargs)
 
+    def subscribe_current_values(self, paths: Iterable[str], **rpc_kwargs) -> Iterator[Dict[str, Datapoint]]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        Example:
+            for updates in client.subscribe_current_values([
+                'Vehicle.Speed', 'Vehicle.ADAS.ABS.IsActive',
+            ]):
+                for path, dp in updates.items():
+                    print(f"Current value for {path} is now: {dp.value}")
+        """
+        for updates in self.subscribe(
+            entries=(SubscribeEntry(path, View.CURRENT_VALUE, (Field.VALUE,)) for path in paths),
+            **rpc_kwargs,
+        ):
+            yield {update.entry.path: update.entry.value for update in updates}
+
+    def subscribe_target_values(self, paths: Iterable[str], **rpc_kwargs) -> Iterator[Dict[str, Datapoint]]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        Example:
+            async for updates in client.subscribe_target_values([
+                'Vehicle.ADAS.ABS.IsActive',
+            ]):
+                for path, dp in updates.items():
+                    print(f"Target value for {path} is now: {dp.value}")
+        """
+        for updates in self.subscribe(
+            entries=(SubscribeEntry(path, View.TARGET_VALUE, (Field.ACTUATOR_TARGET,)) for path in paths),
+            **rpc_kwargs,
+        ):
+            yield {update.entry.path: update.entry.actuator_target for update in updates}
+
+    def subscribe_metadata(
+        self, paths: Iterable[str],
+        field: MetadataField = MetadataField.ALL,
+        **rpc_kwargs,
+    ) -> Iterator[Dict[str, Metadata]]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        Example:
+            for updates in client.subscribe_metadata([
+                'Vehicle.Speed',
+                'Vehicle.ADAS.ABS.IsActive',
+            ]):
+                for path, md in updates.items():
+                    print(f"Metadata for {path} are now: {md.to_dict()}")
+        """
+        for updates in self.subscribe(
+            entries=(SubscribeEntry(path, View.METADATA, (Field(field.value),)) for path in paths),
+            **rpc_kwargs,
+        ):
+            yield {update.entry.path: update.entry.metadata for update in updates}
+
+
     def get(self, *, entries: Iterable[EntryRequest], **rpc_kwargs) -> List[DataEntry]:
         """
         Parameters:
@@ -684,6 +757,21 @@ class VSSClient(BaseVSSClient):
         except RpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
         self._process_set_response(resp)
+
+    def subscribe(self, *, entries: Iterable[SubscribeEntry], **rpc_kwargs) -> Iterator[List[EntryUpdate]]:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        """
+        req = self._prepare_subscribe_request(entries)
+        resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
+        try:
+            for resp in resp_stream:
+                logger.debug("%s: %s", type(resp).__name__, resp)
+                yield [EntryUpdate.from_message(update) for update in resp.updates]
+        except RpcError as exc:
+            raise VSSClientError.from_grpc_error(exc) from exc
 
     def get_server_info(self, **rpc_kwargs) -> ServerInfo:
         """

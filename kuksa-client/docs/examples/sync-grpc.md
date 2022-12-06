@@ -3,18 +3,15 @@
 `kuksa_client.grpc.VSSClient` provides a synchronous client that only supports `grpc` to interact with `kuksa_databroker`.
 'Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'
 
-> **Note**
-> The synchronous API does not yet support subscribing to values/target values/metadata changes.
-
 ## Usage
 
 This API is split in 2 sets of functions:
-- [Simplified API](#simplified-api) to quickly get started getting/setting current values, target values or metadata
+- [Simplified API](#simplified-api) to quickly get started getting/setting/subscribing to current values, target values or metadata
 - [Full-fledged API](#full-fledged-api) to achieve more complex use cases and get extra performance (e.g. limit the number of RPCs)
 
 ### Simplified API
 
-This API makes the assumption you're interested in getting/setting either:
+This API makes the assumption you're interested in getting/setting/subscribing to either:
 
 - current values i.e. sensor, attribute values
 - or target values i.e. actuator target values
@@ -42,6 +39,23 @@ with VSSClient('127.0.0.1', 55555) as client:
     client.set_target_values({
         'Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition': Datapoint(45),
     })
+```
+
+Here's an example how one can actuate a wiping system and monitor the position:
+```python
+from kuksa_client.grpc import Datapoint
+from kuksa_client.grpc import VSSClient
+
+with VSSClient('127.0.0.1', 55555) as client:
+    client.set_target_values({
+        'Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition': Datapoint(45),
+    })
+
+    for updates in client.subscribe_current_values([
+        'Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition',
+    ]):
+        current_position = updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'].value
+        print(f"Current wiper position is: {current_position}")
 ```
 
 ### Full-fledged API
@@ -98,4 +112,25 @@ with VSSClient('127.0.0.1', 55555) as client:
             metadata=Metadata(data_type=DataType.FLOAT),
         ), (Field.VALUE,)),)
         client.set(updates=updates)
+```
+
+#### Subscribe to current and target values updates for multiple entries
+
+```python
+from kuksa_client.grpc import Field
+from kuksa_client.grpc import SubscribeEntry
+from kuksa_client.grpc import View
+from kuksa_client.grpc import VSSClient
+
+with VSSClient('127.0.0.1', 55555) as client:
+    for updates in client.subscribe(entries=[
+        SubscribeEntry('Vehicle.Body.Windshield.Front.Wiping.System.Frequency', View.FIELDS, (Field.VALUE, Field.ACTUATOR_TARGET)),
+        SubscribeEntry('Vehicle.Body.Windshield.Front.Wiping.System.Mode', View.FIELDS, (Field.VALUE, Field.ACTUATOR_TARGET)),
+        SubscribeEntry('Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition', View.FIELDS, (Field.VALUE, Field.ACTUATOR_TARGET)),
+    ]):
+        for update in updates:
+            if update.entry.value is not None:
+                print(f"Current value for {update.entry.path} is now: {update.entry.value}")
+            if update.entry.actuator_target is not None:
+                print(f"Target value for {update.entry.path} is now: {update.entry.actuator_target}")
 ```
