@@ -274,13 +274,7 @@ class VSSClient(BaseVSSClient):
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         """
-        req = val_pb2.SubscribeRequest()
-        for entry in entries:
-            entry_request = val_pb2.SubscribeEntry(path=entry.path, view=entry.view.value, fields=[])
-            for field in entry.fields:
-                entry_request.fields.append(field.value)
-            req.entries.append(entry_request)
-        logger.debug("%s: %s", type(req).__name__, req)
+        req = self._prepare_subscribe_request(entries)
         resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
         try:
             async for resp in resp_stream:

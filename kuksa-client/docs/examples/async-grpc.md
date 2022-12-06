@@ -143,9 +143,9 @@ asyncio.run(main())
 ```python
 import asyncio
 
-from kuksa_client.grpc.aio import Field
-from kuksa_client.grpc.aio import SubscribeEntry
-from kuksa_client.grpc.aio import View
+from kuksa_client.grpc import Field
+from kuksa_client.grpc import SubscribeEntry
+from kuksa_client.grpc import View
 from kuksa_client.grpc.aio import VSSClient
 
 async def main():
