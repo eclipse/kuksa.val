@@ -90,6 +90,9 @@ class S3Client():
             print("The object does not exist." + str(exc))
 
 
+class KuksaClientError(Exception):
+    ...
+
 
 class KuksaClient():
 
@@ -106,12 +109,16 @@ class KuksaClient():
         self.dataset = {}
 
     def get_metadata(self, path):
-        metadata = (json.loads(self.client.getMetaData(path))["metadata"])
+        response = json.loads(self.client.getMetaData(path))
+        self._raise_if_invalid(response)
+        metadata = response["metadata"]
 
         return metadata
 
     def get_value(self, path):
-        dataset = json.loads(self.client.getValue(path))["data"]["dp"]["value"]
+        response = json.loads(self.client.getValue(path))
+        self._raise_if_invalid(response)
+        dataset = response["data"]["dp"]["value"]
         # convert to strings to Arrays, which is required by pyarrow.from_pydict
         if not isinstance(dataset, dict):
             dataset = {path: [dataset]}
@@ -123,6 +130,11 @@ class KuksaClient():
 
     def shutdown(self):
         self.client.stop()
+
+    def _raise_if_invalid(self, response):
+        error = response.get('error')
+        if error is not None:
+            raise KuksaClientError(error)
 
 
 class ParquetPacker():
