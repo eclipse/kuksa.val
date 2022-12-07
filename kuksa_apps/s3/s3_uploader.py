@@ -19,7 +19,9 @@
 ########################################################################
 
 import configparser
+import contextlib
 import datetime
+import enum
 import json
 import pathlib
 import signal
@@ -28,12 +30,20 @@ import time
 
 import boto3
 import kuksa_client
+import kuksa_client.grpc
+from kuksa_client.grpc import MetadataField
 from pyarrow import parquet
 import pyarrow as pa
 import pyarrow_mapping
 
 
 scriptDir = pathlib.Path(__file__).resolve().parent
+
+
+class ServerType(str, enum.Enum):
+    KUKSA_VAL_SERVER = 'kuksa_val_server'
+    KUKSA_DATABROKER = 'kuksa_databroker'
+
 
 class S3Client():
 
@@ -94,16 +104,21 @@ class KuksaClientError(Exception):
     ...
 
 
-class KuksaClient():
+class KuksaClient:
+    @staticmethod
+    def from_config(config):
+        server_type = ServerType(config['general']['server_type'])
+        if server_type is ServerType.KUKSA_VAL_SERVER:
+            return KuksaVALServerClient(config[server_type.value])
+        return KuksaDatabrokerClient(config[server_type.value])
+
+
+class KuksaVALServerClient(KuksaClient):
 
     # Constructor
     def __init__(self, config):
-        print("Init kuksa client...")
-        if "kuksa_val" not in config:
-            print("kuksa_val section missing from configuration, exiting")
-            sys.exit(-1)
-        provider_config = config['kuksa_val']
-        self.client = kuksa_client.KuksaClientThread(provider_config)
+        print("Init kuksa VAL server client...")
+        self.client = kuksa_client.KuksaClientThread(config)
         self.client.start()
         self.client.authorize()
 
@@ -138,6 +153,39 @@ class KuksaClient():
             raise KuksaClientError(error)
 
 
+class KuksaDatabrokerClient(KuksaClient):
+    def __init__(self, config):
+        print("Init kuksa databroker client...")
+        self.exit_stack = contextlib.ExitStack()
+        self.client = self.exit_stack.enter_context(
+            kuksa_client.grpc.VSSClient(host=config['ip'], port=int(config['port']), ensure_startup_connection=False),
+        )
+
+    def get_datatypes(self, paths):
+        datatypes = {}
+        try:
+            for path, metadata in self.client.get_metadata(paths, MetadataField.DATA_TYPE).items():
+                datatypes[path] = pyarrow_mapping.KUKSA_CLIENT_TO_PYARROW_MAPPING[metadata.data_type]()
+        except kuksa_client.grpc.VSSClientError as exc:
+            raise KuksaClientError("Couldn't get datatypes") from exc
+
+        return datatypes
+
+    def get_values(self, paths):
+        try:
+            values = {}
+            for path, datapoint in self.client.get_current_values(paths).items():
+                values[path] = [datapoint.value if datapoint is not None else None]
+        except kuksa_client.grpc.VSSClientError as exc:
+            raise KuksaClientError("Couldn't get current values") from exc
+
+        return values
+
+    def shutdown(self):
+        self.exit_stack.close()
+        self.client = None
+
+
 class ParquetPacker():
     def __init__(self, config):
         print("Init parquet packer...")
@@ -145,7 +193,7 @@ class ParquetPacker():
             print("parquet section missing from configuration, exiting")
             sys.exit(-1)
 
-        self.dataprovider = KuksaClient(config)
+        self.dataprovider = KuksaClient.from_config(config)
         self.uploader = S3Client(config)
         config = config['parquet']
         self.interval = config.get('interval', 1)
