@@ -106,27 +106,28 @@ class KuksaClient():
         self.client = kuksa_client.KuksaClientThread(provider_config)
         self.client.start()
         self.client.authorize()
-        self.dataset = {}
 
-    def get_metadata(self, path):
-        response = json.loads(self.client.getMetaData(path))
-        self._raise_if_invalid(response)
-        metadata = response["metadata"]
+    def get_datatypes(self, paths):
+        datatypes = {}
+        for path in paths:
+            response = json.loads(self.client.getMetaData(path))
+            self._raise_if_invalid(response)
+            datatype_json_path = 'metadata.' + path.replace('.', '.children.') + '.datatype'
+            current_node = response
+            for key in datatype_json_path.split('.'):
+                current_node = current_node[key]
+            datatypes[path] = pyarrow_mapping.KUKSA_TO_PYARROW_MAPPING[current_node]()
 
-        return metadata
+        return datatypes
 
-    def get_value(self, path):
-        response = json.loads(self.client.getValue(path))
-        self._raise_if_invalid(response)
-        dataset = response["data"]["dp"]["value"]
-        # convert to strings to Arrays, which is required by pyarrow.from_pydict
-        if not isinstance(dataset, dict):
-            dataset = {path: [dataset]}
-        else:
-            for key in dataset:
-                dataset[key] = [dataset[key]]
-        return dataset
+    def get_values(self, paths):
+        values = {}
+        for path in paths:
+            response = json.loads(self.client.getValue(path))
+            self._raise_if_invalid(response)
+            values[path] = [response["data"]["dp"]["value"]]
 
+        return values
 
     def shutdown(self):
         self.client.stop()
@@ -163,26 +164,11 @@ class ParquetPacker():
         self.num_rows = 0
 
 
-    def gen_fields(self, metadata, prefix=""):
-        fields = []
-        # Note: only first children is considered, which mapped the vss tree structure
-        for key in metadata:
-            #print("key is " + key)
-            if "children" in metadata[key]:
-                prefix += key + "."
-                return pa.struct(self.gen_fields(metadata[key]["children"], prefix))
-            #print("prefix is " + prefix)
-            datatype = pyarrow_mapping.KUKSA_TO_PYARROW_MAPPING[metadata[key]["datatype"]]()
-            #print("datatype is " + str(datatype))
-            fields.append(pa.field(prefix+key, datatype))
-
-        return fields
-
     def gen_schema(self, paths):
         fields = [pa.field("ts", pa.timestamp('us'))]
-        for path in paths:
-            metadata = self.dataprovider.get_metadata(path)
-            fields += (self.gen_fields(metadata))
+        datatypes = self.dataprovider.get_datatypes(paths)
+        for path, datatype in datatypes.items():
+            fields.append(pa.field(path, datatype))
 
         return pa.schema(fields)
 
@@ -208,9 +194,7 @@ class ParquetPacker():
     def loop(self):
         print("receive loop started")
         while self.running:
-            data = {}
-            for path in self.paths:
-                data.update(self.dataprovider.get_value(path))
+            data = self.dataprovider.get_values(self.paths)
             self.write_table(data)
             time.sleep(int(self.interval))
 
