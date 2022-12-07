@@ -18,29 +18,25 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
-
-
-import threading
 import configparser
-import os, sys, json, signal
-import csv
+import datetime
+import json
+import pathlib
+import signal
+import sys
+import threading
 import time
-import queue
-from pyarrow import parquet
-from pyarrow import fs
+
 import boto3
+import kuksa_client
+from pyarrow import parquet
 import pyarrow as pa
-import numpy as np 
-from datetime import date
-from datetime import datetime
 import pyarrow_mapping
 
 
-scriptDir= os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(scriptDir, "../../"))
-from kuksa_client import KuksaClientThread
+scriptDir = pathlib.Path(__file__).resolve().parent
 
-class S3_Client():
+class S3Client():
 
     # Constructor
     def __init__(self, config):
@@ -48,7 +44,7 @@ class S3_Client():
         if "s3" not in config:
             print("s3 section missing from configuration, exiting")
             sys.exit(-1)
-        s3_config=config['s3']
+        s3_config = config['s3']
         endpoint_url = s3_config.get("endpoint_url", None)
         access_key = s3_config.get("access_key_id", None)
         secret_key = s3_config.get("secret_access_key", None)
@@ -66,38 +62,37 @@ class S3_Client():
             api_version = api_version,
             use_ssl = use_ssl,
             aws_session_token = token
-            )
+        )
 
         # Create bucket if does not exist
         self.bucket = s3_config.get('bucket', "testbucket")
         bucket_exists = False
         response = self.client.list_buckets()
         print('Existing buckets:')
-        for b in response['Buckets']:
-            print(f'  {b["Name"]}')
-            if self.bucket == b["Name"]:
+        for bucket in response['Buckets']:
+            print(f'  {bucket["Name"]}')
+            if self.bucket == bucket["Name"]:
                 bucket_exists = True
         if not bucket_exists:
             print("create bucket " + self.bucket)
-            self.client.create_bucket(Bucket= self.bucket)
+            self.client.create_bucket(Bucket=self.bucket)
 
 
-    def upload(self, srcFile, dstFile):
-
+    def upload(self, src_file, dst_file):
         # Output the bucket names
-        print(f'update file {srcFile} to s3://{self.bucket}/{dstFile}')
-        self.client.upload_file(srcFile, self.bucket, dstFile)
+        print(f'update file {src_file} to s3://{self.bucket}/{dst_file}')
+        self.client.upload_file(src_file, self.bucket, dst_file)
         time.sleep(1)
 
         # read uploaded file for debugging
         try:
-            self.client.download_file(self.bucket, dstFile, srcFile + ".downloaded")
-        except Exception as e:
-            print("The object does not exist." + str(e))
+            self.client.download_file(self.bucket, dst_file, src_file + ".downloaded")
+        except Exception as exc:
+            print("The object does not exist." + str(exc))
 
 
 
-class Kuksa_Client():
+class KuksaClient():
 
     # Constructor
     def __init__(self, config):
@@ -105,103 +100,102 @@ class Kuksa_Client():
         if "kuksa_val" not in config:
             print("kuksa_val section missing from configuration, exiting")
             sys.exit(-1)
-        provider_config=config['kuksa_val']
-        self.client = KuksaClientThread(provider_config)
+        provider_config = config['kuksa_val']
+        self.client = kuksa_client.KuksaClientThread(provider_config)
         self.client.start()
         self.client.authorize()
         self.dataset = {}
-        
-    def getMetaData(self, path):
+
+    def get_metadata(self, path):
         metadata = (json.loads(self.client.getMetaData(path))["metadata"])
 
         return metadata
 
-    def getValue(self, path):
+    def get_value(self, path):
         dataset = json.loads(self.client.getValue(path))["data"]["dp"]["value"]
         # convert to strings to Arrays, which is required by pyarrow.from_pydict
         if not isinstance(dataset, dict):
-            dataset= {path: [dataset]}
+            dataset = {path: [dataset]}
         else:
             for key in dataset:
                 dataset[key] = [dataset[key]]
-        return (dataset)
+        return dataset
 
 
     def shutdown(self):
         self.client.stop()
 
-        
-class Parquet_Packer():
+
+class ParquetPacker():
     def __init__(self, config):
         print("Init parquet packer...")
         if "parquet" not in config:
             print("parquet section missing from configuration, exiting")
             sys.exit(-1)
-        
-        self.dataprovider = Kuksa_Client(config)
-        self.uploader = S3_Client(config)
-        config=config['parquet']
+
+        self.dataprovider = KuksaClient(config)
+        self.uploader = S3Client(config)
+        config = config['parquet']
         self.interval = config.get('interval', 1)
-        self.path = config.get('path', "")
-        self.path = self.path.replace(" ", "").split(",")
+        self.paths = config.get('paths', "")
+        self.paths = self.paths.replace(" ", "").split(",")
         self.max_num_rows = config.getint('max_num_rows', -1)
-        
-        self.schema = self.genSchema(self.path)
-        self.createNewParquet()
+
+        self.schema = self.gen_schema(self.paths)
+        self.create_new_parquet()
         self.running = True
 
         self.thread = threading.Thread(target=self.loop, args=())
         self.thread.start()
 
-    def createNewParquet(self):
-        currTime = datetime.now().strftime("%Y-%b-%d_%H_%M_%S.%f")
-        self.pqfile = 'kuksa_' + currTime +'.parquet'
+    def create_new_parquet(self):
+        current_time = datetime.datetime.now().strftime("%Y-%b-%d_%H_%M_%S.%f")
+        self.pqfile = 'kuksa_' + current_time +'.parquet'
         self.pqwriter = parquet.ParquetWriter(self.pqfile, self.schema)
         self.num_rows = 0
 
 
-    def genFields(self, metadata, prefix = ""):
+    def gen_fields(self, metadata, prefix=""):
         fields = []
         # Note: only first children is considered, which mapped the vss tree structure
         for key in metadata:
             #print("key is " + key)
             if "children" in metadata[key]:
                 prefix += key + "."
-                return pa.struct(self.genFields(metadata[key]["children"], prefix))
-            else:
-                #print("prefix is " + prefix)
-                datatype = pyarrow_mapping.KUKSA_TO_PYARROW_MAPPING[metadata[key]["datatype"]]()
-                #print("datatype is " + str(datatype))
-                fields.append(pa.field(prefix+key, datatype))
-            
+                return pa.struct(self.gen_fields(metadata[key]["children"], prefix))
+            #print("prefix is " + prefix)
+            datatype = pyarrow_mapping.KUKSA_TO_PYARROW_MAPPING[metadata[key]["datatype"]]()
+            #print("datatype is " + str(datatype))
+            fields.append(pa.field(prefix+key, datatype))
+
 
         return fields
 
-    def genSchema(self, path):
+    def gen_schema(self, paths):
         fields = [pa.field("ts", pa.timestamp('us'))]
-        for p in path:
-            metadata = self.dataprovider.getMetaData(p)
-            fields += (self.genFields(metadata))
+        for path in paths:
+            metadata = self.dataprovider.get_metadata(path)
+            fields += (self.gen_fields(metadata))
 
         return pa.schema(fields)
 
 
-    def writeTable(self, data):
+    def write_table(self, data):
         table = pa.Table.from_pydict(data)
-        table = table.add_column(0, "ts", [[datetime.now()]])
+        table = table.add_column(0, "ts", [[datetime.datetime.now()]])
         try:
             table = table.cast(self.schema)
             self.pqwriter.write_table(table)
             self.num_rows += 1
-        except pa.lib.ArrowInvalid as e:
-            print("ERROR: " + str(e))
+        except pa.lib.ArrowInvalid as exc:
+            print("ERROR: " + str(exc))
             print("The following data can not be written into parquet file:")
             print(data)
 
         if self.max_num_rows > 0 and self.num_rows >= self.max_num_rows:
             self.pqwriter.close()
             self.uploader.upload(self.pqfile, self.pqfile )
-            self.createNewParquet()
+            self.create_new_parquet()
 
 
     def loop(self):
@@ -209,41 +203,37 @@ class Parquet_Packer():
         while self.running:
 
             data = {}
-            for p in self.path:
-                data.update(self.dataprovider.getValue(p))
+            for path in self.paths:
+                data.update(self.dataprovider.get_value(path))
 
-            self.writeTable(data)
-            
+            self.write_table(data)
+
             time.sleep(int(self.interval))
 
     def shutdown(self):
 
-        self.running=False
+        self.running = False
         self.dataprovider.shutdown()
         self.pqwriter.close()
         self.thread.join()
 
-        
+
 def main():
-    config_candidates=[os.path.join(scriptDir, 'config.ini')]
-    for candidate in config_candidates:
-        if os.path.isfile(candidate):
-            configfile=candidate
-            break
-    if configfile is None:
-        print("No configuration file found. Exiting")
+    config_path = scriptDir / 'config.ini'
+    if not config_path.is_file():
+        print(f"Could not find configuration file: {config_path}. Exiting.")
         sys.exit(-1)
     config = configparser.ConfigParser()
-    config.read(configfile)
-    
-    client = Parquet_Packer(config)
+    config.read(config_path)
 
-    def terminationSignalreceived(signalNumber, frame):
+    client = ParquetPacker(config)
+
+    def handle_termination(_signum, _frame):
         print("Received termination signal. Shutting down")
         client.shutdown()
-    signal.signal(signal.SIGINT, terminationSignalreceived)
-    signal.signal(signal.SIGQUIT, terminationSignalreceived)
-    signal.signal(signal.SIGTERM, terminationSignalreceived)
+    signal.signal(signal.SIGINT, handle_termination)
+    signal.signal(signal.SIGQUIT, handle_termination)
+    signal.signal(signal.SIGTERM, handle_termination)
 
 if __name__ == "__main__":
     sys.exit(main())
