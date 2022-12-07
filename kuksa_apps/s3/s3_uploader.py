@@ -24,7 +24,6 @@ import json
 import pathlib
 import signal
 import sys
-import threading
 import time
 
 import boto3
@@ -145,9 +144,6 @@ class ParquetPacker():
         self.create_new_parquet()
         self.running = True
 
-        self.thread = threading.Thread(target=self.loop, args=())
-        self.thread.start()
-
     def create_new_parquet(self):
         current_time = datetime.datetime.now().strftime("%Y-%b-%d_%H_%M_%S.%f")
         self.pqfile = 'kuksa_' + current_time +'.parquet'
@@ -167,7 +163,6 @@ class ParquetPacker():
             datatype = pyarrow_mapping.KUKSA_TO_PYARROW_MAPPING[metadata[key]["datatype"]]()
             #print("datatype is " + str(datatype))
             fields.append(pa.field(prefix+key, datatype))
-
 
         return fields
 
@@ -201,21 +196,17 @@ class ParquetPacker():
     def loop(self):
         print("receive loop started")
         while self.running:
-
             data = {}
             for path in self.paths:
                 data.update(self.dataprovider.get_value(path))
-
             self.write_table(data)
-
             time.sleep(int(self.interval))
 
     def shutdown(self):
-
+        print('Shutting down parquet packer...')
         self.running = False
         self.dataprovider.shutdown()
         self.pqwriter.close()
-        self.thread.join()
 
 
 def main():
@@ -229,11 +220,16 @@ def main():
     client = ParquetPacker(config)
 
     def handle_termination(_signum, _frame):
-        print("Received termination signal. Shutting down")
-        client.shutdown()
+        # Let the "finally" block hereafter do the cleaning after SystemExit got raised by sys.exit().
+        sys.exit("Received termination signal.")
     signal.signal(signal.SIGINT, handle_termination)
     signal.signal(signal.SIGQUIT, handle_termination)
     signal.signal(signal.SIGTERM, handle_termination)
+    try:
+        client.loop()
+    finally:
+        client.shutdown()
+
 
 if __name__ == "__main__":
     sys.exit(main())
