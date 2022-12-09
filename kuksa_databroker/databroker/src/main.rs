@@ -127,10 +127,13 @@ async fn shutdown_handler() {
     let mut sigint =
         signal(SignalKind::interrupt()).expect("failed to setup SIGINT signal handler");
     let mut sighup = signal(SignalKind::hangup()).expect("failed to setup SIGHUP signal handler");
+    let mut sigterm =
+        signal(SignalKind::terminate()).expect("failed to setup SIGTERM signal handler");
 
     select! {
         _ = sigint.recv() => info!("received SIGINT"),
         _ = sighup.recv() => info!("received SIGHUP"),
+        _ = sigterm.recv() => info!("received SIGTERM"),
     };
 }
 
