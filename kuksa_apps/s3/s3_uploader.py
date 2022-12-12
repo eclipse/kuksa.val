@@ -90,15 +90,8 @@ class S3Client():
 
     def upload(self, src_file, dst_file):
         # Output the bucket names
-        print(f'update file {src_file} to s3://{self.bucket}/{dst_file}')
+        print(f'Upload file {src_file} to s3://{self.bucket}/{dst_file}')
         self.client.upload_file(src_file, self.bucket, dst_file)
-        time.sleep(1)
-
-        # read uploaded file for debugging
-        try:
-            self.client.download_file(self.bucket, dst_file, src_file + ".downloaded")
-        except Exception as exc:
-            print("The object does not exist." + str(exc))
 
 
 class KuksaClientError(Exception):
@@ -255,7 +248,8 @@ class ParquetPacker():
 
         if self.max_num_rows > 0 and self.num_rows >= self.max_num_rows:
             self.pqwriter.close()
-            self.uploader.upload(self.pqfile, self.pqfile )
+            self.uploader.upload(self.pqfile, self.pqfile)
+            pathlib.Path(self.pqfile).unlink()
             self.create_new_parquet()
 
 
@@ -271,6 +265,7 @@ class ParquetPacker():
         self.running = False
         self.dataprovider.shutdown()
         self.pqwriter.close()
+        pathlib.Path(self.pqfile).unlink()
 
 
 def main():
