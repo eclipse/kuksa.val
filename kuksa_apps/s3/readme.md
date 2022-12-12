@@ -67,7 +67,7 @@ Test Client> setValue Vehicle/Cabin/Infotainment/Navigation/DestinationSet/Longi
 }
 ```
 
-You may now run S3 uploader, wait for some seconds until you see `update file kuksa[...].parquet to s3://kuksa/kuksa[...].parquet`:
+You may now run S3 uploader, wait for some seconds until you see `Upload file kuksa[...].parquet to s3://kuksa/kuksa[...].parquet`:
 
 ```console
 $ python s3_uploader.py
@@ -79,7 +79,7 @@ Init S3 client...
 Existing buckets:
   kuksa
 receive loop started
-update file kuksa_2022-Dec-07_09_02_55.691982.parquet to s3://kuksa/kuksa_2022-Dec-07_09_02_55.691982.parquet
+Upload file kuksa_2022-Dec-07_09_02_55.691982.parquet to s3://kuksa/kuksa_2022-Dec-07_09_02_55.691982.parquet
 ^C
 ```
 
