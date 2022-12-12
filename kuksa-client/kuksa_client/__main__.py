@@ -377,13 +377,10 @@ class TestClient(Cmd):
             self.subscribeIds.discard(args.SubscribeId)
             self.pathCompletionItems = []
 
-    def do_quit(self, args):
-        if hasattr(self, "commThread"):
-            if self.commThread is not None:
-                self.commThread.stop()
-                time.sleep(1)
-        super().do_quit(args)
-        sys.exit(0)
+    def stop(self):
+        if self.commThread is not None:
+            self.commThread.stop()
+            self.commThread.join()
 
     def getMetaData(self, path):
         """Get MetaData of the path"""
@@ -533,7 +530,11 @@ def main():
 
     logging.config.fileConfig(args.logging_config)
     clientApp = TestClient(args.ip, args.port, args.protocol, args.insecure)
-    clientApp.cmdloop()
+    try:
+        # We exit the loop when the user types "quit" or hits Ctrl-D.
+        clientApp.cmdloop()
+    finally:
+        clientApp.stop()
 
 if __name__=="__main__":
     sys.exit(main())
