@@ -22,6 +22,7 @@ import configparser
 import contextlib
 import datetime
 import enum
+import http
 import json
 import pathlib
 import signal
@@ -101,7 +102,20 @@ class S3Client():
 
 
 class KuksaClientError(Exception):
-    ...
+    def __init__(self, code: int, reason: str, message: str):
+        super().__init__(code, reason, message)
+        self.code = code
+        self.reason = reason
+        self.message = message
+
+    @classmethod
+    def from_viss(cls, viss_error):
+        return cls(int(viss_error['number']), viss_error['reason'], viss_error['message'])
+
+    @classmethod
+    def from_kuksa_client_grpc(cls, client_error: kuksa_client.grpc.VSSClientError):
+        return cls(client_error.error['code'], client_error.error['reason'], client_error.error['message'])
+
 
 
 class KuksaClient:
@@ -139,7 +153,13 @@ class KuksaVALServerClient(KuksaClient):
         values = {}
         for path in paths:
             response = json.loads(self.client.getValue(path))
-            self._raise_if_invalid(response)
+            try:
+                self._raise_if_invalid(response)
+            except KuksaClientError as exc:
+                if exc.code == http.HTTPStatus.NOT_FOUND and exc.reason == 'unavailable_data':
+                    values[path] = [None]
+                    continue
+                raise
             values[path] = [response["data"]["dp"]["value"]]
 
         return values
@@ -150,7 +170,7 @@ class KuksaVALServerClient(KuksaClient):
     def _raise_if_invalid(self, response):
         error = response.get('error')
         if error is not None:
-            raise KuksaClientError(error)
+            raise KuksaClientError.from_viss(error)
 
 
 class KuksaDatabrokerClient(KuksaClient):
@@ -167,7 +187,7 @@ class KuksaDatabrokerClient(KuksaClient):
             for path, metadata in self.client.get_metadata(paths, MetadataField.DATA_TYPE).items():
                 datatypes[path] = pyarrow_mapping.KUKSA_CLIENT_TO_PYARROW_MAPPING[metadata.data_type]()
         except kuksa_client.grpc.VSSClientError as exc:
-            raise KuksaClientError("Couldn't get datatypes") from exc
+            raise KuksaClientError.from_kuksa_client_grpc(exc)
 
         return datatypes
 
@@ -177,7 +197,7 @@ class KuksaDatabrokerClient(KuksaClient):
             for path, datapoint in self.client.get_current_values(paths).items():
                 values[path] = [datapoint.value if datapoint is not None else None]
         except kuksa_client.grpc.VSSClientError as exc:
-            raise KuksaClientError("Couldn't get current values") from exc
+            raise KuksaClientError.from_kuksa_client_grpc(exc)
 
         return values
 
