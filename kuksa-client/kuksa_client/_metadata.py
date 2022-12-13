@@ -38,7 +38,10 @@ __email__ = "Unknown"
 __license__ = "Unknown"
 __copyright__ = "Copyright 2020 Robert Bosch GmbH"
 
-import importlib_metadata
+try:
+    import importlib.metadata as importlib_metadata
+except ImportError:
+    import importlib_metadata
 
 try:
 
