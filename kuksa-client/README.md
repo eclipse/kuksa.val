@@ -13,13 +13,13 @@ More about `kuksa.val` can be found in the [repository](https://github.com/eclip
 
 ## Installing the client and starting its CLI
 
-The fastest way to start using the kuksa-client is to install a pre-built version with pip.
-Instructions on how to build and run locally can be found further down in this document.
+The fastest way to start using kuksa-client is to install a pre-built version from pypi.org:
 
 ```console
 $ pip install kuksa-client
 ```
 
+If you want to install from sources instead see [Building and running a local version](#building-and-running-a-local-version).
 
 After you have installed the kuksa-client package via pip you can run the test client CLI directly by executing:
 
@@ -135,7 +135,7 @@ setValue: error: unrecognized arguments: dtc2 ]
 ```
 
 
-## Building and Running a local version
+## Building and running a local version
 
 For development purposes it may be necessary to customize the code for the client and run a locally built version.
 First we suggest you create a dedicated [python virtual environment](https://docs.python.org/3/library/venv.html) for kuksa-client:
@@ -149,13 +149,15 @@ $ source ~/.venv/kuksa-client/bin/activate  # Run this every time you want to ac
 
 Now in order to ensure local `*.py` files will be used when running the client, we need to install kuksa-client in editable mode:
 ```console
-(kuksa-client) $ pip install --editable .
+(kuksa-client) $ pip install -r requirements.txt -e .
 ```
 
 If you wish to also install test dependencies, run instead:
 ```console
-(kuksa-client) $ pip install --editable ".[test]"
+(kuksa-client) $ pip install -r test-requirements.txt -e ".[test]"
 ```
+
+If you ever wish to upgrade provided requirements, see [Requirements](docs/requirements.md).
 
 Now you should be able to start using `kuksa-client`:
 ```console
