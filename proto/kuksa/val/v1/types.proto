@@ -11,9 +11,7 @@ syntax = "proto3";
 package kuksa.val.v1;
 import "google/protobuf/timestamp.proto";
 
-// Should probably be changed to something like:
-// option go_package = "github.com/eclipse/kuksa.val/proto/v1";
-option go_package = "/kuksa_grpc_proto";
+option go_package = "kuksa/val/v1";
 
 // Describes a VSS entry
 // When requesting an entry, the amount of information returned can
