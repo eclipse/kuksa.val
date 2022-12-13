@@ -12,11 +12,9 @@ syntax = "proto3";
 
 package kuksa.val.v1;
 
-import "kuksa/val/v1/types.proto";
+option go_package = "kuksa/val/v1";
 
-// Should probably be changed to something like:
-// option go_package = "github.com/eclipse/kuksa.val/proto/v1";
-option go_package = "/kuksa_grpc_proto";
+import "kuksa/val/v1/types.proto";
 
 // Note on authorization:
 // Tokens (auth-token or auth-uuid) are sent as (GRPC / http2) metadata.
