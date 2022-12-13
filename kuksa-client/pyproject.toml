@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "grpcio-tools~=1.50.0",
+    "grpcio-tools>=1.46.0",
     "setuptools>=42",
     "setuptools-git-versioning",
     "wheel",
