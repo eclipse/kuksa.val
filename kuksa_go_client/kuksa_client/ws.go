@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kuksa_viss
+package kuksa_client
 
 import (
 	"log"
@@ -23,13 +23,14 @@ import (
 )
 
 // Function to connect to kuksa.val
-func (cc *KuksaClientComm) ConnectToKuksaValServerWs() error {
+func (cc *KuksaClientCommWs) ConnectToKuksaVal() error {
 	err := cc.startCommunication()
+	log.Println("Websocket connected")
 	return err
 }
 
 // Function to get attribute value from VSS tree
-func (cc *KuksaClientComm) GetAttrValueFromKuksaValServer(path string, attr string) (string, error) {
+func (cc *KuksaClientCommWs) GetValueFromKuksaVal(path string, attr string) (string, error) {
 
 	// Create new KuksaValRequest
 	req := objx.New(make(map[string]interface{}))
@@ -46,26 +47,23 @@ func (cc *KuksaClientComm) GetAttrValueFromKuksaValServer(path string, attr stri
 	return value, err
 }
 
-// Function to get value from VSS tree
-func (cc *KuksaClientComm) GetValueFromKuksaValServer(path string) (string, error) {
-
-	value, err := cc.GetAttrValueFromKuksaValServer(path, "value")
-	return value, err
-}
-
-// Function to subscribe value from VSS tree
-func (cc *KuksaClientComm) SubscribeFromKuksaValServer(path string, subsChannel *chan []byte) (string, error) {
-
-	subscriptionId, err := cc.SubscribeAttrFromKuksaValServer(path, subsChannel, "value")
-	return subscriptionId, err
+func (cc *KuksaClientCommWs) PrintSubscriptionMessages(id string) error {
+	for {
+		val := <-*cc.subscriptionState[id]
+		log.Printf("Vehicle.Speed Subscribed: %s", val)
+	}
 }
 
 // Function to subscribe attribute value from VSS tree
-func (cc *KuksaClientComm) SubscribeAttrFromKuksaValServer(path string, subsChannel *chan []byte, attr string) (string, error) {
+func (cc *KuksaClientCommWs) SubscribeFromKuksaVal(path string, attr string) (string, error) {
+
+	// Create new channel for subscribing
+	id := uuid.New().String()
+	subsChannel := make(chan []byte, 10)
 
 	// Create new KuksaValRequest
 	req := objx.New(make(map[string]interface{}))
-	req.Set("requestId", uuid.New().String())
+	req.Set("requestId", id)
 	req.Set("action", "subscribe")
 	req.Set("path", path)
 	req.Set("attribute", attr)
@@ -76,7 +74,7 @@ func (cc *KuksaClientComm) SubscribeAttrFromKuksaValServer(path string, subsChan
 	if err == nil {
 		subscriptionId = resp.Get("subscriptionId").String()
 		cc.subscriptionStateMutex.Lock()
-		cc.subscriptionState[subscriptionId] = subsChannel
+		cc.subscriptionState[subscriptionId] = &subsChannel
 		cc.subscriptionStateMutex.Unlock()
 
 	}
@@ -84,7 +82,7 @@ func (cc *KuksaClientComm) SubscribeAttrFromKuksaValServer(path string, subsChan
 }
 
 // Function to unsubscribe value from VSS tree
-func (cc *KuksaClientComm) UnsubscribeFromKuksaValServer(id string) error {
+func (cc *KuksaClientCommWs) UnsubscribeFromKuksaVal(id string) error {
 
 	// Create new KuksaValRequest
 	req := objx.New(make(map[string]interface{}))
@@ -98,17 +96,13 @@ func (cc *KuksaClientComm) UnsubscribeFromKuksaValServer(id string) error {
 		delete(cc.subscriptionState, id)
 		cc.subscriptionStateMutex.Unlock()
 	}
+
+	close(*cc.subscriptionState[id])
 	return err
 }
 
 // Function to set value from VSS tree
-func (cc *KuksaClientComm) SetValueFromKuksaValServer(path string, value string) error {
-	err := cc.SetAttrValueFromKuksaValServer(path, value, "value")
-	return err
-}
-
-// Function to set value from VSS tree
-func (cc *KuksaClientComm) SetAttrValueFromKuksaValServer(path string, value string, attr string) error {
+func (cc *KuksaClientCommWs) SetValueFromKuksaVal(path string, value string, attr string) error {
 
 	// Create new KuksaValRequest
 	respChannel := make(chan objx.Map)
@@ -126,7 +120,7 @@ func (cc *KuksaClientComm) SetAttrValueFromKuksaValServer(path string, value str
 }
 
 // Function to authorize to kuksa.val server
-func (cc *KuksaClientComm) AuthorizeKuksaValServerConn() error {
+func (cc *KuksaClientCommWs) AuthorizeKuksaValConn() error {
 
 	// Get the authorization token
 	tokenByteString, err := os.ReadFile(cc.Config.TokenPath)
@@ -146,7 +140,7 @@ func (cc *KuksaClientComm) AuthorizeKuksaValServerConn() error {
 }
 
 // Function to get metadata from kuksa.val server
-func (cc *KuksaClientComm) GetMetadataFromKuksaValServer(path string) (string, error) {
+func (cc *KuksaClientCommWs) GetMetadataFromKuksaVal(path string) (string, error) {
 
 	// Create new KuksaValRequest
 	req := objx.New(make(map[string]interface{}))
