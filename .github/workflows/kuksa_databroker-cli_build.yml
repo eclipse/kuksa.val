@@ -1,0 +1,157 @@
+# /********************************************************************************
+# * Copyright (c) 2022 Contributors to the Eclipse Foundation
+# *
+# * See the NOTICE file(s) distributed with this work for additional
+# * information regarding copyright ownership.
+# *
+# * This program and the accompanying materials are made available under the
+# * terms of the Apache License 2.0 which is available at
+# * http://www.apache.org/licenses/LICENSE-2.0
+# *
+# * SPDX-License-Identifier: Apache-2.0
+# ********************************************************************************/
+
+name: kuksa_databroker-cli_build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    paths:
+      - ".github/workflows/kuksa_databroker-cli_build.yml"
+      - "kuksa_databroker/**"
+      - "Cargo.*"
+      - "Cross.toml"
+  workflow_call:
+  workflow_dispatch:
+
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: cargo fmt
+        working-directory: ${{github.workspace}}
+        run: cargo fmt -- --check
+      - name: cargo clippy
+        working-directory: ${{github.workspace}}
+        run: cargo clippy --all-targets -- -W warnings -D warnings
+
+
+  checkrights:
+    uses: ./.github/workflows/check_push_rights.yml
+    secrets: inherit
+
+# Run on selfhosted, because our runner has native ARM build in a remote
+# builder (no need for qemu)
+  build-container:
+    runs-on: [ self-hosted ]
+    needs: checkrights
+
+    steps:
+    - uses: actions/checkout@v3
+      with: 
+        submodules: recursive
+
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        # list of Docker images to use as base name for tags
+        images: |
+          ghcr.io/eclipse/kuksa.val/databroker-cli
+        # generate Docker tags based on the following events/attributes
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          
+    # only needed for runners without buildx setup, will be slow 
+    #- name: Set up QEMU
+    #  uses: docker/setup-qemu-action@v2
+      
+    # - name: Set up Docker Buildx
+    #  id: buildx
+    #  uses: docker/setup-buildx-action@v2
+
+    - name: Log in to the Container registry
+      if: needs.checkrights.outputs.have_secrets == 'true'
+      uses: docker/login-action@v2
+      with:
+          registry: ${{ needs.checkrights.outputs.registry }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build kuksa.val databroker CLI container and push to ghcr.io (and ttl.sh)
+      id: ghcr-build
+      if: needs.checkrights.outputs.have_secrets == 'true'
+      uses: docker/build-push-action@v3
+      with:
+        platforms: |
+          linux/amd64
+          linux/arm64
+        file: ./kuksa_databroker/Dockerfile-cli
+        context: .
+        push: true
+        tags: |
+          ${{ steps.meta.outputs.tags }}
+          ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
+        labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Build ephemereal kuksa.val databroker container and push to ttl.sh
+      if: needs.checkrights.outputs.have_secrets == 'false'
+      id: tmp-build
+      uses: docker/build-push-action@v3
+      with:
+        platforms: |
+          linux/amd64
+          linux/arm64
+        file: ./kuksa_databroker/Dockerfile-cli
+        context: .
+        push: true
+        tags: "ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h"
+        labels: ${{ steps.meta.outputs.labels }}
+        
+    - name: Posting message
+      run: |
+        echo "## :hatching_chick: Moin!" >> $GITHUB_STEP_SUMMARY
+        echo "Something new is in the world" >> $GITHUB_STEP_SUMMARY 
+        echo -e "\nImages for testing temporarily available at \`ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h\`" >> $GITHUB_STEP_SUMMARY
+        echo -e "\n\`\`\`\ndocker pull ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h\n\`\`\`" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Extracting AMD64 binaries
+      run: | 
+        docker rm cliamd || true
+        docker create --name cliamd --platform linux/amd64 ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
+        docker cp cliamd:/app ./  
+        docker rm cliamd
+        mv ./app ./databroker-cli-amd64
+        tar -czf databroker-cli-amd64.tar.gz -C databroker-cli-amd64 .
+
+         
+    - name: Extracting ARM64 binaries
+      run: | 
+        docker rm cliarm || true
+        docker create --name cliarm --platform linux/arm64 ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
+        docker cp cliarm:/app ./  
+        docker rm cliarm
+        mv ./app ./databroker-cli-arm64
+        tar -czf databroker-cli-arm64.tar.gz -C databroker-cli-arm64 .
+         
+    - name: Archive  AMD64 binaries
+      uses: actions/upload-artifact@v3
+      with:
+        name: databroker-cli-amd64
+        path: ./databroker-cli-amd64.tar.gz 
+         
+    - name: Archive  ARM64 binaries
+      uses: actions/upload-artifact@v3
+      with:
+        name: databroker-cli-arm64
+        path: ./databroker-cli-arm64.tar.gz
+        
