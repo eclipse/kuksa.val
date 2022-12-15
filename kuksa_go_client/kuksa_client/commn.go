@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kuksa_viss
+package kuksa_client
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -26,10 +27,15 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/objx"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	// pb "github.com/eclipse/kuksa.val/kuksa_go_client/proto"
+	grpcpb "github.com/eclipse/kuksa.val/kuksa_go_client/proto/kuksa/val/v1"
 )
 
-type KuksaClientComm struct {
-	Config                 *KuksaVISSClientConfig
+type KuksaClientCommWs struct {
+	Config                 *KuksaClientConfig
 	connSocket             *websocket.Conn
 	sendChannel            chan []byte
 	requestState           map[string]*chan []byte
@@ -38,11 +44,37 @@ type KuksaClientComm struct {
 	subscriptionStateMutex sync.RWMutex
 }
 
+type KuksaClientCommGrpc struct {
+	Config                 *KuksaClientConfig
+	conn                   *grpc.ClientConn
+	client                 grpcpb.VALClient
+	cancel                 map[string]*context.CancelFunc
+	subsChannel            map[string]*grpcpb.VAL_SubscribeClient
+	subsAttr               string
+	subscriptionStateMutex sync.RWMutex
+}
+
 const (
 	TIMEOUT = 1 * time.Second
 )
 
-func (cc *KuksaClientComm) startCommunication() error {
+func (cg *KuksaClientCommGrpc) startCommunication() error {
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	serverUrl := cg.Config.ServerAddress + ":" + cg.Config.ServerPort
+	var err error
+	cg.conn, err = grpc.Dial(serverUrl, opts...)
+	if err != nil {
+		return err
+	}
+	cg.client = grpcpb.NewVALClient(cg.conn)
+	cg.cancel = make(map[string]*context.CancelFunc)
+	cg.subsChannel = make(map[string]*grpcpb.VAL_SubscribeClient)
+	log.Println("gRPC channel Connected")
+	return nil
+}
+
+func (cc *KuksaClientCommWs) startCommunication() error {
 
 	if cc.Config.Insecure {
 		// Open an insecure websocket
@@ -56,7 +88,7 @@ func (cc *KuksaClientComm) startCommunication() error {
 			log.Fatal("Connection error: ", err)
 			return err
 		}
-		log.Printf(string(cc.connSocket.LocalAddr().String()))
+		log.Println(string(cc.connSocket.LocalAddr().String()))
 	} else {
 		// Open a secure websocket
 		serverUrl := url.URL{Scheme: "wss", Host: cc.Config.ServerAddress + ":" + cc.Config.ServerPort}
@@ -70,6 +102,9 @@ func (cc *KuksaClientComm) startCommunication() error {
 
 		// Load CA Certificate
 		caCert, err := ioutil.ReadFile(cc.Config.CertsDir + "/CA.pem")
+		if err != nil {
+			return err
+		}
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM(caCert)
 
@@ -85,7 +120,7 @@ func (cc *KuksaClientComm) startCommunication() error {
 			log.Fatal("Connection error: ", err)
 			return err
 		}
-		log.Printf(string(cc.connSocket.LocalAddr().String()))
+		log.Println(string(cc.connSocket.LocalAddr().String()))
 	}
 
 	// Create send sub routine
@@ -143,13 +178,17 @@ func (cc *KuksaClientComm) startCommunication() error {
 }
 
 // Close the Kuksa Client
-func (cc *KuksaClientComm) Close() {
+func (cg *KuksaClientCommGrpc) Close() {
+	defer cg.conn.Close()
+}
+
+func (cc *KuksaClientCommWs) Close() {
 	close(cc.sendChannel)
 	cc.connSocket.Close()
 }
 
 // Communication Handler
-func (cc *KuksaClientComm) communicationHandler(req objx.Map) (objx.Map, error) {
+func (cc *KuksaClientCommWs) communicationHandler(req objx.Map) (objx.Map, error) {
 	// Create channel for response and store it in the Request state
 	respChannel := make(chan []byte)
 	defer close(respChannel)

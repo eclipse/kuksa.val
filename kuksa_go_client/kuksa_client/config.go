@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kuksa_viss
+package kuksa_client
 
 import (
 	"log"
@@ -29,7 +29,7 @@ const (
 	WebSocket      Transport = "WebSocket"
 )
 
-type KuksaVISSClientConfig struct {
+type KuksaClientConfig struct {
 	ServerAddress     string    `mapstructure:"serverAddress"`
 	ServerPort        string    `mapstructure:"serverPort"`
 	Insecure          bool      `mapstructure:"insecure"`
@@ -38,15 +38,15 @@ type KuksaVISSClientConfig struct {
 	TransportProtocol Transport `mapstructure:"transport"`
 }
 
-func ReadConfig(config *KuksaVISSClientConfig) {
+func ReadConfig(config *KuksaClientConfig) {
 
 	// Read in the configuration of the switcher
 	log.Println("Reading Config ...")
 
-	viper.SetConfigName("kuksa-viss-client") // name of config file (without extension)
+	viper.SetConfigName("kuksa-client") // name of config file (without extension)
 	viper.AddConfigPath("./")                // path to look for the config file in
 
-	viper.SetEnvPrefix("kuksa_viss_client")
+	viper.SetEnvPrefix("kuksa_client")
 	viper.AutomaticEnv()
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
@@ -59,7 +59,7 @@ func ReadConfig(config *KuksaVISSClientConfig) {
 	}
 }
 
-func (config KuksaVISSClientConfig) String() string {
+func (config KuksaClientConfig) String() string {
 
 	var retString string
 
