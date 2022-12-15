@@ -30,7 +30,7 @@ func (cc *KuksaClientCommWs) ConnectToKuksaVal() error {
 }
 
 // Function to get attribute value from VSS tree
-func (cc *KuksaClientCommWs) GetValueFromKuksaVal(path string, attr string) (string, error) {
+func (cc *KuksaClientCommWs) GetValueFromKuksaVal(path string, attr string) ([]string, error) {
 
 	// Create new KuksaValRequest
 	req := objx.New(make(map[string]interface{}))
@@ -44,7 +44,9 @@ func (cc *KuksaClientCommWs) GetValueFromKuksaVal(path string, attr string) (str
 	if resp.Has("data.dp." + attr) {
 		value = resp.Get("data.dp." + attr).String()
 	}
-	return value, err
+	values := []string{}
+	values = append(values, value)
+	return values, err
 }
 
 func (cc *KuksaClientCommWs) PrintSubscriptionMessages(id string) error {
@@ -140,7 +142,7 @@ func (cc *KuksaClientCommWs) AuthorizeKuksaValConn() error {
 }
 
 // Function to get metadata from kuksa.val server
-func (cc *KuksaClientCommWs) GetMetadataFromKuksaVal(path string) (string, error) {
+func (cc *KuksaClientCommWs) GetMetadataFromKuksaVal(path string) ([]string, error) {
 
 	// Create new KuksaValRequest
 	req := objx.New(make(map[string]interface{}))
@@ -153,5 +155,7 @@ func (cc *KuksaClientCommWs) GetMetadataFromKuksaVal(path string) (string, error
 	if resp.Has("metadata") {
 		value, err = resp.Get("metadata").ObjxMap().JSON()
 	}
-	return value, err
+	values := []string{}
+	values = append(values, value)
+	return values, err
 }
