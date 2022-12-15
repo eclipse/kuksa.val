@@ -12,10 +12,14 @@
 # ********************************************************************************/
 
 # This is expected to be executed in the kuksa.val top-level directory
+
 # This builds the databroker-cli
 
-FROM rust:1.63 as builder
+FROM rust:1.65-alpine as builder
 
+# This will speed up fetching the crate.io index in the future, see
+# https://blog.rust-lang.org/2022/06/22/sparse-registry-testing.html
+ENV CARGO_UNSTABLE_SPARSE_REGISTRY=true
 
 RUN rustup component add rustfmt
 
@@ -25,6 +29,14 @@ WORKDIR /build
 ADD kuksa_databroker kuksa_databroker
 ADD proto proto
 ADD Cargo.toml Cargo.toml
+
+RUN apk add git musl-dev python3 protoc ncurses-terminfo-base
+# See also https://github.com/rust-lang/cargo/issues/10583, 
+# without this needs more than 12GB in runner if somebody wants to buildx
+# it with the common qemu setup
+RUN ln -s /usr/bin/git /usr/local/cargo/bin/
+#RUN ls /usr/local/cargo/bin/
+ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
 # Creating BOM
 RUN cargo install cargo-license
@@ -39,10 +51,11 @@ RUN cargo build  --bin databroker-cli --release
 
 
 
-FROM  debian:buster-slim
+FROM  alpine:3
+
 
 COPY --from=builder /build//target/release/databroker-cli /app/databroker-cli
 COPY --from=builder /build/kuksa_databroker/databroker-cli/thirdparty /app/thirdparty
-
+COPY --from=builder /etc/terminfo /etc/terminfo
 
 ENTRYPOINT [ "/app/databroker-cli" ]
