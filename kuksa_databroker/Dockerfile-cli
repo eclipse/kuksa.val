@@ -51,8 +51,7 @@ RUN cargo build  --bin databroker-cli --release
 
 
 
-FROM  alpine:3
-
+FROM  scratch
 
 COPY --from=builder /build//target/release/databroker-cli /app/databroker-cli
 COPY --from=builder /build/kuksa_databroker/databroker-cli/thirdparty /app/thirdparty
