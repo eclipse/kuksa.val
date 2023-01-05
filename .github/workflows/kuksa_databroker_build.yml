@@ -108,8 +108,8 @@ jobs:
     uses: ./.github/workflows/check_push_rights.yml
     secrets: inherit
 
-# Run on selfhosted, becasue our runner has native ARM build in a remote
-# builder (no need for qemu
+# Run on selfhosted, because our runner has native ARM build in a remote
+# builder (no need for qemu)
   build-container:
     runs-on: [ self-hosted ]
     needs: checkrights
@@ -181,41 +181,27 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
   
     - name: Posting message
-      run: |
-        echo "## :hatching_chick: Moin!" >> $GITHUB_STEP_SUMMARY
-        echo "Something new is in the world" >> $GITHUB_STEP_SUMMARY 
-        echo -e "\nImages for testing temporarily available at \`ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h\`" >> $GITHUB_STEP_SUMMARY
-          echo -e "\n\`\`\`\ndocker pull ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h\n\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-    - name: Extracting AMD64 binaries
-      run: | 
-        docker rm brokeramd || true
-        docker create --name brokeramd --platform linux/amd64 ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h
-        docker cp brokeramd:/app ./  
-        docker rm brokeramd
-        mv ./app ./databroker-amd64
-        tar -czf databroker-amd64.tar.gz -C databroker-amd64 .
-
-    - name: Extracting ARM64 binaries
-      run: | 
-        docker rm brokerarm || true
-        docker create --name brokerarm --platform linux/arm64 ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h
-        docker cp brokerarm:/app ./  
-        docker rm brokerarm
-        mv ./app ./databroker-arm64
-        tar -czf databroker-arm64.tar.gz -C databroker-arm64 .  
-
-    - name: Archive  AMD64 binaries
-      uses: actions/upload-artifact@v3
+      uses: ./.github/actions/post-container-location
       with:
-        name: databroker-amd64
-        path: ./databroker-amd64.tar.gz 
-         
-    - name: Archive  ARM64 binaries
-      uses: actions/upload-artifact@v3
+        image: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h
+
+    - name:  Extracting ARM64 binaries
+      uses: ./.github/actions/copy-from-oci
       with:
-        name: databroker-arm64
-        path: ./databroker-arm64.tar.gz
+        platform: linux/arm64
+        id: databroker-arm64
+        image: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h
+        src: /app/
+        export: true
+        
+    - name:  Extracting AMD64 binaries
+      uses: ./.github/actions/copy-from-oci
+      with:
+        platform: linux/amd64
+        id: databroker-amd64
+        image: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h
+        src: /app/
+        export: true
 
   integration-test:
     name: Run integration test
