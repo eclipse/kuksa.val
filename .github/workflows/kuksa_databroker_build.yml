@@ -115,13 +115,13 @@ jobs:
     needs: checkrights
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with: 
         submodules: recursive
 
     - name: Docker meta
       id: meta
-      uses: docker/metadata-action@v3.5.0
+      uses: docker/metadata-action@v4
       with:
         # list of Docker images to use as base name for tags
         images: |
@@ -150,7 +150,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build kuksa.val databroker container and push to ghcr.io
+    - name: Build kuksa.val databroker container container and push to ghcr.io (and ttl.sh)
       id: ghcr-build
       if: needs.checkrights.outputs.have_secrets == 'true'
       uses: docker/build-push-action@v3
@@ -169,7 +169,7 @@ jobs:
     - name: Build ephemereal kuksa.val databroker container and push to ttl.sh
       if: needs.checkrights.outputs.have_secrets == 'false'
       id: tmp-build
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
         platforms: |
           linux/amd64
@@ -179,9 +179,44 @@ jobs:
         push: true
         tags: "ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h"
         labels: ${{ steps.meta.outputs.labels }}
+  
+    - name: Posting message
+      run: |
+        echo "## :hatching_chick: Moin!" >> $GITHUB_STEP_SUMMARY
+        echo "Something new is in the world" >> $GITHUB_STEP_SUMMARY 
+        echo -e "\nImages for testing temporarily available at \`ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h\`" >> $GITHUB_STEP_SUMMARY
+          echo -e "\n\`\`\`\ndocker pull ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h\n\`\`\`" >> $GITHUB_STEP_SUMMARY
 
+    - name: Extracting AMD64 binaries
+      run: | 
+        docker rm brokeramd || true
+        docker create --name brokeramd --platform linux/amd64 ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h
+        docker cp brokeramd:/app ./  
+        docker rm brokeramd
+        mv ./app ./databroker-amd64
+        tar -czf databroker-amd64.tar.gz -C databroker-amd64 .
 
-    
+    - name: Extracting ARM64 binaries
+      run: | 
+        docker rm brokerarm || true
+        docker create --name brokerarm --platform linux/arm64 ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}:1h
+        docker cp brokerarm:/app ./  
+        docker rm brokerarm
+        mv ./app ./databroker-arm64
+        tar -czf databroker-arm64.tar.gz -C databroker-arm64 .  
+
+    - name: Archive  AMD64 binaries
+      uses: actions/upload-artifact@v3
+      with:
+        name: databroker-amd64
+        path: ./databroker-amd64.tar.gz 
+         
+    - name: Archive  ARM64 binaries
+      uses: actions/upload-artifact@v3
+      with:
+        name: databroker-arm64
+        path: ./databroker-arm64.tar.gz
+
   integration-test:
     name: Run integration test
     runs-on: ubuntu-latest
