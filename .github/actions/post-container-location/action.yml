@@ -1,0 +1,24 @@
+
+name: Post container location
+description: Post snippet to pull and run test container
+
+
+
+
+inputs:
+    image:
+      required: true
+      type: string
+      description: The OCI image
+ 
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        echo "## :hatching_chick: Moin!" >> $GITHUB_STEP_SUMMARY
+        echo "Something new is in the world" >> $GITHUB_STEP_SUMMARY 
+        echo -e "\nImages for testing temporarily available at \`${{ inputs.image }}\`" >> $GITHUB_STEP_SUMMARY
+        echo -e "\n\`\`\`\ndocker pull ${{ inputs.image }}\n\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo -e "\n\`\`\`\ndocker run --rm -it --net=host ${{ inputs.image }}\n\`\`\`" >> $GITHUB_STEP_SUMMARY
+      
