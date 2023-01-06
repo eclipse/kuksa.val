@@ -117,41 +117,28 @@ jobs:
         tags: "ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h"
         labels: ${{ steps.meta.outputs.labels }}
         
-    - name: Posting message
-      run: |
-        echo "## :hatching_chick: Moin!" >> $GITHUB_STEP_SUMMARY
-        echo "Something new is in the world" >> $GITHUB_STEP_SUMMARY 
-        echo -e "\nImages for testing temporarily available at \`ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h\`" >> $GITHUB_STEP_SUMMARY
-        echo -e "\n\`\`\`\ndocker pull ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h\n\`\`\`" >> $GITHUB_STEP_SUMMARY
-    
-    - name: Extracting AMD64 binaries
-      run: | 
-        docker rm cliamd || true
-        docker create --name cliamd --platform linux/amd64 ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
-        docker cp cliamd:/app ./  
-        docker rm cliamd
-        mv ./app ./databroker-cli-amd64
-        tar -czf databroker-cli-amd64.tar.gz -C databroker-cli-amd64 .
 
-         
+    - name: Posting message
+      uses: ./.github/actions/post-container-location
+      with:
+        image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
+      
     - name: Extracting ARM64 binaries
-      run: | 
-        docker rm cliarm || true
-        docker create --name cliarm --platform linux/arm64 ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
-        docker cp cliarm:/app ./  
-        docker rm cliarm
-        mv ./app ./databroker-cli-arm64
-        tar -czf databroker-cli-arm64.tar.gz -C databroker-cli-arm64 .
-         
-    - name: Archive  AMD64 binaries
-      uses: actions/upload-artifact@v3
+      uses: ./.github/actions/copy-from-oci
       with:
-        name: databroker-cli-amd64
-        path: ./databroker-cli-amd64.tar.gz 
-         
-    - name: Archive  ARM64 binaries
-      uses: actions/upload-artifact@v3
+        platform: linux/arm64
+        id: databroker-cli-arm64
+        image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
+        src: /app/
+        export: true
+
+    - name: Extracting AMD64 binaries
+      uses: ./.github/actions/copy-from-oci
       with:
-        name: databroker-cli-arm64
-        path: ./databroker-cli-arm64.tar.gz
+        platform: linux/amd64
+        id: databroker-cli-amd64
+        image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
+        src: /app/
+        export: true
+
         
