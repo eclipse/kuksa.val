@@ -33,6 +33,9 @@ inputs:
       required: false
       default: false
       description: Archive dest and export as Action artifact
+    tar-transform:
+      required: false
+      description: Optionally applying chosen --transform to tar when export is set to true
       
 
 runs:
@@ -49,7 +52,7 @@ runs:
         
     - if: inputs.export == 'true'
       shell: bash
-      run: tar -czf ${{ inputs.id }}.tar.gz -C ${{ inputs.id }} .
+      run: tar -czf ${{ inputs.id }}.tar.gz -C ${{ inputs.id }} --transform "${{ inputs.transform }}"  .
          
     - if: inputs.export == 'true'
       uses: actions/upload-artifact@v3
