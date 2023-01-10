@@ -131,6 +131,7 @@ jobs:
         image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
         src: /app/
         export: true
+        transform: s/app/databroker-cli/
 
     - name: Extracting AMD64 binaries
       uses: ./.github/actions/copy-from-oci
@@ -140,5 +141,4 @@ jobs:
         image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
         src: /app/
         export: true
-
-        
+        transform: s/app/databroker-cli/
