@@ -1,8 +1,5 @@
 on:
   workflow_call:
-    secrets:
-      PUSH_CONTAINER_TOKEN:
-        required: false
     outputs:
       have_secrets:
         description: "In possession of ghcr.io tokens?"
@@ -16,14 +13,25 @@ jobs:
       have_secrets: ${{ steps.check-secrets.outputs.have_secrets }}
 
     steps:
-    #Check we have access to secrets. Forks fo not
-    - name: check for secrets needed to run demo
+    #Check we have access to secrets for pushing to GHCR. Forks do not
+    - name: check GITHUB_TOKEN allows GHCR push access
       id: check-secrets
       run: |
-          if [ ! -z "${{ secrets.PUSH_CONTAINER_TOKEN }}" ]; then
-            echo "Running from base repo. Will push to ghcr.io"
-            echo "{have_secrets}={true}" >> $GITHUB_OUTPUT
-          else
-            echo "No secrets for pushing. Will push ephemeral images to ttl.sh"
-            echo "{have_secrets}={false}" >> $GITHUB_OUTPUT
+          if [[ ${{ github.event_name }} == "push"  ]] &&  [[ ${{ github.repository }} == "eclipse/kuksa.val"  ]]; then
+            echo "We are pushing to kuksa.val upstream, so we should have rights"
+            echo "have_secrets=true" >> $GITHUB_OUTPUT
+            exit 0
+            # if it is a pull_request and my_repo is kuksa.val I can push to GHCR,
+            # (note that some/all workflows int his repo might still opt to no push PR builds to GHCR)
           fi
+          if [[ ${{ github.event_name }} == "pull_request"  ]] &&  [[ ${{ github.event.pull_request.head.repo.full_name }} == "eclipse/kuksa.val"  ]]; then
+              echo "We are an internal pull request , so we should have rights"
+              echo "have_secrets=true" >> $GITHUB_OUTPUT
+              exit 0
+          fi
+          # Everything else
+          echo "Seems we do not have rights to push"
+          echo "We are event ${{ github.event_name }} running in ${{ github.repository }}"
+          echo "In case this is a PR it is coming from ${{ github.event.pull_request.head.repo.full_name }} "
+          echo "have_secrets=false" >> $GITHUB_OUTPUT
+      shell: bash
