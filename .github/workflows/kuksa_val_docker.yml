@@ -46,7 +46,7 @@ jobs:
       if: needs.checkrights.outputs.have_secrets == 'true'
       uses: docker/login-action@v2
       with:
-          registry: ${{ needs.checkrights.outputs.registry }}
+          registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
