@@ -62,7 +62,7 @@ jobs:
       if: needs.checkrights.outputs.have_secrets == 'true'
       uses: docker/login-action@v2
       with:
-          registry: ${{ needs.checkrights.outputs.registry }}
+          registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
           #username: kuksa-bot #keep it for now, maybe the standard token can not push to same package
