@@ -119,6 +119,17 @@ async fn get_metadata(channel: &tonic::transport::Channel) -> Option<Vec<proto::
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!(
+        "Databroker-cli version {}  ({})",
+        env!("VERGEN_GIT_SEMVER_LIGHTWEIGHT"),
+        env!("VERGEN_CARGO_PROFILE")
+    );
+    println!(
+        "Built from SHA {} at {}\n",
+        env!("VERGEN_GIT_SHA_SHORT"),
+        env!("VERGEN_BUILD_TIMESTAMP")
+    );
+
     let mut properties = Vec::<proto::v1::Metadata>::new();
     let mut subscription_nbr = 1;
 

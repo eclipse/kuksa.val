@@ -32,3 +32,9 @@ tokio = { version = "1.17.0", features = [
 tokio-stream = { version = "0.1.8", features = ["sync"] }
 linefeed = "0.6"
 ansi_term = "0.12"
+
+[build-dependencies]
+vergen = "7.4.3"
+anyhow = "1.0.68"
+
+
