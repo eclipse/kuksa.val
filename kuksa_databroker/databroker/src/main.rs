@@ -1,5 +1,5 @@
 /********************************************************************************
-* Copyright (c) 2022 Contributors to the Eclipse Foundation
+* Copyright (c) 2022-2023 Contributors to the Eclipse Foundation
 *
 * See the NOTICE file(s) distributed with this work for additional
 * information regarding copyright ownership.
@@ -137,6 +137,59 @@ async fn shutdown_handler() {
     };
 }
 
+async fn read_metadata_file(
+    broker: &broker::DataBroker,
+    filename: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let path = filename.trim();
+    info!("Populating metadata from file '{}'", path);
+    let mut metadata_file = std::fs::OpenOptions::new().read(true).open(path)?;
+    // metadata_file
+    let mut data = String::new();
+    metadata_file.read_to_string(&mut data)?;
+    let entries = vss::parse_vss(&data)?;
+    for entry in entries {
+        debug!("Adding VSS datapoint type {}", entry.name);
+
+        let id = broker
+            .add_entry(
+                entry.name.clone(),
+                entry.data_type,
+                databroker::broker::ChangeType::OnChange,
+                entry.entry_type,
+                entry.description.unwrap_or_else(|| "".to_owned()),
+            )
+            .await;
+
+        if let (Ok(id), Some(default)) = (id, entry.default) {
+            let ids = [(
+                id,
+                broker::EntryUpdate {
+                    datapoint: Some(broker::Datapoint {
+                        ts: std::time::SystemTime::now(),
+                        value: default,
+                    }),
+                    path: None,
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                },
+            )];
+            if let Err(errors) = broker.update_entries(ids).await {
+                // There's only one error (since we're only trying to set one)
+                if let Some(error) = errors.get(0) {
+                    info!(
+                        "Failed to set default value for {}: {:?}",
+                        entry.name, error.1
+                    );
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let version = option_env!("VERGEN_GIT_SEMVER").unwrap_or("");
@@ -183,16 +236,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .value_name("PORT")
                 .required(false)
                 .env("KUKSA_DATA_BROKER_PORT")
+                .value_parser(clap::value_parser!(u16).range(1..))
                 .default_value("55555"),
         )
         .arg(
             Arg::new("metadata")
                 .display_order(4)
                 .long("metadata")
-                .help("Populate data broker with metadata from file")
+                .help("Populate data broker with metadata from (comma-separated) list of files")
                 .takes_value(true)
+                .use_value_delimiter(true)
+                .require_value_delimiter(true)
+                .multiple_values(true)
                 .value_name("FILE")
                 .env("KUKSA_DATA_BROKER_METADATA_FILE")
+                .value_parser(clap::builder::NonEmptyStringValueParser::new())
                 .required(false),
         )
         .arg(
@@ -212,7 +270,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = format!(
         "{}:{}",
         args.value_of("address").unwrap(),
-        args.value_of("port").unwrap()
+        args.get_one::<u16>("port").unwrap()
     );
 
     let broker = broker::DataBroker::new();
@@ -261,51 +319,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Some(filename) = args.value_of("metadata") {
-        info!("Populating metadata... from file '{}'", filename);
-        let mut metadata_file = std::fs::OpenOptions::new().read(true).open(filename)?;
-        // metadata_file
-        let mut data = String::new();
-        metadata_file.read_to_string(&mut data)?;
-        let entries = vss::parse_vss(&data)?;
-        for entry in entries {
-            debug!("Adding {}", entry.name);
-
-            let id = broker
-                .add_entry(
-                    entry.name.clone(),
-                    entry.data_type,
-                    databroker::broker::ChangeType::OnChange,
-                    entry.entry_type,
-                    entry.description.unwrap_or_else(|| "".to_owned()),
-                )
-                .await;
-
-            if let (Ok(id), Some(default)) = (id, entry.default) {
-                let ids = [(
-                    id,
-                    broker::EntryUpdate {
-                        datapoint: Some(broker::Datapoint {
-                            ts: std::time::SystemTime::now(),
-                            value: default,
-                        }),
-                        path: None,
-                        actuator_target: None,
-                        entry_type: None,
-                        data_type: None,
-                        description: None,
-                    },
-                )];
-                if let Err(errors) = broker.update_entries(ids).await {
-                    // There's only one error (since we're only trying to set one)
-                    if let Some(error) = errors.get(0) {
-                        info!(
-                            "Failed to set default value for {}: {:?}",
-                            entry.name, error.1
-                        );
-                    }
-                }
-            }
+    if let Some(metadata_filenames) = args.get_many::<String>("metadata") {
+        for filename in metadata_filenames {
+            read_metadata_file(&broker, filename).await?;
         }
     }
 

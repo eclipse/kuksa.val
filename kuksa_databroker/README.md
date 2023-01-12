@@ -2,17 +2,17 @@
 
 - [Kuksa Databroker](#kuksa-data-broker)
   - [Intro](#intro)
-  - [Interface](#interface)
+  - [Interface](#grpc-interfaces)
   - [Relation to the COVESA Vehicle Signal Specification (VSS)](#relation-to-the-covesa-vehicle-signal-specification-vss)
   - [Building](#building)
     - [Build all](#build-all)
     - [Build all release](#build-all-release)
   - [Running](#running)
-    - [Broker](#broker)
-    - [Test the broker - run client/cli](#test-the-broker---run-clientcli)
-    - [Kuksa Data Broker Query Syntax](#databroker-query-syntax)
+    - [Broker](#databroker)
+    - [Test the broker - run client/cli](#test-the-databroker)
+    - [Kuksa Data Broker Query Syntax](#data-broker-query-syntax)
     - [Configuration](#configuration)
-    - [Build and run databroker container](#build-and-run-databroker-container)
+    - [Build and run databroker container](#build-and-run-databroker)
   - [Limitations](#limitations)
   - [GRPC overview](#grpc-overview)
 
@@ -20,13 +20,16 @@
 
 Kuksa Data Broker is a GRPC service acting as a broker of vehicle data / data points / signals.
 
-## GRPC Interface(s)
+## GRPC Interfaces
 
 Databroker implements a couple of GRPC interfaces.
+
 ### `kuksa.val.v1.VAL`
+
 This GRPC interface is under development and is meant to be used by kuksa-databroker, kuksa-val-server and the feeders.
 
 ### `sdv.databroker.v1.Broker`
+
 This interface is currently used by databroker clients. It is defined as follows (see [file](proto/sdv/databroker/v1/broker.proto) in the proto folder):
 
 ```protobuf
@@ -64,7 +67,7 @@ that's available in the [vss-tools](https://github.com/COVESA/vss-tools) reposit
 ./vss-tools/vspec2json.py -I spec spec/VehicleSignalSpecification.vspec vss.json
 ```
 
-The resulting vss.json can be loaded at startup my supplying the data broker with the command line argument:
+The resulting vss.json can be loaded at startup by supplying the data broker with the command line argument:
 
 ```shell
 --metadata vss.json
@@ -102,30 +105,33 @@ USAGE:
     databroker [OPTIONS]
 
 OPTIONS:
-        --address <ADDR>    Bind address [default: 127.0.0.1]
-        --port <PORT>       Bind port [default: 55555]
-        --metadata <FILE>   Populate data broker with metadata from file [env:
-                            KUKSA_DATA_BROKER_METADATA_FILE=]
-        --dummy-metadata    Populate data broker with dummy metadata
-    -h, --help              Print help information
-    -V, --version           Print version information
+        --address <ADDR>      Bind address [default: 127.0.0.1]
+        --port <PORT>         Bind port [default: 55555]
+        --metadata <FILE(S)>  Populate data broker with metadata from a
+                              (comma-separated) list of files.
+                              [env:KUKSA_DATA_BROKER_METADATA_FILE=]
+        --dummy-metadata      Populate data broker with dummy metadata
+    -h, --help                Print help information
+    -V, --version             Print version information
 
 ```
 
 ### :warning: Default port not working on Mac OS
-The databroker default port `55555` is not usable in many versions of Mac OS. You can not bind it, or if it seems bound you still can not receive messages. Therefore, on Mac OS you need to start databroker on another port, e.g.
+The databroker default port `55555` is not usable in many versions of Mac OS. You can not bind it, or if it seems bound you still can not receive messages.
+Therefore, on Mac OS you need to start databroker on another port, e.g.
 
 ```
 databroker --port 55556
 ```
 
-Please note, this also applies if you use a container environment like K3S or Docker on Mac OS. If you forward the port or exposing the host network interfaces, the same problem occurs.
+Please note, this also applies if you use a container environment like K3S or Docker on Mac OS. If you forward the port or exposing the host network
+interfaces, the same problem occurs.
 
 For more information see also https://developer.apple.com/forums/thread/671197 
 
 Currently, to run databroker-cli (see below), you do need to change the port it connects to in databroker-cli code and recompile it.
 
-### Test the databroker - run client/cli
+### Test the databroker
 
 Run the cli with:
 
@@ -182,10 +188,10 @@ WHERE
 
 | parameter      | default value | cli parameter    | environment variable              | description                                  |
 |----------------|---------------|------------------|-----------------------------------|----------------------------------------------|
-| metadata       | <no active>   | --metadata       | KUKSA_DATA_BROKER_METADATA_FILE | Populate data broker with metadata from file |
+| metadata       | <no active>   | --metadata       | KUKSA_DATA_BROKER_METADATA_FILE   | Populate data broker with metadata from file |
 | dummy-metadata | <no active>   | --dummy-metadata | <no active>                       | Populate data broker with dummy metadata     |
-| listen_address | "127.0.0.1"   | --address        | KUKSA_DATA_BROKER_ADDR          | Listen for rpc calls                         |
-| listen_port    | 55555         | --port           | KUKSA_DATA_BROKER_PORT          | Listen for rpc calls                         |
+| listen_address | "127.0.0.1"   | --address        | KUKSA_DATA_BROKER_ADDR            | Listen for rpc calls                         |
+| listen_port    | 55555         | --port           | KUKSA_DATA_BROKER_PORT            | Listen for rpc calls                         |
 
 To change the default configuration use the arguments during startup see [run section](#running) or environment variables.
 
