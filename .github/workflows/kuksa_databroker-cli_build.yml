@@ -53,8 +53,19 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-      with: 
-        submodules: recursive
+
+    # We need tags for versioning,
+    # Checkout action above would only get them 
+    # using fetch-depth=0 (fetch all)
+    # just fetching tags alone is not sufficient as we need to
+    # have their history for them to be visible by git describe
+    # As a compromise we only deepen the shallow checkout.
+    # See also  https://github.com/actions/checkout/issues/701
+    - name: Making GIT tags available
+      run: |
+       git fetch --tags -f origin
+       git fetch --deepen 250 origin
+       
 
     - name: Docker meta
       id: meta
