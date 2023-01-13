@@ -21,21 +21,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Transport string
-
-const (
-	UndefTransport Transport = ""
-	Grpc                     = "GRPC"
-	WebSocket      Transport = "WebSocket"
-)
-
 type KuksaClientConfig struct {
-	ServerAddress     string    `mapstructure:"serverAddress"`
-	ServerPort        string    `mapstructure:"serverPort"`
-	Insecure          bool      `mapstructure:"insecure"`
-	CertsDir          string    `mapstructure:"certsDir"`
-	TokenPath         string    `mapstructure:"tokenPath"`
-	TransportProtocol Transport `mapstructure:"transport"`
+	ServerAddress     string `mapstructure:"serverAddress"`
+	ServerPort        string `mapstructure:"serverPort"`
+	Insecure          bool   `mapstructure:"insecure"`
+	CertsDir          string `mapstructure:"certsDir"`
+	TokenPath         string `mapstructure:"tokenPath"`
+	TransportProtocol string `mapstructure:"protocol"`
 }
 
 func ReadConfig(config *KuksaClientConfig) {
@@ -44,7 +36,7 @@ func ReadConfig(config *KuksaClientConfig) {
 	log.Println("Reading Config ...")
 
 	viper.SetConfigName("kuksa-client") // name of config file (without extension)
-	viper.AddConfigPath("./")                // path to look for the config file in
+	viper.AddConfigPath("./")           // path to look for the config file in
 
 	viper.SetEnvPrefix("kuksa_client")
 	viper.AutomaticEnv()

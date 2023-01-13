@@ -4,5 +4,5 @@
     "insecure": false,
     "certsDir": "../kuksa_certificates/",
     "tokenPath" : "../kuksa_certificates/jwt/super-admin.json.token",
-    "transport": "WebSocket"
+    "protocol": "ws"
 }
