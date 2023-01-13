@@ -12,143 +12,150 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate protoc --go_out=proto -I $HOME/kuksa.val/proto kuksa/val/v1/types.proto kuksa/val/v1/val.proto --go_opt=module=github.com/eclipse/kuksa.val/proto/kuksa/val/v1
+//go:generate protoc --go_out=proto --go-grpc_out=proto -I ../proto kuksa/val/v1/types.proto
+//go:generate protoc --go_out=proto --go-grpc_out=proto -I ../proto kuksa/val/v1/val.proto
 
 package main
 
 import (
-	"log"
-	"strconv"
-	"time"
 	"flag"
+	"log"
 
-	"github.com/eclipse/kuksa.val/kuksa_go_client/kuksa_viss"
+	"github.com/eclipse/kuksa.val/kuksa_go_client/kuksa_client"
 	"github.com/eclipse/kuksa.val/kuksa_go_client/protocInstall"
 )
 
 func main() {
+
 	protoc := flag.Bool("protoc", false, "")
-    flag.Parse()
 
 	if *protoc {
 		protocInstall.Protoc()
-	}else{
-		log.Println("Starting Kuksa VISS Client!!")
+	} else {
+		log.Println("Starting Kuksa Client!!")
 
 		// Load the Kuksa Configuration
-		var configKuksaClient kuksa_viss.KuksaVISSClientConfig
-		kuksa_viss.ReadConfig(&configKuksaClient)
+		var configKuksaClient kuksa_client.KuksaClientConfig
+		kuksa_client.ReadConfig(&configKuksaClient)
 		log.Println(configKuksaClient)
+		protocol := flag.String("protocol", "undefined", "Could be grpc or ws. Per default the protocol variable is undefined. Then the value from the config file kuksa_client.json will be used.")
+		flag.Parse()
+		if *protocol == "undefined" {
+			protocol = &configKuksaClient.TransportProtocol
+		}
 
-		// Trigger connection to the Kuksa Server
-		kuksaClientComm := kuksa_viss.KuksaClientComm{Config: &configKuksaClient}
-		err := kuksaClientComm.ConnectToKuksaValServerWs()
+		var backend kuksa_client.KuksaBackend
+
+		if *protocol == "ws" {
+			backend = &kuksa_client.KuksaClientCommWs{Config: &configKuksaClient}
+		} else if *protocol == "grpc" {
+			backend = &kuksa_client.KuksaClientCommGrpc{Config: &configKuksaClient}
+		} else {
+			log.Println("Specify -protocol=ws or -protocol=grpc")
+		}
+
+		err := backend.ConnectToKuksaVal()
 		if err != nil {
 			log.Fatalf("Connection Error: %v", err)
 		}
-		defer kuksaClientComm.Close()
+		defer backend.Close()
 
-		// Authorize the connection
-		err = kuksaClientComm.AuthorizeKuksaValServerConn()
+		//Authorize the connection
+		err = backend.AuthorizeKuksaValConn()
 		if err != nil {
 			log.Fatalf("Authorization Error: %v", err)
 		}
 
-		// Set and Get the attribute targetValue
-		err = kuksaClientComm.SetAttrValueFromKuksaValServer("Vehicle.Body.Trunk.IsOpen", "true", "targetValue")
+		err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "value")
 		if err != nil {
-			log.Printf("Set Attribute Error: %v", err)
+			log.Printf("Set Value Error: %v", err)
 		} else {
-			log.Printf("Vehicle.Body.Trunk.IsOpen Set: True")
+			log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
 		}
 
-		var value string
-		value, err = kuksaClientComm.GetAttrValueFromKuksaValServer("Vehicle.Body.Trunk.IsOpen", "targetValue")
+		values, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "value")
 		if err != nil {
-			log.Printf("Get Attribute Error: %v", err)
+			log.Printf("Get Value Error: %v", err)
 		} else {
-			log.Printf("Vehicle.Body.Trunk.IsOpen: " + value)
-		}
-
-		// Get Value of Vehicle.Speed1
-		// This datapoint does not exist in the VSS and should result in an error
-		value, err = kuksaClientComm.GetValueFromKuksaValServer("Vehicle.Speed1")
-		if err != nil {
-			log.Printf("Get Error: %v", err)
-		} else {
-			log.Printf("Vehicle.Speed: " + value)
-		}
-
-		// Go Routine for setting Vehicle Speed
-		go func() {
-			for i := 0; ; i++ {
-				// Set Value of Vehicle.Speed
-				err := kuksaClientComm.SetValueFromKuksaValServer("Vehicle.Speed", strconv.Itoa(i))
-				if err != nil {
-					log.Printf("Set Error: %v", err)
-				} else {
-					log.Printf("Vehicle.Speed Set: %d", i)
-				}
-				time.Sleep(10 * time.Millisecond)
+			for _, value := range values {
+				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value)
 			}
-		}()
+		}
 
-		// Go Routine for getting Vehicle Speed
-		finish := make(chan int)
-		go func() {
-			tick := time.Tick(15 * time.Millisecond)
-			done := time.After(1 * time.Second)
-			for {
-				select {
-				case <-tick:
-					// Get Value of Vehicle.Speed
-					value, err = kuksaClientComm.GetValueFromKuksaValServer("Vehicle.Speed")
-					if err != nil {
-						log.Printf("Get Error: %v", err)
-					} else {
-						log.Printf("Vehicle.Speed Get: %s", value)
-					}
-					continue
-				case <-done:
-					log.Printf("Done now!!")
-					finish <- 1
-					return
-				}
+		err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "targetValue")
+		if err != nil {
+			log.Printf("Set Value Error: %v", err)
+		} else {
+			log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
+		}
+
+		tValues, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "targetValue")
+		if err != nil {
+			log.Printf("Get Value Error: %v", err)
+		} else {
+			for _, value := range tValues {
+				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value)
 			}
-		}()
+		}
 
 		// Get MetaData of Vehicle.Speed
-		value, err = kuksaClientComm.GetMetadataFromKuksaValServer("Vehicle.Speed")
-		log.Printf("Vehicle.Speed Metadata: " + value)
+		value, err := backend.GetMetadataFromKuksaVal("Vehicle.Speed")
+		if err == nil {
+			for _, val := range value {
+				log.Printf("Vehicle.Speed Metadata: " + val)
+			}
+		} else {
+			log.Printf("Error while getting metadata: %s", err)
+		}
 
-		// Subscribe to Vehicle.Speed
-		channel := make(chan []byte, 10)
-		id, err := kuksaClientComm.SubscribeFromKuksaValServer("Vehicle.Speed", &channel)
+		//Subscribe to Vehicle.Speed
+
+		id, err := backend.SubscribeFromKuksaVal("Vehicle.Speed", "value")
 		if err == nil {
 			log.Printf("Vehicle.Speed Subscription Id: %s", id)
 		} else {
 			log.Printf("Subscription Error %s", err)
 		}
+		err = backend.PrintSubscriptionMessages(id)
+		if err != nil {
+			log.Printf("Printing the subscription messages failed with: %s", err)
+		}
+// More subscribing examples
+// 		idT, err := backend.SubscribeFromKuksaVal("Vehicle.Speed", "targetValue")
+// 		if err == nil {
+// 			log.Printf("Vehicle.Speed Subscription Id: %s", idT)
+// 		} else {
+// 			log.Printf("Subscription Error %s", err)
+// 		}
+// 		err = backend.PrintSubscriptionMessages(idT)
+// 		if err != nil {
+// 			log.Printf("Printing the subscription messages failed with: %s", err)
+// 		}
 
-		go func() {
-			unsub := time.After(800 * time.Millisecond)
-			for {
-				select {
-				case val := <-channel:
-					log.Printf("Vehicle.Speed Subscribed: %s", val)
-				case <-unsub:
-					err := kuksaClientComm.UnsubscribeFromKuksaValServer(id)
-					if err == nil {
-						log.Printf("Vehicle.Speed Unsubscribed")
-					} else {
-						log.Printf("Unsubscription Error: %s", err)
-					}
-					close(channel)
-					return
-				}
-			}
-		}()
+// 		err = backend.UnsubscribeFromKuksaVal(idT)
+// 		if err != nil {
+// 			log.Printf("Unsubscribing failed with: %s", err)
+// 		}
 
-		<-finish
-	}
-}
+// 		err = backend.UnsubscribeFromKuksaVal(id)
+// 		if err != nil {
+// 			log.Printf("Unsubscribing failed with: %s", err)
+// 		}
+
+// 		idM, err := backend.SubscribeFromKuksaVal("Vehicle.Speed", "metadata")
+// 		if err == nil {
+// 			log.Printf("Vehicle.Speed Subscription Id: %s", idM)
+// 		} else {
+// 			log.Printf("Subscription Error %s", err)
+// 		}
+// 		err = backend.PrintSubscriptionMessages(idM)
+// 		if err != nil {
+// 			log.Printf("Printing the subscription messages failed with: %s", err)
+// 		}
+
+// 		err = backend.UnsubscribeFromKuksaVal(idM)
+// 		if err != nil {
+// 			log.Printf("Unsubscribing failed with: %s", err)
+// 		}
+// 	}
+// }
