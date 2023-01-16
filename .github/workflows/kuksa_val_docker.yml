@@ -8,6 +8,8 @@ on:
     paths-ignore:
     - ".github/workflows/kuksa_databroker_build.yml"
     - "kuksa_databroker/**"
+    - "kuksa_go_client/**"
+    - "kuksa_client/**"
     - "Cargo.*"
     - "Cross.toml"
   workflow_dispatch:
