@@ -6,6 +6,8 @@ This is KUKSA.val, the KUKSA **V**ehicle **A**bstration **L**ayer.
 
 KUKSA.val provides in-vehicle software components for working with in-vehicle signals modelled using the [COVESA VSS data model](https://github.com/COVESA/vehicle_signal_specification).
 
+If you are new here, try the [Quickstart](doc/quickstart.md), which should not take more than 10 min of your time.
+
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0) 
 [![Gitter](https://badges.gitter.im/kuksa-val.svg)](https://gitter.im/kuksa-val)
