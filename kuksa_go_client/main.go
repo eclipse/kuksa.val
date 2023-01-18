@@ -120,6 +120,8 @@ func main() {
 		if err != nil {
 			log.Printf("Printing the subscription messages failed with: %s", err)
 		}
+       }
+}
 // More subscribing examples
 // 		idT, err := backend.SubscribeFromKuksaVal("Vehicle.Speed", "targetValue")
 // 		if err == nil {
