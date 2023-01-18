@@ -1,4 +1,4 @@
-// Copyright 2022 Robert Bosch GmbH
+// Copyright 2023 Robert Bosch GmbH
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -120,8 +120,9 @@ func main() {
 		if err != nil {
 			log.Printf("Printing the subscription messages failed with: %s", err)
 		}
-       }
+	}
 }
+
 // More subscribing examples
 // 		idT, err := backend.SubscribeFromKuksaVal("Vehicle.Speed", "targetValue")
 // 		if err == nil {
