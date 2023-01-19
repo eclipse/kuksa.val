@@ -192,7 +192,8 @@ async fn read_metadata_file(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let version = option_env!("VERGEN_GIT_SEMVER").unwrap_or("");
+    let version = option_env!("VERGEN_GIT_SEMVER_LIGHTWEIGHT")
+        .unwrap_or(option_env!("VERGEN_GIT_SHA").unwrap_or("unknown"));
 
     let about = format!(
         concat!(
