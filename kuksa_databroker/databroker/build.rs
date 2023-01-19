@@ -26,7 +26,7 @@ fn main() -> Result<()> {
 
     // Enable VERGEN_GIT_SEMVER
     *git.semver_mut() = true;
-    *git.semver_kind_mut() = vergen::SemverKind::Normal;
+    *git.semver_kind_mut() = vergen::SemverKind::Lightweight;
     *git.semver_dirty_mut() = Some(" (dirty worktree)");
 
     // Enable VERGEN_GIT_SHA
