@@ -29,6 +29,11 @@ jobs:
               echo "have_secrets=true" >> $GITHUB_OUTPUT
               exit 0
           fi
+          if [[ "${{ github.ref_type }}" == "tag"  ]] &&  [[ "${{ github.repository }}" == "eclipse/kuksa.val"  ]]; then
+              echo "We are an upstream release build , so we should have rights"
+              echo "have_secrets=true" >> $GITHUB_OUTPUT
+              exit 0
+          fi
           # Everything else
           echo "Seems we do not have rights to push"
           echo "We are event ${{ github.event_name }} running in ${{ github.repository }}"
