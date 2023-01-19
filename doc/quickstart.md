@@ -28,7 +28,9 @@ client> feed Vehicle.Speed 200
 -> Ok
 client> get Vehicle.Speed 
 -> Vehicle.Speed: 200.00
-client> 
+client> quit
+Bye bye!
+
 ```
 
 An alternative is the kuksa-client CLI (based on our Python client library).
@@ -60,7 +62,9 @@ Test Client> getValue Vehicle.Speed
     }
 }
 
-Test Client> 
+Test Client> quit
+gRPC channel disconnected.
+
 ```
 
 ## Reading and Writing VSS data with code
@@ -130,8 +134,8 @@ docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/kuksa-client:master --p
 ```
 
 ### feed/set: Why is my data not updated?
-Some VSS points are "senors", e.g. Vehicle.Speed. You can read/get Vehicle speed, but we are not expecting to be able to influence it via VSS.
-Historically components, that gather the actual vehicle speed from some senors/busses in a vehicle and providing a VSS  reprensetation to kuksa.val have been called `feeders`. Hence, to update the current speed in the Rust-cli, you use
+Some VSS points are "sensors", e.g. Vehicle.Speed. You can read/get Vehicle speed, but we are not expecting to be able to influence it via VSS.
+Historically components, that gather the actual vehicle speed from some sensors/busses in a vehicle and providing a VSS  representation to kuksa.val have been called `feeders`. Hence, to update the current speed in the Rust-cli, you use
 
 ```
 feed Vehicle.Speed 200
@@ -143,8 +147,8 @@ while in the Python-cli you use
 set Vehicle.Speed 200
 ```
 
-The other thing, that VSS provides you are "actuators" `Vehicle.Body.Trunk.Rear.IsOpen`. The mos important thing to remember about actors: Every actor is also a sensor, so everyting written on top applies as well!
-The second-most important thing is: For VSS actors, it is expected that you might be able to influence the state of the real Vehicle by writting to them. So while being used as a sensor, you will get the current position of the Window in the exmaple, you might also want to set the _desired_ positon. 
+The other thing, that VSS provides you are "actuators" `Vehicle.Body.Trunk.Rear.IsOpen`. The most important thing to remember about actuators: Every actuators is also a sensor, so everything written on top applies as well!
+The second-most important thing is: For VSS actuatorss, it is expected that you might be able to influence the state of the real Vehicle by writing to them. So while being used as a sensor, you will get the current position of the Window in the example, you might also want to set the _desired_ position.
 
 You express this in the databroker-cli as
 
@@ -155,10 +159,10 @@ set Vehicle.Body.Trunk.Rear.IsOpen true
 In kuksa-client cli you do
 
 ```
-Test Client> setValue -a  targetValue Vehicle.Body.Trunk.Rear.IsOpen  True 
+Test Client> setValue -a  targetValue Vehicle.Body.Trunk.Rear.IsOpen True
 ```
 
-In the code exmaples above you would do 
+In the code examples above you would do
 
 ```python
 client.set_target_values({
@@ -167,7 +171,5 @@ client.set_target_values({
 ```
 
 
-
-
 ### All I see is Python, shouldn't this be high-performance?
-Our Python library makes it easy to interact with databroker. While this is often sufficient for many applications, you are not lmited by it: Databroker's native interface is based on GRPC, a high-perfomacne GRPC framework. GRPC enables you to generate bindings for _any_ language. Check the [GRPC website](https://grpc.io) and take a look at the [databroker interface definitions](https://github.com/eclipse/kuksa.val/tree/master/proto/kuksa/val/v1).
+Our Python library makes it easy to interact with databroker. While this is often sufficient for many applications, you are not limited by it: Databroker's native interface is based on GRPC, a high-performance GRPC framework. GRPC enables you to generate bindings for _any_ language. Check the [GRPC website](https://grpc.io) and take a look at the [databroker interface definitions](https://github.com/eclipse/kuksa.val/tree/master/proto/kuksa/val/v1).
