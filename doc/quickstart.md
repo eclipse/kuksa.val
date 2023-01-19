@@ -85,7 +85,7 @@ with VSSClient('127.0.0.1', 55555) as client:
         client.set_current_values({
         'Vehicle.Speed': Datapoint(speed),
         })
-        print(f"Setting Vehicle.Speed to {speed}")
+        print(f"Feeding Vehicle.Speed to {speed}")
         time.sleep(1)
 print("Finished.")
 ```
