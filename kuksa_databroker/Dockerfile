@@ -56,9 +56,11 @@ ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
 RUN cargo install cargo-license
 
-ADD kuksa_databroker kuksa_databroker
-ADD proto proto
-ADD Cargo.toml Cargo.toml
+# We need to add all files, because .git directory is needed to
+# extract verson information during build, and we can not leave
+# files out, if we do not want -dirty tags on every build
+# Does not influence final image size due to multistage build
+COPY . .
 
 # Creating BOM
 WORKDIR /build/kuksa_databroker/createbom
