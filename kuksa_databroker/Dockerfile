@@ -25,7 +25,8 @@ RUN echo "AMD64 quirks"
 # it seems on AMD build some dependency requires zlib headers
 # also the grpc proto compilation always falls back to
 # some binaries downloaded by cargo that require glibc
-RUN apk add zlib-dev libc6-compat  libstdc++ gcompat
+RUN apk add libc6-compat  libstdc++ gcompat
+ENV BUILDTARGET=x86_64-unknown-linux-musl
 
 
 FROM base AS builder-arm64
@@ -34,7 +35,7 @@ RUN echo "ARM64 quirks"
 # on missing __getauxval symbol, see also
 # https://github.com/rust-lang/rust/issues/89626
 ENV CFLAGS=-mno-outline-atomics
-
+ENV BUILDTARGET=aarch64-unknown-linux-musl
 
 
 FROM builder-$TARGETARCH as builder
@@ -67,16 +68,16 @@ WORKDIR /build/kuksa_databroker/createbom
 RUN rm -rf ../thirdparty
 RUN python3 createbom.py ../databroker
 
-WORKDIR /build/kuksa_databroker/databroker
+WORKDIR /build/kuksa_databroker/databroker 
 
 ENV RUSTFLAGS='-C link-arg=-s'
 
-RUN cargo build --bin databroker --release
-
+RUN cargo build --bin databroker --release --target $BUILDTARGET 
+RUN mv /build/target/$BUILDTARGET/release/databroker /build/
 
 FROM  scratch
 
-COPY --from=builder /build/target/release/databroker /app/databroker
+COPY --from=builder /build/databroker /app/databroker
 COPY --from=builder /build/kuksa_databroker/databroker/thirdparty /app/thirdparty
 
 ADD ./data/vss-core/vss_release_3.0.json vss_release_3.0.json
