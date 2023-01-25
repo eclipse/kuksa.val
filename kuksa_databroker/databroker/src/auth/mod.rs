@@ -1,5 +1,5 @@
 /********************************************************************************
-* Copyright (c) 2022 Contributors to the Eclipse Foundation
+* Copyright (c) 2023 Contributors to the Eclipse Foundation
 *
 * See the NOTICE file(s) distributed with this work for additional
 * information regarding copyright ownership.
@@ -11,9 +11,4 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-pub mod auth;
-pub mod broker;
-pub mod grpc;
-pub mod query;
-pub mod types;
-pub mod vss;
+pub mod token_decoder;

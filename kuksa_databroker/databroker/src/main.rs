@@ -17,7 +17,7 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use std::fmt::Write;
 
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 use tracing_subscriber::filter::EnvFilter;
 
 use tokio::select;
@@ -25,7 +25,7 @@ use tokio::signal::unix::{signal, SignalKind};
 
 use clap::{Arg, Command};
 
-use databroker::{broker, grpc, vss};
+use databroker::{auth, broker, grpc, vss};
 
 // Hardcoded datapoints
 const DATAPOINTS: &[(
@@ -248,6 +248,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .required(false),
         )
         .arg(
+            Arg::new("jwt-public-key")
+                .display_order(5)
+                .long("jwt-public-key")
+                .help("Public key used to verify JWT access tokens")
+                .takes_value(true)
+                .value_name("FILE")
+                .required(false),
+        )
+        .arg(
             Arg::new("dummy-metadata")
                 .display_order(10)
                 .long("dummy-metadata")
@@ -319,9 +328,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    info!("Listening on {}", addr);
+    let jwt_public_key = match args.get_one::<String>("jwt-public-key") {
+        Some(pub_key_filename) => match std::fs::read_to_string(pub_key_filename) {
+            Ok(pub_key) => {
+                info!("Using '{pub_key_filename}' to authenticate access tokens");
+                Some(pub_key)
+            }
+            Err(err) => {
+                error!("Failed to open file {:?}: {}", pub_key_filename, err);
+                None
+            }
+        },
+        None => None,
+    };
 
-    grpc::server::serve_with_shutdown(&addr, broker, shutdown_handler()).await?;
+    match jwt_public_key {
+        Some(pub_key) => {
+            let token_decoder = auth::token_decoder::TokenDecoder::new(pub_key)?;
+            grpc::server::serve_authorized(&addr, broker, token_decoder, shutdown_handler())
+                .await?;
+        }
+        None => {
+            grpc::server::serve(&addr, broker, shutdown_handler()).await?;
+        }
+    }
 
     Ok(())
 }
