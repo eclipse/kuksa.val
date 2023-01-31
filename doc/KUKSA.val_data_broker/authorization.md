@@ -4,10 +4,12 @@ Authorization is achived by supplying an `Authorization` header as part of the H
 
 `Authorization: Bearer TOKEN`
 
-The bearer token is encoded as a JWT token, which means it contains everything the server needs to verify the authenticity of the claims contained therein.
+The bearer token is encoded as a JWT token, which means it contains everything the server needs to
+verify the authenticity of the claims contained therein.
 
 ## Scopes
-By specifying scopes when requesting a token (from a authorization server), the user of the token can be limited in what they're allowed to do.
+By specifying scopes when requesting a token (from a authorization server), the user of the token
+can be limited in what they're allowed to do.
 
 Example:
 
@@ -19,15 +21,23 @@ Example:
 |`provide:Vehicle.Width` | Client can provide `Vehicle.Width`            |
 
 ## Claims
-The scopes specified when requesting the token will result in certain claims being available in the resulting JWT token. These claims can then be used by the server to restrict what the client can do.
+The scopes specified when requesting the token will result in certain claims being available in
+the resulting JWT token. These claims can then be used by the server to restrict what the client
+can do.
 
 
 ### Alternative A
-| Claim             | Description                                    |
-|-------------------|------------------------------------------------|
-| `read_signals`    | Client is allowed to read these VSS signals    |
-| `actuate_signals` | Client is allowed to actuate these VSS signals |
-| `provide_signals` | Client is allowed to provide these VSS signals |
+
+Each claim represents an action and contains a list of paths to match.
+
+If a paths starts with a `!`, the access rights normally granted by the claim are negated
+for those matches (e.g. if contained in `read` would mean not allowed to read)
+
+| Claim     | Description                                                      |
+|-----------|------------------------------------------------------------------|
+| `read`    | Paths to match when deciding access rights for reading signals   |
+| `actuate` | Paths to match when deciding access rights for actuating signals |
+| `provide` | Paths to match when deciding access rights for providing signals |
 
 
 **Example 1**
@@ -38,12 +48,14 @@ Scope `"read:Vehicle.ADAS.* actuate:Vehicle.ADAS.*"` will be converted to the fo
 ```
 {
     ...
-    "read_signals": [
-        "Vehicle.ADAS.*"
-    ],
-    "actuate_signals": [
-        "Vehicle.ADAS.*"
-    ]
+    "vss": {
+        "read": [
+            "Vehicle.ADAS.*"
+        ],
+        "actuate": [
+            "Vehicle.ADAS.*"
+        ]
+    }
 }
 ```
 
@@ -51,14 +63,17 @@ Scope `"read:Vehicle.ADAS.* actuate:Vehicle.ADAS.*"` will be converted to the fo
 
 Allow reading all signals under `Vehicle.ADAS` except the subtree of `Vehicle.ADAS.Sensitive`.
 
-Scope `"read:Vehicle.ADAS.* read:!Vehicle.ADAS.Sensitive.*"` will be converted to the following claims in the JWT:
+Scope `"read:Vehicle.ADAS.* read:!Vehicle.ADAS.Sensitive.*"` will be converted to the following
+claims in the JWT:
 ```
 {
     ...
-    "read_signals": [
-        "Vehicle.ADAS.*",
-        "!Vehicle.ADAS.Sensitive.*"
-    ]
+    "vss": {
+        "read": [
+            "Vehicle.ADAS.*",
+            "!Vehicle.ADAS.Sensitive.*"
+        ]
+    }
 }
 ```
 
@@ -66,20 +81,24 @@ Scope `"read:Vehicle.ADAS.* read:!Vehicle.ADAS.Sensitive.*"` will be converted t
 
 Allow reading & providing all entries matching `"Vehicle.Body.Windshield.*.Wiping.*"`.
 
-Scope `"read:Vehicle.Body.Windshield.*.Wiping.* provide:Vehicle.Body.Windshield.*.Wiping.*"` will be converted to the following claims in the JWT:
+Scope `"read:Vehicle.Body.Windshield.*.Wiping.* provide:Vehicle.Body.Windshield.*.Wiping.*"` will
+be converted to the following claims in the JWT:
 ```
 {
     ...
-    "provide_signals": [
-        "Vehicle.Body.Windshield.*.Wiping.*"
-    ]
+    "vss": {
+        "provide": [
+            "Vehicle.Body.Windshield.*.Wiping.*"
+        ]
+    }
 }
 ```
 
 ### Alternative B
 
 An alternative design where a combination of "actions" and "paths" are combined into a "rule".
- 
+The rules are placed in one of two lists based on whether they should allow or deny matches.
+
 The basic claims are `allow` and `deny` which can be placed under the root claim `vss`.
 
 | Claim   | Description                                                          |
@@ -112,12 +131,14 @@ Scope `"read:Vehicle.ADAS.* actuate:Vehicle.ADAS.*"` will be converted to the fo
 ```
 {
     ...
-    "allow": [
-        {
-            "actions": ["read", "actuate"],
-            "paths": ["Vehicle.ADAS.*"]
-        }
-    ]
+    "vss": {
+        "allow": [
+            {
+                "actions": ["read", "actuate"],
+                "paths": ["Vehicle.ADAS.*"]
+            }
+        ]
+    }
 }
 ```
 
@@ -125,22 +146,25 @@ Scope `"read:Vehicle.ADAS.* actuate:Vehicle.ADAS.*"` will be converted to the fo
 
 Allow reading all signals under `Vehicle.ADAS` except the subtree of `Vehicle.ADAS.Sensitive`.
 
-Scope `"read:Vehicle.ADAS.* read:!Vehicle.ADAS.Sensitive.*"` will be converted to the following claims in the JWT:
+Scope `"read:Vehicle.ADAS.* read:!Vehicle.ADAS.Sensitive.*"` will be converted to the following
+claims in the JWT:
 ```
 {
     ...
-    "allow": [
-        {
-            "actions": ["read"],
-            "paths": ["Vehicle.ADAS.*"]
-        }
-    ],
-    "deny": [
-        {
-            "actions": ["read"],
-            "paths": ["Vehicle.ADAS.Sensitive.*"]
-        }
-    ]
+    "vss": {
+        "allow": [
+            {
+                "actions": ["read"],
+                "paths": ["Vehicle.ADAS.*"]
+            }
+        ],
+        "deny": [
+            {
+                "actions": ["read"],
+                "paths": ["Vehicle.ADAS.Sensitive.*"]
+            }
+        ]
+    }
 }
 ```
 
@@ -148,25 +172,30 @@ Scope `"read:Vehicle.ADAS.* read:!Vehicle.ADAS.Sensitive.*"` will be converted t
 
 Allow reading & providing all entries matching `"Vehicle.Body.Windshield.*.Wiping.*"`.
 
-Scope `"read:Vehicle.Body.Windshield.*.Wiping.* provide:Vehicle.Body.Windshield.*.Wiping.*"` will be converted to the following claims in the JWT:
+Scope `"read:Vehicle.Body.Windshield.*.Wiping.* provide:Vehicle.Body.Windshield.*.Wiping.*"` will
+be converted to the following claims in the JWT:
 ```
 {
     ...
-    "allow": [
-        {
-            "actions": ["provide"],
-            "paths": ["Vehicle.Body.Windshield.*.Wiping.*"]
-        }
-    ]
+    "vss": {
+        "allow": [
+            {
+                "actions": ["provide"],
+                "paths": ["Vehicle.Body.Windshield.*.Wiping.*"]
+            }
+        ]
+    }
 }
 ```
 
 #### Possible extension: using "access_mode" + "fields" for more granularity
 
-The examples above use "actions" to specify what the rule allows/denies. These can be thought of as a group of permissions needed to perform the intended action.
-But the access rights structure enables replacing "actions" (and "paths") with something else, for example to express more granular permissions.
+The examples above use "actions" to specify what the rule allows/denies. These can be thought of as
+a group of permissions needed to perform the intended action. But the access rights structure
+enables replacing "actions" (and "paths") with something else, for example to express more granular
+permissions.
 
-This example with "actions":
+Given this example using "actions":
 
 ```
 "allow": [
@@ -177,7 +206,7 @@ This example with "actions":
     ...
 ```
 
-could be rewritten to grant permissions on a per-field basis instead:
+could be rewritten as a per-field permission rule instead:
 
 ```
 "allow": [
@@ -203,7 +232,8 @@ could be rewritten to grant permissions on a per-field basis instead:
 ```
 
 The downside is that it quickly gets verbose. The point is that both ways of describing
-access rights can coexist in the same list of rules (theoretically at least).
+access rights can coexist in the same list of rules. By taking advantage of combining
+"allow" and "deny" rules, the verbosity could be minimised.
 
 The scope requesting this could look like this:
 ```
