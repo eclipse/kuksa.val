@@ -272,3 +272,98 @@ To request this using scopes, something like this could be used:
 ```
 "read:category:low_impact actuate:category:low_impact !read:category:restricted !actuate:category:restricted"
 ```
+
+### Alternative C
+
+The same basic design as [Alternative B](#alternative-b) but instead of having one `allow` and
+one `deny` list, only one list exist where the order of the rules matter. First rule to match
+is used.
+
+| Rule    | Description                                 |
+|---------|---------------------------------------------|
+| `allow` | A match will cause the action to be granted |
+| `deny`  | A match will cause the action to be denied  |
+
+The possible actions (initially) are:
+
+| Action    | Description                                                          |
+|-----------|----------------------------------|
+| `read`    | Allow reading matching signals   |
+| `actuate` | Allow actuating matching signals |
+| `provide` | Allow providing matching signals |
+
+To allow the creation of new signals, `create` could be an appropriate action name.
+
+To allow editing the metadata of a signal `edit` could be an appropriate action name.
+
+...
+
+**Example 2**
+
+Allow reading all signals under `Vehicle.ADAS` except the subtree of `Vehicle.ADAS.Sensitive`.
+
+Scope `"read:Vehicle.ADAS.* read:!Vehicle.ADAS.Sensitive.*"` will be converted to the following
+claims in the JWT:
+```
+{
+    ...
+    "vss": [
+        {
+            "rule": "deny",
+            "actions": ["read"],
+            "paths": ["Vehicle.ADAS.Sensitive.*"]
+        },
+        {
+            "rule": "allow",
+            "actions": ["read"],
+            "paths": ["Vehicle.ADAS.*"]
+        }
+    ]
+}
+```
+
+#### Possible extension: using "access_mode" + "fields" for more granularity
+Example of a per-field access rule:
+
+```
+"vss": [
+    {
+        "rule": "allow",
+        "access_mode": "r",
+        "fields": [
+            "value"
+        ],
+        "paths": [
+            "Vehicle.*"
+        ]
+    }
+    {
+        "rule": "allow",
+        "access_mode": "rw",
+        "fields": [
+            "actuator_target"
+        ],
+        "paths": [
+            "Vehicle.ADAS"
+        ]
+    }
+    ...
+```
+
+#### Possible extension: Using "categories" instead of "paths"
+Example when specifying `categories` instead of `paths` in the rules, e.g.
+
+```
+"vss": [
+    {
+        "rule": "deny",
+        "actions": ["read", "actuate"],
+        "categories": ["restricted"]
+    },
+    {
+        "rule": "allow",
+        "actions": ["read", "actuate"],
+        "categories": ["low_impact"]
+    }
+    ...
+```
