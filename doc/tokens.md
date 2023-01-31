@@ -25,104 +25,113 @@ On a high level, these interactions with the VSS tree need to be considered
   "iss": "Eclipse KUKSA Dev",
   "iat": 1516239022,
   "exp": 1606239022,
-  "kuksa-vss":  {
-     "Vehicle.Speed": ["get_current"]
-  }
+  "vss-read":  [
+    "Vehicle.Speed"
+  ]
 }
 ``` 
 
-The authorisation is handled by the `kuksa-vss` claim. In KUKSA.val we only handle explicit access rights, i.e. a token directly encodes what the owner of said token can do. 
+The authorisation is handled by `vss-*` claims. In KUKSA.val we only handle explicit access rights, i.e. a token directly encodes what the owner of said token can do. 
 
 As KUKSA.val is a rather low level component, we are not making assumptions about the security model around your application. Depending on your deployment, you maybe have Role-baed access models, or you work with bearer tokens. You need to make sure, that such access rights are rolled out into explicit descriptions by an IAM/IDM or some other form of policy database in your system.
 
 
+## vss claims 
 
-## kuksa-vss claim format
+The following claims are supported.
 
-Entries in the `kuksa_vss` claim, follow the following format
+### vss-read
+This implies a client is able to read (get/subscribe) the current value for sensors, actuators and attributes, as well as the target value for actuators.
 
-```json
-"kuksa-vss":  {
-     "<VSS_PATH>": ["<ACCESS_MODIFIER_1>", "<ACCESS_MODIFIER_2>", "..."]
-  }
-```
+**Discussion: Might also be split into read-sensor, read-target? Should this also imply read-meta**
+
+### vss-provide-sensor:
+This implies a client is able to set the current value for sensors and actuators.
+
+**Discussion: Might alternatively be called just "provide", which would fit providers that are "feeders", but  currently in my mind a "provider" could also be of the service variety, and be a component that reacts on updated target values. Might also be jsut "write-current" which may be more obvious if you ar enot into VSS/KUKSA lingo**
+
+### vss-actuate
+This implies a client is able to set the desired target value for actuators.
+
+### vss-read-meta
+This implies a client is able to read VSS metadata, including names of children, for the given paths. Reading meta data without any additonal rights is useful, if you want to give a means of discoverability to a client, wihtout neccesarily granting rights to acces the data itself-
+
+### vss-modify-meta
+This implies a client is able to change metadata of a signal
+
+### vss-create-signals
+This implies a client is able to create any number of new signals (sensors, actuators, attributes) including a branching structure under the given paths.
+Create signals also implies modify-meta. **Discussion: or does it not?**
+
+
 
 ## VSS paths
-Identifies to which path(s) the access modifiers apply to. A path may be a simple path to a signal such as (VSS  3.0 examples) `Vehicle.Speed`, or a path to a branch such as `Vehicle.Cabin`, implying the rule applies to all signals in that subtree
+Identifies to which path(s) a claim apply to. A path may be a simple path to a signal such as (VSS  3.0 examples) `Vehicle.Speed`, or a path to a branch such as `Vehicle.Cabin`, implying the rule applies to all signals in that subtree. An asterisk `*` can be used as wildcard.
 
-## Access Modifiers
-Each path needs to contain a list of access modifiers, defining, which actions are allowed for that path. Currently defined access modifiers
-
-### Reading
- * *get_current* : Allows reading (get/subscribe) of a signal's current value, e.g. the current `Vehicle.Speed`
- * *get_target*: Allows reading (get/subscribe) of a signal's target value, e.g. the desired state for `Vehicle.Cabin.Trunk.Front.IsOpen`
- * *get_meta*: Allows querying metadata.
- * *get_all*: Shortcut for *get_current*, *get_target* and *get_meta* 
-
-
-### Writing
- * *set_current*: Allows writing (set) of a signal's current value, e.g. for providing the current `Vehicle.Speed`
-
- * *set_target*: Allows writing (set) of a signal's target value, e.g. for setting the desired state of `Vehicle.Cabin.Trunk.Front.IsOpen`.
-
- * *modify_model*: Allows changing metadata or even the tree structure (adding branches/signals) below a given path, e.g. `modify_model` rights for `Vehicle.FMS` would allow a client to add or change any number of elements under the `FMS` branch.
-
+### Examples
+This examples are based on VSS 3.0
+ * `Vehicle.Speed` identifies a single sensor
+ * `Vehicle.OBD` identifes the branch `OBD`, and thus all rules aply to all succesors in the whole subtree
+ * `Vehicle.OBD.*` applies to all children in the `OBD`, it is equivalent to the previous example **Discussion: We might also define this to not be recursive, i.e. match children signals, but not branches?**
+ * `Vehicle.Body.Trunk.*.IsOpen` will match `Vehicle.Body.Trunk.Front.IsOpen` and `Vehicle.Body.Trunk.Rear.IsOpen`. The `*` only matches a single branch element, i.e. `Vehicle.*.IsOpen` would _not_ match  `Vehicle.Body.Trunk.Rear.AbsoluteLoad`, however `Vehicle.*.*.*.IsOpen` would
+ * The `*` wildcard can only match full VSS path components, i.e. it can only applied after a dot, you can _not_ use `Vehicle.Spe*` to match `Vehicle.Speed`
 
 ## Examples
 
-## Superuser claim
+### Superuser claims
 No limits.
 
 ```json
-"kuksa-vss":  {
-     "Vehicle": ["get_all", "set_current", "set_target", "modify_model"],
-  }
+  "vss-read":  [
+    "Vehicle"
+   ],
+   "vss-create-signals":  [
+    "Vehicle"
+   ],
+   "vss-provide-sensor":  [
+    "Vehicle"
+   ],
+   "vss-actuate":  [
+    "Vehicle"
+   ],
 ```
 
-## OBD Provider
+### OBD Provider
 Suppose you have a provider for all signals available on OBD
 
 ```json
-"kuksa-vss":  {
-     "Vehicle.OBD": ["set_target"],
-  }
+   "vss-provide-sensor":  [
+    "Vehicle.OBD"
+   ],
 ```
 
-## Battery SoC Service
+### Battery SoC Service
 An exampe, where a service queries data from the battery management system, to calculate a sate of charge.
 
 ```json
-"kuksa-vss":  {
-     "Vehicle.Powertrain.TractionBattery.StateOfCharge.Current": ["set_current"],
-     "Vehicle.Powertrain.TractionBattery.Temperature": ["get_current"],
-     "Vehicle.Powertrain.TractionBattery.BMS": ["get_current"],
-  }
+   "vss-read":  [
+    "Vehicle.Powertrain.TractionBattery.Temperature",
+    "Vehicle.Powertrain.TractionBattery.BMS"
+   ],
+   "vss-provide-sensor":  [
+    "Vehicle.Powertrain.TractionBattery.StateOfCharge"
+   ],
 ```
 
-
-
-
-## Order of evaluation
-Entries are evaluated in order, the first entry that matches will be taken. If a application shall be able to read all `OBD` data and only write `OBD.Speed`, this configuration will not work
+### Trunk Provider for instances
+An service that will provide current state of a vehicle's trunks as well as the ability to open the trunks.
+It would use the read rights to subscribe to the target values, and report current status by means of the pthe privde-sensor claim for both front and rear trunks.
 
 ```json
-"kuksa-vss":  {
-     "Vehicle": ["get_all"]
-  }
+   "vss-read":  [
+    "Vehicle.Body.Trunk.*.IsOpen",
+    "Vehicle.Body.Trunk.*.IsLocked",
+   ],
+   "vss-provide-sensor":  [
+    "Vehicle.Body.Trunk.*.IsOpen",
+    "Vehicle.Body.Trunk.*.IsLocked",
+   ],
 ```
 
-This token would not enable a client to set `Vehicle.OBD.Speed`, as the first entry already matches, and does not grant any set priviledges.
-
-A correct token to achieve this looks like this
-
-```json
-"kuksa-vss":  {
-     "Vehicle.OBD.Speed": ["get_all", "set_current" ],
-     "Vehicle.OBD": ["get_all"],
-}
-```
-
-As a mental model, structure you rules like you would with a firewall:  Specific rules first, generic "catch-all"s last.
-
-If not matching rule if found, access is denied.
-
+## Default policy is deny
+If a path is not defined in a claim ocvering a specific action, the request is denied.
