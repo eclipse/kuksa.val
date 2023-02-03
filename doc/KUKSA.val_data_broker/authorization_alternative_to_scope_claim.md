@@ -1,33 +1,16 @@
-# Authorization - Alternative C
+## Alternative to using the "scope" claim
+As part of working on a new design for the authorization in KUKSA.VAL, an updated
+version of the "kuksa-vss" claim was at first envisioned.
 
-Authorization is achived by supplying an `Authorization` header as part of the HTTP / GRPC requests.
+One downside of a design like this is that it's not readily compatible with OAuth2,
+which uses the "scope" claim to encode the same type of information.
 
-`Authorization: Bearer TOKEN`
+A description of the envisioned claim is included here for reference.
 
-The bearer token is encoded as a JWT token, which means it contains everything the server needs to
-verify the authenticity of the claims contained therein.
+In this proposed design, the claim consists of a list of rules, containing a set of actions
+along with a set of paths they would apply to. In addition, the rule could be of
+either a "allow" or "deny" type.
 
-## Scopes
-By specifying scopes when requesting a token (from a authorization server), the user of the token
-can be limited in what they're allowed to do.
-
-Example:
-
-| Scope                  | Access                                        |
-|------------------------|-----------------------------------------------|
-|`read:Vehicle.Speed`    | Client can only read `Vehicle.Speed`          |
-|`read:Vehicle.ADAS.*`   | Client can read everything under Vehicle.ADAS |
-|`actuate:Vehicle.ADAS.*`| Client can actuate all actuators under Vehicle.ADAS |
-|`provide:Vehicle.Width` | Client can provide `Vehicle.Width`            |
-
-## Claims
-The scopes specified when requesting the token will result in certain claims being available in
-the resulting JWT token. These claims can then be used by the server to restrict what the client
-can do.
-
-The same basic design as [Alternative B](#alternative-b) but instead of having one `allow` and
-one `deny` list, only one list exist where the order of the rules matter. First rule to match
-is used.
 
 | Rule    | Description                                 |
 |---------|---------------------------------------------|
