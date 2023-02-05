@@ -13,9 +13,9 @@
     * [Example 1](#example-1)
     * [Example 2](#example-2)
   * [Scope format (possible extensions)](#scope-format-possible-extensions)
-    * [Using "deny rules" to limit other broader scopes](#using-deny-rules-to-limit-other-broader-scopes)
-    * [Using "access_mode" + "fields" for more granularity](#using-access_mode--fields-for-more-granularity)
-    * [Using "tags" instead of "paths"](#using-tags-instead-of-paths)
+    * [Using "subactions" for more granularity](#using-subactions-for-more-granularity)
+    * [Using "deny rules" to limit another broader scope](#using-deny-rules-to-limit-another-broader-scope)
+    * [Using "tags" in addition to paths](#using-tags-instead-of-paths)
 * [References](#references)
   * [The OAuth 2.0 Authorization Framework](#the-oauth-20-authorization-framework)
     * [Introduction](#introduction-1)
@@ -191,29 +191,33 @@ what would be possible using a predefined set of scopes modelled on different us
 
 | Scope                 | Description                 |
 |-----------------------|-----------------------------|
-|`<ACTION>:<PATH>`      | Allow ACTION for PATH       |
+|`<ACTION>[:<PATH>]`      | Allow ACTION for PATH       |
 
 Examples of KUKSA.VAL scope strings:
 
 | Scope string             | Access                                        |
 |--------------------------|-----------------------------------------------|
-|`read:Vehicle.Speed`      | Client can only read `Vehicle.Speed`          |
-|`read:Vehicle.ADAS`       | Client can read everything under Vehicle.ADAS |
-|`actuate:Vehicle.ADAS`    | Client can actuate (and read) all actuators under Vehicle.ADAS |
-|`provide:Vehicle.Width`   | Client can provide (and read) `Vehicle.Width` |
+|`read`                    | Allow client to read everything               |
+|`read:Vehicle.Speed`      | Allow client to read `Vehicle.Speed` (including metadata) |
+|`read:Vehicle.ADAS`       | Allow client to read everything under Vehicle.ADAS (including metadata) |
+|`actuate:Vehicle.ADAS`    | Allow client to actuate all actuators under Vehicle.ADAS (including `read`) |
+|`provide:Vehicle.Width`   | Allow client to provide `Vehicle.Width` (including `read`) |
 
 #### Actions
 Available actions (initially):
 
-| Action    | Description                                                          |
-|-----------|----------------------------------|
-| `read`    | Allow reading matching signals   |
-| `actuate` | Allow actuating (and read) matching signals |
-| `provide` | Allow providing (and read) matching signals |
+| Action    | Description                                    |
+|-----------|------------------------------------------------|
+| `read`    | Allow client to read matching signals (and metadata) |
+| `actuate` | Allow client to actuate matching signals (includes `read`) |
+| `provide` | Allow client to provide matching signals (includes `read`) |
 
-To allow the creation of new signals, `create` could be an appropriate action name.
+and possibly:
 
-To allow editing the metadata of a signal `edit_metadata` could be an appropriate action name.
+| Action    | Description                                   |
+|-----------|-----------------------------------------------|
+| `edit`    | Allow client to edit metadata of a VSS entry. |
+| `create`  | Allow client to create a VSS entry (under a certain path). If a VSS entry already exists, `edit` is needed to change it. |
 
 #### Paths
 If the `<PATH>` is a VSS branch, the scope applies to all children of that branch.
@@ -243,7 +247,30 @@ Allow reading & providing all entries matching `"Vehicle.Body.Windshield.*.Wipin
 ```
 
 ### Scope format (possible extensions)
-#### Using "deny rules" to limit other broader scopes
+#### Using "subactions" for more granularity
+While the action in the scope format are meant to capture the intent of authorization in the most common use cases, it can be useful to further limit the scope. This can be accomplished by introducing "subactions".
+
+Examples of what these subactions could be:
+
+| Subactions for `read` | Description                        |
+|-----------------------|------------------------------------|
+| `read:field:<FIELD>`  | Allow client to only read a certain field for matching signals |
+
+| Subactions for `actuate` | Description                     |
+|--------------------------|---------------------------------|
+| -                        | Can't think of any              |
+
+| Subactions for `provide` | Description                     |
+|--------------------------|---------------------------------|
+| `provide:value` | Allow client to provide the value (but not respond to actuation requests) for matching signals. (includes `read`) |
+| `provide:actuation` | Allow client to respond to actuation requests (but not provide the value) for matching signals. (includes `read`) |
+
+| Subactions for `edit` | Description                     |
+|-----------------------|---------------------------------|
+| `edit:field:FIELD` | Allow client to edit metadata field FIELD for matching signals. (includes `read`) |
+
+
+#### Using "deny rules" to limit another broader scope
 | Scope                 | Description                 |
 |-----------------------|-----------------------------|
 |`!<ACTION>:<PATH>`     | Deny ACTION for PATH        |
@@ -254,30 +281,13 @@ Examples of KUKSA.VAL scope strings:
 
 | Scope string             | Access                                        |
 |--------------------------|-----------------------------------------------|
-|`read:Vehicle`            | Client can read everything below `Vehicle` (except `Vehicle.Sensitive` b/c of the scope below)    |
-|`!read:Vehicle.Sensitive` | Client is _not_ allowed to read anything under `Vehicle.Sensitive` |
+|`read:Vehicle`            | Client can read everything under path `Vehicle` (except what is denied below) |
+|`!read:field:sensitive_field` | Client is _not_ allowed to read `sensitive_field` |
+|`!read:Vehicle.Sensitive.Path` | Client is _not_ allowed to read anything under `Vehicle.Sensitive.Path` |
 
-#### Using "access_mode" + "fields" for more granularity
-The examples above use "actions" to specify what a scope allows/denies. These can be thought of as
-a group of permissions needed to perform the intended action. But it's possible to combine this
-with an extended syntax that enables replacing "actions" with something else.
 
-| Scope                                | Description                                |
-|--------------------------------------|--------------------------------------------|
-|`<ACCESS_MODE>:field:<FIELD>:<PATH>`  | Allow ACCESS_MODE for field FIELD for PATH |
-|`!<ACCESS_MODE>:field:<FIELD>:<PATH>` | Deny ACCESS_MODE for field FIELD for PATH  |
-
-Specifying scopes in this way is more verbose, but allows finer grained control. The point is that
-these scopes can coexist with the "normal" scopes. By taking advantage of combining "allow" and "deny"
-rules, the verbosity can be minimised.
-
-Example:
-```
-"read:field:value:Vehicle readwrite:field:actuator_target:Vehicle.ADAS"
-```
-
-#### Using "tags" instead of "paths"
-Another possible extension is to allow something other than "paths" to identify a (group of)
+#### Using "tags" in addition to paths
+Another possible extension is to allow something other than paths to identify a (group of)
 signal(s).
 
 Once scenario is that categorization information (tags) has been added to the VSS `.vspec` files.
@@ -289,8 +299,8 @@ demonstrate the extensibility of the scope syntax as shown here.
 
 | Scope                                   | Description                              |
 |-----------------------------------------|------------------------------------------|
-|`<ACCESS_MODE>:field:<FIELD>:tag:<TAG>`  | Allow ACCESS_MODE for field FIELD for signals tagged with TAG |
-|`!<ACCESS_MODE>:field:<FIELD>:tag:<TAG>` | Deny ACCESS_MODE for field FIELD for signals tagged with TAG  |
+|`<ACTION>:field:<FIELD>:tag:<TAG>`  | Allow ACTION for field FIELD for signals tagged with TAG |
+|`!<ACTION>:field:<FIELD>:tag:<TAG>` | Deny ACTION for field FIELD for signals tagged with TAG  |
 |`<ACTION>:tag:<TAG>`                     | Allow ACTION for signals tagged with TAG |
 |`!<ACTION>:tag:<TAG>`                    | Deny ACTION for signals tagged with TAG  |
 
