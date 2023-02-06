@@ -7,15 +7,17 @@
     * [Authorization claims](#authorization-claims)
 * [Examples of other API scope implementations](#examples-of-other-api-scope-implementations)
 * [Implementation in KUKSA.VAL](#implementation-in-kuksaval)
-  * [Scope format](#scope-format)
+  * [Limit access to resources](#limit-access-to-resources)
+  * [Limit access with scope](#limit-access-with-scope)
     * [Actions](#actions)
     * [Paths](#paths)
     * [Example 1](#example-1)
     * [Example 2](#example-2)
-  * [Scope format (possible extensions)](#scope-format-possible-extensions)
-    * [Using "subactions" for more granularity](#using-subactions-for-more-granularity)
-    * [Using "deny rules" to limit another broader scope](#using-deny-rules-to-limit-another-broader-scope)
-    * [Using "tags" in addition to paths](#using-tags-instead-of-paths)
+  * [Limit access (additional possibilities)](#limit-access-additional-possibilities)
+    * [Add "subactions" to scope for more granularity](#add-subactions-to-scope-for-more-granularity)
+    * [Add "deny" scopes to limit other scopes](#add-deny-scopes-to-limit-other-scopes)
+    * [Add "tag" to scope as alternative to path](#add-tag-to-scope-as-alternative-to-path)
+    * [Add "vin" to scope to limit access per vehicle](#add-vin-to-scope-to-limit-access-per-vehicle)
 * [References](#references)
   * [The OAuth 2.0 Authorization Framework](#the-oauth-20-authorization-framework)
     * [Introduction](#introduction-1)
@@ -121,15 +123,29 @@ The TOKEN is a JWT access token as specified in the [RFC 9068](https://datatrack
 The access token contains everything the server needs to verify the authenticity of the claims
 contained therein.
 
-Example of claims available in the access token:
+Example of what's available in a JWT access token:
 
-```
+Header:
+
+```yaml
 {
-    "aud": ["kuksa.val.v1", "sdv.databroker.v1"],
+  "typ": "at+JWT",
+  "alg": "RS256",
+  "kid": "RjEwOwOA"
+}
+```
+
+Claims:
+```yaml
+{
+    "aud": [
+      "vehicle/5GZCZ43D13S812715/kuksa.val.v1",
+      "vehicle/5GZCZ43D13S812715/sdv.databroker.v1"
+    ],
     "iss": "https://issuer.example.com",
     "exp": 1443904177,
     "nbf": 1443904077,
-    "sub": "dgaf4mvfs75Fci_FL3heQA",
+    "sub": "dgaf4mvfs7",
     "client_id": "s6BhdRkqt3",
     "scope": "read:Vehicle actuate:Vehicle"
 }
@@ -166,32 +182,63 @@ Example of claims available in the access token:
 
 ## Implementation in KUKSA.VAL
 A common (perhaps the most common) scenario when delegating access using OAuth2 is that the
-principal owner of the resource has certain access rights that needs to be verified by the
-resource owner. This can be the user id, group membership, roles or other entitlements,
-present in the access token as claims.
+principal owner of a resource has certain access rights that needs to be verified by the
+resource server. This can be accomplished using the user id, group membership, roles or other entitlements present in the access token as claims.
 
-In addition to this, the resource owner can specify a scope when requesting an access token
-from the authorization server. The result is that the client (e.g. a third party app) is
-only granted a subset of the resource owners access rights when using the token.
+In addition to this, the resource owner can further limit what's authorized by an access
+token by specifying a scope in the request to the authorization server. The issued access
+token will then only grant this subset of authorization to the client (e.g. a third party app)
+using the token.
 
-There are currently no plans in KUKSA.VAL to verify the access rights of the subject itself,
-or what kind of access rights a certain group membership or role would provide. What this
-means in practice is that anyone authorized to get a valid access token is assumed to have
-full access rights within KUKSA.VAL. Access to VSS entries / signals are instead limited
-exclusively by the scope provided in the JWT access token.
+There are currently no plans in KUKSA.VAL to separately verify the access rights of the
+resource owner itself, or what kind of access rights a certain group membership or role would provide. What this means in practice is that anyone authorized to get a valid access token is assumed to have full access rights within KUKSA.VAL, which will only be limited by the scope provided.
 
 There is nothing in the design preventing KUKSA.VAL from including support for other types
-of access right verifications / mappings in the future. The scope as specified here will
-continue to work as a way to limit the access granted by these other means anyway.
+of verifications in the future. The scope as specified here will continue to work as a way to limit the access granted by these other means anyway.
 
-### Scope format
-The available scope(s) in KUKSA.VAL utilize a concept of "prefix scopes" that consist of
-a VSS path, prefixed with an action. This provides a more flexible way to specify scope than
-what would be possible using a predefined set of scopes modelled on different use cases.
+
+### Limit access to resources
+The issued access token will typically be intended to for use with a certain resource. In the
+context of KUKSA.VAL, this can be a certain vehicle, or a certain backend service.
+
+To prevent access tokens issued for one resource from being used to gain access to other,
+unintended resources, OAuth2 introduces the concept of [Resource Indicators [RFC 8707]](https://datatracker.ietf.org/doc/html/rfc8707). By specifying the intended resource in the request
+to the authorization server, the resulting `"aud"` or audience claim should be populated with
+this resource.
+
+From [RFC9068](https://datatracker.ietf.org/doc/html/rfc9068#JWTATLRequest):
+> If the request includes a "resource" parameter (as defined in [[RFC8707](https://datatracker.ietf.org/doc/html/rfc6749)]), the resulting JWT access token "aud" claim SHOULD have the same value as the "resource" parameter in the request.
+
+and from [RFC8707](https://datatracker.ietf.org/doc/html/rfc6749):
+> To prevent cross-JWT confusion, authorization servers MUST use a distinct identifier as an "aud" claim value to uniquely identify access tokens issued by the same issuer for distinct resources. For more details on cross-JWT confusion, please refer to Section 2.8 of [RFC8725].
+
+By using a resource identifier that uniquely identifies the resource (i.e. a certain vehicle),
+and including this in the `"aud"` claim, KUKSA.VAL can verify that the access token isn't meant
+for another resource.
+
+KUKSA.VAL also needs to verify that the access token is intended to be used for KUKSA.VAL.
+An `"aud"` claim that would address both these requirements could look something like this (TBD):
+
+```yaml
+{
+  "aud": [
+    "vehicle/5GZCZ43D13S812715/kuksa.val.v1"
+  ],
+  ...
+}
+```
+
+where `5GZCZ43D13S812715` could be the VIN or another unique identifier available to KUKSA.VAL
+for local verification.
+
+### Limit access with scope
+The scope(s) used in in KUKSA.VAL to limit access rights, utilize "prefix scopes" that
+consist of an action prefix followed by an (optional) VSS path. This provides a flexible
+way to limit for which VSS signals the action is allowed.
 
 | Scope                 | Description                 |
 |-----------------------|-----------------------------|
-|`<ACTION>[:<PATH>]`      | Allow ACTION for PATH       |
+|`<ACTION>[:<PATH>]`    | Allow ACTION for PATH       |
 
 Examples of KUKSA.VAL scope strings:
 
@@ -246,8 +293,8 @@ Allow reading & providing all entries matching `"Vehicle.Body.Windshield.*.Wipin
 }
 ```
 
-### Scope format (possible extensions)
-#### Using "subactions" for more granularity
+### Limit access (additional possibilities)
+#### Add "subactions" to scope for more granularity
 While the action in the scope format are meant to capture the intent of authorization in the most common use cases, it can be useful to further limit the scope. This can be accomplished by introducing "subactions".
 
 Examples of what these subactions could be:
@@ -270,7 +317,7 @@ Examples of what these subactions could be:
 | `edit:field:FIELD` | Allow client to edit metadata field FIELD for matching signals. (includes `read`) |
 
 
-#### Using "deny rules" to limit another broader scope
+#### Add "deny" scopes to limit other scopes
 | Scope                 | Description                 |
 |-----------------------|-----------------------------|
 |`!<ACTION>:<PATH>`     | Deny ACTION for PATH        |
@@ -286,7 +333,7 @@ Examples of KUKSA.VAL scope strings:
 |`!read:Vehicle.Sensitive.Path` | Client is _not_ allowed to read anything under `Vehicle.Sensitive.Path` |
 
 
-#### Using "tags" in addition to paths
+#### Add "tag" to scope as alternative to path
 Another possible extension is to allow something other than paths to identify a (group of)
 signal(s).
 
@@ -310,6 +357,20 @@ Example:
 "!read:tag:restricted !actuate:tag:restricted read:tag:low_impact actuate:tag:low_impact"
 ```
 
+#### Add "vin" to scope to limit access per vehicle
+As described in [Limit access to resources](#limit-access-to-resources), it's a good idea
+to limit what resources an access token is authorized to access. The `"aud"` claim seems
+to be a good way to do this.
+
+A possible addition to this would be to be able to limit access to certain VIN:s by also
+introducing a `"vin:<VIN>"` scope.
+
+```yaml
+{
+  ...
+  "scope": "... vin:5GZCZ43D13S812715"
+}
+```
 
 # References
 
