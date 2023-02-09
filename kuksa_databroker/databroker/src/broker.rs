@@ -53,14 +53,9 @@ pub struct Datapoint {
 }
 
 #[derive(Debug, Clone)]
-pub struct ActuatorTarget {
-    pub target_datapoint: Datapoint,
-}
-
-#[derive(Debug, Clone)]
 pub struct Entry {
     pub datapoint: Datapoint,
-    pub actuator_target: Option<ActuatorTarget>,
+    pub actuator_target: Option<Datapoint>,
     pub metadata: Metadata,
 }
 
@@ -150,7 +145,7 @@ pub struct EntryUpdate {
     // Actuator target is wrapped in an additional Option<> in
     // order to be able to convey "update it to None" which would
     // mean setting it to `Some(None)`.
-    pub actuator_target: Option<Option<ActuatorTarget>>, // only for actuators
+    pub actuator_target: Option<Option<Datapoint>>, // only for actuators
 
     // Metadata
     pub entry_type: Option<EntryType>,
@@ -182,7 +177,7 @@ impl Entry {
             self.validate_value(&datapoint.value)?;
         }
         if let Some(Some(actuatortarget)) = &update.actuator_target {
-            self.validate_value(&actuatortarget.target_datapoint.value)?;
+            self.validate_value(&actuatortarget.value)?;
         }
         Ok(())
     }

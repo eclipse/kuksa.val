@@ -261,7 +261,7 @@ fn proto_entry_from_entry_and_fields(
     let actuator_target = if fields.contains(&proto::Field::ActuatorTarget) {
         match entry.actuator_target {
             Some(actuator_target) => {
-                Option::<proto::Datapoint>::from(actuator_target.target_datapoint)
+                Option::<proto::Datapoint>::from(actuator_target)
             }
             None => None,
         }
@@ -420,9 +420,7 @@ impl broker::EntryUpdate {
         };
         let actuator_target = if fields.contains(&proto::Field::ActuatorTarget) {
             match &entry.actuator_target {
-                Some(datapoint) => Some(Some(broker::ActuatorTarget {
-                    target_datapoint: broker::Datapoint::from(datapoint.clone()),
-                })),
+                Some(datapoint) => Some(Some(broker::Datapoint::from(datapoint.clone()))),
                 None => Some(None),
             }
         } else {
