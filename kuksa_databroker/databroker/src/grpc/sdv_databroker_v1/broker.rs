@@ -96,9 +96,9 @@ impl proto::broker_server::Broker for broker::DataBroker {
                                     broker::EntryUpdate {
                                         path: None,
                                         datapoint: None,
-                                        actuator_target: Some(Some(broker::DataValue::from(
-                                            &datapoint,
-                                        ))),
+                                        actuator_target: Some(Some(broker::ActuatorTarget {
+                                            target_datapoint: broker::Datapoint::from(&datapoint),
+                                        })),
                                         entry_type: None,
                                         data_type: None,
                                         description: None,
