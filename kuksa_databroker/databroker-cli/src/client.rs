@@ -20,6 +20,7 @@ use tonic::transport::Channel;
 
 pub struct Client {
     pub uri: Uri,
+    pub token: Option<tonic::metadata::AsciiMetadataValue>,
     pub channel: Option<tonic::transport::Channel>,
     connection_state_subs: Option<tokio::sync::broadcast::Sender<ConnectionState>>,
 }
@@ -46,12 +47,37 @@ impl std::fmt::Display for ClientError {
     }
 }
 
+#[derive(Debug)]
+pub enum TokenError {
+    MalformedTokenError(String),
+}
+
+impl std::error::Error for TokenError {}
+impl std::fmt::Display for TokenError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenError::MalformedTokenError(msg) => f.pad(msg),
+        }
+    }
+}
+
 impl Client {
     pub fn new(uri: Uri) -> Self {
         Client {
             uri,
+            token: None,
             channel: None,
             connection_state_subs: None,
+        }
+    }
+
+    pub fn set_access_token(&mut self, token: impl AsRef<str>) -> Result<(), TokenError> {
+        match tonic::metadata::AsciiMetadataValue::from_str(&format!("Bearer {}", token.as_ref())) {
+            Ok(token) => {
+                self.token = Some(token);
+                Ok(())
+            }
+            Err(err) => Err(TokenError::MalformedTokenError(format!("{err}"))),
         }
     }
 
@@ -124,8 +150,10 @@ impl Client {
         &mut self,
         paths: Vec<String>,
     ) -> Result<Vec<proto::v1::Metadata>, ClientError> {
-        let mut client =
-            proto::v1::broker_client::BrokerClient::new(self.get_channel().await?.clone());
+        let mut client = proto::v1::broker_client::BrokerClient::with_interceptor(
+            self.get_channel().await?.clone(),
+            self.get_auth_interceptor(),
+        );
         // Empty vec == all property metadata
         let args = tonic::Request::new(proto::v1::GetMetadataRequest { names: paths });
         match client.get_metadata(args).await {
@@ -144,8 +172,10 @@ impl Client {
         HashMap<std::string::String, databroker_proto::sdv::databroker::v1::Datapoint>,
         ClientError,
     > {
-        let mut client =
-            proto::v1::broker_client::BrokerClient::new(self.get_channel().await?.clone());
+        let mut client = proto::v1::broker_client::BrokerClient::with_interceptor(
+            self.get_channel().await?.clone(),
+            self.get_auth_interceptor(),
+        );
         let args = tonic::Request::new(proto::v1::GetDatapointsRequest {
             datapoints: paths.iter().map(|path| path.as_ref().into()).collect(),
         });
@@ -158,12 +188,29 @@ impl Client {
         }
     }
 
+    pub async fn set_datapoints(
+        &mut self,
+        datapoints: HashMap<String, proto::v1::Datapoint>,
+    ) -> Result<proto::v1::SetDatapointsReply, ClientError> {
+        let args = tonic::Request::new(proto::v1::SetDatapointsRequest { datapoints });
+        let mut client = proto::v1::broker_client::BrokerClient::with_interceptor(
+            self.get_channel().await?.clone(),
+            self.get_auth_interceptor(),
+        );
+        match client.set_datapoints(args).await {
+            Ok(response) => Ok(response.into_inner()),
+            Err(err) => Err(ClientError::Status(err)),
+        }
+    }
+
     pub async fn subscribe(
         &mut self,
         query: String,
     ) -> Result<tonic::Streaming<proto::v1::SubscribeReply>, ClientError> {
-        let mut client =
-            proto::v1::broker_client::BrokerClient::new(self.get_channel().await?.clone());
+        let mut client = proto::v1::broker_client::BrokerClient::with_interceptor(
+            self.get_channel().await?.clone(),
+            self.get_auth_interceptor(),
+        );
         let args = tonic::Request::new(proto::v1::SubscribeRequest { query });
 
         match client.subscribe(args).await {
@@ -176,13 +223,27 @@ impl Client {
         &mut self,
         datapoints: HashMap<i32, proto::v1::Datapoint>,
     ) -> Result<proto::v1::UpdateDatapointsReply, ClientError> {
-        let mut client =
-            proto::v1::collector_client::CollectorClient::new(self.get_channel().await?.clone());
+        let mut client = proto::v1::collector_client::CollectorClient::with_interceptor(
+            self.get_channel().await?.clone(),
+            self.get_auth_interceptor(),
+        );
 
         let request = tonic::Request::new(proto::v1::UpdateDatapointsRequest { datapoints });
         match client.update_datapoints(request).await {
             Ok(response) => Ok(response.into_inner()),
             Err(err) => Err(ClientError::Status(err)),
+        }
+    }
+
+    fn get_auth_interceptor(
+        &mut self,
+    ) -> impl FnMut(tonic::Request<()>) -> Result<tonic::Request<()>, tonic::Status> + '_ {
+        move |mut req: tonic::Request<()>| {
+            if let Some(token) = &self.token {
+                // debug!("Inserting auth token: {:?}", token);
+                req.metadata_mut().insert("authorization", token.clone());
+            }
+            Ok(req)
         }
     }
 }
