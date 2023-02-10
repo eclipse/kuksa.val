@@ -46,6 +46,12 @@ const CLI_COMMANDS: &[(&str, &str, &str)] = &[
         "[PATTERN]",
         "Fetch metadata. Provide PATTERN to list metadata of signals matching pattern.",
     ),
+    ("token", "<TOKEN>", "Use TOKEN as access token"),
+    (
+        "token-file",
+        "<FILE>",
+        "Use content of FILE as access token",
+    ),
     ("help", "", "You're looking at it."),
     ("quit", "", "Quit"),
 ];
@@ -59,6 +65,9 @@ struct Cli {
 
     // #[clap(short, long)]
     // port: Option<u16>,
+    /// File containing access token
+    #[clap(long, value_name = "FILE", display_order = 2)]
+    token_file: Option<String>,
 
     // Sub command
     #[clap(subcommand)]
@@ -93,6 +102,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     let mut client = client::Client::new(to_uri(cli.server)?);
+    if let Some(token_filename) = cli.token_file {
+        let token = std::fs::read_to_string(token_filename)?;
+        client.set_access_token(token)?;
+    }
 
     let mut connection_state_subscription = client.subscribe_to_connection_state();
     let interface_ref = interface.clone();
@@ -202,6 +215,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 Err(ClientError::Connection(msg)) => {
                                     print_error(cmd, msg)?;
                                 }
+                            }
+                        }
+                        "token" => {
+                            interface.add_history_unique(line.clone());
+
+                            if args.is_empty() {
+                                print_usage(cmd);
+                                continue;
+                            }
+
+                            match client.set_access_token(args) {
+                                Ok(()) => {
+                                    print_info("Access token set.")?;
+                                }
+                                Err(err) => print_error(cmd, &format!("Malformed token: {err}"))?,
+                            }
+                        }
+                        "token-file" => {
+                            interface.add_history_unique(line.clone());
+
+                            if args.is_empty() {
+                                print_usage(cmd);
+                                continue;
+                            }
+
+                            let token_filename = args.trim();
+                            match std::fs::read_to_string(token_filename) {
+                                Ok(token) => match client.set_access_token(token) {
+                                    Ok(()) => print_info("Access token set.")?,
+                                    Err(err) => {
+                                        print_error(cmd, &format!("Malformed token: {err}"))?
+                                    }
+                                },
+                                Err(err) => print_error(
+                                    cmd,
+                                    &format!(
+                                        "Failed to open token file \"{token_filename}\": {err}"
+                                    ),
+                                )?,
                             }
                         }
                         "set" => {
@@ -1034,6 +1086,10 @@ impl<Term: Terminal> Completer<Term> for CliCompleter {
                     }
                 }
             },
+            Some("token-file") => {
+                let path_completer = linefeed::complete::PathCompleter;
+                path_completer.complete(word, prompter, start, _end)
+            }
             _ => None,
         }
     }
