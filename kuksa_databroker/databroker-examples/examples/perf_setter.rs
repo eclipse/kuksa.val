@@ -59,7 +59,7 @@ async fn run_streaming_set_test(iterations: i32, n_th_message: i32) {
             {
                 Ok(metadata) => metadata.into_inner().results["Vehicle.ADAS.ABS.Error"],
                 Err(err) => {
-                    println!("Couldn't retrieve metadata: {:?}", err);
+                    println!("Couldn't retrieve metadata: {err:?}");
                     -1
                 }
             };
@@ -108,7 +108,7 @@ async fn run_streaming_set_test(iterations: i32, n_th_message: i32) {
                     Ok(_) => {
                         eprintln!("START");
                     }
-                    Err(err) => eprint!("{}", err),
+                    Err(err) => eprint!("{err}"),
                 };
 
                 let mut n: i32 = 0;
@@ -135,7 +135,7 @@ async fn run_streaming_set_test(iterations: i32, n_th_message: i32) {
                             }
                             n += 1;
                         }
-                        Err(err) => eprint!("{}", err),
+                        Err(err) => eprint!("{err}"),
                     };
                 }
 
@@ -144,7 +144,7 @@ async fn run_streaming_set_test(iterations: i32, n_th_message: i32) {
                     Ok(_) => {
                         eprintln!("\rEND                                                    ");
                     }
-                    Err(err) => eprint!("{}", err),
+                    Err(err) => eprint!("{err}"),
                 };
 
                 (n, n_id)
@@ -153,7 +153,7 @@ async fn run_streaming_set_test(iterations: i32, n_th_message: i32) {
             let (n, n_id) = feeder.await.unwrap();
             match sender.await {
                 Ok(_) => {}
-                Err(err) => eprint!("{}", err),
+                Err(err) => eprint!("{err}"),
             };
 
             let seconds = now.elapsed().as_secs_f64();
@@ -167,10 +167,10 @@ async fn run_streaming_set_test(iterations: i32, n_th_message: i32) {
                 n_id,
                 n_id as f64 / seconds
             );
-            println!("Completed in {:.3} s", seconds);
+            println!("Completed in {seconds:.3} s");
         }
         Err(err) => {
-            println!("{}", err);
+            println!("{err}");
         }
     }
 }
@@ -194,7 +194,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => DEFAULT_NTH_MESSAGE,
     };
 
-    println!("INPUT: Set {} times", iterations);
+    println!("INPUT: Set {iterations} times");
 
     // run_set_test(iterations).await;
     run_streaming_set_test(iterations, queue_size).await;

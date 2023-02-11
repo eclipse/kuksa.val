@@ -146,7 +146,7 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::ParseError(error) => write!(f, "{}", error),
+            Error::ParseError(error) => write!(f, "{error}"),
         }
     }
 }
@@ -365,7 +365,7 @@ fn add_entry(
         EntryType::Branch => match entry.children {
             Some(children) => {
                 for (name, child) in children {
-                    add_entry(entries, format!("{}.{}", path, name), child)?;
+                    add_entry(entries, format!("{path}.{name}"), child)?;
                 }
                 Ok(())
             }
