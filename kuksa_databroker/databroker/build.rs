@@ -36,7 +36,7 @@ fn main() -> Result<()> {
         Ok(ok) => Ok(ok),
         Err(e) => {
             // Swallow the errors for now (enable with -vv)
-            eprintln!("vergen failed: {}", e);
+            eprintln!("vergen failed: {e}");
             Ok(())
         }
     }

@@ -961,7 +961,7 @@ impl DataBroker {
                 let stream = ReceiverStream::new(receiver);
                 Ok(stream)
             }
-            Err(e) => Err(QueryError::CompilationError(format!("{:?}", e))),
+            Err(e) => Err(QueryError::CompilationError(format!("{e:?}"))),
         }
     }
 

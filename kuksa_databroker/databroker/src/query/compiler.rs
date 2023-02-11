@@ -163,8 +163,7 @@ pub fn compile_expr(
                         Ok(left_expr) => (Box::new(left_expr), Box::new(right_expr)),
                         Err(_) => {
                             return Err(CompilationError::TypeError(format!(
-                                "left side is incompatible with right side in expression \"{}\"",
-                                expr
+                                "left side is incompatible with right side in expression \"{expr}\""
                             )))
                         }
                     },
@@ -172,8 +171,7 @@ pub fn compile_expr(
                         Ok(right_expr) => (Box::new(left_expr), Box::new(right_expr)),
                         Err(_) => {
                             return Err(CompilationError::TypeError(format!(
-                                "right side is incompatible with left side in expression \"{}\"",
-                                expr
+                                "right side is incompatible with left side in expression \"{expr}\""
                             )))
                         }
                     },
@@ -222,8 +220,7 @@ pub fn compile_expr(
                                                     }),
                                                 ),
                                                 _ => return Err(CompilationError::TypeError(format!(
-                                                    "right side is incompatible with left side in expression \"{}\"",
-                                                    expr
+                                                    "right side is incompatible with left side in expression \"{expr}\""
                                                 )))
                                             },
                                         }
@@ -232,8 +229,7 @@ pub fn compile_expr(
                             }
                             _ => {
                                 return Err(CompilationError::TypeError(format!(
-                                "right side is incompatible with left side in expression \"{}\"",
-                                expr
+                                "right side is incompatible with left side in expression \"{expr}\""
                             )))
                             }
                         }
@@ -295,10 +291,9 @@ pub fn compile_expr(
                         "OR requires boolean expressions on both sides".to_string(),
                     )),
                 },
-                operator => Err(CompilationError::UnsupportedOperator(format!(
-                    "{}",
-                    operator,
-                ))),
+                operator => Err(CompilationError::UnsupportedOperator(
+                    format!("{operator}",),
+                )),
             }
         }
         ast::Expr::Nested(e) => compile_expr(e, input, output),
@@ -309,8 +304,7 @@ pub fn compile_expr(
                 operator: UnaryOperator::Not,
             }),
             operator => Err(CompilationError::UnsupportedOperator(format!(
-                "Unsupported unary operator \"{}\"",
-                operator
+                "Unsupported unary operator \"{operator}\""
             ))),
         },
 
@@ -326,8 +320,7 @@ pub fn compile_expr(
             high: Box::new(compile_expr(high, input, output)?),
         }),
         operator => Err(CompilationError::UnsupportedOperator(format!(
-            "Unsupported operator \"{}\"",
-            operator
+            "Unsupported operator \"{operator}\""
         ))),
     }
 }
@@ -476,6 +469,6 @@ pub fn compile(
                 ))
             }
         }
-        Err(e) => Err(CompilationError::ParseError(format!("{}", e))),
+        Err(e) => Err(CompilationError::ParseError(format!("{e}"))),
     }
 }

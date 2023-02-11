@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     match value {
                                         proto::v1::datapoint::Value::FailureValue(reason) => {
                                             if started {
-                                                eprintln!("-> Failure: {:?}", reason);
+                                                eprintln!("-> Failure: {reason:?}");
                                             }
                                         }
                                         proto::v1::datapoint::Value::StringValue(string_value) => {
@@ -66,7 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                             n,
                                                             n as f64 / seconds
                                                         );
-                                                        eprintln!("Completed in {:.3} s", seconds);
+                                                        eprintln!("Completed in {seconds:.3} s");
                                                     }
                                                 }
                                                 _ => {
@@ -105,7 +105,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         Err(err) => {
-            eprintln!("{}", err);
+            eprintln!("{err}");
         }
     }
 

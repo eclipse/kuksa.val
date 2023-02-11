@@ -196,8 +196,7 @@ impl proto::val_server::Val for broker::DataBroker {
                     },
                     None => {
                         return Err(tonic::Status::invalid_argument(format!(
-                            "Invalid Field (id: {})",
-                            id
+                            "Invalid Field (id: {id})"
                         )))
                     }
                 };
@@ -212,7 +211,7 @@ impl proto::val_server::Val for broker::DataBroker {
             }
             Err(e) => Err(tonic::Status::new(
                 tonic::Code::InvalidArgument,
-                format!("{:?}", e),
+                format!("{e:?}"),
             )),
         }
     }

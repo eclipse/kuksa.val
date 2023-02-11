@@ -146,7 +146,7 @@ impl proto::broker_server::Broker for broker::DataBroker {
                 debug!("Subscribed to new query");
                 Ok(Response::new(Box::pin(stream)))
             }
-            Err(e) => Err(Status::new(Code::InvalidArgument, format!("{:?}", e))),
+            Err(e) => Err(Status::new(Code::InvalidArgument, format!("{e:?}"))),
         }
     }
 

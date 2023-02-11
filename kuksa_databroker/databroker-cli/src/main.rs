@@ -94,7 +94,7 @@ async fn connect(
         }
         Err(err) => {
             set_disconnected_prompt(interface);
-            writeln!(interface, "{}", err).unwrap();
+            writeln!(interface, "{err}").unwrap();
             None
         }
     }
@@ -132,7 +132,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = std::env::var("KUKSA_DATA_BROKER_ADDR").unwrap_or_else(|_| "127.0.0.1".to_owned());
     let port = std::env::var("KUKSA_DATA_BROKER_PORT").unwrap_or_else(|_| "55555".to_owned());
-    let mut uri = match addr_to_uri(format!("{}:{}", addr, port)) {
+    let mut uri = match addr_to_uri(format!("{addr}:{port}")) {
         Some(uri) => uri,
         None => return Err(Box::new(ParseError {}).into()),
     };
@@ -154,10 +154,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let (cmd, args) = split_first_word(&line);
                     match cmd {
                         "help" => {
-                            println!("{} commands:", APP_NAME);
+                            println!("{APP_NAME} commands:");
                             println!();
                             for &(cmd, help) in CLI_COMMANDS {
-                                println!("  {:15} - {}", cmd, help);
+                                println!("  {cmd:15} - {help}");
                             }
                             println!();
                         }
@@ -270,15 +270,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                         ) {
                                                             Some(error) => {
                                                                 println!(
-                                                                    "-> Error setting id {}: {:?}",
-                                                                    id, error
+                                                                    "-> Error setting id {id}: {error:?}"
                                                                 )
                                                             }
                                                             None => {
-                                                                println!(
-                                                                    "-> Error setting id {}",
-                                                                    id
-                                                                )
+                                                                println!("-> Error setting id {id}")
                                                             }
                                                         }
                                                     }
@@ -367,15 +363,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                         ) {
                                                             Some(error) => {
                                                                 println!(
-                                                                    "-> Error setting id {}: {:?}",
-                                                                    id, error
+                                                                    "-> Error setting id {id}: {error:?}"
                                                                 )
                                                             }
                                                             None => {
-                                                                println!(
-                                                                    "-> Error setting id {}",
-                                                                    id
-                                                                )
+                                                                println!("-> Error setting id {id}")
                                                             }
                                                         }
                                                     }
@@ -417,8 +409,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         tonic::Request::new(proto::v1::SubscribeRequest { query });
                                     match client.subscribe(args).await {
                                         Ok(response) => {
-                                            let sub_id =
-                                                format!("subscription{}", subscription_nbr);
+                                            let sub_id = format!("subscription{subscription_nbr}");
                                             subscription_nbr += 1;
                                             tokio::spawn(async move {
                                                 let mut stream = response.into_inner();
@@ -441,8 +432,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                                 }
                                                                 writeln!(
                                                                     iface,
-                                                                    "-> {}:\n{}",
-                                                                    sub_id, output
+                                                                    "-> {sub_id}:\n{output}"
                                                                 )
                                                                 .unwrap();
                                                             }
@@ -531,7 +521,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     break;
                 }
                 ReadResult::Signal(sig) => {
-                    println!("received signal: {:?}", sig);
+                    println!("received signal: {sig:?}");
                 }
             }
         }
@@ -778,9 +768,9 @@ where
     let real_delimiter = ", ";
     let mut delimiter = "";
     for value in array {
-        write!(f, "{}", delimiter)?;
+        write!(f, "{delimiter}")?;
         delimiter = real_delimiter;
-        write!(f, "{}", value)?;
+        write!(f, "{value}")?;
     }
     f.write_str("]")
 }
@@ -790,32 +780,32 @@ impl fmt::Display for DisplayDatapoint {
         match &self.0.value {
             Some(value) => match value {
                 proto::v1::datapoint::Value::BoolValue(value) => {
-                    f.write_fmt(format_args!("{}", value))
+                    f.write_fmt(format_args!("{value}"))
                 }
                 proto::v1::datapoint::Value::FailureValue(failure) => f.write_fmt(format_args!(
                     "( {:?} )",
                     proto::v1::datapoint::Failure::from_i32(*failure).unwrap()
                 )),
                 proto::v1::datapoint::Value::Int32Value(value) => {
-                    f.write_fmt(format_args!("{}", value))
+                    f.write_fmt(format_args!("{value}"))
                 }
                 proto::v1::datapoint::Value::Int64Value(value) => {
-                    f.write_fmt(format_args!("{}", value))
+                    f.write_fmt(format_args!("{value}"))
                 }
                 proto::v1::datapoint::Value::Uint32Value(value) => {
-                    f.write_fmt(format_args!("{}", value))
+                    f.write_fmt(format_args!("{value}"))
                 }
                 proto::v1::datapoint::Value::Uint64Value(value) => {
-                    f.write_fmt(format_args!("{}", value))
+                    f.write_fmt(format_args!("{value}"))
                 }
                 proto::v1::datapoint::Value::FloatValue(value) => {
-                    f.write_fmt(format_args!("{:.2}", value))
+                    f.write_fmt(format_args!("{value:.2}"))
                 }
                 proto::v1::datapoint::Value::DoubleValue(value) => {
-                    f.write_fmt(format_args!("{}", value))
+                    f.write_fmt(format_args!("{value}"))
                 }
                 proto::v1::datapoint::Value::StringValue(value) => {
-                    f.write_fmt(format_args!("'{}'", value))
+                    f.write_fmt(format_args!("'{value}'"))
                 }
                 proto::v1::datapoint::Value::StringArray(array) => display_array(f, &array.values),
                 proto::v1::datapoint::Value::BoolArray(array) => display_array(f, &array.values),

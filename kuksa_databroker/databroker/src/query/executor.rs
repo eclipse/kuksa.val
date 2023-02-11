@@ -60,7 +60,7 @@ impl CompiledQuery {
                 let name = match e {
                     Expr::Datapoint { name, data_type: _ } => name.clone(),
                     Expr::Alias { alias, .. } => alias.clone(),
-                    _ => format!("field_{}", index),
+                    _ => format!("field_{index}"),
                 };
                 match e.execute(input) {
                     Ok(value) => fields.push((name, value)),
@@ -128,36 +128,31 @@ fn execute_binary_operation(
         Operator::Or => match (&left_value, &right_value) {
             (DataValue::Bool(left), DataValue::Bool(right)) => Ok(DataValue::Bool(*left || *right)),
             _ => Err(ExecutionError::TypeError(format!(
-                "OR is only possible with boolean expressions, tried \"{:?} OR {:?}\"",
-                left_value, right_value
+                "OR is only possible with boolean expressions, tried \"{left_value:?} OR {right_value:?}\""
             ))),
         },
         Operator::And => match (&left_value, &right_value) {
             (DataValue::Bool(left), DataValue::Bool(right)) => Ok(DataValue::Bool(*left && *right)),
             _ => Err(ExecutionError::TypeError(format!(
-                "AND is only possible with boolean expressions, tried \"{:?} AND {:?}\"",
-                left_value, right_value
+                "AND is only possible with boolean expressions, tried \"{left_value:?} AND {right_value:?}\""
             ))),
         },
         Operator::Eq => match left_value.equals(&right_value) {
             Ok(equals) => Ok(DataValue::Bool(equals)),
             Err(_) => Err(ExecutionError::CastError(format!(
-                "comparison {:?} = {:?} isn't supported",
-                left_value, right_value
+                "comparison {left_value:?} = {right_value:?} isn't supported"
             ))),
         },
         Operator::NotEq => match left_value.equals(&right_value) {
             Ok(equals) => Ok(DataValue::Bool(!equals)), // Negate equals
             Err(_) => Err(ExecutionError::CastError(format!(
-                "comparison {:?} != {:?} isn't supported",
-                left_value, right_value
+                "comparison {left_value:?} != {right_value:?} isn't supported"
             ))),
         },
         Operator::Gt => match left_value.greater_than(&right_value) {
             Ok(greater_than) => Ok(DataValue::Bool(greater_than)),
             Err(_) => Err(ExecutionError::CastError(format!(
-                "comparison {:?} > {:?} isn't supported",
-                left_value, right_value
+                "comparison {left_value:?} > {right_value:?} isn't supported"
             ))),
         },
         Operator::Ge => match left_value.greater_than(&right_value) {
@@ -168,22 +163,19 @@ fn execute_binary_operation(
                     match left_value.equals(&right_value) {
                         Ok(equals) => Ok(DataValue::Bool(equals)),
                         Err(_) => Err(ExecutionError::CastError(format!(
-                            "comparison {:?} >= {:?} isn't supported",
-                            left_value, right_value
+                            "comparison {left_value:?} >= {right_value:?} isn't supported"
                         ))),
                     }
                 }
             }
             Err(_) => Err(ExecutionError::CastError(format!(
-                "comparison {:?} >= {:?} isn't supported",
-                left_value, right_value
+                "comparison {left_value:?} >= {right_value:?} isn't supported"
             ))),
         },
         Operator::Lt => match left_value.less_than(&right_value) {
             Ok(less_than) => Ok(DataValue::Bool(less_than)),
             Err(_) => Err(ExecutionError::CastError(format!(
-                "comparison {:?} < {:?} isn't supported",
-                left_value, right_value
+                "comparison {left_value:?} < {right_value:?} isn't supported"
             ))),
         },
         Operator::Le => match left_value.less_than(&right_value) {
@@ -194,15 +186,13 @@ fn execute_binary_operation(
                     match left_value.equals(&right_value) {
                         Ok(equals) => Ok(DataValue::Bool(equals)),
                         Err(_) => Err(ExecutionError::CastError(format!(
-                            "comparison {:?} <= {:?} isn't supported",
-                            left_value, right_value
+                            "comparison {left_value:?} <= {right_value:?} isn't supported"
                         ))),
                     }
                 }
             }
             Err(_) => Err(ExecutionError::CastError(format!(
-                "comparison {:?} <= {:?} isn't supported",
-                left_value, right_value
+                "comparison {left_value:?} <= {right_value:?} isn't supported"
             ))),
         },
     }
@@ -246,8 +236,7 @@ fn execute_between_operation(
         },
         Ok(data_value) => {
             return Err(ExecutionError::TypeError(format!(
-                "comparison BETWEEN {:?} AND ... not supported",
-                data_value
+                "comparison BETWEEN {data_value:?} AND ... not supported"
             )))
         }
         Err(e) => return Err(e),
@@ -268,8 +257,7 @@ fn execute_between_operation(
         },
         Ok(data_value) => {
             return Err(ExecutionError::TypeError(format!(
-                "comparison BETWEEN ... AND {:?} not supported",
-                data_value
+                "comparison BETWEEN ... AND {data_value:?} not supported"
             )))
         }
         Err(e) => return Err(e),
@@ -396,7 +384,7 @@ fn executor_test() {
         for (i, (name, value)) in fields.iter().enumerate() {
             assert_eq!(name, &expected[i].0);
             assert_eq!(value, &expected[i].1);
-            println!("{}: {:?}", name, value)
+            println!("{name}: {value:?}")
         }
     }
 

@@ -110,7 +110,7 @@ const DATAPOINTS: &[(
 fn init_logging() {
     let mut output = String::from("Init logging from RUST_LOG");
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|err| {
-        output.write_fmt(format_args!(" ({})", err)).unwrap();
+        output.write_fmt(format_args!(" ({err})")).unwrap();
         // If no environment variable set, this is the default
         EnvFilter::new("info")
     });
@@ -306,7 +306,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .await
                     {
                         Ok(_) => {}
-                        Err(e) => println!("{:?}", e),
+                        Err(e) => println!("{e:?}"),
                     }
                 }
             }
