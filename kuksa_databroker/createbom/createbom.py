@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python3
 ########################################################################
 # Copyright (c) 2022 Robert Bosch GmbH
 #
@@ -17,12 +17,12 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
-'''
-Thid will generate a list of all dependencies and licenses of a
+"""
+This script will generate a list of all dependencies and licenses of a
 Rust project. It will create a folder called thirdparty in that
 project folder containing a list of dependencies and a copy
 of each license used in dependencies
-'''
+"""
 
 import argparse
 import sys
@@ -33,66 +33,119 @@ import gzip
 
 from subprocess import check_output, CalledProcessError
 
-from bomutil import maplicensefile
+from bomutil.maplicensefile import MAP as supported_licenses
 from bomutil import quirks
 
-def extract_license_list(all_license_list, component):
-    '''Extract valid licenses for each dependency. We most of the time
+
+class LicenseException(Exception):
+    pass
+
+
+class CargoLicenseException(Exception):
+    pass
+
+
+def extract_license_ids(crate):
+    """Extract valid licenses for each dependency. We most of the time
     do not care whether it is "AND" or "OR" currently, we currently assume we are
-    compatible to all "OR" variants, and thus include all'''
-    component = quirks.apply_quirks(component)
-    licenses = re.split(r'\s*AND\s*|\s*OR\s*|\(|\)', component["license"])
-    licenses = list(filter(None, licenses))
-    print(f"Licenses for {component['name']}: {licenses}")
+    compatible to all "OR" variants, and thus include all"""
+    crate = quirks.apply_quirks(crate)
+    license = crate["license"]
 
-    del component['license_file']
-
-    for license_id in licenses:
-        if license_id not in maplicensefile.MAP:
-            print(f"BOM creation failed, can not find license text for {license_id} \
-                 used in dependency {component['name']}")
-            sys.exit(-100)
-        if maplicensefile.MAP[license_id] not in license_list:
-            all_license_list.append(maplicensefile.MAP[license_id])
-
-parser = argparse.ArgumentParser()
-parser.add_argument("dir", help="Rust project directory")
-args = parser.parse_args()
-
-sourcepath = os.path.abspath(args.dir)
-targetpath = os.path.join(sourcepath,"thirdparty")
-
-print(f"Generating BOM for project in {sourcepath}")
-
-if os.path.exists(targetpath):
-    print(f"Folder {targetpath} already exists. Remove it before running this script.")
-    sys.exit(-2)
+    if license:
+        license_ids = re.split(r"\s*AND\s*|\s*OR\s*|\(|\)", license)
+        license_ids = list(filter(None, license_ids))
+        return license_ids
+    else:
+        err = f"No license specified for dependency {crate['name']}"
+        raise LicenseException(err)
 
 
-try:
-    cargo_output=check_output(\
-        ["cargo", "license", "--json", "--avoid-build-deps", "--current-dir", sourcepath])
-except CalledProcessError as e:
-    print(f"Error running cargo license: {e}")
-    sys.exit(-1)
+def generate_bom(source_path, target_path):
+    try:
+        cargo_output = check_output(
+            [
+                "cargo",
+                "license",
+                "--json",
+                "--avoid-build-deps",
+                "--current-dir",
+                source_path,
+            ]
+        )
+    except CalledProcessError as e:
+        raise CargoLicenseException(f"Error running cargo license: {e}")
+
+    crates = json.loads(cargo_output)
+
+    license_files = set()
+    errors = []
+    for crate in crates:
+        try:
+            license_ids = extract_license_ids(crate)
+            print(f"Licenses for {crate['name']}: {license_ids}")
+            for license_id in license_ids:
+                if license_id in supported_licenses:
+                    license_file = supported_licenses[license_id]
+                    license_files.add(license_file)
+                else:
+                    err = (
+                        f"Could not find license text for {license_id}"
+                        f" used in dependency {crate['name']}"
+                    )
+                    errors.append(err)
+
+        except LicenseException as e:
+            errors.append(e)
+
+    if errors:
+        for error in errors:
+            print(error)
+        raise LicenseException("BOM creation failed, unresolved licenses detected")
+
+    # Exporting
+    os.mkdir(target_path)
+
+    for license_file in license_files:
+        print(f"Copying {license_file[:-2]}")
+        with gzip.open("licensestore/" + license_file, "rb") as inf:
+            content = inf.read()
+        with open(os.path.join(target_path, license_file[:-3]), "wb") as outf:
+            outf.write(content)
+
+    print("Writing thirdparty_components.txt")
+    with open(
+        os.path.join(target_path, "thirdparty_components.txt"), "w", encoding="utf-8"
+    ) as jsonout:
+        json.dump(crates, jsonout, indent=4)
 
 
-licensedict=json.loads(cargo_output)
+def main(args=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("dir", help="Rust project directory")
+    args = parser.parse_args(args)
 
-license_list = []
-for entry in licensedict:
-    extract_license_list(license_list,entry)
+    source_path = os.path.abspath(args.dir)
+    target_path = os.path.join(source_path, "thirdparty")
 
-# Exporting
-os.mkdir(targetpath)
+    if os.path.exists(target_path):
+        print(
+            f"Folder {target_path} already exists. Remove it before running this script."
+        )
+        return -2
 
-for licensefile in license_list:
-    print(f"Copying {licensefile[:-2]}")
-    with gzip.open("licensestore/"+licensefile, 'rb') as inf:
-        content = inf.read()
-    with open(os.path.join(targetpath,licensefile[:-3]),'wb') as outf:
-        outf.write(content)
+    print(f"Generating BOM for project in {source_path}")
+    try:
+        generate_bom(source_path, target_path)
+    except LicenseException as e:
+        print(f"Error: {e}")
+        return -100
+    except CargoLicenseException as e:
+        print(f"Error: {e}")
+        return -1
 
-print("Writing thirdparty_components.txt")
-with open(os.path.join(targetpath,"thirdparty_components.txt"),'w',encoding="utf-8") as jsonout:
-    json.dump(licensedict,jsonout, indent=4)
+
+if __name__ == "__main__":
+    import sys
+
+    sys.exit(main(sys.argv[1:]))
