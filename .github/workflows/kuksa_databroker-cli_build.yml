@@ -100,7 +100,7 @@ jobs:
         push: true
         tags: |
           ${{ steps.meta.outputs.tags }}
-          ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
+          ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}
         labels: ${{ steps.meta.outputs.labels }}
 
     - name: Build ephemereal kuksa.val databroker container and push to ttl.sh
@@ -114,21 +114,21 @@ jobs:
         file: ./kuksa_databroker/Dockerfile-cli
         context: .
         push: true
-        tags: "ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h"
+        tags: "ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}"
         labels: ${{ steps.meta.outputs.labels }}
         
 
     - name: Posting message
       uses: ./.github/actions/post-container-location
       with:
-        image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
+        image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}
       
     - name: Extracting ARM64 binaries
       uses: ./.github/actions/copy-from-oci
       with:
         platform: linux/arm64
         id: databroker-cli-arm64
-        image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
+        image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}
         src: /app/
         export: true
         transform: s/app/databroker-cli/
@@ -138,7 +138,7 @@ jobs:
       with:
         platform: linux/amd64
         id: databroker-cli-amd64
-        image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}:1h
+        image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}
         src: /app/
         export: true
         transform: s/app/databroker-cli/
