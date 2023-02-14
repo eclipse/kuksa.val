@@ -41,24 +41,53 @@ class LicenseException(Exception):
     pass
 
 
-class CargoLicenseException(Exception):
+class RunCargoException(Exception):
     pass
 
 
-def extract_license_ids(crate):
+def extract_license_ids(license):
     """Extract valid licenses for each dependency. We most of the time
     do not care whether it is "AND" or "OR" currently, we currently assume we are
     compatible to all "OR" variants, and thus include all"""
-    crate = quirks.apply_quirks(crate)
-    license = crate["license"]
-
+    license_ids = []
     if license:
         license_ids = re.split(r"\s*AND\s*|\s*OR\s*|\(|\)", license)
         license_ids = list(filter(None, license_ids))
-        return license_ids
-    else:
-        err = f"No license specified for dependency {crate['name']}"
-        raise LicenseException(err)
+
+    return license_ids
+
+
+def extract_license_filenames(crate):
+    license_files = []
+    crate = quirks.apply_quirks(crate)
+
+    crate_name = crate["name"]
+    license_ids = extract_license_ids(crate["license"])
+    license_file = crate["license_file"]
+
+    if not license_ids and not license_file:
+        raise LicenseException(
+            f"Neither license nor license file specified for {crate_name}"
+        )
+
+    if license_file:
+        license_ids.append(crate_name)
+
+    missing = []
+    for license_id in license_ids:
+        if license_id in supported_licenses:
+            license_file = supported_licenses[license_id]
+            license_files.append(license_file)
+        else:
+            missing.append(license_id)
+
+    if missing:
+        missing_licenses = ", ".join(missing)
+        raise LicenseException(
+            f"Could not find license file for {missing_licenses} in {crate_name}"
+        )
+
+    return license_files
 
 
 def generate_bom(source_path, target_path):
@@ -74,7 +103,7 @@ def generate_bom(source_path, target_path):
             ]
         )
     except CalledProcessError as e:
-        raise CargoLicenseException(f"Error running cargo license: {e}")
+        raise RunCargoException(f"Error running cargo license: {e}")
 
     crates = json.loads(cargo_output)
 
@@ -82,19 +111,17 @@ def generate_bom(source_path, target_path):
     errors = []
     for crate in crates:
         try:
-            license_ids = extract_license_ids(crate)
-            print(f"Licenses for {crate['name']}: {license_ids}")
-            for license_id in license_ids:
-                if license_id in supported_licenses:
-                    license_file = supported_licenses[license_id]
-                    license_files.add(license_file)
-                else:
-                    err = (
-                        f"Could not find license text for {license_id}"
-                        f" used in dependency {crate['name']}"
-                    )
-                    errors.append(err)
-
+            print(f"License for {crate['name']}: ", end="")
+            license_filenames = extract_license_filenames(crate)
+            for license_filename in license_filenames:
+                license_files.add(license_filename)
+            unpacked_filenames = [
+                filename[:-3] if filename.endswith(".gz") else filename
+                for filename in license_filenames
+            ]
+            print(" ".join(unpacked_filenames))
+            del crate["license_file"]
+            crate["license_files"] = unpacked_filenames
         except LicenseException as e:
             errors.append(e)
 
@@ -140,7 +167,7 @@ def main(args=None):
     except LicenseException as e:
         print(f"Error: {e}")
         return -100
-    except CargoLicenseException as e:
+    except RunCargoException as e:
         print(f"Error: {e}")
         return -1
 
