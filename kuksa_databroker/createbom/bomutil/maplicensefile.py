@@ -29,4 +29,6 @@ MAP = {
     "CC0-1.0": "CC0-1.0.txt.gz",
     "WTFPL": "WTFPL.txt.gz",
     "Zlib": "Zlib.txt.gz",
+    "ISC": "ISC.txt.gz",
+    "ring": "ring.LICENSE.txt.gz",
 }
