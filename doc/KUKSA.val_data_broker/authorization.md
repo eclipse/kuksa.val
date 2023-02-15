@@ -15,7 +15,7 @@
     * [Example 1](#example-1)
     * [Example 2](#example-2)
   * [Limit access (additional possibilities)](#limit-access-additional-possibilities)
-    * [Add "subactions" to scope for more granularity](#add-subactions-to-scope-for-more-granularity)
+    * [Add "field" to scope for more granularity](#add-field-to-scope-for-more-granularity)
     * [Add "deny" scopes to limit other scopes](#add-deny-scopes-to-limit-other-scopes)
     * [Add "tag" to scope as alternative to path](#add-tag-to-scope-as-alternative-to-path)
     * [Add "vin" to scope to limit access per vehicle](#add-vin-to-scope-to-limit-access-per-vehicle)
@@ -131,8 +131,7 @@ Header:
 ```yaml
 {
   "typ": "at+JWT",
-  "alg": "RS256",
-  "kid": "RjEwOwOA"
+  "alg": "RS256"
 }
 ```
 
@@ -153,6 +152,10 @@ Claims:
 ```
 
 ### Data Structure
+| Header     | Description                                         |
+|-----------|------------------------------------------------------|
+| typ       | REQUIRED - Media type, SHOULD be "at+jwt" for JWT access tokens. |
+| alg       | The cryptographic algorithm used to secure the JWS. Resource servers conforming to RFC9068 MUST include RS256 among their supported signature algorithms. |
 
 | Claim     | Description                                          |
 |-----------|------------------------------------------------------|
