@@ -9,6 +9,7 @@
 * [Implementation in KUKSA.VAL](#implementation-in-kuksaval)
   * [Limit access to resources](#limit-access-to-resources)
   * [Limit access with scope](#limit-access-with-scope)
+    * [Hierarchical Access Rights](#hierarchical-access-rights)
     * [Actions](#actions)
     * [Paths](#paths)
     * [Example 1](#example-1)
@@ -232,13 +233,26 @@ where `5GZCZ43D13S812715` could be the VIN or another unique identifier availabl
 for local verification.
 
 ### Limit access with scope
-The scope(s) used in in KUKSA.VAL to limit access rights, utilize "prefix scopes" that
-consist of an action prefix followed by an (optional) VSS path. This provides a flexible
-way to limit for which VSS signals the action is allowed.
+Scopes are intended to limit what is authorized by an access token. To avoid coming up with
+scopes of different names for every imaginable use case, KUKSA.VAL uses "prefix scopes" to
+allow the dynamic creation of scopes that corresponds to the intent of the authorization.
+#### Hierarchical Access Rights
+The core concept is that a scope consist of an _action_ that represent the intent. This can be
+seen as the top level of an access right hierarchy that allows everything below it. To limit
+the scope further, _sub actions_ and _sub selections_ can be added to the right of this prefix.
+The different levels are separated by `:`. This provides a flexible way to limit a the scope
+for the intended use case.
+
+So for example, `read` is the top level action in an access rights hierarchy and includes read
+access to everything. `read:Vehicle.Speed` is an example of a _sub selection_ (a path) that
+limits the access rights otherwise granted by the overall `read`. Furthermore, this can be
+expanded in the future to include other _sub actions_ such as `read:field:FIELD` which can also
+be combined with further _sub selections_ such as the path above or things like tags etc. See
+[Limit access (additional possibilities)](#limit-access-additional-possibilities).
 
 | Scope                 | Description                 |
 |-----------------------|-----------------------------|
-|`<ACTION>[:<PATH>]`    | Allow ACTION for PATH       |
+|`<ACTION>[:SUB_ACTION][:<PATH>]`    | Allow ACTION for PATH       |
 
 Examples of KUKSA.VAL scope strings:
 
@@ -258,13 +272,13 @@ Available actions (initially):
 | `read`    | Allow client to read matching signals (and metadata) |
 | `actuate` | Allow client to actuate matching signals (includes `read`) |
 | `provide` | Allow client to provide matching signals (includes `read`) |
+| `create`  | Allow client to create a VSS entry (under a certain path). If a VSS entry already exists, a separate scope (not fully defined yet) is needed to change it. |
 
-and possibly:
+| Subactions | Description                     |
+|--------------------------|---------------------------------|
+| `provide:data` | Allow client to provide data (but not respond to actuation requests) for matching signals. (includes `read`) |
+| `provide:actuation` | Allow client to respond to actuation requests (but not provide the value) for matching signals. (includes `read`) |
 
-| Action    | Description                                   |
-|-----------|-----------------------------------------------|
-| `edit`    | Allow client to edit metadata of a VSS entry. |
-| `create`  | Allow client to create a VSS entry (under a certain path). If a VSS entry already exists, `edit` is needed to change it. |
 
 #### Paths
 If the `<PATH>` is a VSS branch, the scope applies to all children of that branch.
@@ -294,23 +308,24 @@ Allow reading & providing all entries matching `"Vehicle.Body.Windshield.*.Wipin
 ```
 
 ### Limit access (additional possibilities)
-#### Add "subactions" to scope for more granularity
-While the action in the scope format are meant to capture the intent of authorization in the most common use cases, it can be useful to further limit the scope. This can be accomplished by introducing "subactions".
 
-Examples of what these subactions could be:
+#### Add "modify" to allow changing metadata of entries
+Suggested alternative naming: `edit`, `update`
+
+| Action    | Description                                     |
+|-----------|-------------------------------------------------|
+| `modify`  | Allow client to modify metadata of a VSS entry. |
+
+The reason for differentiating between creating and modifying entries is that creating an entry shouldn't have a huge effect on already running applications in the vehicle. Changing an entry on the other hand, could have a huge effect as it has the potential to invalidate the state of a lot of applications. That's why the right to create an entry doesn't automatically include the authorization to edit it.
+
+Note:
+Further considerations: Runtime changes vs persistent changes.
+
+#### Add "field" to scope for more granularity
 
 | Subactions for `read` | Description                        |
 |-----------------------|------------------------------------|
 | `read:field:<FIELD>`  | Allow client to only read a certain field for matching signals |
-
-| Subactions for `actuate` | Description                     |
-|--------------------------|---------------------------------|
-| -                        | Can't think of any              |
-
-| Subactions for `provide` | Description                     |
-|--------------------------|---------------------------------|
-| `provide:value` | Allow client to provide the value (but not respond to actuation requests) for matching signals. (includes `read`) |
-| `provide:actuation` | Allow client to respond to actuation requests (but not provide the value) for matching signals. (includes `read`) |
 
 | Subactions for `edit` | Description                     |
 |-----------------------|---------------------------------|
