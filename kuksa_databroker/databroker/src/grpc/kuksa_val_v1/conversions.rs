@@ -324,9 +324,7 @@ impl From<broker::EntryUpdate> for proto::DataEntry {
                 None => None,
             },
             actuator_target: match from.actuator_target {
-                Some(Some(actuator_target)) => {
-                    Option::<proto::Datapoint>::from(actuator_target)
-                }
+                Some(Some(actuator_target)) => Option::<proto::Datapoint>::from(actuator_target),
                 Some(None) => None,
                 None => None,
             },

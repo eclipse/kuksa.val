@@ -260,9 +260,7 @@ fn proto_entry_from_entry_and_fields(
     };
     let actuator_target = if fields.contains(&proto::Field::ActuatorTarget) {
         match entry.actuator_target {
-            Some(actuator_target) => {
-                Option::<proto::Datapoint>::from(actuator_target)
-            }
+            Some(actuator_target) => Option::<proto::Datapoint>::from(actuator_target),
             None => None,
         }
     } else {
