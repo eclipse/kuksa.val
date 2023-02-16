@@ -1068,15 +1068,15 @@ async fn test_get_set_datapoint() {
         .expect("Register datapoint should succeed");
 
     let id2 = datapoints
-    .add_entry(
-        "test.datapoint2".to_owned(),
-        DataType::Bool,
-        ChangeType::OnChange,
-        EntryType::Actuator,
-        "Test datapoint 2".to_owned(),
-    )
-    .await
-    .expect("Register datapoint should succeed");
+        .add_entry(
+            "test.datapoint2".to_owned(),
+            DataType::Bool,
+            ChangeType::OnChange,
+            EntryType::Actuator,
+            "Test datapoint 2".to_owned(),
+        )
+        .await
+        .expect("Register datapoint should succeed");
 
     // Data point exists with value NotAvailable
     match datapoints.get_datapoint(id1).await {
@@ -1091,7 +1091,7 @@ async fn test_get_set_datapoint() {
     match datapoints.get_entry(id2).await {
         Some(entry) => {
             assert_eq!(entry.datapoint.value, DataValue::NotAvailable);
-            assert_eq!(entry.actuator_target, None)     
+            assert_eq!(entry.actuator_target, None)
         }
         None => {
             panic!("data point expected to exist");
@@ -1119,22 +1119,22 @@ async fn test_get_set_datapoint() {
 
     let time2 = SystemTime::now();
     datapoints
-    .update_entries([(
-        id2,
-        EntryUpdate {
-            path: None,
-            datapoint: None,
-            actuator_target: Some(Some(Datapoint {
-                ts: time2,
-                value: DataValue::Bool(true),
-            })),
-            entry_type: None,
-            data_type: None,
-            description: None,
-        },
-    )])
-    .await
-    .expect("setting datapoint #2");
+        .update_entries([(
+            id2,
+            EntryUpdate {
+                path: None,
+                datapoint: None,
+                actuator_target: Some(Some(Datapoint {
+                    ts: time2,
+                    value: DataValue::Bool(true),
+                })),
+                entry_type: None,
+                data_type: None,
+                description: None,
+            },
+        )])
+        .await
+        .expect("setting datapoint #2");
 
     // Data point exists with value 100
     match datapoints.get_datapoint(id1).await {
@@ -1148,17 +1148,15 @@ async fn test_get_set_datapoint() {
     }
 
     match datapoints.get_entry(id2).await {
-        Some(entry) => {
-            match entry.actuator_target{
-                Some(datapoint) => {
-                    assert_eq!(datapoint.value, DataValue::Bool(true));
-                    assert_eq!(datapoint.ts, time2);
-                }
-                None => {
-                    panic!("data point expected to exist");
-                }
+        Some(entry) => match entry.actuator_target {
+            Some(datapoint) => {
+                assert_eq!(datapoint.value, DataValue::Bool(true));
+                assert_eq!(datapoint.ts, time2);
             }
-        }
+            None => {
+                panic!("data point expected to exist");
+            }
+        },
         None => {
             panic!("data point 2 expected to exist");
         }
