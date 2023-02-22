@@ -1,6 +1,6 @@
 # System Architecture and Deployment
 
-Before you have a look at the content below go [here](./definitions.md) and you'll get a common understanding for the terms used in this file.
+Before you have a look at the content below go [here](./terminology.md) and you'll get a common understanding for the terms used in this document.
 
 The KUKSA.val aims to provide a consistent view of all signals inside a vehicle. The data model follows the [COVESA Vehicle Signal Specification](https://github.com/COVESA/vehicle_signal_specification) while the data is accessed using either a variant of the [W3C VISS protocol](https://github.com/w3c/automotive) or a [GRPC](https://grpc.io)-based protocol. The KUKSA.val contains two slightly different server-client systems - the [KUKSA.val databroker](../kuksa_databroker/) and the [KUKSA.val server](../kuksa-val-server/). For the differences of the two go [here](./server-vs-broker.md).
 
@@ -8,9 +8,18 @@ The following picture shows the basic system architecture:
 
 ![Basic architecture](./pictures/sysarch_basic.svg)
 
-KUKSA.val runs on a vehicle computer with a given VSS model, the model is populated and updated by *data feeder* components. A data feeder might get its information directly fom a sensor, from the vehicle busses, or from lower parts of the software stack.
+A KUKSA.val VSS server runs on a vehicle computer with a given VSS model. Applications can interact with the VSS model, setting, getting or subscribing to VSS datapoints.
 
-KUKSA clients (feeders & applications) are using the VISS or GRPC protocols to talk to KUKSA.val. Transport layer security is provided by TLS. JWT tokens are used to enforce access rights on a signal level, so that each client only has read and write access to a well defined subset of the VSS model.
+KUKSA.val provides a network bases API for that, either W3C VISS (currently only available in KUKSA.val server) or the KUKSA.val GRPC API (currently supported by KUKSA.val databroker).
+
+Connections can be protected via TLS and authorisation to access specific VSS data is managed via JWT tokens (in KUKSA.val server, KUKSA.val databroker implementation is ongoing)
+
+To sync the VSS model to the actual state of the vehicle, providers are used. A data-provider might get its information directly fom a sensor, from the vehicle busses, or from lower parts of the software stack. Historically, data-providers are often called "feeders".
+To sync the desired state in the VSS server to the Vehicle, actuation-providers are used. Similar to the data-provider an actuation provider also needs to access lower-level Vehicle systems.
+
+Providers have the same protocol options of accessing the VSS server as Applications.
+
+In the following we will provide some more specific example of applications and provider components.
 
 ## Data Feeders 
 Components providing data for leaves in the VSS tree are called  *data feeders*. Technically they are just normal KUKSA.val clients. Usually a feeder will gather some data from a vehicle using any kind of standard or proprietary protocol, convert its representation the one mandated by VSS and set the VSS signal using the VISS or GRPC protocol.
