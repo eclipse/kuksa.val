@@ -105,14 +105,14 @@ USAGE:
     databroker [OPTIONS]
 
 OPTIONS:
-        --address <ADDR>      Bind address [default: 127.0.0.1]
-        --port <PORT>         Bind port [default: 55555]
-        --metadata <FILE(S)>  Populate data broker with metadata from a
-                              (comma-separated) list of files.
-                              [env:KUKSA_DATA_BROKER_METADATA_FILE=]
-        --dummy-metadata      Populate data broker with dummy metadata
-    -h, --help                Print help information
-    -V, --version             Print version information
+        --address <ADDR>           Bind address [env: KUKSA_DATA_BROKER_ADDR=] [default: 127.0.0.1]
+        --port <PORT>              Bind port [env: KUKSA_DATA_BROKER_PORT=] [default: 55555]
+        --metadata <FILE>...       Populate data broker with metadata from (comma-separated) list of
+                                   files [env: KUKSA_DATA_BROKER_METADATA_FILE=]
+        --jwt-public-key <FILE>    Public key used to verify JWT access tokens
+        --dummy-metadata           Populate data broker with dummy metadata
+    -h, --help                     Print help information
+    -V, --version                  Print version information
 
 ```
 
@@ -157,14 +157,15 @@ This will enable `TAB`-completion for the available properties in the client. Ru
 
 Get data points by running "get"
 ```shell
-client> get Vehicle.ADAS.CruiseControl.Error
--> Vehicle.ADAS.CruiseControl.Error: NotAvailable
+sdv.databroker.v1 > get Vehicle.ADAS.CruiseControl.IsEnabled 
+[get]  OK
+Vehicle.ADAS.CruiseControl.IsEnabled: ( NotAvailable )
 ```
 
 Set data points by running "set"
 ```shell
-client> set Vehicle.ADAS.CruiseControl.Error Nooooooo!
--> Ok
+sdv.databroker.v1 > set Vehicle.ADAS.CruiseControl.IsEnabled false
+[set]  OK
 ```
 
 ### Data Broker Query Syntax
@@ -175,13 +176,14 @@ Detailed information about the databroker rule engine can be found in [QUERY.md]
 You can try it out in the client using the subscribe command in the client:
 
 ```shell
-client> subscribe
+sdv.databroker.v1 > subscribe
 SELECT
-  Vehicle.ADAS.ABS.Error
+  Vehicle.ADAS.ABS.IsError
 WHERE
-  Vehicle.ADAS.ABS.IsActive
+  Vehicle.ADAS.ABS.IsEngaged
 
--> status: OK
+[subscribe]  OK
+Subscription is now running in the background. Received data is identified by [1].
 ```
 
 ### Configuration
@@ -192,6 +194,7 @@ WHERE
 | dummy-metadata | <no active>   | --dummy-metadata | <no active>                       | Populate data broker with dummy metadata     |
 | listen_address | "127.0.0.1"   | --address        | KUKSA_DATA_BROKER_ADDR            | Listen for rpc calls                         |
 | listen_port    | 55555         | --port           | KUKSA_DATA_BROKER_PORT            | Listen for rpc calls                         |
+| jwt-public-key | <no active>   | --jwt-public-key | <no active>                       | Public key used to verify JWT access tokens
 
 To change the default configuration use the arguments during startup see [run section](#running) or environment variables.
 
