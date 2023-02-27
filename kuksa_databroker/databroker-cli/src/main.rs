@@ -228,6 +228,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             match client.set_access_token(args) {
                                 Ok(()) => {
                                     print_info("Access token set.")?;
+                                    match client.get_metadata(vec![]).await {
+                                        Ok(metadata) => {
+                                            interface.set_completer(Arc::new(
+                                                CliCompleter::from_metadata(&metadata),
+                                            ));
+                                            properties = metadata;
+                                        }
+                                        Err(ClientError::Status(status)) => {
+                                            print_resp_err("metadata", &status)?;
+                                        }
+                                        Err(ClientError::Connection(msg)) => {
+                                            print_error("metadata", msg)?;
+                                        }
+                                    }
                                 }
                                 Err(err) => print_error(cmd, &format!("Malformed token: {err}"))?,
                             }
@@ -243,7 +257,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             let token_filename = args.trim();
                             match std::fs::read_to_string(token_filename) {
                                 Ok(token) => match client.set_access_token(token) {
-                                    Ok(()) => print_info("Access token set.")?,
+                                    Ok(()) => {
+                                        print_info("Access token set.")?;
+                                        match client.get_metadata(vec![]).await {
+                                            Ok(metadata) => {
+                                                interface.set_completer(Arc::new(
+                                                    CliCompleter::from_metadata(&metadata),
+                                                ));
+                                                properties = metadata;
+                                            }
+                                            Err(ClientError::Status(status)) => {
+                                                print_resp_err("metadata", &status)?;
+                                            }
+                                            Err(ClientError::Connection(msg)) => {
+                                                print_error("metadata", msg)?;
+                                            }
+                                        }
+                                    }
                                     Err(err) => {
                                         print_error(cmd, &format!("Malformed token: {err}"))?
                                     }
