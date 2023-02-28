@@ -1,4 +1,4 @@
-# System Architecture and Deployment
+# KUKSA.val System Components and Deployment
 
 This document shows basic KUKSA.val deployments and gives examples for provider components.
 
@@ -58,9 +58,9 @@ As a VSS data catalogue can contain signals of different abstraction levels, oft
 
 A consumer can be implemented directly against the KUKSA.val GRPC or VISS specification using any programming language. For Python-based consumers you can make use of the [KUKSA.val client library](../kuksa-client/).
 
-## Where to deploy KUKSA.val in a vehicle
+## (Distributed) KUKSA.val deployment
 
-The idea behind VSS and KUKSA.val is, to provide a single entry point to all vehicle data. As in a real vehicle data is distributed and not all domains need access to all data you might opt to run several servers, each providing a subset of all vehicle data. This can also increase resiliency of the system and allows to separate safety domains.
+The idea behind VSS and KUKSA.val is, to provide a single entry point to all vehicle data. As in a real vehicle data is distributed and not all domains need access to all data you might opt to run several VSS servers, each providing a subset of all vehicle data. This can also increase resiliency of the system and allows to separate safety domains.
 
 What is considered a suitable deployment is very much dependent on the vehicle architecture and the scope of data managed in VSS.
 
@@ -68,10 +68,10 @@ The following figure shows several possible patterns:
 
 ![Deployment patterns](./pictures/sysarch_deployment.svg)
 
-The example assumes the primary vehicle computer contains the fully populated VSS model for that vehicle. That is the simplest deployment and expected in simple vehicles, that might only have one computer able to run KUKSA.val and protocols such as VISS.
+That is the simplest expected deployment assumes the primary vehicle computer contains the fully populated VSS model for that vehicle. This is expected vehicles, that might only have one computer able to run KUKSA.val and protocols such as GRPC or VISS.
 
-In a redundancy scenario there may be a backup vehicle computer with a KUKSA.val instance that is kept in sync, so that in case of a failover, the last known data is available immediately for all VSS data points. We assume an optimized VSS Sync component to be used that might deal with one-way or two-way syncs. Currently KUKSA.val does not include a sync mechanism.
+In a redundancy scenario there may be a backup vehicle computer with a KUKSA.val instance that is kept in sync, so that in case of a failover, the last known data is available immediately for all VSS datapoints. We assume an optimized VSS Sync component to be used that might deal with one-way or two-way syncs. Currently KUKSA.val does not include a sync mechanism.
 
-A vehicle can have additional  domain controllers such as the powertrain controller. The Powertrain controller might use VSS to manage internal data not relevant to other domains as well as accessing other VSS data relevant to powertrain functionality provided by the central vehicle computer.
+A vehicle can have additional  domain controllers such as the powertrain controller. The Powertrain controller might use VSS to manage private internal datapoints not relevant to other domains. At the same time it is accessing VSS signals relevant to powertrain functionality provided by the VSS server on the central vehicle computer as well as providing higher level powertrain signals to the vehicle computer.
 
-The Infotainment/Displays example extends this pattern, where the system subscribes needed data from the central Vehicle Computer (e.g. data that needs to be visualized), but also feeds data back to main VSS model (e.g. if a driver sets charge limits in the UI). 
+The Infotainment/Displays example extends this pattern, where the system subscribes needed data from the central Vehicle Computer (e.g. data that needs to be visualized), but also wants to actuate things in the vehicle via VSS model (e.g. if a driver sets charge limits in the UI). 
