@@ -44,18 +44,19 @@ Finally, there may be other  processor based platforms in a vehicle such as anot
 
 A provider can be implemented directly against the KUKSA.val GRPC or VISS specification using any programming language. For Python-based providers you can make use of the [KUKSA.val client library](../kuksa-client/).
 
-## Conusmers: Applications
-Applications are accessing vehicle signals through KUKSA.val. The following figure shows common patterns:
+## Consumers
+Consumers are usually different kind of applications that are accessing VSS signals through KUKSA.val. The following figure shows common consumer patterns:
 
-![Application patterns](./pictures/sysarch_applications.svg)
+![Application patterns](./pictures/sysarch_consumers.svg)
 
-A standard application ("Application)"  will request data from KUKSA.val and "do something" with it. As simple example is gathering some signals and visualizing them. The [node.red examples](../kuksa_apps/node-red) in KUKSA.val are an example of this pattern.
+A standard consumer ("Application)"  will interact VSS datapoints from the VSS server and "do something" with it. As simple example is gathering some signals and visualizing them. 
 
-Often data needs to be made available in the cloud, or other vehicle-external systems. Especially when connected via cellular networks, being hidden behind NATs or using dynamic IP addresses, the VISS/GRPC pattern of contacting a VSS server is not a good fit. The common pattern is, that the vehicle pushes relevant data, using suitable IoT protocols and potentially dealing with buffering and connection loss. This is the "Cloud Adapter" pattern. An example is the [KUKSA.val S3 uploader](../kuksa_apps/s3/).
+Anther common use case is providing telemetry to the cloud. With cellular networks, being hidden behind NATs or using dynamic IP addresses, the VISS/GRPC pattern of contacting a VSS server is not a suitable. The common pattern is, that the vehicle pushes relevant data, using suitable IoT protocols and potentially dealing with buffering and connection loss. This is the "Cloud Adapter" pattern. An example is the [KUKSA.val S3 uploader](../kuksa_apps/s3/).
 
-As a VSS data catalogue can contain signals of different abstraction levels, often higher level signals depend on lower level ones. Thus a KUKSA.val application might use data from some signals to calculate the value of of others (Signal Refinement). An example is, taking current battery voltage and other low level signals from the battery system to calculate a state-of-charge and pushing it back. Another service might use state of-charge, system and ambient temperature to calculate remaining range.
+As a VSS data catalogue can contain signals of different abstraction levels, often higher level signals depend on lower level ones. Thus an  application might use data from some signals to calculate the value of of others ("Signal Refinement"). An example is, taking current battery voltage and other low level signals from the battery system to calculate a state-of-charge and pushing it back. Another service might use state of-charge, system and ambient temperature to calculate remaining range. Such a client combines the roles of consumer and data-provider.
 
-Any application can make use of the [KUKSA.val client library](../kuksa-client/) to interact with KUKSA.val using VISS or GRPC.
+
+A consumer can be implemented directly against the KUKSA.val GRPC or VISS specification using any programming language. For Python-based consumers you can make use of the [KUKSA.val client library](../kuksa-client/).
 
 ## Where to deploy KUKSA.val in a vehicle
 
