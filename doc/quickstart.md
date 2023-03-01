@@ -69,7 +69,7 @@ gRPC channel disconnected.
 
 ## Reading and Writing VSS data with code
 
-Most likely, to get productive with KUKSA.val you want to interact with it programatically. Here is you you do it with our Python library.
+Most likely, to get productive with KUKSA.val you want to interact with it programmatically. Here is you you do it with our Python library.
 
 ### Generating data
 Create a file `speed_provider.py` with the following content
@@ -112,8 +112,8 @@ Do a `pip install kuksa-client` and start with
 python ./speed_subscriber.py
 
 
-## FAQ & notes
-Frequently anticipated questions
+## FAQ & Notes
+Frequently anticipated questions and tipps.
 
 ### This is not working on OS X
 Unfortunately OS X has a bug that does not allow you to use the databroker default 55555. To change when starting the server:
@@ -132,6 +132,33 @@ Using kuksa-client CLI
 ```
 docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/kuksa-client:master --port 55556 --protocol grpc --insecure 
 ```
+
+### Docker desktop: Host networking not supported
+The examples above all used docker's `--net=host` option. That is quite convenient for development, as basically your containers "share" your hosts networking and there is no need for any port publishing. 
+
+However when using Docker Desktop on Mac OS or Windows, [host networking is not supported](https://docs.docker.com/network/host/).
+
+One alternative is using a Docker distribution, that does support it even on Mac OS or Windows. [Rancher Desktop](https://rancherdesktop.io) is an alternative that does.
+
+With Docker Desktop you can still forward ports, so this should work:
+
+```
+docker run -it --rm  --publish 55556:55556 ghcr.io/eclipse/kuksa.val/databroker:master  --port 55556
+```
+
+From your host computer you can now reach databroker at `127.0.0.1:55556`. To connect from another container, you need to use your computers IP address (**not** 127.0.0.1), i.e. to use the client
+
+```
+docker run -it --rm  -e KUKSA_DATA_BROKER_PORT=55556 -e KUKSA_DATA_BROKER_ADDR=<YOUR_IP> ghcr.io/eclipse/kuksa.val/databroker-cli:master 
+```
+
+Recent versions of the databroker-cli also support command line arguments, so you can also write
+
+```
+docker run -it --rm   ghcr.io/eclipse/kuksa.val/databroker-cli:master  --server http://<YOUR_IP>:55556
+```
+
+
 
 ### feed/set: Why is my data not updated?
 Some VSS points are "sensors", e.g. Vehicle.Speed. You can read/get Vehicle speed, but we are not expecting to be able to influence it via VSS.
