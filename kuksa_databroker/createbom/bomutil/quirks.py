@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 ########################################################################
-# Copyright (c) 2022 Robert Bosch GmbH
+# Copyright (c) 2022, 2023 Robert Bosch GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ def apply_quirks(component):
     Use narrow matching (name and complete license string) to catch
     changes
     '''
-    if component["name"] == "wasi" \
+    if component["name"] in {"io-lifetimes", "linux-raw-sys", "rustix", "wasi"} \
         and component["license"] == "Apache-2.0 OR Apache-2.0 WITH LLVM-exception OR MIT":
         # All licenses are "OR", we already ship Apache-2.0 and MIT. The LLVM exception
         # does not apply to us, so lets keep it clean.

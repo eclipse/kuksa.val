@@ -21,7 +21,7 @@ members = [
 ]
 
 [workspace.dependencies]
-clap = { version = "3.1.10", default-features = false }
+clap = { version = "4.2", default-features = false }
 databroker-proto = { path = "kuksa_databroker/databroker-proto" }
 # prost has no features
 prost = "0.11"

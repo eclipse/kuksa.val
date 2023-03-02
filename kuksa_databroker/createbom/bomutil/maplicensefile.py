@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 ########################################################################
-# Copyright (c) 2022 Robert Bosch GmbH
+# Copyright (c) 2022, 2023 Robert Bosch GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 
 MAP = {
     "Apache-2.0": "Apache-2.0.txt.gz",
+    "BlueOak-1.0.0": "BlueOak-1.0.0.md.gz",
     "MIT": "MIT.txt.gz",
     "Unlicense": "Unlicense.txt.gz",
     "BSL-1.0": "BSL-1.0.txt.gz",
