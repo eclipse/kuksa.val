@@ -19,3 +19,23 @@ pub mod permissions;
 pub mod query;
 pub mod types;
 pub mod vss;
+
+use std::fmt::Write;
+
+use tracing::info;
+use tracing_subscriber::filter::EnvFilter;
+
+pub fn init_logging() {
+    let mut output = String::from("Init logging from RUST_LOG");
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|err| {
+        output.write_fmt(format_args!(" ({err})")).unwrap();
+        // If no environment variable set, this is the default
+        EnvFilter::new("info")
+    });
+    tracing_subscriber::fmt::Subscriber::builder()
+        .with_env_filter(filter)
+        .try_init()
+        .expect("Unable to install global logging subscriber");
+
+    info!("{}", output);
+}

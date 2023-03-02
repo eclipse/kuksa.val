@@ -1,5 +1,5 @@
 /********************************************************************************
-* Copyright (c) 2022 Contributors to the Eclipse Foundation
+* Copyright (c) 2022, 2023 Contributors to the Eclipse Foundation
 *
 * See the NOTICE file(s) distributed with this work for additional
 * information regarding copyright ownership.
@@ -13,7 +13,8 @@
 
 use std::{convert::TryFrom, future::Future, time::Duration};
 
-use tonic::transport::ServerTlsConfig;
+use tokio_stream::wrappers::TcpListenerStream;
+use tonic::transport::{Server, ServerTlsConfig};
 use tracing::{debug, info, warn};
 
 use databroker_proto::{kuksa, sdv};
@@ -143,6 +144,32 @@ where
     info!("Listening on {}", socket_addr);
     router
         .serve_with_shutdown(socket_addr, shutdown(broker, signal))
+        .await?;
+
+    Ok(())
+}
+
+pub async fn serve_with_incoming_shutdown<F>(
+    stream: TcpListenerStream,
+    broker: broker::DataBroker,
+    signal: F,
+) -> Result<(), Box<dyn std::error::Error>>
+where
+    F: Future<Output = ()>,
+{
+    broker.start_housekeeping_task();
+
+    Server::builder()
+        .http2_keepalive_interval(Some(Duration::from_secs(10)))
+        .http2_keepalive_timeout(Some(Duration::from_secs(20)))
+        .add_service(sdv::databroker::v1::broker_server::BrokerServer::new(
+            broker.clone(),
+        ))
+        .add_service(sdv::databroker::v1::collector_server::CollectorServer::new(
+            broker.clone(),
+        ))
+        .add_service(kuksa::val::v1::val_server::ValServer::new(broker.clone()))
+        .serve_with_incoming_shutdown(stream, shutdown(broker, signal))
         .await?;
 
     Ok(())

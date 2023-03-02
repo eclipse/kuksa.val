@@ -15,17 +15,14 @@
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-use std::fmt::Write;
-
 use databroker::broker::RegistrationError;
 use databroker::grpc::server::{Authorization, ServerTLS};
 use tracing::{debug, error, info};
-use tracing_subscriber::filter::EnvFilter;
 
 use tokio::select;
 use tokio::signal::unix::{signal, SignalKind};
 
-use clap::{Arg, Command};
+use clap::{Arg, ArgAction, Command};
 
 use databroker::{broker, grpc, jwt, permissions, vss};
 
@@ -108,21 +105,6 @@ const DATAPOINTS: &[(
         "Run of the mill test array",
     ),
 ];
-
-fn init_logging() {
-    let mut output = String::from("Init logging from RUST_LOG");
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|err| {
-        output.write_fmt(format_args!(" ({err})")).unwrap();
-        // If no environment variable set, this is the default
-        EnvFilter::new("info")
-    });
-    tracing_subscriber::fmt::Subscriber::builder()
-        .with_env_filter(filter)
-        .try_init()
-        .expect("Unable to install global logging subscriber");
-
-    info!("{}", output);
-}
 
 async fn shutdown_handler() {
     let mut sigint =
@@ -225,14 +207,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let parser = Command::new("Kuksa Data Broker")
         .version(version)
-        .about(&*about)
+        .about(about)
         .arg(
             Arg::new("address")
                 .display_order(1)
                 .long("address")
                 .alias("addr")
                 .help("Bind address")
-                .takes_value(true)
+                .action(ArgAction::Set)
                 .value_name("IP")
                 .required(false)
                 .env("KUKSA_DATA_BROKER_ADDR")
@@ -243,7 +225,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .display_order(2)
                 .long("port")
                 .help("Bind port")
-                .takes_value(true)
+                .action(ArgAction::Set)
                 .value_name("PORT")
                 .required(false)
                 .env("KUKSA_DATA_BROKER_PORT")
@@ -256,10 +238,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .alias("metadata")
                 .long("vss")
                 .help("Populate data broker with VSS metadata from (comma-separated) list of files")
-                .takes_value(true)
-                .use_value_delimiter(true)
-                .require_value_delimiter(true)
-                .multiple_values(true)
+                .action(ArgAction::Set)
+                .value_delimiter(',')
                 .value_name("FILE")
                 .env("KUKSA_DATA_BROKER_METADATA_FILE")
                 .value_parser(clap::builder::NonEmptyStringValueParser::new())
@@ -270,7 +250,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .display_order(5)
                 .long("jwt-public-key")
                 .help("Public key used to verify JWT access tokens")
-                .takes_value(true)
+                .action(ArgAction::Set)
                 .value_name("FILE")
                 .required(false),
         )
@@ -279,14 +259,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .display_order(6)
                 .long("insecure")
                 .help("Allow insecure connections")
-                .takes_value(false),
+                .action(ArgAction::SetTrue),
         )
         .arg(
             Arg::new("tls-cert")
                 .display_order(5)
                 .long("tls-cert")
                 .help("TLS certificate file (.pem)")
-                .takes_value(true)
+                .action(ArgAction::Set)
                 .value_name("FILE")
                 .conflicts_with("insecure"),
         )
@@ -295,7 +275,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .display_order(5)
                 .long("tls-private-key")
                 .help("TLS private key file (.pem)")
-                .takes_value(true)
+                .action(ArgAction::Set)
                 .value_name("FILE")
                 .conflicts_with("insecure"),
         )
@@ -303,14 +283,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Arg::new("dummy-metadata")
                 .display_order(10)
                 .long("dummy-metadata")
-                .takes_value(false)
+                .action(ArgAction::Set)
                 .help("Populate data broker with dummy metadata")
                 .required(false),
         );
     let args = parser.get_matches();
 
     // install global collector configured based on RUST_LOG env var.
-    init_logging();
+    databroker::init_logging();
 
     info!("Starting Kuksa Databroker {}", version);
 
@@ -323,7 +303,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let broker = broker::DataBroker::new(version);
     let database = broker.authorized_access(&permissions::ALLOW_ALL);
 
-    if args.is_present("dummy-metadata") {
+    if args.contains_id("dummy-metadata") {
         info!("Populating (hardcoded) metadata");
         for (name, data_type, change_type, entry_type, description) in DATAPOINTS {
             if let Ok(id) = database
@@ -375,7 +355,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    let tls_config = if args.is_present("insecure") {
+    let tls_config = if args.get_flag("insecure") {
         ServerTLS::Disabled
     } else {
         let cert_file = args.get_one::<String>("tls-cert");
