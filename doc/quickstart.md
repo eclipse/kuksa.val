@@ -69,7 +69,7 @@ gRPC channel disconnected.
 
 ## Reading and Writing VSS data with code
 
-Most likely, to get productive with KUKSA.val you want to interact with it programmatically. Here is you you do it with our Python library.
+To realize your ideas with KUKSA.val you need to write programs that interact with its API. The easiest way to achieve this is using our Python library.
 
 ### Generating data
 Create a file `speed_provider.py` with the following content
