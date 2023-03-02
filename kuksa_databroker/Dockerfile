@@ -80,11 +80,11 @@ FROM  scratch
 COPY --from=builder /build/databroker /app/databroker
 COPY --from=builder /build/kuksa_databroker/databroker/thirdparty /app/thirdparty
 
-ADD ./data/vss-core/vss_release_3.0.json vss_release_3.0.json
+ADD ./data/vss-core/vss_release_3.1.1.json vss_release_3.1.1.json
 
 ENV KUKSA_DATA_BROKER_ADDR=0.0.0.0
 ENV KUKSA_DATA_BROKER_PORT=55555
-ENV KUKSA_DATA_BROKER_METADATA_FILE=vss_release_3.0.json
+ENV KUKSA_DATA_BROKER_METADATA_FILE=vss_release_3.1.1.json
 
 EXPOSE $KUKSA_DATA_BROKER_PORT
 
