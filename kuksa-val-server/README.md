@@ -101,9 +101,9 @@ Additional information about our cmake setup (in case you need adavanced options
 After you successfully built the kuksa.val server you can run it like this
 
 ```bash
-#assuming you are inside kuksa.val/build directory
+#assuming you are inside kuksa-val-server/build directory
 cd src
-./kuksa-val-server  --vss ./vss_release_3.0.json --log-level ALL
+./kuksa-val-server  --vss ./vss_release_3.1.1.json --log-level ALL
 
 ```
 Setting log level to `ALL` gives you some more information about what is going on.

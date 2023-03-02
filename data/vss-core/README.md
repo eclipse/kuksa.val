@@ -3,26 +3,38 @@
 ## Introduction
 
 KUKSA.val is adapted to use Vehicle Signals Specification as defined by COVESA.
-The ambition is to always support the latest released version available at the [COVESA VSS release page](https://github.com/COVESA/vehicle_signal_specification/releases).
+The ambition is to always support the latest released version available at the
+[COVESA VSS release page](https://github.com/COVESA/vehicle_signal_specification/releases).
 In addition older versions may be supported. This folder contains copies of all versions supported.
 
 ## Supported VSS versions
 
+* [VSS 3.1.1](https://github.com/COVESA/vehicle_signal_specification/releases/tag/v3.1.1)
 * [VSS 3.0](https://github.com/COVESA/vehicle_signal_specification/releases/tag/v3.0)
 * [VSS 2.2](https://github.com/COVESA/vehicle_signal_specification/releases/tag/v2.2)
 * [VSS 2.1](https://github.com/COVESA/vehicle_signal_specification/releases/tag/v2.1)
 * [VSS 2.0](https://github.com/COVESA/vehicle_signal_specification/releases/tag/v2.0)
 
+### Known limitations
+
+* [VSS 3.1](https://github.com/COVESA/vehicle_signal_specification/releases/tag/v3.1) is not supported as it contains
+  a branch without description. Descriptions are mandatory in VSS but that is currently not checked by vss-tools.
+  However, KUKSA.val databroker requires description to be present.
+  Use [VSS 3.1.1](https://github.com/COVESA/vehicle_signal_specification/releases/tag/v3.1.1) instead.
+
 ## Change process
 
 This is the process for introducing support for a new VSS version:
 
-* Copy the new json file to this folder, note that VSS releases use a a slightly different naming convention, adapt the name to the pattern use in KUKSA.val
+* Copy the new json file to this folder, note that VSS releases use a a slightly different naming convention,
+  adapt the name to the pattern used in KUKSA.val
 * Check if KUKSA.val code relying on VSS syntax needs to be updated to manage changes in syntax
 * Check if examples needs to be updated due to changed signal names or syntax
 * Change build scripts and examples to use the new version as default
     * Search for the old version number and replace where needed
 * If needed, adapt or extend test cases to use the new version instead of previous version
+* Remember to also integrate new version in [KUKSA Feeder](https://github.com/eclipse/kuksa.val.feeders) repository
+    * Needed at least for dbc2val
 
 ## Tests after update
 
@@ -116,7 +128,7 @@ Test Client> getValue Vehicle.CurrentLocation.Latitude
 Build and run kuksa_databroker using the new VSS file according to [documentation](../../kuksa_databroker/README.md), e.g.
 
 ```sh
-$cargo run --bin databroker -- --metadata ../data/vss-core/vss_release_3.0.json
+$cargo run --bin databroker -- --metadata ../data/vss-core/vss_release_3.1.1.json
 ```
 
 Use the client to verify that changes in VSS are reflected, by doing e.g. set/get on some new or renamed signals.
