@@ -1,5 +1,5 @@
 /********************************************************************************
-* Copyright (c) 2022 Contributors to the Eclipse Foundation
+* Copyright (c) 2022, 2023 Contributors to the Eclipse Foundation
 *
 * See the NOTICE file(s) distributed with this work for additional
 * information regarding copyright ownership.
@@ -17,6 +17,7 @@ use std::iter::FromIterator;
 use std::pin::Pin;
 
 use databroker_proto::kuksa::val::v1 as proto;
+use databroker_proto::kuksa::val::v1::DataEntryError;
 use tokio_stream::Stream;
 use tokio_stream::StreamExt;
 use tracing::debug;
@@ -94,7 +95,7 @@ impl proto::val_server::Val for broker::DataBroker {
         request: tonic::Request<proto::SetRequest>,
     ) -> Result<tonic::Response<proto::SetResponse>, tonic::Status> {
         // Collect errors encountered
-        let mut errors = Vec::new();
+        let mut errors = Vec::<DataEntryError>::new();
 
         let mut updates = Vec::<(i32, broker::EntryUpdate)>::new();
         for request in request.into_inner().updates {
@@ -143,10 +144,49 @@ impl proto::val_server::Val for broker::DataBroker {
             Ok(()) => {}
             Err(err) => {
                 debug!("Failed to set datapoint: {:?}", err);
-                // errors = err
-                //     .iter()
-                //     .map(|(id, error)| (*id, proto::DataEntryError::from(error) as i32))
-                //     .collect();
+                for (id, error) in err.into_iter() {
+                    if let Some(entry) = self.get_entry(id).await {
+                        let path = entry.metadata.path.clone();
+                        let data_entry_error = match error {
+                            broker::UpdateError::NotFound => DataEntryError {
+                                path: path.clone(),
+                                error: Some(proto::Error {
+                                    code: 404,
+                                    reason: String::from("not found"),
+                                    message: format!("no datapoint registered for path {path}"),
+                                }),
+                            },
+                            broker::UpdateError::WrongType => DataEntryError {
+                                path,
+                                error: Some(proto::Error {
+                                    code: 400,
+                                    reason: String::from("type mismatch"),
+                                    message:
+                                        "cannot set existing datapoint to value of different type"
+                                            .to_string(),
+                                }),
+                            },
+                            broker::UpdateError::UnsupportedType => DataEntryError {
+                                path,
+                                error: Some(proto::Error {
+                                    code: 400,
+                                    reason: String::from("unsupported type"),
+                                    message: "cannot set datapoint to value of unsupported type"
+                                        .to_string(),
+                                }),
+                            },
+                            broker::UpdateError::OutOfBounds => DataEntryError {
+                                path,
+                                error: Some(proto::Error {
+                                    code: 400,
+                                    reason: String::from("value out of bounds"),
+                                    message: String::from("given value exceeds type's boundaries"),
+                                }),
+                            },
+                        };
+                        errors.push(data_entry_error);
+                    }
+                }
             }
         }
 
@@ -432,5 +472,56 @@ impl broker::EntryUpdate {
             data_type: None,
             description: None,
         }
+    }
+}
+
+#[tokio::test]
+async fn test_update_datapoint_using_wrong_type() {
+    use databroker_proto::kuksa::val::v1::val_server::Val;
+
+    let datapoints = broker::DataBroker::new();
+
+    datapoints
+        .add_entry(
+            "test.datapoint1".to_owned(),
+            broker::DataType::Bool,
+            broker::ChangeType::OnChange,
+            broker::EntryType::Sensor,
+            "Test datapoint 1".to_owned(),
+        )
+        .await
+        .expect("Register datapoint should succeed");
+
+    let req = proto::SetRequest {
+        updates: vec![proto::EntryUpdate {
+            fields: vec![proto::Field::Value as i32],
+            entry: Some(proto::DataEntry {
+                path: "test.datapoint1".to_owned(),
+                value: Some(proto::Datapoint {
+                    timestamp: Some(std::time::SystemTime::now().into()),
+                    value: Some(proto::datapoint::Value::Int32(1456)),
+                }),
+                metadata: None,
+                actuator_target: None,
+            }),
+        }],
+    };
+    match datapoints
+        .set(tonic::Request::new(req))
+        .await
+        .map(|res| res.into_inner())
+    {
+        Ok(set_response) => {
+            assert!(
+                !set_response.errors.is_empty(),
+                "databroker should not allow updating boolean datapoint with an int32"
+            );
+            let error = set_response.errors[0]
+                .to_owned()
+                .error
+                .expect("error details are missing");
+            assert_eq!(error.code, 400, "unexpected error code");
+        }
+        Err(_status) => panic!("failed to execute set request"),
     }
 }

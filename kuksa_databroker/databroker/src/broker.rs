@@ -1099,6 +1099,36 @@ async fn test_get_set_datapoint() {
     }
 
     let time1 = SystemTime::now();
+
+    match datapoints
+        .update_entries([(
+            id1,
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts: time1,
+                    value: DataValue::Bool(true),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
+            },
+        )])
+        .await
+    {
+        Ok(_) => {
+            panic!("should not have been able to set int32 typed datapoint to boolean value")
+        }
+        Err(e) => match e[0] {
+            (id, UpdateError::WrongType) => assert_eq!(id, id1),
+            _ => panic!(
+                "should have reported wrong type but got error of type {:?}",
+                e
+            ),
+        },
+    }
+
     datapoints
         .update_entries([(
             id1,
