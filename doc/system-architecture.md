@@ -12,9 +12,9 @@ The following picture shows the basic KUKSA.val system architecture:
 
 A KUKSA.val VSS server runs on a vehicle computer with a given VSS model. Applications can interact with the VSS model by setting, getting or subscribing to VSS datapoints.
 
-THe VSS server exposes a network based API to let consumers interact with VSS datapoints. This is either W3C VISS (currently only available in KUKSA.val server) or the KUKSA.val GRPC API (currently supported by KUKSA.val databroker).
+The VSS server exposes a network based API to let consumers interact with VSS datapoints. This is either W3C VISS (currently only available in KUKSA.val server) or the KUKSA.val GRPC API (currently supported by KUKSA.val databroker).
 
-Connections can be protected via TLS and authorisation to access specific VSS data is managed via JWT tokens (in KUKSA.val server, KUKSA.val databroker implementation is ongoing).
+Connections to the VSS server can be protected via TLS. Authorization to access specific VSS data is managed via JWT tokens (in KUKSA.val server, KUKSA.val databroker implementation is ongoing).
 
 To sync the VSS model to the actual state of the vehicle, providers are used. A data-provider might get its information directly from a sensor, from  vehicle busses available to the provider, or from lower parts of the software stack. Historically, data-providers are often called "feeders".
 To sync the desired state in the VSS server to the Vehicle, actuation-providers are used. Similar to the data-provider, an actuation provider also needs to access lower-level Vehicle systems.
@@ -24,9 +24,11 @@ Providers have the same protocol options of accessing the VSS server as consumer
 In the following we will provide some more specific example of consumer and provider components.
 
 ## Providers 
-Components providing data for leaves in the VSS tree are called  *data-providers*. Technically they are just normal KUKSA.val clients. Sometimes you will see data-providers to be referred to as "feeders".  Usually, a data-provider will gather some data from a vehicle using any kind of standard or proprietary protocol, convert its representation the one mandated by VSS and set the VSS signal using the VISS or GRPC protocol.
+Components providing data for leaves in the VSS tree are called  *data-providers*. Technically they are just normal KUKSA.val clients. Sometimes you will see data-providers to be referred to as "feeders".  
 
-If a provider also supports affecting vehicle systems based on a desired state being set via the VSS server, it is an *actuation-provider*. Depending on the system design, a provider can be designed to fulfil both the roles as data-provider and actuation-provider.
+A data-provider will gather some data from a vehicle  using whatever standard or proprietary protocol is needed to access the data. It will then convert the gathered data to the representation defined in a VSS model and provide those standard signals to the VSS server using the VISS or GRPC protocol.
+
+If a provider also supports affecting vehicle systems, based on a desired state being set via the VSS server, it is an *actuation-provider*. Depending on the system design, a provider can be designed to fulfil both the roles as data-provider and actuation-provider.
 
 The following picture shows different kinds of possible KUKSA.val providers
 
@@ -38,9 +40,9 @@ The [DBC Feeder](https://github.com/eclipse/kuksa.val.feeders/tree/main/dbc2val)
 
 Other ECUs with Ethernet connectivity might publish data as SOME/IP (ECU 2 in the example) or DDS (ECU 3 in the example) services. The KUKSA.val project provides an [example SOME/IP provider](https://github.com/eclipse/kuksa.val.feeders/tree/main/someip2val) based on [vsomeip](https://github.com/COVESA/vsomeip) emulating a SOME/IP controllable wiper.
 
-The Vehicle Computer running the VSS server might run other (automotive) middlewares that provides raw data and signals. In this example we assume the Vehicle Computer runs an AUTOSAR Adaptive subsystem. In that case a provider using the APIs of the underlying system can be created, without the need to parse a specific serialization first. IN case of AUTOSAR Adaptive, signals might be accesses using the `ara::com` API.
+The Vehicle Computer running the VSS server might run other (automotive) middlewares that provides raw data and signals. In this example we assume the Vehicle Computer runs an AUTOSAR Adaptive subsystem. In that case a provider using the APIs of the underlying system can be created, without the need to parse a specific serialization first. In case of AUTOSAR Adaptive, signals might be accessed using the `ara::com` API.
 
-Finally, there may be other  processor based platforms in a vehicle such as another vehicle computer (VCU in the example), a domain, or zone controller or an infotainment system. These systems can run any kind of provider themselves and connect to a VSS server running on a different compute unit using the VISS or GRPC protocols directly.
+Finally, there may be other  processor based platforms in a vehicle such as another vehicle computer (VCU in the example), a domain, or zone controller or an infotainment system. These systems can run any kind of provider themselves and connect to a VSS server running on a different compute unit directly through the VISS or GRPC directly.
 
 A provider can be implemented directly against the KUKSA.val GRPC or VISS specification using any programming language. For Python-based providers you can make use of the [KUKSA.val client library](../kuksa-client/).
 
@@ -49,9 +51,9 @@ Consumers are usually different kind of applications that are accessing VSS sign
 
 ![Application patterns](./pictures/sysarch_consumers.svg)
 
-A standard consumer ("Application)"  will interact VSS datapoints from the VSS server and "do something" with it. As simple example is gathering some signals and visualizing them. 
+A standard consumer ("Application)"  will interact with VSS datapoints from the VSS server to realize a vehicle functionality. A simple example is gathering some signals and visualizing them. 
 
-Anther common use case is providing telemetry to the cloud. With cellular networks, being hidden behind NATs or using dynamic IP addresses, the VISS/GRPC pattern of contacting a VSS server is not a suitable. The common pattern is, that the vehicle pushes relevant data, using suitable IoT protocols and potentially dealing with buffering and connection loss. This is the "Cloud Adapter" pattern. An example is the [KUKSA.val S3 uploader](../kuksa_apps/s3/).
+Another common use case is providing telemetry to the cloud. With cellular networks, being hidden behind NATs or using dynamic IP addresses, the VISS/GRPC pattern of contacting a VSS server is not a suitable. The common pattern is, that the vehicle pushes relevant data, using suitable IoT protocols and potentially dealing with buffering and connection loss. This is the "Cloud Adapter" pattern. An example is the [KUKSA.val S3 uploader](../kuksa_apps/s3/).
 
 As a VSS data catalogue can contain signals of different abstraction levels, often higher level signals depend on lower level ones. Thus an  application might use data from some signals to calculate the value of of others ("Signal Refinement"). An example is, taking current battery voltage and other low level signals from the battery system to calculate a state-of-charge and pushing it back. Another service might use state of-charge, system and ambient temperature to calculate remaining range. Such a client combines the roles of consumer and data-provider.
 
@@ -60,7 +62,7 @@ A consumer can be implemented directly against the KUKSA.val GRPC or VISS specif
 
 ## (Distributed) KUKSA.val deployment
 
-The idea behind VSS and KUKSA.val is, to provide a single entry point to all vehicle data. As in a real vehicle data is distributed and not all domains need access to all data you might opt to run several VSS servers, each providing a subset of all vehicle data. This can also increase resiliency of the system and allows to separate safety domains.
+The idea behind VSS and KUKSA.val is, to provide a single entry point to all vehicle data. As in a real vehicle data is distributed and not all domains need access to all data. Therefore, you might opt to run several VSS servers, each providing a subset of all vehicle data. This can also increase resiliency of the system and allows to separate safety domains.
 
 What is considered a suitable deployment is very much dependent on the vehicle architecture and the scope of data managed in VSS.
 
@@ -68,9 +70,9 @@ The following figure shows several possible patterns:
 
 ![Deployment patterns](./pictures/sysarch_deployment.svg)
 
-That is the simplest expected deployment assumes the primary vehicle computer contains the fully populated VSS model for that vehicle. This is expected vehicles, that might only have one computer able to run KUKSA.val and protocols such as GRPC or VISS.
+The simplest expected deployment assumes that the primary vehicle computer contains the fully populated VSS model for a vehicle. This is the only possible deployment in vehicles, that only have one computer capable to run KUKSA.val and protocols such as GRPC or VISS.
 
-In a redundancy scenario there may be a backup vehicle computer with a KUKSA.val instance that is kept in sync, so that in case of a failover, the last known data is available immediately for all VSS datapoints. We assume an optimized VSS Sync component to be used that might deal with one-way or two-way syncs. Currently KUKSA.val does not include a sync mechanism.
+In a redundancy scenario there may be a backup vehicle computer with a KUKSA.val instance that is kept in sync, so that in case of a failover, the last known data is immediately available  for all VSS datapoints. We assume an optimized VSS Sync component to be used that might deal with one-way or two-way syncs. Currently KUKSA.val does not include a sync mechanism.
 
 A vehicle can have additional  domain controllers such as the powertrain controller. The Powertrain controller might use VSS to manage private internal datapoints not relevant to other domains. At the same time it is accessing VSS signals relevant to powertrain functionality provided by the VSS server on the central vehicle computer as well as providing higher level powertrain signals to the vehicle computer.
 
