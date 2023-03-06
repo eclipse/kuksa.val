@@ -10,7 +10,7 @@ If you are new here, try the [Quickstart](doc/quickstart.md), which should not t
 
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0) 
-[![Gitter](https://badges.gitter.im/kuksa-val.svg)](https://gitter.im/kuksa-val)
+[![Gitter](https://img.shields.io/gitter/room/kuksa-val/community)](https://gitter.im/kuksa-val/community)
 
 [![Build kuksa-val-server](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_val_docker.yml/badge.svg)](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_val_docker.yml?query=branch%3Amaster)
 [![Build kuksa-databroker](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_databroker_build.yml/badge.svg)](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_databroker_build.yml?query=branch%3Amaster)
