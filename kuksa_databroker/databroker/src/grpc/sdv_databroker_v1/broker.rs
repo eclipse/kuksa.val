@@ -107,6 +107,7 @@ impl proto::broker_server::Broker for broker::DataBroker {
                                         entry_type: None,
                                         data_type: None,
                                         description: None,
+                                        allowed: None,
                                     },
                                 ));
                             }

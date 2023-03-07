@@ -46,6 +46,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
                         entry_type: None,
                         data_type: None,
                         description: None,
+                        allowed: None,
                     },
                 )
             })
@@ -99,7 +100,8 @@ impl proto::collector_server::Collector for broker::DataBroker {
                                                         actuator_target: None,
                                                         entry_type: None,
                                                         data_type: None,
-                                                        description: None
+                                                        description: None,
+                                                        allowed: None,
                                                     }
                                                 )
                                             )
@@ -167,6 +169,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
                             broker::ChangeType::from(&change_type),
                             broker::types::EntryType::Sensor,
                             metadata.description,
+                            None,
                         )
                         .await
                     {
