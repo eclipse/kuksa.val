@@ -11,4 +11,7 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-pub mod token_decoder;
+mod decoder;
+mod scope;
+
+pub use decoder::{Claims, Decoder, Error};

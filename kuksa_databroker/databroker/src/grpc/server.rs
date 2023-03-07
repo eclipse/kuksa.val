@@ -11,21 +11,18 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-use std::{future::Future, time::Duration};
+use std::{convert::TryFrom, future::Future, time::Duration};
 
 use tonic::transport::Server;
 use tracing::{debug, info, warn};
 
 use databroker_proto::{kuksa, sdv};
 
-use crate::{
-    auth::{self, token_decoder::TokenDecoder},
-    broker,
-};
+use crate::{broker, jwt, permissions::Permissions};
 
 #[derive(Clone)]
 struct AuthorizationInterceptor {
-    token_decoder: auth::token_decoder::TokenDecoder,
+    token_decoder: jwt::Decoder,
 }
 
 impl tonic::service::Interceptor for AuthorizationInterceptor {
@@ -38,11 +35,18 @@ impl tonic::service::Interceptor for AuthorizationInterceptor {
                 Ok(header) if header.starts_with("Bearer ") => {
                     let token: &str = header[7..].into();
                     match self.token_decoder.decode(token) {
-                        Ok(claims) => {
-                            request.extensions_mut().insert(claims);
-                            Ok(request)
-                        }
-                        Err(_) => Err(tonic::Status::unauthenticated("Invalid auth token")),
+                        Ok(claims) => match Permissions::try_from(claims) {
+                            Ok(permissions) => {
+                                request.extensions_mut().insert(permissions);
+                                Ok(request)
+                            }
+                            Err(err) => Err(tonic::Status::unauthenticated(format!(
+                                "Invalid auth token: {err}"
+                            ))),
+                        },
+                        Err(err) => Err(tonic::Status::unauthenticated(format!(
+                            "Invalid auth token: {err}"
+                        ))),
                     }
                 }
                 Ok(_) | Err(_) => Err(tonic::Status::unauthenticated("Invalid auth token")),
@@ -68,7 +72,7 @@ where
 pub async fn serve_authorized<F>(
     addr: &str,
     broker: broker::DataBroker,
-    token_decoder: TokenDecoder,
+    token_decoder: jwt::Decoder,
     signal: F,
 ) -> Result<(), Box<dyn std::error::Error>>
 where

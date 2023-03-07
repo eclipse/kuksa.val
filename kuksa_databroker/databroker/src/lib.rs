@@ -11,9 +11,11 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-pub mod auth;
 pub mod broker;
+pub mod glob;
 pub mod grpc;
+pub mod jwt;
+pub mod permissions;
 pub mod query;
 pub mod types;
 pub mod vss;
