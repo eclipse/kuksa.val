@@ -23,6 +23,7 @@ use tokio_stream::StreamExt;
 use tracing::debug;
 
 use crate::broker;
+use crate::permissions::Permissions;
 
 #[tonic::async_trait]
 impl proto::val_server::Val for broker::DataBroker {
@@ -30,6 +31,9 @@ impl proto::val_server::Val for broker::DataBroker {
         &self,
         request: tonic::Request<proto::GetRequest>,
     ) -> Result<tonic::Response<proto::GetResponse>, tonic::Status> {
+        let permissions = request.extensions().get::<Permissions>();
+        debug!(?request, ?permissions);
+
         let requested = request.into_inner().entries;
         if requested.is_empty() {
             Err(tonic::Status::new(
@@ -94,6 +98,9 @@ impl proto::val_server::Val for broker::DataBroker {
         &self,
         request: tonic::Request<proto::SetRequest>,
     ) -> Result<tonic::Response<proto::SetResponse>, tonic::Status> {
+        let permissions = request.extensions().get::<Permissions>();
+        debug!(?request, ?permissions);
+
         // Collect errors encountered
         let mut errors = Vec::<DataEntryError>::new();
 
@@ -209,6 +216,9 @@ impl proto::val_server::Val for broker::DataBroker {
         &self,
         request: tonic::Request<proto::SubscribeRequest>,
     ) -> Result<tonic::Response<Self::SubscribeStream>, tonic::Status> {
+        let permissions = request.extensions().get::<Permissions>();
+        debug!(?request, ?permissions);
+
         let request = request.into_inner();
 
         if request.entries.is_empty() {

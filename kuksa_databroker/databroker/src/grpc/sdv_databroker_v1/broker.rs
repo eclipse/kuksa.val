@@ -21,6 +21,7 @@ use std::collections::HashMap;
 use std::pin::Pin;
 
 use crate::broker;
+use crate::permissions::Permissions;
 
 use tracing::debug;
 
@@ -30,7 +31,8 @@ impl proto::broker_server::Broker for broker::DataBroker {
         &self,
         request: Request<proto::GetDatapointsRequest>,
     ) -> Result<Response<proto::GetDatapointsReply>, Status> {
-        debug!("Got a request: {:?}", request);
+        let permissions = request.extensions().get::<Permissions>();
+        debug!(?request, ?permissions);
 
         let requested = request.into_inner();
         if requested.datapoints.is_empty() {
@@ -71,6 +73,9 @@ impl proto::broker_server::Broker for broker::DataBroker {
         &self,
         request: tonic::Request<proto::SetDatapointsRequest>,
     ) -> Result<tonic::Response<proto::SetDatapointsReply>, Status> {
+        let permissions = request.extensions().get::<Permissions>();
+        debug!(?request, ?permissions);
+
         // Collect errors encountered
         let mut errors = HashMap::<String, i32>::new();
         let mut id_to_path = HashMap::<i32, String>::new(); // Map id to path for errors
@@ -139,6 +144,9 @@ impl proto::broker_server::Broker for broker::DataBroker {
         &self,
         request: tonic::Request<proto::SubscribeRequest>,
     ) -> Result<tonic::Response<Self::SubscribeStream>, tonic::Status> {
+        let permissions = request.extensions().get::<Permissions>();
+        debug!(?request, ?permissions);
+
         let query = request.into_inner().query;
         match self.subscribe_query(&query).await {
             Ok(stream) => {
@@ -154,6 +162,9 @@ impl proto::broker_server::Broker for broker::DataBroker {
         &self,
         request: tonic::Request<proto::GetMetadataRequest>,
     ) -> Result<tonic::Response<proto::GetMetadataReply>, tonic::Status> {
+        let permissions = request.extensions().get::<Permissions>();
+        debug!(?request, ?permissions);
+
         let request = request.into_inner();
 
         let list = if request.names.is_empty() {

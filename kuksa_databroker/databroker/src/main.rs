@@ -25,7 +25,7 @@ use tokio::signal::unix::{signal, SignalKind};
 
 use clap::{Arg, Command};
 
-use databroker::{auth, broker, grpc, vss};
+use databroker::{broker, grpc, jwt, vss};
 
 // Hardcoded datapoints
 const DATAPOINTS: &[(
@@ -344,7 +344,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match jwt_public_key {
         Some(pub_key) => {
-            let token_decoder = auth::token_decoder::TokenDecoder::new(pub_key)?;
+            let token_decoder = jwt::Decoder::new(pub_key)?;
             grpc::server::serve_authorized(&addr, broker, token_decoder, shutdown_handler())
                 .await?;
         }

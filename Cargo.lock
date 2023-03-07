@@ -188,6 +188,7 @@ dependencies = [
  "jsonwebtoken",
  "prost",
  "prost-types",
+ "regex",
  "serde",
  "serde_json",
  "sqlparser",
