@@ -154,6 +154,7 @@ async fn read_metadata_file(
                 databroker::broker::ChangeType::OnChange,
                 entry.entry_type,
                 entry.description,
+                entry.allowed,
             )
             .await;
 
@@ -170,6 +171,7 @@ async fn read_metadata_file(
                     entry_type: None,
                     data_type: None,
                     description: None,
+                    allowed: None,
                 },
             )];
             if let Err(errors) = broker.update_entries(ids).await {
@@ -288,6 +290,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     change_type.clone(),
                     entry_type.clone(),
                     description.to_string(),
+                    None,
                 )
                 .await
             {
@@ -310,6 +313,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 entry_type: None,
                                 data_type: None,
                                 description: None,
+                                allowed: None,
                             },
                         )])
                         .await

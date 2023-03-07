@@ -481,6 +481,7 @@ impl broker::EntryUpdate {
             entry_type: None,
             data_type: None,
             description: None,
+            allowed: None,
         }
     }
 }

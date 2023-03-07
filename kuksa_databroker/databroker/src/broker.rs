@@ -44,6 +44,7 @@ pub struct Metadata {
     pub entry_type: EntryType,
     pub change_type: ChangeType,
     pub description: String,
+    pub allowed: Option<types::DataValue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -151,6 +152,10 @@ pub struct EntryUpdate {
     pub entry_type: Option<EntryType>,
     pub data_type: Option<DataType>,
     pub description: Option<String>,
+    // allowed is wrapped in an additional Option<> in
+    // order to be able to convey "update it to None" which would
+    // mean setting it to `Some(None)`.
+    pub allowed: Option<Option<types::DataValue>>,
 }
 
 impl Entry {
@@ -175,11 +180,176 @@ impl Entry {
     pub fn validate(&self, update: &EntryUpdate) -> Result<(), UpdateError> {
         if let Some(datapoint) = &update.datapoint {
             self.validate_value(&datapoint.value)?;
+            self.validate_allowed(&datapoint.value)?;
         }
         if let Some(Some(actuatortarget)) = &update.actuator_target {
             self.validate_value(&actuatortarget.value)?;
+            self.validate_allowed(&actuatortarget.value)?;
+        }
+        if let Some(Some(updated_allowed)) = update.allowed.clone() {
+            if Some(updated_allowed.clone()) != self.metadata.allowed {
+                self.validate_allowed_type(&Some(updated_allowed))?;
+            }
         }
         Ok(())
+    }
+
+    pub fn validate_allowed_type(&self, allowed: &Option<DataValue>) -> Result<(), UpdateError> {
+        if let Some(allowed_values) = allowed {
+            match (allowed_values, &self.metadata.data_type) {
+                (DataValue::BoolArray(_allowed_values), DataType::Bool) => Ok(()),
+                (DataValue::StringArray(_allowed_values), DataType::String) => Ok(()),
+                (DataValue::Int32Array(_allowed_values), DataType::Int32) => Ok(()),
+                (DataValue::Int64Array(_allowed_values), DataType::Int64) => Ok(()),
+                (DataValue::Uint32Array(_allowed_values), DataType::Uint32) => Ok(()),
+                (DataValue::Uint64Array(_allowed_values), DataType::Uint64) => Ok(()),
+                (DataValue::FloatArray(_allowed_values), DataType::Float) => Ok(()),
+                (DataValue::DoubleArray(_allowed_values), DataType::Double) => Ok(()),
+                (DataValue::BoolArray(_allowed_values), DataType::BoolArray) => Ok(()),
+                (DataValue::StringArray(_allowed_values), DataType::StringArray) => Ok(()),
+                (DataValue::Int32Array(_allowed_values), DataType::Int32Array) => Ok(()),
+                (DataValue::Int64Array(_allowed_values), DataType::Int64Array) => Ok(()),
+                (DataValue::Uint32Array(_allowed_values), DataType::Uint32Array) => Ok(()),
+                (DataValue::Uint64Array(_allowed_values), DataType::Uint64Array) => Ok(()),
+                (DataValue::FloatArray(_allowed_values), DataType::FloatArray) => Ok(()),
+                (DataValue::DoubleArray(_allowed_values), DataType::DoubleArray) => Ok(()),
+                _ => Err(UpdateError::WrongType {}),
+            }
+        } else {
+            // it is allowed to set allowed to None
+            Ok(())
+        }
+    }
+
+    fn validate_allowed(&self, value: &DataValue) -> Result<(), UpdateError> {
+        // check if allowed value
+        if let Some(allowed_values) = &self.metadata.allowed {
+            match (allowed_values, value) {
+                (DataValue::BoolArray(allowed_values), DataValue::Bool(value)) => {
+                    match allowed_values.contains(value) {
+                        true => Ok(()),
+                        false => Err(UpdateError::OutOfBounds),
+                    }
+                }
+                (DataValue::DoubleArray(allowed_values), DataValue::Double(value)) => {
+                    match allowed_values.contains(value) {
+                        true => Ok(()),
+                        false => Err(UpdateError::OutOfBounds),
+                    }
+                }
+                (DataValue::FloatArray(allowed_values), DataValue::Float(value)) => {
+                    match allowed_values.contains(value) {
+                        true => Ok(()),
+                        false => Err(UpdateError::OutOfBounds),
+                    }
+                }
+                (DataValue::Int32Array(allowed_values), DataValue::Int32(value)) => {
+                    match allowed_values.contains(value) {
+                        true => Ok(()),
+                        false => Err(UpdateError::OutOfBounds),
+                    }
+                }
+                (DataValue::Int64Array(allowed_values), DataValue::Int64(value)) => {
+                    match allowed_values.contains(value) {
+                        true => Ok(()),
+                        false => Err(UpdateError::OutOfBounds),
+                    }
+                }
+                (DataValue::StringArray(allowed_values), DataValue::String(value)) => {
+                    match allowed_values.contains(value) {
+                        true => Ok(()),
+                        false => Err(UpdateError::OutOfBounds),
+                    }
+                }
+                (DataValue::Uint32Array(allowed_values), DataValue::Uint32(value)) => {
+                    match allowed_values.contains(value) {
+                        true => Ok(()),
+                        false => Err(UpdateError::OutOfBounds),
+                    }
+                }
+                (DataValue::Uint64Array(allowed_values), DataValue::Uint64(value)) => {
+                    match allowed_values.contains(value) {
+                        true => Ok(()),
+                        false => Err(UpdateError::OutOfBounds),
+                    }
+                }
+                (DataValue::BoolArray(allowed_values), DataValue::BoolArray(value)) => {
+                    for item in value {
+                        match allowed_values.contains(item) {
+                            true => (),
+                            false => return Err(UpdateError::OutOfBounds),
+                        }
+                    }
+                    Ok(())
+                }
+                (DataValue::DoubleArray(allowed_values), DataValue::DoubleArray(value)) => {
+                    for item in value {
+                        match allowed_values.contains(item) {
+                            true => (),
+                            false => return Err(UpdateError::OutOfBounds),
+                        }
+                    }
+                    Ok(())
+                }
+                (DataValue::FloatArray(allowed_values), DataValue::FloatArray(value)) => {
+                    for item in value {
+                        match allowed_values.contains(item) {
+                            true => (),
+                            false => return Err(UpdateError::OutOfBounds),
+                        }
+                    }
+                    Ok(())
+                }
+                (DataValue::Int32Array(allowed_values), DataValue::Int32Array(value)) => {
+                    for item in value {
+                        match allowed_values.contains(item) {
+                            true => (),
+                            false => return Err(UpdateError::OutOfBounds),
+                        }
+                    }
+                    Ok(())
+                }
+                (DataValue::Int64Array(allowed_values), DataValue::Int64Array(value)) => {
+                    for item in value {
+                        match allowed_values.contains(item) {
+                            true => (),
+                            false => return Err(UpdateError::OutOfBounds),
+                        }
+                    }
+                    Ok(())
+                }
+                (DataValue::StringArray(allowed_values), DataValue::StringArray(value)) => {
+                    for item in value {
+                        match allowed_values.contains(item) {
+                            true => (),
+                            false => return Err(UpdateError::OutOfBounds),
+                        }
+                    }
+                    Ok(())
+                }
+                (DataValue::Uint32Array(allowed_values), DataValue::Uint32Array(value)) => {
+                    for item in value {
+                        match allowed_values.contains(item) {
+                            true => (),
+                            false => return Err(UpdateError::OutOfBounds),
+                        }
+                    }
+                    Ok(())
+                }
+                (DataValue::Uint64Array(allowed_values), DataValue::Uint64Array(value)) => {
+                    for item in value {
+                        match allowed_values.contains(item) {
+                            true => (),
+                            false => return Err(UpdateError::OutOfBounds),
+                        }
+                    }
+                    Ok(())
+                }
+                _ => Err(UpdateError::UnsupportedType),
+            }
+        } else {
+            Ok(())
+        }
     }
 
     fn validate_value(&self, value: &DataValue) -> Result<(), UpdateError> {
@@ -372,6 +542,12 @@ impl Entry {
         if let Some(actuator_target) = update.actuator_target {
             self.actuator_target = actuator_target;
             changed.insert(Field::ActuatorTarget);
+        }
+
+        if let Some(updated_allowed) = update.allowed {
+            if updated_allowed != self.metadata.allowed {
+                self.metadata.allowed = updated_allowed;
+            }
         }
 
         // TODO: Apply the other fields as well
@@ -688,6 +864,7 @@ impl Entries {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn add(
         &mut self,
         name: String,
@@ -696,40 +873,49 @@ impl Entries {
         entry_type: EntryType,
         description: String,
         datapoint: Option<Datapoint>,
+        allowed: Option<types::DataValue>,
     ) -> Result<i32, RegistrationError> {
         if let Some(datapoint) = self.get_by_path(&name) {
             // It already exists
             return Ok(datapoint.metadata.id);
         };
 
+        let temp_id = 0;
+
+        let mut new_entry = Entry {
+            metadata: Metadata {
+                id: temp_id,
+                path: name.clone(),
+                data_type,
+                change_type,
+                entry_type,
+                description,
+                allowed,
+            },
+            datapoint: match datapoint {
+                Some(datapoint) => datapoint,
+                None => Datapoint {
+                    ts: SystemTime::now(),
+                    value: DataValue::NotAvailable,
+                },
+            },
+            actuator_target: None,
+        };
+
+        new_entry
+            .validate_allowed_type(&new_entry.metadata.allowed)
+            .map_err(|_err| RegistrationError {})?;
+
         // Get next id (and bump it)
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
 
         // Map name -> id
-        self.path_to_id.insert(name.clone(), id);
+        self.path_to_id.insert(name, id);
+
+        new_entry.metadata.id = id;
 
         // Add entry (mapped by id)
-        self.entries.insert(
-            id,
-            Entry {
-                metadata: Metadata {
-                    id,
-                    path: name,
-                    data_type,
-                    change_type,
-                    entry_type,
-                    description,
-                },
-                datapoint: match datapoint {
-                    Some(datapoint) => datapoint,
-                    None => Datapoint {
-                        ts: SystemTime::now(),
-                        value: DataValue::NotAvailable,
-                    },
-                },
-                actuator_target: None,
-            },
-        );
+        self.entries.insert(id, new_entry);
 
         // Return the id
         Ok(id)
@@ -781,11 +967,17 @@ impl DataBroker {
         change_type: ChangeType,
         entry_type: EntryType,
         description: String,
+        allowed: Option<types::DataValue>,
     ) -> Result<i32, RegistrationError> {
-        self.entries
-            .write()
-            .await
-            .add(name, data_type, change_type, entry_type, description, None)
+        self.entries.write().await.add(
+            name,
+            data_type,
+            change_type,
+            entry_type,
+            description,
+            None,
+            allowed,
+        )
     }
 
     pub async fn get_id_by_path(&self, name: &str) -> Option<i32> {
@@ -995,6 +1187,7 @@ async fn test_register_datapoint() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1020,6 +1213,7 @@ async fn test_register_datapoint() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 2".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1045,6 +1239,7 @@ async fn test_register_datapoint() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1 (modified)".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1063,6 +1258,7 @@ async fn test_get_set_datapoint() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1142,6 +1338,7 @@ async fn test_get_set_datapoint() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1205,6 +1402,7 @@ async fn test_subscribe_query_and_get() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1240,6 +1438,7 @@ async fn test_subscribe_query_and_get() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1280,6 +1479,7 @@ async fn test_multi_subscribe() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1334,6 +1534,7 @@ async fn test_multi_subscribe() {
                     entry_type: None,
                     data_type: None,
                     description: None,
+                    allowed: None,
                 },
             )])
             .await
@@ -1377,6 +1578,7 @@ async fn test_subscribe_after_new_registration() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1412,6 +1614,7 @@ async fn test_subscribe_after_new_registration() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1444,6 +1647,7 @@ async fn test_subscribe_after_new_registration() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1 (new description)".to_owned(),
+            None,
         )
         .await
         .expect("Registration should succeed");
@@ -1463,6 +1667,7 @@ async fn test_subscribe_after_new_registration() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1501,6 +1706,7 @@ async fn test_subscribe_set_multiple() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1512,6 +1718,7 @@ async fn test_subscribe_set_multiple() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 2".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1551,6 +1758,7 @@ async fn test_subscribe_set_multiple() {
                         entry_type: None,
                         data_type: None,
                         description: None,
+                        allowed: None,
                     },
                 ),
                 (
@@ -1565,6 +1773,7 @@ async fn test_subscribe_set_multiple() {
                         entry_type: None,
                         data_type: None,
                         description: None,
+                        allowed: None,
                     },
                 ),
             ])
@@ -1603,6 +1812,7 @@ async fn test_bool_array() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Run of the mill test array".to_owned(),
+            None,
         )
         .await
         .unwrap();
@@ -1621,6 +1831,7 @@ async fn test_bool_array() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1656,6 +1867,7 @@ async fn test_string_array() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Run of the mill test array".to_owned(),
+            None,
         )
         .await
         .unwrap();
@@ -1679,6 +1891,7 @@ async fn test_string_array() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1719,6 +1932,7 @@ async fn test_int8_array() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Run of the mill test array".to_owned(),
+            None,
         )
         .await
         .unwrap();
@@ -1737,6 +1951,7 @@ async fn test_int8_array() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1763,6 +1978,7 @@ async fn test_int8_array() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1790,6 +2006,7 @@ async fn test_uint8_array() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Run of the mill test array".to_owned(),
+            None,
         )
         .await
         .unwrap();
@@ -1808,6 +2025,7 @@ async fn test_uint8_array() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1834,6 +2052,7 @@ async fn test_uint8_array() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1864,6 +2083,7 @@ async fn test_float_array() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Run of the mill test array".to_owned(),
+            None,
         )
         .await
         .unwrap();
@@ -1882,6 +2102,7 @@ async fn test_float_array() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1919,6 +2140,7 @@ async fn test_subscribe_and_get() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1962,6 +2184,7 @@ async fn test_subscribe_and_get() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
