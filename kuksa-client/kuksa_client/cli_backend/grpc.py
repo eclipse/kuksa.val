@@ -200,6 +200,8 @@ class Backend(cli_backend.Backend):
                 responseQueue.put((resp, None))
             except kuksa_client.grpc.VSSClientError as exc:
                 responseQueue.put((None, exc.to_dict()))
+            except ValueError as exc:
+                responseQueue.put((None, {"error": "ValueError in casting the value."}))
 
         self.grpcConnected = False
 
