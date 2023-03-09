@@ -173,6 +173,7 @@ impl Entry {
         //                     .entry_type
         //                     .data_type
         //                     .description
+        //                     .allowed
 
         update
     }
@@ -1187,7 +1188,7 @@ async fn test_register_datapoint() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1".to_owned(),
-            None,
+            Some(DataValue::BoolArray(Vec::from([true]))),
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1199,6 +1200,10 @@ async fn test_register_datapoint() {
                 assert_eq!(entry.metadata.path, "test.datapoint1");
                 assert_eq!(entry.metadata.data_type, DataType::Bool);
                 assert_eq!(entry.metadata.description, "Test datapoint 1");
+                assert_eq!(
+                    entry.metadata.allowed,
+                    Some(DataValue::BoolArray(Vec::from([true])))
+                );
             }
             None => {
                 panic!("datapoint should exist");
@@ -1225,6 +1230,7 @@ async fn test_register_datapoint() {
                 assert_eq!(entry.metadata.path, "test.datapoint2");
                 assert_eq!(entry.metadata.data_type, DataType::String);
                 assert_eq!(entry.metadata.description, "Test datapoint 2");
+                assert_eq!(entry.metadata.allowed, None);
             }
             None => {
                 panic!("no metadata returned");
@@ -1245,6 +1251,23 @@ async fn test_register_datapoint() {
         .expect("Register datapoint should succeed");
 
     assert_eq!(id3, id1);
+
+    if datapoints
+        .add_entry(
+            "test.datapoint3".to_owned(),
+            DataType::String,
+            ChangeType::OnChange,
+            EntryType::Sensor,
+            "Test datapoint 3".to_owned(),
+            Some(DataValue::Int32Array(Vec::from([1, 2, 3, 4]))),
+        )
+        .await
+        .is_ok()
+    {
+        panic!("Datapoint should not be regsitered successfully");
+    } else {
+        // everything fine, should not succed to register because allowed is Int32Array and data_type is String
+    }
 }
 
 #[tokio::test]
@@ -1258,7 +1281,7 @@ async fn test_get_set_datapoint() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Test datapoint 1".to_owned(),
-            None,
+            Some(DataValue::Int32Array(vec![100])),
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1270,6 +1293,7 @@ async fn test_get_set_datapoint() {
             ChangeType::OnChange,
             EntryType::Actuator,
             "Test datapoint 2".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
@@ -1309,6 +1333,7 @@ async fn test_get_set_datapoint() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: Some(Some(DataValue::Int32Array(vec![100]))),
             },
         )])
         .await
@@ -1338,7 +1363,7 @@ async fn test_get_set_datapoint() {
                 entry_type: None,
                 data_type: None,
                 description: None,
-                allowed: None,
+                allowed: Some(Some(DataValue::Int32Array(vec![100]))),
             },
         )])
         .await
@@ -1358,6 +1383,7 @@ async fn test_get_set_datapoint() {
                 entry_type: None,
                 data_type: None,
                 description: None,
+                allowed: None,
             },
         )])
         .await
@@ -1386,6 +1412,96 @@ async fn test_get_set_datapoint() {
         },
         None => {
             panic!("data point 2 expected to exist");
+        }
+    }
+
+    if datapoints
+        .update_entries([(
+            id1,
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts: SystemTime::now(),
+                    value: DataValue::Int32(1),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
+                allowed: Some(Some(DataValue::Int32Array(vec![100]))),
+            },
+        )])
+        .await
+        .is_ok()
+    {
+        panic!("Setting int32 value of 1 should fail because it is not in the allowed values");
+    } else {
+        // everything fine should fail because trying to set a value which is not in allowed values
+    }
+
+    if datapoints
+        .update_entries([(
+            id1,
+            EntryUpdate {
+                path: None,
+                datapoint: None,
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
+                allowed: Some(Some(DataValue::BoolArray(vec![true]))),
+            },
+        )])
+        .await
+        .is_ok()
+    {
+        panic!("Setting allowed to a BoolArray should fail because data_type is int32");
+    } else {
+        // everything fine should fail because trying to set array of type Bool does not match data_type
+    }
+
+    datapoints
+        .update_entries([(
+            id1,
+            EntryUpdate {
+                path: None,
+                datapoint: None,
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
+                allowed: Some(None),
+            },
+        )])
+        .await
+        .expect("setting allowed for entry #1");
+
+    datapoints
+        .update_entries([(
+            id1,
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts: time1,
+                    value: DataValue::Int32(1),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
+                allowed: None,
+            },
+        )])
+        .await
+        .expect("setting datapoint #1");
+
+    match datapoints.get_datapoint(id1).await {
+        Some(datapoint) => {
+            assert_eq!(datapoint.value, DataValue::Int32(1));
+            assert_eq!(datapoint.ts, time1);
+        }
+        None => {
+            panic!("data point 1 expected to exist");
         }
     }
 }
@@ -1867,7 +1983,12 @@ async fn test_string_array() {
             ChangeType::OnChange,
             EntryType::Sensor,
             "Run of the mill test array".to_owned(),
-            None,
+            Some(DataValue::StringArray(vec![
+                String::from("yes"),
+                String::from("no"),
+                String::from("maybe"),
+                String::from("nah"),
+            ])),
         )
         .await
         .unwrap();
@@ -1919,6 +2040,87 @@ async fn test_string_array() {
             );
         }
         None => panic!("Expected get_datapoint to return a datapoint, instead got: None"),
+    }
+
+    // check if duplicate is working
+    match broker
+        .update_entries([(
+            id,
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts,
+                    value: DataValue::StringArray(vec![
+                        String::from("yes"),
+                        String::from("no"),
+                        String::from("maybe"),
+                        String::from("nah"),
+                        String::from("yes"),
+                    ]),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
+                allowed: None,
+            },
+        )])
+        .await
+    {
+        Ok(_) => {}
+        Err(e) => {
+            panic!(
+                "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
+                e
+            )
+        }
+    }
+
+    match broker.get_datapoint(id).await {
+        Some(datapoint) => {
+            assert_eq!(datapoint.ts, ts);
+            assert_eq!(
+                datapoint.value,
+                DataValue::StringArray(vec![
+                    String::from("yes"),
+                    String::from("no"),
+                    String::from("maybe"),
+                    String::from("nah"),
+                    String::from("yes"),
+                ])
+            );
+        }
+        None => panic!("Expected get_datapoint to return a datapoint, instead got: None"),
+    }
+
+    if broker
+        .update_entries([(
+            id,
+            EntryUpdate {
+                path: None,
+                datapoint: Some(Datapoint {
+                    ts,
+                    value: DataValue::StringArray(vec![
+                        String::from("yes"),
+                        String::from("no"),
+                        String::from("maybe"),
+                        String::from("nah"),
+                        String::from("true"),
+                    ]),
+                }),
+                actuator_target: None,
+                entry_type: None,
+                data_type: None,
+                description: None,
+                allowed: None,
+            },
+        )])
+        .await
+        .is_ok()
+    {
+        panic!("Expected set_datapoints to fail because string(true) not in allowed values")
+    } else {
+        // everything fine vlaue string(true) not in the allowed values
     }
 }
 

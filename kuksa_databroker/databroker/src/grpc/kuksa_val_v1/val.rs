@@ -499,6 +499,7 @@ async fn test_update_datapoint_using_wrong_type() {
             broker::ChangeType::OnChange,
             broker::EntryType::Sensor,
             "Test datapoint 1".to_owned(),
+            None,
         )
         .await
         .expect("Register datapoint should succeed");
