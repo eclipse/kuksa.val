@@ -11,7 +11,7 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryFrom};
 
 use databroker_proto::sdv::databroker as proto;
 use http::Uri;
@@ -72,7 +72,7 @@ impl Client {
     }
 
     pub fn set_access_token(&mut self, token: impl AsRef<str>) -> Result<(), TokenError> {
-        match tonic::metadata::AsciiMetadataValue::from_str(&format!("Bearer {}", token.as_ref())) {
+        match tonic::metadata::AsciiMetadataValue::try_from(&format!("Bearer {}", token.as_ref())) {
             Ok(token) => {
                 self.token = Some(token);
                 Ok(())

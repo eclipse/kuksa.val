@@ -7,12 +7,16 @@ fn main() -> Result<()> {
 
     // Cargo
     let cargo = config.cargo_mut();
-
+    *cargo.features_mut() = false;
     // Enable VERGEN_CARGO_PROFILE
     *cargo.profile_mut() = true;
+    *cargo.target_triple_mut() = false;
 
     // Git
     let git = config.git_mut();
+    *git.commit_author_mut() = false;
+    *git.commit_count_mut() = false;
+    *git.commit_message_mut() = false;
 
     // Rerun on HEAD change
     *git.rerun_on_head_change_mut() = true;

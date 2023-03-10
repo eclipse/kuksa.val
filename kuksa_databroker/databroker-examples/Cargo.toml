@@ -1,5 +1,5 @@
 #********************************************************************************
-# Copyright (c) 2022 Contributors to the Eclipse Foundation
+# Copyright (c) 2023 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -19,14 +19,9 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-databroker-proto = { path = "../databroker-proto" }
-tonic = "0.6.2"
-prost = "0.9.0"
-prost-types = "0.9.0"
-tokio = { version = "1.17.0", features = [
-    "macros",
-    "rt-multi-thread",
-    "time",
-    "signal",
-] }
-tokio-stream = { version = "0.1.8", features = ["sync"] }
+databroker-proto = { workspace = true }
+tonic = { workspace = true }
+prost = { workspace = true }
+prost-types = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true, features = ["sync"] }

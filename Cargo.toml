@@ -20,6 +20,24 @@ members = [
     "kuksa_databroker/databroker-examples",
 ]
 
+[workspace.dependencies]
+clap = { version = "3.1.10", default-features = false, features = [
+    "std",
+    "env",
+] }
+databroker-proto = { path = "kuksa_databroker/databroker-proto" }
+prost = "0.11"
+prost-types = "0.11"
+tokio = { version = "1.17.0", features = [
+    "macros",
+    "rt-multi-thread",
+    "time",
+    "signal",
+] }
+tokio-stream = { version = "0.1.8", features = ["sync", "net"] }
+tonic = "0.8"
+tonic-build = "0.8"
+
 [profile.release]
 lto = true                 # Link time optimization (dead code removal etc...)
 opt-level = "s"
