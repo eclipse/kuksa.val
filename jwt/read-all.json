@@ -1,0 +1,10 @@
+{
+  "sub": "local dev",
+  "iss": "createToken.py",
+  "aud": [
+    "kuksa.val"
+  ],
+  "iat": 1516239022,
+  "exp": 1767225599,
+  "scope": "read"
+}

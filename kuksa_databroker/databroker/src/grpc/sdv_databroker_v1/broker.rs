@@ -20,7 +20,7 @@ use tokio_stream::{Stream, StreamExt};
 use std::collections::HashMap;
 use std::pin::Pin;
 
-use crate::broker;
+use crate::broker::{self, ReadError};
 use crate::permissions::Permissions;
 
 use tracing::debug;
@@ -31,8 +31,15 @@ impl proto::broker_server::Broker for broker::DataBroker {
         &self,
         request: Request<proto::GetDatapointsRequest>,
     ) -> Result<Response<proto::GetDatapointsReply>, Status> {
-        let permissions = request.extensions().get::<Permissions>();
-        debug!(?request, ?permissions);
+        debug!(?request);
+        let permissions = match request.extensions().get::<Permissions>() {
+            Some(permissions) => {
+                debug!(?permissions);
+                permissions.clone()
+            }
+            None => return Err(tonic::Status::unauthenticated("Unauthenticated")),
+        };
+        let broker = self.authorized_access(&permissions);
 
         let requested = request.into_inner();
         if requested.datapoints.is_empty() {
@@ -44,19 +51,28 @@ impl proto::broker_server::Broker for broker::DataBroker {
             let mut datapoints = HashMap::new();
 
             for name in requested.datapoints {
-                match self.get_datapoint_by_path(&name).await {
-                    Some(datapoint) => {
+                match broker.get_datapoint_by_path(&name).await {
+                    Ok(datapoint) => {
                         datapoints.insert(name, proto::Datapoint::from(&datapoint));
                     }
-                    None => {
+                    Err(err) => {
                         // Datapoint doesn't exist
                         datapoints.insert(
                             name,
                             proto::Datapoint {
                                 timestamp: None,
-                                value: Some(proto::datapoint::Value::FailureValue(
-                                    proto::datapoint::Failure::UnknownDatapoint as i32,
-                                )),
+                                value: match err {
+                                    ReadError::NotFound => {
+                                        Some(proto::datapoint::Value::FailureValue(
+                                            proto::datapoint::Failure::UnknownDatapoint.into(),
+                                        ))
+                                    }
+                                    ReadError::PermissionDenied | ReadError::PermissionExpired => {
+                                        Some(proto::datapoint::Value::FailureValue(
+                                            proto::datapoint::Failure::AccessDenied.into(),
+                                        ))
+                                    }
+                                },
                             },
                         );
                     }
@@ -73,8 +89,15 @@ impl proto::broker_server::Broker for broker::DataBroker {
         &self,
         request: tonic::Request<proto::SetDatapointsRequest>,
     ) -> Result<tonic::Response<proto::SetDatapointsReply>, Status> {
-        let permissions = request.extensions().get::<Permissions>();
-        debug!(?request, ?permissions);
+        debug!(?request);
+        let permissions = match request.extensions().get::<Permissions>() {
+            Some(permissions) => {
+                debug!(?permissions);
+                permissions.clone()
+            }
+            None => return Err(tonic::Status::unauthenticated("Unauthenticated")),
+        };
+        let broker = self.authorized_access(&permissions);
 
         // Collect errors encountered
         let mut errors = HashMap::<String, i32>::new();
@@ -84,9 +107,9 @@ impl proto::broker_server::Broker for broker::DataBroker {
         let ids = {
             let mut ids = Vec::new();
             for (path, datapoint) in message.datapoints {
-                match self.get_entry_by_path(&path).await {
-                    Some(entry) => {
-                        match entry.metadata.entry_type {
+                match broker.get_metadata_by_path(&path).await {
+                    Some(metadata) => {
+                        match metadata.entry_type {
                             broker::EntryType::Sensor | broker::EntryType::Attribute => {
                                 // Cannot set sensor / attribute through the `Broker` API.
                                 debug!("Cannot set sensor / attribute through the `Broker` API.");
@@ -97,7 +120,7 @@ impl proto::broker_server::Broker for broker::DataBroker {
                             }
                             broker::EntryType::Actuator => {
                                 ids.push((
-                                    entry.metadata.id,
+                                    metadata.id,
                                     broker::EntryUpdate {
                                         path: None,
                                         datapoint: None,
@@ -112,7 +135,7 @@ impl proto::broker_server::Broker for broker::DataBroker {
                                 ));
                             }
                         }
-                        id_to_path.insert(entry.metadata.id, path);
+                        id_to_path.insert(metadata.id, path);
                     }
                     None => {
                         errors.insert(path.clone(), proto::DatapointError::UnknownDatapoint as i32);
@@ -122,7 +145,7 @@ impl proto::broker_server::Broker for broker::DataBroker {
             ids
         };
 
-        match self.update_entries(ids).await {
+        match broker.update_entries(ids).await {
             Ok(()) => {}
             Err(err) => {
                 debug!("Failed to set datapoint: {:?}", err);
@@ -145,11 +168,18 @@ impl proto::broker_server::Broker for broker::DataBroker {
         &self,
         request: tonic::Request<proto::SubscribeRequest>,
     ) -> Result<tonic::Response<Self::SubscribeStream>, tonic::Status> {
-        let permissions = request.extensions().get::<Permissions>();
-        debug!(?request, ?permissions);
+        debug!(?request);
+        let permissions = match request.extensions().get::<Permissions>() {
+            Some(permissions) => {
+                debug!(?permissions);
+                permissions.clone()
+            }
+            None => return Err(tonic::Status::unauthenticated("Unauthenticated")),
+        };
+        let broker = self.authorized_access(&permissions);
 
         let query = request.into_inner().query;
-        match self.subscribe_query(&query).await {
+        match broker.subscribe_query(&query).await {
             Ok(stream) => {
                 let stream = convert_to_proto_stream(stream);
                 debug!("Subscribed to new query");
@@ -163,25 +193,29 @@ impl proto::broker_server::Broker for broker::DataBroker {
         &self,
         request: tonic::Request<proto::GetMetadataRequest>,
     ) -> Result<tonic::Response<proto::GetMetadataReply>, tonic::Status> {
-        let permissions = request.extensions().get::<Permissions>();
-        debug!(?request, ?permissions);
+        debug!(?request);
+        let permissions = match request.extensions().get::<Permissions>() {
+            Some(permissions) => {
+                debug!(?permissions);
+                permissions.clone()
+            }
+            None => return Err(tonic::Status::unauthenticated("Unauthenticated")),
+        };
+
+        let broker = self.authorized_access(&permissions);
 
         let request = request.into_inner();
 
         let list = if request.names.is_empty() {
-            self.entries
-                .read()
+            broker
+                .map_metadata(|metadata| proto::Metadata::from(metadata))
                 .await
-                .iter()
-                .map(|entry| proto::Metadata::from(&entry.metadata))
-                .collect()
         } else {
             let mut list = Vec::new();
 
-            let entries = self.entries.read().await;
             for name in request.names {
-                if let Some(entry) = entries.get_by_path(&name) {
-                    list.push(proto::Metadata::from(&entry.metadata));
+                if let Some(metadata) = broker.get_metadata_by_path(&name).await {
+                    list.push(proto::Metadata::from(&metadata));
                 }
             }
             list
@@ -198,7 +232,8 @@ fn convert_to_proto_stream(
         // debug!("item.id: {:?}", item.value);
         let mut datapoints = HashMap::new();
         for field in item.fields {
-            datapoints.insert(field.name, proto::Datapoint::from(&field.value));
+            let value = proto::Datapoint::from(&field);
+            datapoints.insert(field.name, value);
         }
         let notification = proto::SubscribeReply { fields: datapoints };
         Ok(notification)

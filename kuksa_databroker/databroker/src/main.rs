@@ -17,6 +17,8 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use std::fmt::Write;
 
+use databroker::grpc::server::Authorization;
+use databroker::permissions::{Permission, Permissions};
 use tracing::{debug, error, info};
 use tracing_subscriber::filter::EnvFilter;
 
@@ -136,18 +138,19 @@ async fn shutdown_handler() {
     };
 }
 
-async fn read_metadata_file(
-    broker: &broker::DataBroker,
+async fn read_metadata_file<'a, 'b>(
+    database: &broker::AuthorizedAccess<'_, '_>,
     filename: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let path = filename.trim();
     info!("Populating metadata from file '{}'", path);
     let metadata_file = std::fs::OpenOptions::new().read(true).open(filename)?;
     let entries = vss::parse_vss_from_reader(&metadata_file)?;
+
     for (path, entry) in entries {
         debug!("Adding VSS datapoint type {}", path);
 
-        let id = broker
+        let id = database
             .add_entry(
                 path.clone(),
                 entry.data_type,
@@ -174,7 +177,7 @@ async fn read_metadata_file(
                     allowed: None,
                 },
             )];
-            if let Err(errors) = broker.update_entries(ids).await {
+            if let Err(errors) = database.update_entries(ids).await {
                 // There's only one error (since we're only trying to set one)
                 if let Some(error) = errors.get(0) {
                     info!("Failed to set default value for {}: {:?}", path, error.1);
@@ -278,12 +281,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         args.get_one::<u16>("port").unwrap()
     );
 
-    let broker = broker::DataBroker::new();
+    let broker = broker::DataBroker::new(version);
+    let permissions = Permissions::builder()
+        .add_provide_permission(Permission::All)
+        .build()
+        .expect("creating permissions should always succeed");
+    let database = broker.authorized_access(&permissions);
 
     if args.is_present("dummy-metadata") {
         info!("Populating (hardcoded) metadata");
         for (name, data_type, change_type, entry_type, description) in DATAPOINTS {
-            if let Ok(id) = broker
+            if let Ok(id) = database
                 .add_entry(
                     name.to_string(),
                     data_type.clone(),
@@ -295,7 +303,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .await
             {
                 if name == &"Vehicle.TestArray" {
-                    match broker
+                    match database
                         .update_entries([(
                             id,
                             broker::EntryUpdate {
@@ -328,7 +336,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(metadata_filenames) = args.get_many::<String>("metadata") {
         for filename in metadata_filenames {
-            read_metadata_file(&broker, filename).await?;
+            read_metadata_file(&database, filename).await?;
         }
     }
 
@@ -346,16 +354,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => None,
     };
 
-    match jwt_public_key {
+    let authorization = match jwt_public_key {
         Some(pub_key) => {
             let token_decoder = jwt::Decoder::new(pub_key)?;
-            grpc::server::serve_authorized(&addr, broker, token_decoder, shutdown_handler())
-                .await?;
+            Authorization::Enabled { token_decoder }
         }
-        None => {
-            grpc::server::serve(&addr, broker, shutdown_handler()).await?;
-        }
-    }
+        None => Authorization::Disabled,
+    };
+
+    grpc::server::serve(&addr, broker, authorization, shutdown_handler()).await?;
 
     Ok(())
 }

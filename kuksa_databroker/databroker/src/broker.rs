@@ -11,6 +11,7 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
+use crate::permissions::{PermissionError, Permissions};
 pub use crate::types;
 
 use crate::query;
@@ -34,6 +35,15 @@ pub enum UpdateError {
     WrongType,
     OutOfBounds,
     UnsupportedType,
+    PermissionDenied,
+    PermissionExpired,
+}
+
+#[derive(Debug)]
+pub enum ReadError {
+    NotFound,
+    PermissionDenied,
+    PermissionExpired,
 }
 
 #[derive(Debug, Clone)]
@@ -67,7 +77,7 @@ pub enum Field {
 }
 
 #[derive(Default)]
-pub struct Entries {
+pub struct Database {
     next_id: AtomicI32,
     path_to_id: HashMap<String, i32>,
     entries: HashMap<i32, Entry>,
@@ -116,19 +126,22 @@ pub enum SubscriptionError {
 
 #[derive(Clone)]
 pub struct DataBroker {
-    pub entries: Arc<RwLock<Entries>>,
-    pub subscriptions: Arc<RwLock<Subscriptions>>,
+    database: Arc<RwLock<Database>>,
+    subscriptions: Arc<RwLock<Subscriptions>>,
+    version: String,
     shutdown_trigger: broadcast::Sender<()>,
 }
 
 pub struct QuerySubscription {
     query: query::CompiledQuery,
     sender: mpsc::Sender<QueryResponse>,
+    permissions: Permissions,
 }
 
 pub struct ChangeSubscription {
     entries: HashMap<i32, HashSet<Field>>,
     sender: mpsc::Sender<EntryUpdates>,
+    permissions: Permissions,
 }
 
 #[derive(Debug)]
@@ -575,18 +588,18 @@ impl Subscriptions {
     pub async fn notify(
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
-        entries: &Entries,
+        db: &Database,
     ) -> Result<(), NotificationError> {
         let mut error = None;
         for sub in &self.query_subscriptions {
-            match sub.notify(changed, entries).await {
+            match sub.notify(changed, db).await {
                 Ok(_) => {}
                 Err(err) => error = Some(err),
             }
         }
 
         for sub in &self.change_subscriptions {
-            match sub.notify(changed, entries).await {
+            match sub.notify(changed, db).await {
                 Ok(_) => {}
                 Err(err) => error = Some(err),
             }
@@ -627,8 +640,9 @@ impl ChangeSubscription {
     async fn notify(
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
-        entries: &Entries,
+        db: &Database,
     ) -> Result<(), NotificationError> {
+        let db_read = db.authorized_read_access(&self.permissions);
         match changed {
             Some(changed) => {
                 let mut matches = false;
@@ -648,8 +662,8 @@ impl ChangeSubscription {
                         for (id, changed_fields) in changed {
                             if let Some(fields) = self.entries.get(id) {
                                 if !fields.is_disjoint(changed_fields) {
-                                    match entries.get_by_id(*id) {
-                                        Some(entry) => {
+                                    match db_read.get_entry_by_id(*id) {
+                                        Ok(entry) => {
                                             let mut update = EntryUpdate::default();
                                             let mut notify_fields = HashSet::new();
                                             // TODO: Perhaps make path optional
@@ -672,7 +686,7 @@ impl ChangeSubscription {
                                                 fields: notify_fields,
                                             });
                                         }
-                                        None => {
+                                        Err(_) => {
                                             debug!("notify: could not find entry with id {}", id)
                                         }
                                     }
@@ -694,8 +708,8 @@ impl ChangeSubscription {
                     let mut notifications = EntryUpdates::default();
 
                     for (id, fields) in &self.entries {
-                        match entries.get_by_id(*id) {
-                            Some(entry) => {
+                        match db_read.get_entry_by_id(*id) {
+                            Ok(entry) => {
                                 let mut update = EntryUpdate::default();
                                 let mut notify_fields = HashSet::new();
                                 // TODO: Perhaps make path optional
@@ -713,7 +727,7 @@ impl ChangeSubscription {
                                     fields: notify_fields,
                                 });
                             }
-                            None => {
+                            Err(_) => {
                                 debug!("notify: could not find entry with id {}", id)
                             }
                         }
@@ -733,15 +747,15 @@ impl QuerySubscription {
     fn generate_input(
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
-        entries: &Entries,
+        db: &DatabaseReadAccess,
     ) -> Option<impl query::ExecutionInput> {
         let id_used_in_query = {
             let mut query_uses_id = false;
             match changed {
                 Some(changed) => {
                     for (id, fields) in changed {
-                        if let Some(entry) = entries.get_by_id(*id) {
-                            if self.query.input_spec.contains(&entry.metadata.path)
+                        if let Some(metadata) = db.get_metadata_by_id(*id) {
+                            if self.query.input_spec.contains(&metadata.path)
                                 && fields.contains(&Field::Datapoint)
                             {
                                 query_uses_id = true;
@@ -761,9 +775,9 @@ impl QuerySubscription {
         if id_used_in_query {
             let mut input = query::ExecutionInputImpl::new();
             for name in self.query.input_spec.iter() {
-                match entries.get_by_path(name) {
-                    Some(entry) => input.add(name.to_owned(), entry.datapoint.value.to_owned()),
-                    None => {
+                match db.get_entry_by_path(name) {
+                    Ok(entry) => input.add(name.to_owned(), entry.datapoint.value.to_owned()),
+                    Err(_) => {
                         // TODO: This should probably generate an error
                         input.add(name.to_owned(), DataValue::NotAvailable)
                     }
@@ -778,9 +792,10 @@ impl QuerySubscription {
     async fn notify(
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
-        entries: &Entries,
+        db: &Database,
     ) -> Result<(), NotificationError> {
-        match self.generate_input(changed, entries) {
+        let db_read = db.authorized_read_access(&self.permissions);
+        match self.generate_input(changed, &db_read) {
             Some(input) =>
             // Execute query (if anything queued)
             {
@@ -816,40 +831,120 @@ impl QuerySubscription {
     }
 }
 
-impl Entries {
-    pub fn new() -> Self {
-        Self {
-            next_id: Default::default(),
-            path_to_id: Default::default(),
-            entries: Default::default(),
+pub struct DatabaseReadAccess<'a, 'b> {
+    db: &'a Database,
+    permissions: &'b Permissions,
+}
+
+pub struct DatabaseWriteAccess<'a, 'b> {
+    db: &'a mut Database,
+    permissions: &'b Permissions,
+}
+
+pub struct MetadataIterator<'a> {
+    inner: std::collections::hash_map::Iter<'a, i32, Entry>,
+}
+
+impl<'a> Iterator for MetadataIterator<'a> {
+    type Item = &'a Metadata;
+
+    #[inline]
+    fn next(&mut self) -> Option<&'a Metadata> {
+        self.inner.next().map(|(_, entry)| &entry.metadata)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<'a, 'b> DatabaseReadAccess<'a, 'b> {
+    pub fn get_entry_by_id(&self, id: i32) -> Result<&Entry, ReadError> {
+        match self.db.entries.get(&id) {
+            Some(entry) => match self.permissions.can_read(&entry.metadata.path) {
+                Ok(_) => Ok(entry),
+                Err(PermissionError::Denied) => Err(ReadError::PermissionDenied),
+                Err(PermissionError::Expired) => Err(ReadError::PermissionExpired),
+            },
+            None => Err(ReadError::NotFound),
         }
     }
 
-    pub fn get_by_id(&self, id: i32) -> Option<&Entry> {
-        self.entries.get(&id)
-    }
-
-    pub fn get_by_path(&self, name: impl AsRef<str>) -> Option<&Entry> {
-        match self.path_to_id.get(name.as_ref()) {
-            Some(id) => self.get_by_id(*id),
-            None => None,
+    pub fn get_entry_by_path(&self, path: impl AsRef<str>) -> Result<&Entry, ReadError> {
+        match self.db.path_to_id.get(path.as_ref()) {
+            Some(id) => self.get_entry_by_id(*id),
+            None => Err(ReadError::NotFound),
         }
     }
 
+    pub fn get_metadata_by_id(&self, id: i32) -> Option<&Metadata> {
+        self.db.entries.get(&id).map(|entry| &entry.metadata)
+    }
+
+    pub fn get_metadata_by_path(&self, path: &str) -> Option<&Metadata> {
+        let id = self.db.path_to_id.get(path)?;
+        self.get_metadata_by_id(*id)
+    }
+
+    pub fn iter_metadata(&self) -> MetadataIterator {
+        MetadataIterator {
+            inner: self.db.entries.iter(),
+        }
+    }
+}
+
+impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
     pub fn update_by_path(
         &mut self,
-        path: impl AsRef<str>,
+        path: &str,
         update: EntryUpdate,
     ) -> Result<HashSet<Field>, UpdateError> {
-        match self.path_to_id.get(path.as_ref()) {
+        match self.db.path_to_id.get(path) {
             Some(id) => self.update(*id, update),
             None => Err(UpdateError::NotFound),
         }
     }
 
     pub fn update(&mut self, id: i32, update: EntryUpdate) -> Result<HashSet<Field>, UpdateError> {
-        match self.entries.get_mut(&id) {
+        match self.db.entries.get_mut(&id) {
             Some(entry) => {
+                if update.path.is_some()
+                    || update.entry_type.is_some()
+                    || update.data_type.is_some()
+                    || update.description.is_some()
+                {
+                    return Err(UpdateError::PermissionDenied);
+                }
+                match (
+                    &update.datapoint,
+                    self.permissions.can_write_datapoint(&entry.metadata.path),
+                ) {
+                    (Some(_), Err(PermissionError::Denied)) => {
+                        return Err(UpdateError::PermissionDenied)
+                    }
+                    (Some(_), Err(PermissionError::Expired)) => {
+                        return Err(UpdateError::PermissionExpired)
+                    }
+                    (_, _) => {
+                        // Ok
+                    }
+                }
+
+                match (
+                    &update.actuator_target,
+                    self.permissions
+                        .can_write_actuator_target(&entry.metadata.path),
+                ) {
+                    (Some(_), Err(PermissionError::Denied)) => {
+                        return Err(UpdateError::PermissionDenied)
+                    }
+                    (Some(_), Err(PermissionError::Expired)) => {
+                        return Err(UpdateError::PermissionExpired)
+                    }
+                    (_, _) => {}
+                }
+
                 // Reduce update to only include changes
                 let update = entry.diff(update);
                 // Validate update
@@ -873,12 +968,14 @@ impl Entries {
         change_type: ChangeType,
         entry_type: EntryType,
         description: String,
-        datapoint: Option<Datapoint>,
         allowed: Option<types::DataValue>,
+        datapoint: Option<Datapoint>,
     ) -> Result<i32, RegistrationError> {
-        if let Some(datapoint) = self.get_by_path(&name) {
+        // TODO: Add authorization
+
+        if let Some(id) = self.db.path_to_id.get(&name) {
             // It already exists
-            return Ok(datapoint.metadata.id);
+            return Ok(*id);
         };
 
         let temp_id = 0;
@@ -908,59 +1005,66 @@ impl Entries {
             .map_err(|_err| RegistrationError {})?;
 
         // Get next id (and bump it)
-        let id = self.next_id.fetch_add(1, Ordering::SeqCst);
+        let id = self.db.next_id.fetch_add(1, Ordering::SeqCst);
 
         // Map name -> id
-        self.path_to_id.insert(name, id);
+        self.db.path_to_id.insert(name, id);
 
         new_entry.metadata.id = id;
 
         // Add entry (mapped by id)
-        self.entries.insert(id, new_entry);
+        self.db.entries.insert(id, new_entry);
 
         // Return the id
         Ok(id)
     }
-
-    pub fn iter(&self) -> impl Iterator<Item = &Entry> + '_ {
-        self.entries.values()
-    }
 }
 
-impl query::CompilationInput for Entries {
-    fn get_datapoint_type(&self, field: &str) -> Result<DataType, query::CompilationError> {
-        match self.get_by_path(field) {
-            Some(entry) => Ok(entry.metadata.data_type.to_owned()),
-            None => Err(query::CompilationError::UnknownField(field.to_owned())),
-        }
-    }
-}
-
-impl DataBroker {
+impl Database {
     pub fn new() -> Self {
-        let (shutdown_trigger, _) = broadcast::channel::<()>(1);
-
-        DataBroker {
+        Self {
+            next_id: Default::default(),
+            path_to_id: Default::default(),
             entries: Default::default(),
-            subscriptions: Default::default(),
-            shutdown_trigger,
         }
     }
 
-    pub fn start_housekeeping_task(&self) {
-        info!("Starting housekeeping task");
-        let subscriptions = self.subscriptions.clone();
-        tokio::spawn(async move {
-            let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
-
-            loop {
-                interval.tick().await;
-                // Cleanup dropped subscriptions
-                subscriptions.write().await.cleanup();
-            }
-        });
+    pub fn authorized_read_access<'a, 'b>(
+        &'a self,
+        permissions: &'b Permissions,
+    ) -> DatabaseReadAccess<'a, 'b> {
+        DatabaseReadAccess {
+            db: self,
+            permissions,
+        }
     }
 
+    pub fn authorized_write_access<'a, 'b>(
+        &'a mut self,
+        permissions: &'b Permissions,
+    ) -> DatabaseWriteAccess<'a, 'b> {
+        DatabaseWriteAccess {
+            db: self,
+            permissions,
+        }
+    }
+}
+
+impl<'a, 'b> query::CompilationInput for DatabaseReadAccess<'a, 'b> {
+    fn get_datapoint_type(&self, path: &str) -> Result<DataType, query::CompilationError> {
+        match self.get_metadata_by_path(path) {
+            Some(metadata) => Ok(metadata.data_type.to_owned()),
+            None => Err(query::CompilationError::UnknownField(path.to_owned())),
+        }
+    }
+}
+
+pub struct AuthorizedAccess<'a, 'b> {
+    broker: &'a DataBroker,
+    permissions: &'b Permissions,
+}
+
+impl<'a, 'b> AuthorizedAccess<'a, 'b> {
     pub async fn add_entry(
         &self,
         name: String,
@@ -970,59 +1074,111 @@ impl DataBroker {
         description: String,
         allowed: Option<types::DataValue>,
     ) -> Result<i32, RegistrationError> {
-        self.entries.write().await.add(
-            name,
-            data_type,
-            change_type,
-            entry_type,
-            description,
-            None,
-            allowed,
-        )
+        self.broker
+            .database
+            .write()
+            .await
+            .authorized_write_access(self.permissions)
+            .add(
+                name,
+                data_type,
+                change_type,
+                entry_type,
+                description,
+                allowed,
+                None,
+            )
     }
 
     pub async fn get_id_by_path(&self, name: &str) -> Option<i32> {
-        self.entries
+        self.broker
+            .database
             .read()
             .await
-            .get_by_path(name)
-            .map(|entry| entry.metadata.id)
+            .authorized_read_access(self.permissions)
+            .get_metadata_by_path(name)
+            .map(|metadata| metadata.id)
     }
 
-    pub async fn get_datapoint(&self, id: i32) -> Option<Datapoint> {
-        self.entries
+    pub async fn get_datapoint(&self, id: i32) -> Result<Datapoint, ReadError> {
+        self.broker
+            .database
             .read()
             .await
-            .get_by_id(id)
+            .authorized_read_access(self.permissions)
+            .get_entry_by_id(id)
             .map(|entry| entry.datapoint.clone())
     }
 
-    pub async fn get_datapoint_by_path(&self, name: &str) -> Option<Datapoint> {
-        self.entries
+    pub async fn get_datapoint_by_path(&self, name: &str) -> Result<Datapoint, ReadError> {
+        self.broker
+            .database
             .read()
             .await
-            .get_by_path(name)
+            .authorized_read_access(self.permissions)
+            .get_entry_by_path(name)
             .map(|entry| entry.datapoint.clone())
     }
 
     pub async fn get_metadata(&self, id: i32) -> Option<Metadata> {
-        self.entries
+        self.broker
+            .database
             .read()
             .await
-            .get_by_id(id)
-            .map(|item| item.metadata.clone())
-    }
-
-    pub async fn get_entry_by_path(&self, path: impl AsRef<str>) -> Option<Entry> {
-        self.entries
-            .read()
-            .await
-            .get_by_path(path.as_ref())
+            .authorized_read_access(self.permissions)
+            .get_metadata_by_id(id)
             .cloned()
     }
 
-    pub async fn get_entry(&self, id: i32) -> Option<Entry> {
-        self.entries.read().await.get_by_id(id).cloned()
+    pub async fn get_metadata_by_path(&self, path: &str) -> Option<Metadata> {
+        self.broker
+            .database
+            .read()
+            .await
+            .authorized_read_access(self.permissions)
+            .get_metadata_by_path(path)
+            .cloned()
+    }
+
+    pub async fn get_entry_by_path(&self, path: &str) -> Result<Entry, ReadError> {
+        self.broker
+            .database
+            .read()
+            .await
+            .authorized_read_access(self.permissions)
+            .get_entry_by_path(path)
+            .cloned()
+    }
+
+    pub async fn get_entry_by_id(&self, id: i32) -> Result<Entry, ReadError> {
+        self.broker
+            .database
+            .read()
+            .await
+            .authorized_read_access(self.permissions)
+            .get_entry_by_id(id)
+            .cloned()
+    }
+
+    pub async fn for_each_metadata(&self, f: impl FnMut(&Metadata)) {
+        self.broker
+            .database
+            .read()
+            .await
+            .authorized_read_access(self.permissions)
+            .iter_metadata()
+            .for_each(f)
+    }
+
+    pub async fn map_metadata<T>(&self, f: impl FnMut(&Metadata) -> T) -> Vec<T> {
+        self.broker
+            .database
+            .read()
+            .await
+            .authorized_read_access(self.permissions)
+            .iter_metadata()
+            .map(f)
+            .collect()
     }
 
     pub async fn update_entries(
@@ -1030,14 +1186,15 @@ impl DataBroker {
         updates: impl IntoIterator<Item = (i32, EntryUpdate)>,
     ) -> Result<(), Vec<(i32, UpdateError)>> {
         let mut errors = Vec::new();
-        let mut entries = self.entries.write().await;
+        let mut db = self.broker.database.write().await;
+        let mut db_write = db.authorized_write_access(self.permissions);
 
         let cleanup_needed = {
             let changed = {
                 let mut changed = HashMap::<i32, HashSet<Field>>::new();
                 for (id, update) in updates {
                     debug!("setting id {} to {:?}", id, update);
-                    match entries.update(id, update) {
+                    match db_write.update(id, update) {
                         Ok(changed_fields) => {
                             if !changed_fields.is_empty() {
                                 changed.insert(id, changed_fields);
@@ -1053,14 +1210,15 @@ impl DataBroker {
             // Downgrade to reader (to allow other readers) while holding on
             // to a read lock in order to ensure a consistent state while
             // notifying subscribers (no writes in between)
-            let entries = entries.downgrade();
+            let db = db.downgrade();
 
             // Notify
             match self
+                .broker
                 .subscriptions
                 .read()
                 .await
-                .notify(Some(&changed), &entries)
+                .notify(Some(&changed), &db)
                 .await
             {
                 Ok(()) => false,
@@ -1070,7 +1228,7 @@ impl DataBroker {
 
         // Cleanup closed subscriptions
         if cleanup_needed {
-            self.subscriptions.write().await.cleanup();
+            self.broker.subscriptions.write().await.cleanup();
         }
 
         // Return errors if any
@@ -1106,17 +1264,19 @@ impl DataBroker {
         let subscription = ChangeSubscription {
             entries: valid_entries,
             sender,
+            permissions: self.permissions.clone(),
         };
 
         {
             // Send everything subscribed to in an initial notification
-            let all_entries = self.entries.read().await;
-            if subscription.notify(None, &all_entries).await.is_err() {
+            let db = self.broker.database.read().await;
+            if subscription.notify(None, &db).await.is_err() {
                 warn!("Failed to create initial notification");
             }
         }
 
-        self.subscriptions
+        self.broker
+            .subscriptions
             .write()
             .await
             .add_change_subscription(subscription);
@@ -1129,8 +1289,9 @@ impl DataBroker {
         &self,
         query: &str,
     ) -> Result<impl Stream<Item = QueryResponse>, QueryError> {
-        let reader = self.entries.read().await;
-        let compiled_query = query::compile(query, &*reader);
+        let db_read = self.broker.database.read().await;
+        let db_read_access = db_read.authorized_read_access(self.permissions);
+        let compiled_query = query::compile(query, &db_read_access);
 
         match compiled_query {
             Ok(compiled_query) => {
@@ -1139,11 +1300,13 @@ impl DataBroker {
                 let subscription = QuerySubscription {
                     query: compiled_query,
                     sender,
+                    permissions: self.permissions.clone(),
                 };
 
                 // Send the initial execution of query
-                match subscription.notify(None, &reader).await {
+                match subscription.notify(None, &db_read).await {
                     Ok(_) => self
+                        .broker
                         .subscriptions
                         .write()
                         .await
@@ -1156,6 +1319,43 @@ impl DataBroker {
             }
             Err(e) => Err(QueryError::CompilationError(format!("{e:?}"))),
         }
+    }
+}
+
+impl DataBroker {
+    pub fn new(version: impl Into<String>) -> Self {
+        let (shutdown_trigger, _) = broadcast::channel::<()>(1);
+
+        DataBroker {
+            database: Default::default(),
+            subscriptions: Default::default(),
+            version: version.into(),
+            shutdown_trigger,
+        }
+    }
+
+    pub fn authorized_access<'a, 'b>(
+        &'a self,
+        permissions: &'b Permissions,
+    ) -> AuthorizedAccess<'a, 'b> {
+        AuthorizedAccess {
+            broker: self,
+            permissions,
+        }
+    }
+
+    pub fn start_housekeeping_task(&self) {
+        info!("Starting housekeeping task");
+        let subscriptions = self.subscriptions.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
+
+            loop {
+                interval.tick().await;
+                // Cleanup dropped subscriptions
+                subscriptions.write().await.cleanup();
+            }
+        });
     }
 
     pub async fn shutdown(&self) {
@@ -1170,481 +1370,214 @@ impl DataBroker {
     pub fn get_shutdown_trigger(&self) -> broadcast::Receiver<()> {
         self.shutdown_trigger.subscribe()
     }
+
+    pub fn get_version(&self) -> &str {
+        &self.version
+    }
 }
 
 impl Default for DataBroker {
     fn default() -> Self {
-        Self::new()
+        Self::new("")
     }
 }
 
-#[tokio::test]
-async fn test_register_datapoint() {
-    let datapoints = DataBroker::new();
-    let id1 = datapoints
-        .add_entry(
-            "test.datapoint1".to_owned(),
-            DataType::Bool,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 1".to_owned(),
-            Some(DataValue::BoolArray(Vec::from([true]))),
-        )
-        .await
-        .expect("Register datapoint should succeed");
+#[cfg(test)]
+mod tests {
+    use crate::permissions;
 
-    {
-        match datapoints.entries.read().await.get_by_id(id1) {
-            Some(entry) => {
-                assert_eq!(entry.metadata.id, id1);
-                assert_eq!(entry.metadata.path, "test.datapoint1");
-                assert_eq!(entry.metadata.data_type, DataType::Bool);
-                assert_eq!(entry.metadata.description, "Test datapoint 1");
-                assert_eq!(
-                    entry.metadata.allowed,
-                    Some(DataValue::BoolArray(Vec::from([true])))
-                );
-            }
-            None => {
-                panic!("datapoint should exist");
-            }
-        }
-    }
+    use super::*;
+    use tokio_stream::StreamExt;
 
-    let id2 = datapoints
-        .add_entry(
-            "test.datapoint2".to_owned(),
-            DataType::String,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 2".to_owned(),
-            None,
-        )
-        .await
-        .expect("Register datapoint should succeed");
+    #[tokio::test]
+    async fn test_register_datapoint() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
 
-    {
-        match datapoints.entries.read().await.get_by_id(id2) {
-            Some(entry) => {
-                assert_eq!(entry.metadata.id, id2);
-                assert_eq!(entry.metadata.path, "test.datapoint2");
-                assert_eq!(entry.metadata.data_type, DataType::String);
-                assert_eq!(entry.metadata.description, "Test datapoint 2");
-                assert_eq!(entry.metadata.allowed, None);
-            }
-            None => {
-                panic!("no metadata returned");
+        let id1 = broker
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                DataType::Bool,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 1".to_owned(),
+                Some(DataValue::BoolArray(Vec::from([true]))),
+            )
+            .await
+            .expect("Register datapoint should succeed");
+
+        {
+            match broker.get_entry_by_id(id1).await {
+                Ok(entry) => {
+                    assert_eq!(entry.metadata.id, id1);
+                    assert_eq!(entry.metadata.path, "test.datapoint1");
+                    assert_eq!(entry.metadata.data_type, DataType::Bool);
+                    assert_eq!(entry.metadata.description, "Test datapoint 1");
+                    assert_eq!(
+                        entry.metadata.allowed,
+                        Some(DataValue::BoolArray(Vec::from([true])))
+                    );
+                }
+                Err(_) => {
+                    panic!("datapoint should exist");
+                }
             }
         }
-    }
 
-    let id3 = datapoints
-        .add_entry(
-            "test.datapoint1".to_owned(),
-            DataType::Bool,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 1 (modified)".to_owned(),
-            None,
-        )
-        .await
-        .expect("Register datapoint should succeed");
+        let id2 = broker
+            .add_entry(
+                "test.datapoint2".to_owned(),
+                DataType::String,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 2".to_owned(),
+                None,
+            )
+            .await
+            .expect("Register datapoint should succeed");
 
-    assert_eq!(id3, id1);
-
-    if datapoints
-        .add_entry(
-            "test.datapoint3".to_owned(),
-            DataType::String,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 3".to_owned(),
-            Some(DataValue::Int32Array(Vec::from([1, 2, 3, 4]))),
-        )
-        .await
-        .is_ok()
-    {
-        panic!("Datapoint should not be regsitered successfully");
-    } else {
-        // everything fine, should not succed to register because allowed is Int32Array and data_type is String
-    }
-}
-
-#[tokio::test]
-async fn test_get_set_datapoint() {
-    let datapoints = DataBroker::new();
-
-    let id1 = datapoints
-        .add_entry(
-            "test.datapoint1".to_owned(),
-            DataType::Int32,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 1".to_owned(),
-            Some(DataValue::Int32Array(vec![100])),
-        )
-        .await
-        .expect("Register datapoint should succeed");
-
-    let id2 = datapoints
-        .add_entry(
-            "test.datapoint2".to_owned(),
-            DataType::Bool,
-            ChangeType::OnChange,
-            EntryType::Actuator,
-            "Test datapoint 2".to_owned(),
-            None,
-        )
-        .await
-        .expect("Register datapoint should succeed");
-
-    // Data point exists with value NotAvailable
-    match datapoints.get_datapoint(id1).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.value, DataValue::NotAvailable);
-        }
-        None => {
-            panic!("data point expected to exist");
-        }
-    }
-
-    match datapoints.get_entry(id2).await {
-        Some(entry) => {
-            assert_eq!(entry.datapoint.value, DataValue::NotAvailable);
-            assert_eq!(entry.actuator_target, None)
-        }
-        None => {
-            panic!("data point expected to exist");
-        }
-    }
-
-    let time1 = SystemTime::now();
-
-    match datapoints
-        .update_entries([(
-            id1,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts: time1,
-                    value: DataValue::Bool(true),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: Some(Some(DataValue::Int32Array(vec![100]))),
-            },
-        )])
-        .await
-    {
-        Ok(_) => {
-            panic!("should not have been able to set int32 typed datapoint to boolean value")
-        }
-        Err(e) => match e[0] {
-            (id, UpdateError::WrongType) => assert_eq!(id, id1),
-            _ => panic!(
-                "should have reported wrong type but got error of type {:?}",
-                e
-            ),
-        },
-    }
-
-    datapoints
-        .update_entries([(
-            id1,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts: time1,
-                    value: DataValue::Int32(100),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: Some(Some(DataValue::Int32Array(vec![100]))),
-            },
-        )])
-        .await
-        .expect("setting datapoint #1");
-
-    let time2 = SystemTime::now();
-    datapoints
-        .update_entries([(
-            id2,
-            EntryUpdate {
-                path: None,
-                datapoint: None,
-                actuator_target: Some(Some(Datapoint {
-                    ts: time2,
-                    value: DataValue::Bool(true),
-                })),
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-        .expect("setting datapoint #2");
-
-    // Data point exists with value 100
-    match datapoints.get_datapoint(id1).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.value, DataValue::Int32(100));
-            assert_eq!(datapoint.ts, time1);
-        }
-        None => {
-            panic!("data point 1 expected to exist");
-        }
-    }
-
-    match datapoints.get_entry(id2).await {
-        Some(entry) => match entry.actuator_target {
-            Some(datapoint) => {
-                assert_eq!(datapoint.value, DataValue::Bool(true));
-                assert_eq!(datapoint.ts, time2);
+        {
+            match broker.get_entry_by_id(id2).await {
+                Ok(entry) => {
+                    assert_eq!(entry.metadata.id, id2);
+                    assert_eq!(entry.metadata.path, "test.datapoint2");
+                    assert_eq!(entry.metadata.data_type, DataType::String);
+                    assert_eq!(entry.metadata.description, "Test datapoint 2");
+                    assert_eq!(entry.metadata.allowed, None);
+                }
+                Err(_) => {
+                    panic!("no metadata returned");
+                }
             }
-            None => {
+        }
+
+        let id3 = broker
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                DataType::Bool,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 1 (modified)".to_owned(),
+                None,
+            )
+            .await
+            .expect("Register datapoint should succeed");
+
+        assert_eq!(id3, id1);
+    }
+
+    #[tokio::test]
+    async fn test_register_invalid_type() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
+
+        if broker
+            .add_entry(
+                "test.signal3".to_owned(),
+                DataType::String,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test signal 3".to_owned(),
+                Some(DataValue::Int32Array(Vec::from([1, 2, 3, 4]))),
+            )
+            .await
+            .is_ok()
+        {
+            panic!("Entry should not register successfully");
+        } else {
+            // everything fine, should not succed to register because allowed is Int32Array and data_type is String
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_set_datapoint() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
+
+        let id1 = broker
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                DataType::Int32,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 1".to_owned(),
+                None,
+            )
+            .await
+            .expect("Register datapoint should succeed");
+
+        let id2 = broker
+            .add_entry(
+                "test.datapoint2".to_owned(),
+                DataType::Bool,
+                ChangeType::OnChange,
+                EntryType::Actuator,
+                "Test datapoint 2".to_owned(),
+                None,
+            )
+            .await
+            .expect("Register datapoint should succeed");
+
+        // Data point exists with value NotAvailable
+        match broker.get_datapoint(id1).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.value, DataValue::NotAvailable);
+            }
+            Err(_) => {
                 panic!("data point expected to exist");
             }
-        },
-        None => {
-            panic!("data point 2 expected to exist");
         }
-    }
 
-    if datapoints
-        .update_entries([(
-            id1,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts: SystemTime::now(),
-                    value: DataValue::Int32(1),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: Some(Some(DataValue::Int32Array(vec![100]))),
-            },
-        )])
-        .await
-        .is_ok()
-    {
-        panic!("Setting int32 value of 1 should fail because it is not in the allowed values");
-    } else {
-        // everything fine should fail because trying to set a value which is not in allowed values
-    }
-
-    if datapoints
-        .update_entries([(
-            id1,
-            EntryUpdate {
-                path: None,
-                datapoint: None,
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: Some(Some(DataValue::BoolArray(vec![true]))),
-            },
-        )])
-        .await
-        .is_ok()
-    {
-        panic!("Setting allowed to a BoolArray should fail because data_type is int32");
-    } else {
-        // everything fine should fail because trying to set array of type Bool does not match data_type
-    }
-
-    datapoints
-        .update_entries([(
-            id1,
-            EntryUpdate {
-                path: None,
-                datapoint: None,
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: Some(None),
-            },
-        )])
-        .await
-        .expect("setting allowed for entry #1");
-
-    datapoints
-        .update_entries([(
-            id1,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts: time1,
-                    value: DataValue::Int32(1),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-        .expect("setting datapoint #1");
-
-    match datapoints.get_datapoint(id1).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.value, DataValue::Int32(1));
-            assert_eq!(datapoint.ts, time1);
+        match broker.get_entry_by_id(id2).await {
+            Ok(entry) => {
+                assert_eq!(entry.datapoint.value, DataValue::NotAvailable);
+                assert_eq!(entry.actuator_target, None)
+            }
+            Err(_) => {
+                panic!("data point expected to exist");
+            }
         }
-        None => {
-            panic!("data point 1 expected to exist");
-        }
-    }
-}
 
-#[tokio::test]
-async fn test_subscribe_query_and_get() {
-    use tokio_stream::StreamExt;
+        let time1 = SystemTime::now();
 
-    let datapoints = DataBroker::new();
-    let id1 = datapoints
-        .add_entry(
-            "test.datapoint1".to_owned(),
-            DataType::Int32,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 1".to_owned(),
-            None,
-        )
-        .await
-        .expect("Register datapoint should succeed");
-
-    let mut stream = datapoints
-        .subscribe_query("SELECT test.datapoint1")
-        .await
-        .expect("Setup subscription");
-
-    // Expect an initial query response
-    // No value has been set yet, so value should be NotAvailable
-    match stream.next().await {
-        Some(query_resp) => {
-            assert_eq!(query_resp.fields.len(), 1);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            assert_eq!(query_resp.fields[0].value, DataValue::NotAvailable);
-        }
-        None => {
-            panic!("did not expect stream end")
-        }
-    }
-
-    datapoints
-        .update_entries([(
-            id1,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts: SystemTime::now(),
-                    value: DataValue::Int32(101),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-        .expect("setting datapoint #1");
-
-    // Value has been set, expect the next item in stream to match.
-    match stream.next().await {
-        Some(query_resp) => {
-            assert_eq!(query_resp.fields.len(), 1);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            assert_eq!(query_resp.fields[0].value, DataValue::Int32(101));
-        }
-        None => {
-            panic!("did not expect stream end")
-        }
-    }
-
-    // Check that the data point has been stored as well
-    match datapoints.get_datapoint(id1).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.value, DataValue::Int32(101));
-        }
-        None => {
-            panic!("data point expected to exist");
-        }
-    }
-}
-
-#[tokio::test]
-async fn test_multi_subscribe() {
-    use tokio_stream::StreamExt;
-
-    let datapoints = DataBroker::new();
-    let id1 = datapoints
-        .add_entry(
-            "test.datapoint1".to_owned(),
-            DataType::Int32,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 1".to_owned(),
-            None,
-        )
-        .await
-        .expect("Register datapoint should succeed");
-
-    let mut subscription1 = datapoints
-        .subscribe_query("SELECT test.datapoint1")
-        .await
-        .expect("setup first subscription");
-
-    let mut subscription2 = datapoints
-        .subscribe_query("SELECT test.datapoint1")
-        .await
-        .expect("setup second subscription");
-
-    // Expect an initial query response
-    // No value has been set yet, so value should be NotAvailable
-    match subscription1.next().await {
-        Some(query_resp) => {
-            assert_eq!(query_resp.fields.len(), 1);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            assert_eq!(query_resp.fields[0].value, DataValue::NotAvailable);
-        }
-        None => {
-            panic!("did not expect stream end")
-        }
-    }
-
-    // Expect an initial query response
-    // No value has been set yet, so value should be NotAvailable
-    match subscription2.next().await {
-        Some(query_resp) => {
-            assert_eq!(query_resp.fields.len(), 1);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            assert_eq!(query_resp.fields[0].value, DataValue::NotAvailable);
-        }
-        None => {
-            panic!("did not expect stream end")
-        }
-    }
-
-    for i in 0..100 {
-        datapoints
+        match broker
             .update_entries([(
                 id1,
                 EntryUpdate {
                     path: None,
                     datapoint: Some(Datapoint {
-                        ts: SystemTime::now(),
-                        value: DataValue::Int32(i),
+                        ts: time1,
+                        value: DataValue::Bool(true),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+        {
+            Ok(_) => {
+                panic!("should not have been able to set int32 typed datapoint to boolean value")
+            }
+            Err(e) => match e[0] {
+                (id, UpdateError::WrongType) => assert_eq!(id, id1),
+                _ => panic!(
+                    "should have reported wrong type but got error of type {:?}",
+                    e
+                ),
+            },
+        }
+
+        broker
+            .update_entries([(
+                id1,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts: time1,
+                        value: DataValue::Int32(100),
                     }),
                     actuator_target: None,
                     entry_type: None,
@@ -1656,229 +1589,309 @@ async fn test_multi_subscribe() {
             .await
             .expect("setting datapoint #1");
 
-        if let Some(query_resp) = subscription1.next().await {
-            assert_eq!(query_resp.fields.len(), 1);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            if let DataValue::Int32(value) = query_resp.fields[0].value {
-                assert_eq!(value, i);
-            } else {
-                panic!("expected test.datapoint1 to contain a value");
+        let time2 = SystemTime::now();
+        broker
+            .update_entries([(
+                id2,
+                EntryUpdate {
+                    path: None,
+                    datapoint: None,
+                    actuator_target: Some(Some(Datapoint {
+                        ts: time2,
+                        value: DataValue::Bool(true),
+                    })),
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+            .expect("setting datapoint #2");
+
+        // Data point exists with value 100
+        match broker.get_datapoint(id1).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.value, DataValue::Int32(100));
+                assert_eq!(datapoint.ts, time1);
             }
-        } else {
-            panic!("did not expect end of stream");
-        }
-
-        if let Some(query_resp) = subscription2.next().await {
-            assert_eq!(query_resp.fields.len(), 1);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            if let DataValue::Int32(value) = query_resp.fields[0].value {
-                assert_eq!(value, i);
-            } else {
-                panic!("expected test.datapoint1 to contain a value");
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint1 to exist");
             }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
+        }
+
+        match broker.get_entry_by_id(id2).await {
+            Ok(entry) => match entry.actuator_target {
+                Some(datapoint) => {
+                    assert_eq!(datapoint.value, DataValue::Bool(true));
+                    assert_eq!(datapoint.ts, time2);
+                }
+                None => {
+                    panic!("data point expected to exist");
+                }
+            },
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint2 to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_set_allowed_values() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
+
+        let id1 = broker
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                DataType::Int32,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 1".to_owned(),
+                Some(DataValue::Int32Array(vec![100])),
+            )
+            .await
+            .expect("Register datapoint should succeed");
+
+        if broker
+            .update_entries([(
+                id1,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts: SystemTime::now(),
+                        value: DataValue::Int32(1),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: Some(Some(DataValue::Int32Array(vec![100]))),
+                },
+            )])
+            .await
+            .is_ok()
+        {
+            panic!("Setting int32 value of 1 should fail because it is not in the allowed values");
         } else {
-            panic!("did not expect end of stream");
+            // everything fine should fail because trying to set a value which is not in allowed values
         }
-    }
-}
 
-#[tokio::test]
-async fn test_subscribe_after_new_registration() {
-    use tokio_stream::StreamExt;
-
-    let datapoints = DataBroker::new();
-    let id1 = datapoints
-        .add_entry(
-            "test.datapoint1".to_owned(),
-            DataType::Int32,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 1".to_owned(),
-            None,
-        )
-        .await
-        .expect("Register datapoint should succeed");
-
-    let mut subscription = datapoints
-        .subscribe_query("SELECT test.datapoint1")
-        .await
-        .expect("Setup subscription");
-
-    // Expect an initial query response
-    // No value has been set yet, so value should be NotAvailable
-    match subscription.next().await {
-        Some(query_resp) => {
-            assert_eq!(query_resp.fields.len(), 1);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            assert_eq!(query_resp.fields[0].value, DataValue::NotAvailable);
+        if broker
+            .update_entries([(
+                id1,
+                EntryUpdate {
+                    path: None,
+                    datapoint: None,
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: Some(Some(DataValue::BoolArray(vec![true]))),
+                },
+            )])
+            .await
+            .is_ok()
+        {
+            panic!("Setting allowed to a BoolArray should fail because data_type is int32");
+        } else {
+            // everything fine should fail because trying to set array of type Bool does not match data_type
         }
-        None => {
-            panic!("did not expect stream end")
-        }
-    }
 
-    datapoints
-        .update_entries([(
-            id1,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts: SystemTime::now(),
-                    value: DataValue::Int32(200),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-        .expect("setting datapoint #1");
+        broker
+            .update_entries([(
+                id1,
+                EntryUpdate {
+                    path: None,
+                    datapoint: None,
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: Some(None),
+                },
+            )])
+            .await
+            .expect("setting allowed for entry #1");
 
-    match subscription.next().await {
-        Some(query_resp) => {
-            assert_eq!(query_resp.fields.len(), 1);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            assert_eq!(query_resp.fields[0].value, DataValue::Int32(200));
-        }
-        None => {
-            panic!("did not expect stream end")
-        }
-    }
+        let time1 = SystemTime::now();
 
-    match datapoints.get_datapoint(id1).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.value, DataValue::Int32(200));
-        }
-        None => {
-            panic!("data point expected to exist");
+        broker
+            .update_entries([(
+                id1,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts: time1,
+                        value: DataValue::Int32(1),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+            .expect("setting datapoint #1");
+
+        match broker.get_datapoint(id1).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.value, DataValue::Int32(1));
+                assert_eq!(datapoint.ts, time1);
+            }
+            Err(ReadError::NotFound) => {
+                panic!("data point 1 expected to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to have access to data point 1");
+            }
         }
     }
 
-    let id2 = datapoints
-        .add_entry(
-            "test.datapoint1".to_owned(),
-            DataType::Int32,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 1 (new description)".to_owned(),
-            None,
-        )
-        .await
-        .expect("Registration should succeed");
+    #[tokio::test]
+    async fn test_subscribe_query_and_get() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
 
-    assert_eq!(id1, id2, "Re-registration should result in the same id");
+        let id1 = broker
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                DataType::Int32,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 1".to_owned(),
+                None,
+            )
+            .await
+            .expect("Register datapoint should succeed");
 
-    datapoints
-        .update_entries([(
-            id1,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts: SystemTime::now(),
-                    value: DataValue::Int32(102),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-        .expect("setting datapoint #1 (second time)");
+        let mut stream = broker
+            .subscribe_query("SELECT test.datapoint1")
+            .await
+            .expect("Setup subscription");
 
-    match subscription.next().await {
-        Some(query_resp) => {
-            assert_eq!(query_resp.fields.len(), 1);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            assert_eq!(query_resp.fields[0].value, DataValue::Int32(102));
+        // Expect an initial query response
+        // No value has been set yet, so value should be NotAvailable
+        match stream.next().await {
+            Some(query_resp) => {
+                assert_eq!(query_resp.fields.len(), 1);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                assert_eq!(query_resp.fields[0].value, DataValue::NotAvailable);
+            }
+            None => {
+                panic!("did not expect stream end")
+            }
         }
-        None => {
-            panic!("did not expect stream end")
+
+        broker
+            .update_entries([(
+                id1,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts: SystemTime::now(),
+                        value: DataValue::Int32(101),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+            .expect("setting datapoint #1");
+
+        // Value has been set, expect the next item in stream to match.
+        match stream.next().await {
+            Some(query_resp) => {
+                assert_eq!(query_resp.fields.len(), 1);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                assert_eq!(query_resp.fields[0].value, DataValue::Int32(101));
+            }
+            None => {
+                panic!("did not expect stream end")
+            }
         }
-    }
 
-    match datapoints.get_datapoint(id1).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.value, DataValue::Int32(102));
-        }
-        None => {
-            panic!("data point expected to exist");
-        }
-    }
-}
-
-#[tokio::test]
-async fn test_subscribe_set_multiple() {
-    use tokio_stream::StreamExt;
-
-    let datapoints = DataBroker::new();
-    let id1 = datapoints
-        .add_entry(
-            "test.datapoint1".to_owned(),
-            DataType::Int32,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 1".to_owned(),
-            None,
-        )
-        .await
-        .expect("Register datapoint should succeed");
-
-    let id2 = datapoints
-        .add_entry(
-            "test.datapoint2".to_owned(),
-            DataType::Int32,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 2".to_owned(),
-            None,
-        )
-        .await
-        .expect("Register datapoint should succeed");
-
-    let mut subscription = datapoints
-        .subscribe_query("SELECT test.datapoint1, test.datapoint2")
-        .await
-        .expect("setup first subscription");
-
-    // Expect an initial query response
-    // No value has been set yet, so value should be NotAvailable
-    match subscription.next().await {
-        Some(query_resp) => {
-            assert_eq!(query_resp.fields.len(), 2);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            assert_eq!(query_resp.fields[0].value, DataValue::NotAvailable);
-            assert_eq!(query_resp.fields[1].name, "test.datapoint2");
-            assert_eq!(query_resp.fields[1].value, DataValue::NotAvailable);
-        }
-        None => {
-            panic!("did not expect stream end")
+        // Check that the data point has been stored as well
+        match broker.get_datapoint(id1).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.value, DataValue::Int32(101));
+            }
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
         }
     }
 
-    for i in 0..10 {
-        datapoints
-            .update_entries([
-                (
+    #[tokio::test]
+    async fn test_multi_subscribe() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
+
+        let id1 = broker
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                DataType::Int32,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 1".to_owned(),
+                None,
+            )
+            .await
+            .expect("Register datapoint should succeed");
+
+        let mut subscription1 = broker
+            .subscribe_query("SELECT test.datapoint1")
+            .await
+            .expect("setup first subscription");
+
+        let mut subscription2 = broker
+            .subscribe_query("SELECT test.datapoint1")
+            .await
+            .expect("setup second subscription");
+
+        // Expect an initial query response
+        // No value has been set yet, so value should be NotAvailable
+        match subscription1.next().await {
+            Some(query_resp) => {
+                assert_eq!(query_resp.fields.len(), 1);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                assert_eq!(query_resp.fields[0].value, DataValue::NotAvailable);
+            }
+            None => {
+                panic!("did not expect stream end")
+            }
+        }
+
+        // Expect an initial query response
+        // No value has been set yet, so value should be NotAvailable
+        match subscription2.next().await {
+            Some(query_resp) => {
+                assert_eq!(query_resp.fields.len(), 1);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                assert_eq!(query_resp.fields[0].value, DataValue::NotAvailable);
+            }
+            None => {
+                panic!("did not expect stream end")
+            }
+        }
+
+        for i in 0..100 {
+            broker
+                .update_entries([(
                     id1,
-                    EntryUpdate {
-                        path: None,
-                        datapoint: Some(Datapoint {
-                            ts: SystemTime::now(),
-                            value: DataValue::Int32(-i),
-                        }),
-                        actuator_target: None,
-                        entry_type: None,
-                        data_type: None,
-                        description: None,
-                        allowed: None,
-                    },
-                ),
-                (
-                    id2,
                     EntryUpdate {
                         path: None,
                         datapoint: Some(Datapoint {
@@ -1891,532 +1904,932 @@ async fn test_subscribe_set_multiple() {
                         description: None,
                         allowed: None,
                     },
-                ),
-            ])
+                )])
+                .await
+                .expect("setting datapoint #1");
+
+            if let Some(query_resp) = subscription1.next().await {
+                assert_eq!(query_resp.fields.len(), 1);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                if let DataValue::Int32(value) = query_resp.fields[0].value {
+                    assert_eq!(value, i);
+                } else {
+                    panic!("expected test.datapoint1 to contain a value");
+                }
+            } else {
+                panic!("did not expect end of stream");
+            }
+
+            if let Some(query_resp) = subscription2.next().await {
+                assert_eq!(query_resp.fields.len(), 1);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                if let DataValue::Int32(value) = query_resp.fields[0].value {
+                    assert_eq!(value, i);
+                } else {
+                    panic!("expected test.datapoint1 to contain a value");
+                }
+            } else {
+                panic!("did not expect end of stream");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_subscribe_after_new_registration() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
+
+        let id1 = broker
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                DataType::Int32,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 1".to_owned(),
+                None,
+            )
+            .await
+            .expect("Register datapoint should succeed");
+
+        let mut subscription = broker
+            .subscribe_query("SELECT test.datapoint1")
+            .await
+            .expect("Setup subscription");
+
+        // Expect an initial query response
+        // No value has been set yet, so value should be NotAvailable
+        match subscription.next().await {
+            Some(query_resp) => {
+                assert_eq!(query_resp.fields.len(), 1);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                assert_eq!(query_resp.fields[0].value, DataValue::NotAvailable);
+            }
+            None => {
+                panic!("did not expect stream end")
+            }
+        }
+
+        broker
+            .update_entries([(
+                id1,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts: SystemTime::now(),
+                        value: DataValue::Int32(200),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
             .await
             .expect("setting datapoint #1");
+
+        match subscription.next().await {
+            Some(query_resp) => {
+                assert_eq!(query_resp.fields.len(), 1);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                assert_eq!(query_resp.fields[0].value, DataValue::Int32(200));
+            }
+            None => {
+                panic!("did not expect stream end")
+            }
+        }
+
+        match broker.get_datapoint(id1).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.value, DataValue::Int32(200));
+            }
+            Err(ReadError::NotFound) => {
+                panic!("datapoint expected to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
+        }
+
+        let id2 = broker
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                DataType::Int32,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 1 (new description)".to_owned(),
+                None,
+            )
+            .await
+            .expect("Registration should succeed");
+
+        assert_eq!(id1, id2, "Re-registration should result in the same id");
+
+        broker
+            .update_entries([(
+                id1,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts: SystemTime::now(),
+                        value: DataValue::Int32(102),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+            .expect("setting datapoint #1 (second time)");
+
+        match subscription.next().await {
+            Some(query_resp) => {
+                assert_eq!(query_resp.fields.len(), 1);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                assert_eq!(query_resp.fields[0].value, DataValue::Int32(102));
+            }
+            None => {
+                panic!("did not expect stream end")
+            }
+        }
+
+        match broker.get_datapoint(id1).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.value, DataValue::Int32(102));
+            }
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
+        }
     }
 
-    for i in 0..10 {
-        if let Some(query_resp) = subscription.next().await {
-            assert_eq!(query_resp.fields.len(), 2);
-            assert_eq!(query_resp.fields[0].name, "test.datapoint1");
-            if let DataValue::Int32(value) = query_resp.fields[0].value {
-                assert_eq!(value, -i);
-            } else {
-                panic!("expected test.datapoint1 to contain a values");
+    #[tokio::test]
+    async fn test_subscribe_set_multiple() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
+
+        let id1 = broker
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                DataType::Int32,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 1".to_owned(),
+                None,
+            )
+            .await
+            .expect("Register datapoint should succeed");
+
+        let id2 = broker
+            .add_entry(
+                "test.datapoint2".to_owned(),
+                DataType::Int32,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 2".to_owned(),
+                None,
+            )
+            .await
+            .expect("Register datapoint should succeed");
+
+        let mut subscription = broker
+            .subscribe_query("SELECT test.datapoint1, test.datapoint2")
+            .await
+            .expect("setup first subscription");
+
+        // Expect an initial query response
+        // No value has been set yet, so value should be NotAvailable
+        match subscription.next().await {
+            Some(query_resp) => {
+                assert_eq!(query_resp.fields.len(), 2);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                assert_eq!(query_resp.fields[0].value, DataValue::NotAvailable);
+                assert_eq!(query_resp.fields[1].name, "test.datapoint2");
+                assert_eq!(query_resp.fields[1].value, DataValue::NotAvailable);
             }
-            assert_eq!(query_resp.fields[1].name, "test.datapoint2");
-            if let DataValue::Int32(value) = query_resp.fields[1].value {
-                assert_eq!(value, i);
-            } else {
-                panic!("expected test.datapoint2 to contain a values");
+            None => {
+                panic!("did not expect stream end")
             }
+        }
+
+        for i in 0..10 {
+            broker
+                .update_entries([
+                    (
+                        id1,
+                        EntryUpdate {
+                            path: None,
+                            datapoint: Some(Datapoint {
+                                ts: SystemTime::now(),
+                                value: DataValue::Int32(-i),
+                            }),
+                            actuator_target: None,
+                            entry_type: None,
+                            data_type: None,
+                            description: None,
+                            allowed: None,
+                        },
+                    ),
+                    (
+                        id2,
+                        EntryUpdate {
+                            path: None,
+                            datapoint: Some(Datapoint {
+                                ts: SystemTime::now(),
+                                value: DataValue::Int32(i),
+                            }),
+                            actuator_target: None,
+                            entry_type: None,
+                            data_type: None,
+                            description: None,
+                            allowed: None,
+                        },
+                    ),
+                ])
+                .await
+                .expect("setting datapoint #1");
+        }
+
+        for i in 0..10 {
+            if let Some(query_resp) = subscription.next().await {
+                assert_eq!(query_resp.fields.len(), 2);
+                assert_eq!(query_resp.fields[0].name, "test.datapoint1");
+                if let DataValue::Int32(value) = query_resp.fields[0].value {
+                    assert_eq!(value, -i);
+                } else {
+                    panic!("expected test.datapoint1 to contain a values");
+                }
+                assert_eq!(query_resp.fields[1].name, "test.datapoint2");
+                if let DataValue::Int32(value) = query_resp.fields[1].value {
+                    assert_eq!(value, i);
+                } else {
+                    panic!("expected test.datapoint2 to contain a values");
+                }
+            } else {
+                panic!("did not expect end of stream");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_bool_array() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
+
+        let id = broker
+            .add_entry(
+                "Vehicle.TestArray".to_owned(),
+                DataType::BoolArray,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Run of the mill test array".to_owned(),
+                None,
+            )
+            .await
+            .unwrap();
+
+        let ts = std::time::SystemTime::now();
+        match broker
+            .update_entries([(
+                id,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts,
+                        value: DataValue::BoolArray(vec![true, true, false, true]),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+        {
+            Ok(()) => {}
+            Err(e) => {
+                panic!(
+                    "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
+                    e
+                )
+            }
+        }
+
+        match broker.get_datapoint(id).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.ts, ts);
+                assert_eq!(
+                    datapoint.value,
+                    DataValue::BoolArray(vec![true, true, false, true])
+                );
+            }
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_string_array() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
+
+        let id = broker
+            .add_entry(
+                "Vehicle.TestArray".to_owned(),
+                DataType::StringArray,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Run of the mill test array".to_owned(),
+                None,
+            )
+            .await
+            .unwrap();
+
+        let ts = std::time::SystemTime::now();
+        match broker
+            .update_entries([(
+                id,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts,
+                        value: DataValue::StringArray(vec![
+                            String::from("yes"),
+                            String::from("no"),
+                            String::from("maybe"),
+                            String::from("nah"),
+                        ]),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+        {
+            Ok(_) => {}
+            Err(e) => {
+                panic!(
+                    "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
+                    e
+                )
+            }
+        }
+
+        match broker.get_datapoint(id).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.ts, ts);
+                assert_eq!(
+                    datapoint.value,
+                    DataValue::StringArray(vec![
+                        String::from("yes"),
+                        String::from("no"),
+                        String::from("maybe"),
+                        String::from("nah"),
+                    ])
+                );
+            }
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_string_array_allowed_values() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
+
+        let id = broker
+            .add_entry(
+                "Vehicle.TestArray".to_owned(),
+                DataType::StringArray,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Run of the mill test array".to_owned(),
+                Some(DataValue::StringArray(vec![
+                    String::from("yes"),
+                    String::from("no"),
+                    String::from("maybe"),
+                    String::from("nah"),
+                ])),
+            )
+            .await
+            .unwrap();
+
+        let ts = std::time::SystemTime::now();
+        match broker
+            .update_entries([(
+                id,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts,
+                        value: DataValue::StringArray(vec![
+                            String::from("yes"),
+                            String::from("no"),
+                            String::from("maybe"),
+                            String::from("nah"),
+                        ]),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+        {
+            Ok(_) => {}
+            Err(e) => {
+                panic!(
+                    "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
+                    e
+                )
+            }
+        }
+
+        match broker.get_datapoint(id).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.ts, ts);
+                assert_eq!(
+                    datapoint.value,
+                    DataValue::StringArray(vec![
+                        String::from("yes"),
+                        String::from("no"),
+                        String::from("maybe"),
+                        String::from("nah"),
+                    ])
+                );
+            }
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
+        }
+
+        // check if duplicate is working
+        match broker
+            .update_entries([(
+                id,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts,
+                        value: DataValue::StringArray(vec![
+                            String::from("yes"),
+                            String::from("no"),
+                            String::from("maybe"),
+                            String::from("nah"),
+                            String::from("yes"),
+                        ]),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+        {
+            Ok(_) => {}
+            Err(e) => {
+                panic!(
+                    "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
+                    e
+                )
+            }
+        }
+
+        match broker.get_datapoint(id).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.ts, ts);
+                assert_eq!(
+                    datapoint.value,
+                    DataValue::StringArray(vec![
+                        String::from("yes"),
+                        String::from("no"),
+                        String::from("maybe"),
+                        String::from("nah"),
+                        String::from("yes"),
+                    ])
+                );
+            }
+            Err(ReadError::NotFound) => panic!("Expected datapoint to exist"),
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("Expected to have access to datapoint")
+            }
+        }
+
+        if broker
+            .update_entries([(
+                id,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts,
+                        value: DataValue::StringArray(vec![
+                            String::from("yes"),
+                            String::from("no"),
+                            String::from("maybe"),
+                            String::from("nah"),
+                            String::from("true"),
+                        ]),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+            .is_ok()
+        {
+            panic!("Expected set_datapoints to fail because string(true) not in allowed values")
         } else {
-            panic!("did not expect end of stream");
+            // everything fine vlaue string(true) not in the allowed values
         }
     }
-}
 
-#[tokio::test]
-async fn test_bool_array() {
-    let broker = DataBroker::new();
-    let id = broker
-        .add_entry(
-            "Vehicle.TestArray".to_owned(),
-            DataType::BoolArray,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Run of the mill test array".to_owned(),
-            None,
-        )
-        .await
-        .unwrap();
+    #[tokio::test]
+    async fn test_int8_array() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
 
-    let ts = std::time::SystemTime::now();
-    match broker
-        .update_entries([(
-            id,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts,
-                    value: DataValue::BoolArray(vec![true, true, false, true]),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-    {
-        Ok(()) => {}
-        Err(e) => {
-            panic!(
-                "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
-                e
+        let id = broker
+            .add_entry(
+                "Vehicle.TestArray".to_owned(),
+                DataType::Int8Array,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Run of the mill test array".to_owned(),
+                None,
             )
+            .await
+            .unwrap();
+
+        let ts = std::time::SystemTime::now();
+        match broker
+            .update_entries([(
+                id,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts,
+                        value: DataValue::Int32Array(vec![10, 20, 30, 40]),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+        {
+            Ok(()) => {}
+            Err(e) => {
+                panic!(
+                    "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
+                    e
+                )
+            }
+        }
+
+        if broker
+            .update_entries([(
+                id,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts,
+                        value: DataValue::Int32Array(vec![100, 200, 300, 400]),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+            .is_ok()
+        {
+            panic!("Expected set_datapoints to fail ( with Err() ), instead got: Ok(())",)
+        }
+
+        match broker.get_datapoint(id).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.ts, ts);
+                assert_eq!(datapoint.value, DataValue::Int32Array(vec![10, 20, 30, 40]));
+            }
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
         }
     }
 
-    match broker.get_datapoint(id).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.ts, ts);
-            assert_eq!(
-                datapoint.value,
-                DataValue::BoolArray(vec![true, true, false, true])
-            );
-        }
-        None => panic!("Expected get_datapoint to return a datapoint, instead got: None"),
-    }
-}
+    #[tokio::test]
+    async fn test_uint8_array() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
 
-#[tokio::test]
-async fn test_string_array() {
-    let broker = DataBroker::new();
-    let id = broker
-        .add_entry(
-            "Vehicle.TestArray".to_owned(),
-            DataType::StringArray,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Run of the mill test array".to_owned(),
-            Some(DataValue::StringArray(vec![
-                String::from("yes"),
-                String::from("no"),
-                String::from("maybe"),
-                String::from("nah"),
-            ])),
-        )
-        .await
-        .unwrap();
-
-    let ts = std::time::SystemTime::now();
-    match broker
-        .update_entries([(
-            id,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts,
-                    value: DataValue::StringArray(vec![
-                        String::from("yes"),
-                        String::from("no"),
-                        String::from("maybe"),
-                        String::from("nah"),
-                    ]),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-    {
-        Ok(_) => {}
-        Err(e) => {
-            panic!(
-                "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
-                e
+        let id = broker
+            .add_entry(
+                "Vehicle.TestArray".to_owned(),
+                DataType::Uint8Array,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Run of the mill test array".to_owned(),
+                None,
             )
+            .await
+            .unwrap();
+
+        let ts = std::time::SystemTime::now();
+        match broker
+            .update_entries([(
+                id,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts,
+                        value: DataValue::Uint32Array(vec![10, 20, 30, 40]),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+        {
+            Ok(()) => {}
+            Err(e) => {
+                panic!(
+                    "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
+                    e
+                )
+            }
+        }
+
+        if broker
+            .update_entries([(
+                id,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts,
+                        value: DataValue::Uint32Array(vec![100, 200, 300, 400]),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+            .is_ok()
+        {
+            panic!("Expected set_datapoints to fail ( with Err() ), instead got: Ok(())",)
+        }
+
+        match broker.get_datapoint(id).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.ts, ts);
+                assert_eq!(
+                    datapoint.value,
+                    DataValue::Uint32Array(vec![10, 20, 30, 40])
+                );
+            }
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
         }
     }
 
-    match broker.get_datapoint(id).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.ts, ts);
-            assert_eq!(
-                datapoint.value,
-                DataValue::StringArray(vec![
-                    String::from("yes"),
-                    String::from("no"),
-                    String::from("maybe"),
-                    String::from("nah"),
-                ])
-            );
-        }
-        None => panic!("Expected get_datapoint to return a datapoint, instead got: None"),
-    }
+    #[tokio::test]
+    async fn test_float_array() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
 
-    // check if duplicate is working
-    match broker
-        .update_entries([(
-            id,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts,
-                    value: DataValue::StringArray(vec![
-                        String::from("yes"),
-                        String::from("no"),
-                        String::from("maybe"),
-                        String::from("nah"),
-                        String::from("yes"),
-                    ]),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-    {
-        Ok(_) => {}
-        Err(e) => {
-            panic!(
-                "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
-                e
+        let id = broker
+            .add_entry(
+                "Vehicle.TestArray".to_owned(),
+                DataType::FloatArray,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Run of the mill test array".to_owned(),
+                None,
             )
+            .await
+            .unwrap();
+
+        let ts = std::time::SystemTime::now();
+        match broker
+            .update_entries([(
+                id,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts,
+                        value: DataValue::FloatArray(vec![10.0, 20.0, 30.0, 40.0]),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+        {
+            Ok(()) => {}
+            Err(e) => {
+                panic!(
+                    "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
+                    e
+                )
+            }
+        }
+
+        match broker.get_datapoint(id).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.ts, ts);
+                assert_eq!(
+                    datapoint.value,
+                    DataValue::FloatArray(vec![10.0, 20.0, 30.0, 40.0])
+                );
+            }
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
         }
     }
 
-    match broker.get_datapoint(id).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.ts, ts);
-            assert_eq!(
-                datapoint.value,
-                DataValue::StringArray(vec![
-                    String::from("yes"),
-                    String::from("no"),
-                    String::from("maybe"),
-                    String::from("nah"),
-                    String::from("yes"),
-                ])
-            );
-        }
-        None => panic!("Expected get_datapoint to return a datapoint, instead got: None"),
-    }
+    #[tokio::test]
+    async fn test_subscribe_and_get() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
 
-    if broker
-        .update_entries([(
-            id,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts,
-                    value: DataValue::StringArray(vec![
-                        String::from("yes"),
-                        String::from("no"),
-                        String::from("maybe"),
-                        String::from("nah"),
-                        String::from("true"),
-                    ]),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-        .is_ok()
-    {
-        panic!("Expected set_datapoints to fail because string(true) not in allowed values")
-    } else {
-        // everything fine vlaue string(true) not in the allowed values
-    }
-}
-
-#[tokio::test]
-async fn test_int8_array() {
-    let broker = DataBroker::new();
-    let id = broker
-        .add_entry(
-            "Vehicle.TestArray".to_owned(),
-            DataType::Int8Array,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Run of the mill test array".to_owned(),
-            None,
-        )
-        .await
-        .unwrap();
-
-    let ts = std::time::SystemTime::now();
-    match broker
-        .update_entries([(
-            id,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts,
-                    value: DataValue::Int32Array(vec![10, 20, 30, 40]),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-    {
-        Ok(()) => {}
-        Err(e) => {
-            panic!(
-                "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
-                e
+        let id1 = broker
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                DataType::Int32,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint 1".to_owned(),
+                None,
             )
+            .await
+            .expect("Register datapoint should succeed");
+
+        let mut stream = broker
+            .subscribe(HashMap::from([(
+                "test.datapoint1".into(),
+                HashSet::from([Field::Datapoint]),
+            )]))
+            .await
+            .expect("subscription should succeed");
+
+        // Stream should yield initial notification with current values i.e. NotAvailable
+        match stream.next().await {
+            Some(next) => {
+                assert_eq!(next.updates.len(), 1);
+                assert_eq!(
+                    next.updates[0].update.path,
+                    Some("test.datapoint1".to_string())
+                );
+                assert_eq!(
+                    next.updates[0].update.datapoint.as_ref().unwrap().value,
+                    DataValue::NotAvailable
+                );
+            }
+            None => {
+                panic!("did not expect stream end")
+            }
+        }
+
+        broker
+            .update_entries([(
+                id1,
+                EntryUpdate {
+                    path: None,
+                    datapoint: Some(Datapoint {
+                        ts: SystemTime::now(),
+                        value: DataValue::Int32(101),
+                    }),
+                    actuator_target: None,
+                    entry_type: None,
+                    data_type: None,
+                    description: None,
+                    allowed: None,
+                },
+            )])
+            .await
+            .expect("setting datapoint #1");
+
+        // Value has been set, expect the next item in stream to match.
+        match stream.next().await {
+            Some(next) => {
+                assert_eq!(next.updates.len(), 1);
+                assert_eq!(
+                    next.updates[0].update.path,
+                    Some("test.datapoint1".to_string())
+                );
+                assert_eq!(
+                    next.updates[0].update.datapoint.as_ref().unwrap().value,
+                    DataValue::Int32(101)
+                );
+            }
+            None => {
+                panic!("did not expect stream end")
+            }
+        }
+
+        // Check that the data point has been stored as well
+        match broker.get_datapoint(id1).await {
+            Ok(datapoint) => {
+                assert_eq!(datapoint.value, DataValue::Int32(101));
+            }
+            Err(ReadError::NotFound) => {
+                panic!("expected datapoint to exist");
+            }
+            Err(ReadError::PermissionDenied | ReadError::PermissionExpired) => {
+                panic!("expected to be authorized");
+            }
         }
     }
 
-    if broker
-        .update_entries([(
-            id,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts,
-                    value: DataValue::Int32Array(vec![100, 200, 300, 400]),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-        .is_ok()
-    {
-        panic!("Expected set_datapoints to fail ( with Err() ), instead got: Ok(())",)
-    }
+    #[tokio::test]
+    async fn test_metadata_for_each() {
+        let db = DataBroker::default();
+        let broker = db.authorized_access(&permissions::ALLOW_ALL);
 
-    match broker.get_datapoint(id).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.ts, ts);
-            assert_eq!(datapoint.value, DataValue::Int32Array(vec![10, 20, 30, 40]));
-        }
-        None => panic!("Expected get_datapoint to return a datapoint, instead got: None"),
-    }
-}
-
-#[tokio::test]
-async fn test_uint8_array() {
-    let broker = DataBroker::new();
-    let id = broker
-        .add_entry(
-            "Vehicle.TestArray".to_owned(),
-            DataType::Uint8Array,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Run of the mill test array".to_owned(),
-            None,
-        )
-        .await
-        .unwrap();
-
-    let ts = std::time::SystemTime::now();
-    match broker
-        .update_entries([(
-            id,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts,
-                    value: DataValue::Uint32Array(vec![10, 20, 30, 40]),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-    {
-        Ok(()) => {}
-        Err(e) => {
-            panic!(
-                "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
-                e
+        let id1 = broker
+            .add_entry(
+                "Vehicle.Test1".to_owned(),
+                DataType::Bool,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Run of the mill test signal".to_owned(),
+                None,
             )
-        }
-    }
-
-    if broker
-        .update_entries([(
-            id,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts,
-                    value: DataValue::Uint32Array(vec![100, 200, 300, 400]),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-        .is_ok()
-    {
-        panic!("Expected set_datapoints to fail ( with Err() ), instead got: Ok(())",)
-    }
-
-    match broker.get_datapoint(id).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.ts, ts);
-            assert_eq!(
-                datapoint.value,
-                DataValue::Uint32Array(vec![10, 20, 30, 40])
-            );
-        }
-        None => panic!("Expected get_datapoint to return a datapoint, instead got: None"),
-    }
-}
-
-#[tokio::test]
-async fn test_float_array() {
-    let broker = DataBroker::new();
-    let id = broker
-        .add_entry(
-            "Vehicle.TestArray".to_owned(),
-            DataType::FloatArray,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Run of the mill test array".to_owned(),
-            None,
-        )
-        .await
-        .unwrap();
-
-    let ts = std::time::SystemTime::now();
-    match broker
-        .update_entries([(
-            id,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts,
-                    value: DataValue::FloatArray(vec![10.0, 20.0, 30.0, 40.0]),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-    {
-        Ok(()) => {}
-        Err(e) => {
-            panic!(
-                "Expected set_datapoints to succeed ( with Ok(()) ), instead got: Err({:?})",
-                e
+            .await
+            .unwrap();
+        let id2 = broker
+            .add_entry(
+                "Vehicle.Test2".to_owned(),
+                DataType::Bool,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Run of the mill test signal".to_owned(),
+                None,
             )
-        }
-    }
+            .await
+            .unwrap();
 
-    match broker.get_datapoint(id).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.ts, ts);
-            assert_eq!(
-                datapoint.value,
-                DataValue::FloatArray(vec![10.0, 20.0, 30.0, 40.0])
-            );
-        }
-        None => panic!("Expected get_datapoint to return a datapoint, instead got: None"),
-    }
-}
-
-#[tokio::test]
-async fn test_subscribe_and_get() {
-    use tokio_stream::StreamExt;
-
-    let broker = DataBroker::new();
-    let id1 = broker
-        .add_entry(
-            "test.datapoint1".to_owned(),
-            DataType::Int32,
-            ChangeType::OnChange,
-            EntryType::Sensor,
-            "Test datapoint 1".to_owned(),
-            None,
-        )
-        .await
-        .expect("Register datapoint should succeed");
-
-    let mut stream = broker
-        .subscribe(HashMap::from([(
-            "test.datapoint1".into(),
-            HashSet::from([Field::Datapoint]),
-        )]))
-        .await
-        .expect("subscription should succeed");
-
-    // Stream should yield initial notification with current values i.e. NotAvailable
-    match stream.next().await {
-        Some(next) => {
-            assert_eq!(next.updates.len(), 1);
-            assert_eq!(
-                next.updates[0].update.path,
-                Some("test.datapoint1".to_string())
-            );
-            assert_eq!(
-                next.updates[0].update.datapoint.as_ref().unwrap().value,
-                DataValue::NotAvailable
-            );
-        }
-        None => {
-            panic!("did not expect stream end")
-        }
-    }
-
-    broker
-        .update_entries([(
-            id1,
-            EntryUpdate {
-                path: None,
-                datapoint: Some(Datapoint {
-                    ts: SystemTime::now(),
-                    value: DataValue::Int32(101),
-                }),
-                actuator_target: None,
-                entry_type: None,
-                data_type: None,
-                description: None,
-                allowed: None,
-            },
-        )])
-        .await
-        .expect("setting datapoint #1");
-
-    // Value has been set, expect the next item in stream to match.
-    match stream.next().await {
-        Some(next) => {
-            assert_eq!(next.updates.len(), 1);
-            assert_eq!(
-                next.updates[0].update.path,
-                Some("test.datapoint1".to_string())
-            );
-            assert_eq!(
-                next.updates[0].update.datapoint.as_ref().unwrap().value,
-                DataValue::Int32(101)
-            );
-        }
-        None => {
-            panic!("did not expect stream end")
-        }
-    }
-
-    // Check that the data point has been stored as well
-    match broker.get_datapoint(id1).await {
-        Some(datapoint) => {
-            assert_eq!(datapoint.value, DataValue::Int32(101));
-        }
-        None => {
-            panic!("data point expected to exist");
+        // No permissions
+        let permissions = Permissions::builder().build().unwrap();
+        let broker = db.authorized_access(&permissions);
+        let metadata = broker.map_metadata(|metadata| metadata.clone()).await;
+        for entry in metadata {
+            match entry.path.as_str() {
+                "Vehicle.Test1" => assert_eq!(entry.id, id1),
+                "Vehicle.Test2" => assert_eq!(entry.id, id2),
+                _ => panic!("Unexpected metadata entry"),
+            }
         }
     }
 }

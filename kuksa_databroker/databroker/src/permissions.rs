@@ -13,56 +13,176 @@
 
 use std::time::SystemTime;
 
-#[derive(Debug)]
-pub struct Permissions {
-    pub expires_at: SystemTime,
-    pub read: PathMatcher,
-    pub actuate: PathMatcher,
-    pub provide: PathMatcher,
+use lazy_static::lazy_static;
+use regex::RegexSet;
+
+use crate::glob;
+
+lazy_static! {
+    pub static ref ALLOW_ALL: Permissions = Permissions {
+        expires_at: None,
+        read: PathMatcher::Everything,
+        actuate: PathMatcher::Everything,
+        provide: PathMatcher::Everything,
+    };
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct Permissions {
+    expires_at: Option<SystemTime>,
+    read: PathMatcher,
+    actuate: PathMatcher,
+    provide: PathMatcher,
+}
+
+pub struct PermissionBuilder {
+    expiration: Option<SystemTime>,
+    read: PathMatchBuilder,
+    actuate: PathMatchBuilder,
+    provide: PathMatchBuilder,
+}
+
+pub enum Permission {
+    Nothing,
+    All,
+    Glob(String),
+}
+
+pub enum PathMatchBuilder {
+    Nothing,
+    Everything,
+    Globs(Vec<String>),
+}
+
+#[derive(Debug, Clone)]
 pub enum PathMatcher {
     Nothing,
     Everything,
-    Regexps(Vec<regex::Regex>),
+    Regexps(regex::RegexSet),
 }
 
 #[derive(Debug)]
-pub enum Error {
-    AccessDenied,
+pub enum PermissionError {
+    Denied,
     Expired,
 }
 
-impl Permissions {
-    pub fn read_allowed(&self, path: &str) -> Result<(), Error> {
-        if self.expires_at < SystemTime::now() {
-            return Err(Error::Expired);
+#[derive(Debug)]
+pub enum PermissionsBuildError {
+    BuildError,
+}
+
+impl Default for PermissionBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl PermissionBuilder {
+    pub fn new() -> Self {
+        Self {
+            expiration: None,
+            read: PathMatchBuilder::Nothing,
+            actuate: PathMatchBuilder::Nothing,
+            provide: PathMatchBuilder::Nothing,
         }
-        if self.read.is_match(path) {
-            return Ok(());
-        }
-        Err(Error::AccessDenied)
     }
 
-    pub fn actuate_allowed(&self, path: &str) -> Result<(), Error> {
-        if self.expires_at < SystemTime::now() {
-            return Err(Error::Expired);
+    pub fn expires_at(mut self, expiration: SystemTime) -> Self {
+        self.expiration = Some(expiration);
+        self
+    }
+
+    pub fn add_read_permission(mut self, permission: Permission) -> Self {
+        match permission {
+            Permission::Nothing => {
+                // Adding nothing
+            }
+            Permission::All => self.read.extend_with(PathMatchBuilder::Everything),
+            Permission::Glob(path) => self.read.extend_with_glob(path),
+        };
+        self
+    }
+
+    pub fn add_actuate_permission(mut self, permission: Permission) -> Self {
+        match permission {
+            Permission::Nothing => {
+                // Adding nothing
+            }
+            Permission::All => self.actuate.extend_with(PathMatchBuilder::Everything),
+            Permission::Glob(path) => self.actuate.extend_with_glob(path),
+        };
+        self
+    }
+
+    pub fn add_provide_permission(mut self, permission: Permission) -> Self {
+        match permission {
+            Permission::Nothing => {
+                // Adding nothing
+            }
+            Permission::All => self.provide.extend_with(PathMatchBuilder::Everything),
+            Permission::Glob(path) => self.provide.extend_with_glob(path),
+        };
+        self
+    }
+
+    pub fn build(self) -> Result<Permissions, PermissionsBuildError> {
+        Ok(Permissions {
+            expires_at: self.expiration,
+            read: self.read.build()?,
+            actuate: self.actuate.build()?,
+            provide: self.provide.build()?,
+        })
+    }
+}
+
+impl Permissions {
+    pub fn builder() -> PermissionBuilder {
+        PermissionBuilder::new()
+    }
+
+    pub fn can_read(&self, path: &str) -> Result<(), PermissionError> {
+        if let Some(expires_at) = self.expires_at {
+            if expires_at < SystemTime::now() {
+                return Err(PermissionError::Expired);
+            }
+        }
+
+        if self.read.is_match(path) {
+            return Ok(());
         }
         if self.actuate.is_match(path) {
             return Ok(());
         }
-        Err(Error::AccessDenied)
+        if self.provide.is_match(path) {
+            return Ok(());
+        }
+
+        Err(PermissionError::Denied)
     }
 
-    pub fn provide_allowed(&self, path: &str) -> Result<(), Error> {
-        if self.expires_at < SystemTime::now() {
-            return Err(Error::Expired);
+    pub fn can_write_actuator_target(&self, path: &str) -> Result<(), PermissionError> {
+        if let Some(expires_at) = self.expires_at {
+            if expires_at < SystemTime::now() {
+                return Err(PermissionError::Expired);
+            }
+        }
+        if self.actuate.is_match(path) {
+            return Ok(());
+        }
+        Err(PermissionError::Denied)
+    }
+
+    pub fn can_write_datapoint(&self, path: &str) -> Result<(), PermissionError> {
+        if let Some(expires_at) = self.expires_at {
+            if expires_at < SystemTime::now() {
+                return Err(PermissionError::Expired);
+            }
         }
         if self.provide.is_match(path) {
             return Ok(());
         }
-        Err(Error::AccessDenied)
+        Err(PermissionError::Denied)
     }
 }
 
@@ -71,41 +191,67 @@ impl PathMatcher {
         match self {
             PathMatcher::Nothing => false,
             PathMatcher::Everything => true,
-            PathMatcher::Regexps(regexps) => {
-                for re in regexps {
-                    if re.is_match(path) {
-                        return true;
-                    }
-                }
-                false
-            }
+            PathMatcher::Regexps(regexps) => regexps.is_match(path),
         }
     }
+}
 
-    pub fn extend_with(&mut self, other: PathMatcher) {
-        if let PathMatcher::Everything = self {
+impl PathMatchBuilder {
+    pub fn extend_with(&mut self, other: PathMatchBuilder) {
+        if let PathMatchBuilder::Everything = self {
             // We already allow everything
             return;
         }
 
         match other {
-            PathMatcher::Nothing => {
+            PathMatchBuilder::Nothing => {
                 // No change
             }
-            PathMatcher::Everything => {
+            PathMatchBuilder::Everything => {
                 // We now allow everything
-                *self = PathMatcher::Everything
+                *self = PathMatchBuilder::Everything
             }
-            PathMatcher::Regexps(mut other_regexps) => match self {
-                PathMatcher::Nothing => *self = PathMatcher::Regexps(other_regexps),
-                PathMatcher::Everything => {
+            PathMatchBuilder::Globs(mut other_regexps) => match self {
+                PathMatchBuilder::Nothing => *self = PathMatchBuilder::Globs(other_regexps),
+                PathMatchBuilder::Everything => {
                     // We already allow everything
                 }
-                PathMatcher::Regexps(regexps) => {
+                PathMatchBuilder::Globs(regexps) => {
                     // Combine regexps
                     regexps.append(&mut other_regexps)
                 }
             },
+        }
+    }
+
+    pub fn extend_with_glob(&mut self, glob: String) {
+        match self {
+            PathMatchBuilder::Nothing => *self = PathMatchBuilder::Globs(vec![glob]),
+            PathMatchBuilder::Everything => {
+                // We already allow everything
+            }
+            PathMatchBuilder::Globs(globs) => {
+                // Combine regexps
+                globs.push(glob)
+            }
+        }
+    }
+
+    pub fn build(self) -> Result<PathMatcher, PermissionsBuildError> {
+        match self {
+            PathMatchBuilder::Nothing => Ok(PathMatcher::Nothing),
+            PathMatchBuilder::Everything => Ok(PathMatcher::Everything),
+            PathMatchBuilder::Globs(globs) => {
+                let regexps = globs.iter().map(|glob| glob::to_regex_string(glob));
+
+                Ok(PathMatcher::Regexps(RegexSet::new(regexps).map_err(
+                    |err| match err {
+                        regex::Error::Syntax(_) => PermissionsBuildError::BuildError,
+                        regex::Error::CompiledTooBig(_) => PermissionsBuildError::BuildError,
+                        _ => PermissionsBuildError::BuildError,
+                    },
+                )?))
+            }
         }
     }
 }

@@ -232,6 +232,7 @@ dependencies = [
  "databroker-proto",
  "jemallocator",
  "jsonwebtoken",
+ "lazy_static",
  "prost",
  "prost-types",
  "regex",

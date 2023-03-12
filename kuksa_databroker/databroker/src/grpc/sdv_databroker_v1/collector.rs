@@ -21,7 +21,7 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Code, Response, Status};
 use tracing::debug;
 
-use crate::broker;
+use crate::{broker, permissions::Permissions};
 
 #[tonic::async_trait]
 impl proto::collector_server::Collector for broker::DataBroker {
@@ -29,6 +29,16 @@ impl proto::collector_server::Collector for broker::DataBroker {
         &self,
         request: tonic::Request<proto::UpdateDatapointsRequest>,
     ) -> Result<tonic::Response<proto::UpdateDatapointsReply>, tonic::Status> {
+        debug!(?request);
+        let permissions = match request.extensions().get::<Permissions>() {
+            Some(permissions) => {
+                debug!(?permissions);
+                permissions.clone()
+            }
+            None => return Err(tonic::Status::unauthenticated("Unauthenticated")),
+        };
+        let broker = self.authorized_access(&permissions);
+
         // Collect errors encountered
         let mut errors = HashMap::new();
 
@@ -52,7 +62,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
             })
             .collect();
 
-        match self.update_entries(ids).await {
+        match broker.update_entries(ids).await {
             Ok(()) => {}
             Err(err) => {
                 debug!("Failed to set datapoint: {:?}", err);
@@ -72,16 +82,29 @@ impl proto::collector_server::Collector for broker::DataBroker {
         &self,
         request: tonic::Request<tonic::Streaming<proto::StreamDatapointsRequest>>,
     ) -> Result<tonic::Response<Self::StreamDatapointsStream>, tonic::Status> {
+        debug!(?request);
+        let permissions = match request.extensions().get::<Permissions>() {
+            Some(permissions) => {
+                debug!(?permissions);
+                permissions.clone()
+            }
+            None => return Err(tonic::Status::unauthenticated("Unauthenticated")),
+        };
+
         let mut stream = request.into_inner();
 
         let mut shutdown_trigger = self.get_shutdown_trigger();
-        let databroker = self.clone();
+
+        // Copy (to move into task below)
+        let broker = self.clone();
 
         // Create error stream (to be returned)
         let (error_sender, error_receiver) = mpsc::channel(10);
 
         // Listening on stream
         tokio::spawn(async move {
+            let permissions = permissions;
+            let broker = broker.authorized_access(&permissions);
             loop {
                 select! {
                     message = stream.message() => {
@@ -107,7 +130,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
                                             )
                                             .collect();
                                         // TODO: Check if sender is allowed to provide datapoint with this id
-                                        match databroker
+                                        match broker
                                             .update_entries(ids)
                                             .await
                                         {
@@ -153,6 +176,16 @@ impl proto::collector_server::Collector for broker::DataBroker {
         &self,
         request: tonic::Request<proto::RegisterDatapointsRequest>,
     ) -> Result<tonic::Response<proto::RegisterDatapointsReply>, Status> {
+        debug!(?request);
+        let permissions = match request.extensions().get::<Permissions>() {
+            Some(permissions) => {
+                debug!(?permissions);
+                permissions.clone()
+            }
+            None => return Err(tonic::Status::unauthenticated("Unauthenticated")),
+        };
+        let broker = self.authorized_access(&permissions);
+
         let mut results = HashMap::new();
         let mut error = None;
 
@@ -162,7 +195,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
                 proto::ChangeType::from_i32(metadata.change_type),
             ) {
                 (Some(value_type), Some(change_type)) => {
-                    match self
+                    match broker
                         .add_entry(
                             metadata.name.clone(),
                             broker::DataType::from(&value_type),

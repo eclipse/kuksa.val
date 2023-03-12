@@ -16,7 +16,7 @@ use std::convert::TryFrom;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use serde::Deserialize;
 
-use crate::{glob, permissions};
+use crate::permissions::{Permission, Permissions, PermissionsBuildError};
 
 use super::scope;
 
@@ -87,7 +87,7 @@ impl Decoder {
     }
 }
 
-impl TryFrom<Claims> for permissions::Permissions {
+impl TryFrom<Claims> for Permissions {
     type Error = Error;
 
     fn try_from(claims: Claims) -> Result<Self, Self::Error> {
@@ -95,52 +95,42 @@ impl TryFrom<Claims> for permissions::Permissions {
             scope::Error::ParseError => Error::ClaimsError,
         })?;
 
-        let mut read = permissions::PathMatcher::Nothing;
-        let mut actuate = permissions::PathMatcher::Nothing;
-        let mut provide = permissions::PathMatcher::Nothing;
+        let mut permissions = Permissions::builder();
         for scope in scopes {
             match scope.path {
                 Some(path) => {
-                    let re = glob::to_regex(&path).map_err(|err| match err {
-                        glob::Error::RegexError => Error::ClaimsError,
-                    })?;
-                    let regexps = vec![re];
-                    match scope.action {
+                    permissions = match scope.action {
                         scope::Action::Read => {
-                            read.extend_with(permissions::PathMatcher::Regexps(regexps))
+                            permissions.add_read_permission(Permission::Glob(path))
                         }
                         scope::Action::Actuate => {
-                            actuate.extend_with(permissions::PathMatcher::Regexps(regexps))
+                            permissions.add_actuate_permission(Permission::Glob(path))
                         }
                         scope::Action::Provide => {
-                            provide.extend_with(permissions::PathMatcher::Regexps(regexps))
+                            permissions.add_provide_permission(Permission::Glob(path))
                         }
                     }
                 }
                 None => {
                     // Empty path => all paths
-                    match scope.action {
-                        scope::Action::Read => {
-                            read.extend_with(permissions::PathMatcher::Everything)
-                        }
+                    permissions = match scope.action {
+                        scope::Action::Read => permissions.add_read_permission(Permission::All),
                         scope::Action::Actuate => {
-                            actuate.extend_with(permissions::PathMatcher::Everything)
+                            permissions.add_actuate_permission(Permission::All)
                         }
                         scope::Action::Provide => {
-                            provide.extend_with(permissions::PathMatcher::Everything)
+                            permissions.add_provide_permission(Permission::All)
                         }
-                    }
+                    };
                 }
             }
         }
 
-        let expires_at = std::time::UNIX_EPOCH + std::time::Duration::from_secs(claims.exp);
+        permissions = permissions
+            .expires_at(std::time::UNIX_EPOCH + std::time::Duration::from_secs(claims.exp));
 
-        Ok(permissions::Permissions {
-            expires_at,
-            read,
-            actuate,
-            provide,
+        permissions.build().map_err(|err| match err {
+            PermissionsBuildError::BuildError => Error::ClaimsError,
         })
     }
 }

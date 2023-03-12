@@ -97,9 +97,9 @@ impl From<&broker::Datapoint> for proto::Datapoint {
     }
 }
 
-impl From<&broker::DataValue> for proto::Datapoint {
-    fn from(data_value: &broker::DataValue) -> Self {
-        let value = match &data_value {
+impl From<&broker::QueryField> for proto::Datapoint {
+    fn from(query_field: &broker::QueryField) -> Self {
+        let value = match &query_field.value {
             broker::DataValue::Bool(value) => proto::datapoint::Value::BoolValue(*value),
             broker::DataValue::String(value) => {
                 proto::datapoint::Value::StringValue(value.to_owned())
@@ -151,7 +151,7 @@ impl From<&broker::DataValue> for proto::Datapoint {
                 })
             }
             broker::DataValue::NotAvailable => proto::datapoint::Value::FailureValue(
-                proto::datapoint::Failure::NotAvailable as i32,
+                proto::datapoint::Failure::NotAvailable.into(),
             ),
         };
 
@@ -314,6 +314,8 @@ impl From<&broker::UpdateError> for proto::DatapointError {
                 proto::DatapointError::InvalidType
             }
             broker::UpdateError::OutOfBounds => proto::DatapointError::OutOfBounds,
+            broker::UpdateError::PermissionDenied => proto::DatapointError::AccessDenied,
+            broker::UpdateError::PermissionExpired => proto::DatapointError::AccessDenied,
         }
     }
 }
