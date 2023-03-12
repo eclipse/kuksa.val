@@ -17,7 +17,7 @@ pub enum Error {
     RegexError,
 }
 
-pub fn to_regex(glob: &str) -> Result<Regex, Error> {
+pub fn to_regex_string(glob: &str) -> String {
     // Construct regular expression
 
     // Make sure we match the whole thing
@@ -44,5 +44,10 @@ pub fn to_regex(glob: &str) -> Result<Regex, Error> {
     // And finally, make sure we match until EOL
     re.push('$');
 
+    re
+}
+
+pub fn to_regex(glob: &str) -> Result<Regex, Error> {
+    let re = to_regex_string(glob);
     Regex::new(&re).map_err(|_err| Error::RegexError)
 }

@@ -430,16 +430,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             print_resp_ok(cmd)?
                                         } else {
                                             for (id, error) in message.errors {
+                                                let identifier = if id == metadata.id {
+                                                    metadata.name.to_string()
+                                                } else {
+                                                    format!("id {id}")
+                                                };
                                                 match proto::v1::DatapointError::from_i32(error) {
                                                     Some(error) => print_resp_ok_fmt(
                                                         cmd,
                                                         format_args!(
-                                                            "Error setting id {id}: {error:?}"
+                                                            "Error providing {identifier}: {error:?}",
                                                         ),
                                                     )?,
                                                     None => print_resp_ok_fmt(
                                                         cmd,
-                                                        format_args!("Error setting id {id}"),
+                                                        format_args!("Error providing {identifier}",),
                                                     )?,
                                                 }
                                             }
@@ -617,9 +622,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 }
                                 Err(ClientError::Status(status)) => {
                                     print_resp_err(cmd, &status)?;
+                                    continue;
                                 }
                                 Err(ClientError::Connection(msg)) => {
                                     print_error(cmd, msg)?;
+                                    continue;
                                 }
                             }
                             let mut filtered_metadata = Vec::new();

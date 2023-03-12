@@ -23,6 +23,7 @@ use tokio_stream::StreamExt;
 use tracing::debug;
 
 use crate::broker;
+use crate::broker::ReadError;
 use crate::permissions::Permissions;
 
 #[tonic::async_trait]
@@ -31,8 +32,15 @@ impl proto::val_server::Val for broker::DataBroker {
         &self,
         request: tonic::Request<proto::GetRequest>,
     ) -> Result<tonic::Response<proto::GetResponse>, tonic::Status> {
-        let permissions = request.extensions().get::<Permissions>();
-        debug!(?request, ?permissions);
+        debug!(?request);
+        let permissions = match request.extensions().get::<Permissions>() {
+            Some(permissions) => {
+                debug!(?permissions);
+                permissions.clone()
+            }
+            None => return Err(tonic::Status::unauthenticated("Unauthenticated")),
+        };
+        let broker = self.authorized_access(&permissions);
 
         let requested = request.into_inner().entries;
         if requested.is_empty() {
@@ -45,8 +53,8 @@ impl proto::val_server::Val for broker::DataBroker {
             let mut errors = Vec::new();
 
             for request in requested {
-                match self.get_entry_by_path(&request.path).await {
-                    Some(entry) => {
+                match broker.get_entry_by_path(&request.path).await {
+                    Ok(entry) => {
                         let view = proto::View::from_i32(request.view).ok_or_else(|| {
                             tonic::Status::invalid_argument(format!(
                                 "Invalid View (id: {}",
@@ -63,15 +71,33 @@ impl proto::val_server::Val for broker::DataBroker {
                         debug!("Getting datapoint: {:?}", proto_entry);
                         entries.push(proto_entry);
                     }
-                    None => {
-                        // Entry doesn't exist
-                        let message = format!("Path '{}' not found", &request.path);
+                    Err(ReadError::NotFound) => {
                         errors.push(proto::DataEntryError {
                             path: request.path,
                             error: Some(proto::Error {
                                 code: 404,
                                 reason: "not_found".to_owned(),
-                                message,
+                                message: "Path not found".to_owned(),
+                            }),
+                        });
+                    }
+                    Err(ReadError::PermissionExpired) => {
+                        errors.push(proto::DataEntryError {
+                            path: request.path,
+                            error: Some(proto::Error {
+                                code: 401,
+                                reason: "unauthorized".to_owned(),
+                                message: "Authorization expired".to_owned(),
+                            }),
+                        });
+                    }
+                    Err(ReadError::PermissionDenied) => {
+                        errors.push(proto::DataEntryError {
+                            path: request.path,
+                            error: Some(proto::Error {
+                                code: 403,
+                                reason: "forbidden".to_owned(),
+                                message: "Permission denied".to_owned(),
                             }),
                         });
                     }
@@ -98,8 +124,16 @@ impl proto::val_server::Val for broker::DataBroker {
         &self,
         request: tonic::Request<proto::SetRequest>,
     ) -> Result<tonic::Response<proto::SetResponse>, tonic::Status> {
-        let permissions = request.extensions().get::<Permissions>();
-        debug!(?request, ?permissions);
+        debug!(?request);
+        let permissions = match request.extensions().get::<Permissions>() {
+            Some(permissions) => {
+                debug!(?permissions);
+                permissions.clone()
+            }
+            None => return Err(tonic::Status::unauthenticated("Unauthenticated")),
+        };
+
+        let broker = self.authorized_access(&permissions);
 
         // Collect errors encountered
         let mut errors = Vec::<DataEntryError>::new();
@@ -107,7 +141,7 @@ impl proto::val_server::Val for broker::DataBroker {
         let mut updates = Vec::<(i32, broker::EntryUpdate)>::new();
         for request in request.into_inner().updates {
             match &request.entry {
-                Some(entry) => match self.get_id_by_path(&entry.path).await {
+                Some(entry) => match broker.get_id_by_path(&entry.path).await {
                     Some(id) => {
                         let fields =
                             HashSet::<proto::Field>::from_iter(request.fields.iter().filter_map(
@@ -147,13 +181,13 @@ impl proto::val_server::Val for broker::DataBroker {
             }
         }
 
-        match self.update_entries(updates).await {
+        match broker.update_entries(updates).await {
             Ok(()) => {}
             Err(err) => {
                 debug!("Failed to set datapoint: {:?}", err);
                 for (id, error) in err.into_iter() {
-                    if let Some(entry) = self.get_entry(id).await {
-                        let path = entry.metadata.path.clone();
+                    if let Some(metadata) = broker.get_metadata(id).await {
+                        let path = metadata.path.clone();
                         let data_entry_error = match error {
                             broker::UpdateError::NotFound => DataEntryError {
                                 path: path.clone(),
@@ -190,6 +224,22 @@ impl proto::val_server::Val for broker::DataBroker {
                                     message: String::from("given value exceeds type's boundaries"),
                                 }),
                             },
+                            broker::UpdateError::PermissionDenied => DataEntryError {
+                                path: path.clone(),
+                                error: Some(proto::Error {
+                                    code: 403,
+                                    reason: String::from("forbidden"),
+                                    message: format!("Access was denied for {path}"),
+                                }),
+                            },
+                            broker::UpdateError::PermissionExpired => DataEntryError {
+                                path,
+                                error: Some(proto::Error {
+                                    code: 401,
+                                    reason: String::from("unauthorized"),
+                                    message: String::from("Unauthorized"),
+                                }),
+                            },
                         };
                         errors.push(data_entry_error);
                     }
@@ -216,8 +266,15 @@ impl proto::val_server::Val for broker::DataBroker {
         &self,
         request: tonic::Request<proto::SubscribeRequest>,
     ) -> Result<tonic::Response<Self::SubscribeStream>, tonic::Status> {
-        let permissions = request.extensions().get::<Permissions>();
-        debug!(?request, ?permissions);
+        debug!(?request);
+        let permissions = match request.extensions().get::<Permissions>() {
+            Some(permissions) => {
+                debug!(?permissions);
+                permissions.clone()
+            }
+            None => return Err(tonic::Status::unauthenticated("Unauthenticated")),
+        };
+        let broker = self.authorized_access(&permissions);
 
         let request = request.into_inner();
 
@@ -254,7 +311,7 @@ impl proto::val_server::Val for broker::DataBroker {
             entries.insert(entry.path.clone(), fields);
         }
 
-        match self.subscribe(entries).await {
+        match broker.subscribe(entries).await {
             Ok(stream) => {
                 let stream = convert_to_proto_stream(stream);
                 Ok(tonic::Response::new(Box::pin(stream)))
@@ -272,7 +329,7 @@ impl proto::val_server::Val for broker::DataBroker {
     ) -> Result<tonic::Response<proto::GetServerInfoResponse>, tonic::Status> {
         let server_info = proto::GetServerInfoResponse {
             name: "databroker".to_owned(),
-            version: "0.17.0".to_owned(),
+            version: self.get_version().to_owned(),
         };
         Ok(tonic::Response::new(server_info))
     }
@@ -486,54 +543,62 @@ impl broker::EntryUpdate {
     }
 }
 
-#[tokio::test]
-async fn test_update_datapoint_using_wrong_type() {
-    use databroker_proto::kuksa::val::v1::val_server::Val;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{broker::DataBroker, permissions};
 
-    let datapoints = broker::DataBroker::new();
+    #[tokio::test]
+    async fn test_update_datapoint_using_wrong_type() {
+        let broker = DataBroker::default();
+        let authorized_access = broker.authorized_access(&permissions::ALLOW_ALL);
 
-    datapoints
-        .add_entry(
-            "test.datapoint1".to_owned(),
-            broker::DataType::Bool,
-            broker::ChangeType::OnChange,
-            broker::EntryType::Sensor,
-            "Test datapoint 1".to_owned(),
-            None,
-        )
-        .await
-        .expect("Register datapoint should succeed");
+        authorized_access
+            .add_entry(
+                "test.datapoint1".to_owned(),
+                broker::DataType::Bool,
+                broker::ChangeType::OnChange,
+                broker::EntryType::Sensor,
+                "Test datapoint 1".to_owned(),
+                None,
+            )
+            .await
+            .expect("Register datapoint should succeed");
 
-    let req = proto::SetRequest {
-        updates: vec![proto::EntryUpdate {
-            fields: vec![proto::Field::Value as i32],
-            entry: Some(proto::DataEntry {
-                path: "test.datapoint1".to_owned(),
-                value: Some(proto::Datapoint {
-                    timestamp: Some(std::time::SystemTime::now().into()),
-                    value: Some(proto::datapoint::Value::Int32(1456)),
+        let mut req = tonic::Request::new(proto::SetRequest {
+            updates: vec![proto::EntryUpdate {
+                fields: vec![proto::Field::Value as i32],
+                entry: Some(proto::DataEntry {
+                    path: "test.datapoint1".to_owned(),
+                    value: Some(proto::Datapoint {
+                        timestamp: Some(std::time::SystemTime::now().into()),
+                        value: Some(proto::datapoint::Value::Int32(1456)),
+                    }),
+                    metadata: None,
+                    actuator_target: None,
                 }),
-                metadata: None,
-                actuator_target: None,
-            }),
-        }],
-    };
-    match datapoints
-        .set(tonic::Request::new(req))
-        .await
-        .map(|res| res.into_inner())
-    {
-        Ok(set_response) => {
-            assert!(
-                !set_response.errors.is_empty(),
-                "databroker should not allow updating boolean datapoint with an int32"
-            );
-            let error = set_response.errors[0]
-                .to_owned()
-                .error
-                .expect("error details are missing");
-            assert_eq!(error.code, 400, "unexpected error code");
+            }],
+        });
+
+        // Manually insert permissions
+        req.extensions_mut().insert(permissions::ALLOW_ALL.clone());
+
+        match proto::val_server::Val::set(&broker, req)
+            .await
+            .map(|res| res.into_inner())
+        {
+            Ok(set_response) => {
+                assert!(
+                    !set_response.errors.is_empty(),
+                    "databroker should not allow updating boolean datapoint with an int32"
+                );
+                let error = set_response.errors[0]
+                    .to_owned()
+                    .error
+                    .expect("error details are missing");
+                assert_eq!(error.code, 400, "unexpected error code");
+            }
+            Err(_status) => panic!("failed to execute set request"),
         }
-        Err(_status) => panic!("failed to execute set request"),
     }
 }
