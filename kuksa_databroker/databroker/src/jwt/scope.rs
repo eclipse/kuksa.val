@@ -22,6 +22,7 @@ pub enum Action {
     Read,
     Actuate,
     Provide,
+    Create,
 }
 
 #[derive(Debug)]
@@ -67,6 +68,7 @@ pub fn parse_whitespace_separated(scope: &str) -> Result<Vec<Scope>, Error> {
                         "read" => Action::Read,
                         "actuate" => Action::Actuate,
                         "provide" => Action::Provide,
+                        "create" => Action::Create,
                         _ => {
                             // Unknown action
                             return Err(Error::ParseError);
@@ -237,6 +239,42 @@ mod test {
                 assert!(matches!(scope.action, Action::Provide));
                 assert!(scope.path.is_some());
                 assert_eq!(scope.path.as_deref().unwrap(), "Vehicle.Test");
+            }
+            Err(_) => todo!(),
+        }
+    }
+
+    #[test]
+    fn test_scope_create_no_path() {
+        match parse_whitespace_separated("create") {
+            Ok(scopes) => {
+                assert_eq!(scopes.len(), 1);
+                assert!(matches!(scopes[0].action, Action::Create));
+                assert_eq!(scopes[0].path, None);
+            }
+            Err(_) => todo!(),
+        }
+    }
+
+    #[test]
+    fn test_scope_create_sep_no_path() {
+        match parse_whitespace_separated("create:") {
+            Ok(_) => {
+                panic!("empty path should result in error")
+            }
+            Err(Error::ParseError) => {}
+        }
+    }
+
+    #[test]
+    fn test_scope_create_vehicle_test() {
+        match parse_whitespace_separated("create:Vehicle.*") {
+            Ok(scopes) => {
+                assert_eq!(scopes.len(), 1);
+                let scope = &scopes[0];
+                assert!(matches!(scope.action, Action::Create));
+                assert!(scope.path.is_some());
+                assert_eq!(scope.path.as_deref().unwrap(), "Vehicle.*");
             }
             Err(_) => todo!(),
         }

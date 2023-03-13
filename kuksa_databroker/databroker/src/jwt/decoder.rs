@@ -109,6 +109,9 @@ impl TryFrom<Claims> for Permissions {
                         scope::Action::Provide => {
                             permissions.add_provide_permission(Permission::Glob(path))
                         }
+                        scope::Action::Create => {
+                            permissions.add_create_permission(Permission::Glob(path))
+                        }
                     }
                 }
                 None => {
@@ -121,6 +124,7 @@ impl TryFrom<Claims> for Permissions {
                         scope::Action::Provide => {
                             permissions.add_provide_permission(Permission::All)
                         }
+                        scope::Action::Create => permissions.add_create_permission(Permission::All),
                     };
                 }
             }

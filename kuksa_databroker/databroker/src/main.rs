@@ -17,8 +17,8 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use std::fmt::Write;
 
+use databroker::broker::RegistrationError;
 use databroker::grpc::server::Authorization;
-use databroker::permissions::{Permission, Permissions};
 use tracing::{debug, error, info};
 use tracing_subscriber::filter::EnvFilter;
 
@@ -27,7 +27,7 @@ use tokio::signal::unix::{signal, SignalKind};
 
 use clap::{Arg, Command};
 
-use databroker::{broker, grpc, jwt, vss};
+use databroker::{broker, grpc, jwt, permissions, vss};
 
 // Hardcoded datapoints
 const DATAPOINTS: &[(
@@ -150,7 +150,7 @@ async fn read_metadata_file<'a, 'b>(
     for (path, entry) in entries {
         debug!("Adding VSS datapoint type {}", path);
 
-        let id = database
+        match database
             .add_entry(
                 path.clone(),
                 entry.data_type,
@@ -159,29 +159,41 @@ async fn read_metadata_file<'a, 'b>(
                 entry.description,
                 entry.allowed,
             )
-            .await;
-
-        if let (Ok(id), Some(default)) = (id, entry.default) {
-            let ids = [(
-                id,
-                broker::EntryUpdate {
-                    datapoint: Some(broker::Datapoint {
-                        ts: std::time::SystemTime::now(),
-                        value: default,
-                    }),
-                    path: None,
-                    actuator_target: None,
-                    entry_type: None,
-                    data_type: None,
-                    description: None,
-                    allowed: None,
-                },
-            )];
-            if let Err(errors) = database.update_entries(ids).await {
-                // There's only one error (since we're only trying to set one)
-                if let Some(error) = errors.get(0) {
-                    info!("Failed to set default value for {}: {:?}", path, error.1);
+            .await
+        {
+            Ok(id) => {
+                if let Some(default) = entry.default {
+                    let ids = [(
+                        id,
+                        broker::EntryUpdate {
+                            datapoint: Some(broker::Datapoint {
+                                ts: std::time::SystemTime::now(),
+                                value: default,
+                            }),
+                            path: None,
+                            actuator_target: None,
+                            entry_type: None,
+                            data_type: None,
+                            description: None,
+                            allowed: None,
+                        },
+                    )];
+                    if let Err(errors) = database.update_entries(ids).await {
+                        // There's only one error (since we're only trying to set one)
+                        if let Some(error) = errors.get(0) {
+                            info!("Failed to set default value for {}: {:?}", path, error.1);
+                        }
+                    }
                 }
+            }
+            Err(RegistrationError::PermissionDenied) => {
+                error!("Failed to add entry {path}: Permission denied")
+            }
+            Err(RegistrationError::PermissionExpired) => {
+                error!("Failed to add entry {path}: Permission expired")
+            }
+            Err(RegistrationError::ValidationError) => {
+                error!("Failed to add entry {path}: Validation failed")
             }
         }
     }
@@ -282,11 +294,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let broker = broker::DataBroker::new(version);
-    let permissions = Permissions::builder()
-        .add_provide_permission(Permission::All)
-        .build()
-        .expect("creating permissions should always succeed");
-    let database = broker.authorized_access(&permissions);
+    let database = broker.authorized_access(&permissions::ALLOW_ALL);
 
     if args.is_present("dummy-metadata") {
         info!("Populating (hardcoded) metadata");
