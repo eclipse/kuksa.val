@@ -21,7 +21,10 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Code, Response, Status};
 use tracing::debug;
 
-use crate::{broker, permissions::Permissions};
+use crate::{
+    broker::{self, RegistrationError},
+    permissions::Permissions,
+};
 
 #[tonic::async_trait]
 impl proto::collector_server::Collector for broker::DataBroker {
@@ -207,7 +210,23 @@ impl proto::collector_server::Collector for broker::DataBroker {
                         .await
                     {
                         Ok(id) => results.insert(metadata.name, id),
-                        Err(_) => {
+                        Err(RegistrationError::PermissionDenied) => {
+                            // Registration error
+                            error = Some(Status::new(
+                                Code::PermissionDenied,
+                                format!("Failed to register {}", metadata.name),
+                            ));
+                            break;
+                        }
+                        Err(RegistrationError::PermissionExpired) => {
+                            // Registration error
+                            error = Some(Status::new(
+                                Code::Unauthenticated,
+                                format!("Failed to register {}", metadata.name),
+                            ));
+                            break;
+                        }
+                        Err(RegistrationError::ValidationError) => {
                             // Registration error
                             error = Some(Status::new(
                                 Code::InvalidArgument,

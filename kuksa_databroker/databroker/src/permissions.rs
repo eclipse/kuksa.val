@@ -24,6 +24,7 @@ lazy_static! {
         read: PathMatcher::Everything,
         actuate: PathMatcher::Everything,
         provide: PathMatcher::Everything,
+        create: PathMatcher::Everything,
     };
 }
 
@@ -33,6 +34,7 @@ pub struct Permissions {
     read: PathMatcher,
     actuate: PathMatcher,
     provide: PathMatcher,
+    create: PathMatcher,
 }
 
 pub struct PermissionBuilder {
@@ -40,6 +42,7 @@ pub struct PermissionBuilder {
     read: PathMatchBuilder,
     actuate: PathMatchBuilder,
     provide: PathMatchBuilder,
+    create: PathMatchBuilder,
 }
 
 pub enum Permission {
@@ -85,6 +88,7 @@ impl PermissionBuilder {
             read: PathMatchBuilder::Nothing,
             actuate: PathMatchBuilder::Nothing,
             provide: PathMatchBuilder::Nothing,
+            create: PathMatchBuilder::Nothing,
         }
     }
 
@@ -126,12 +130,24 @@ impl PermissionBuilder {
         self
     }
 
+    pub fn add_create_permission(mut self, permission: Permission) -> Self {
+        match permission {
+            Permission::Nothing => {
+                // Adding nothing
+            }
+            Permission::All => self.create.extend_with(PathMatchBuilder::Everything),
+            Permission::Glob(path) => self.create.extend_with_glob(path),
+        };
+        self
+    }
+
     pub fn build(self) -> Result<Permissions, PermissionsBuildError> {
         Ok(Permissions {
             expires_at: self.expiration,
             read: self.read.build()?,
             actuate: self.actuate.build()?,
             provide: self.provide.build()?,
+            create: self.create.build()?,
         })
     }
 }
@@ -142,19 +158,21 @@ impl Permissions {
     }
 
     pub fn can_read(&self, path: &str) -> Result<(), PermissionError> {
-        if let Some(expires_at) = self.expires_at {
-            if expires_at < SystemTime::now() {
-                return Err(PermissionError::Expired);
-            }
-        }
+        self.expired()?;
 
         if self.read.is_match(path) {
             return Ok(());
         }
+
+        // Read permissions are included (by convention) in the
+        // other permissions as well.
         if self.actuate.is_match(path) {
             return Ok(());
         }
         if self.provide.is_match(path) {
+            return Ok(());
+        }
+        if self.create.is_match(path) {
             return Ok(());
         }
 
@@ -162,11 +180,8 @@ impl Permissions {
     }
 
     pub fn can_write_actuator_target(&self, path: &str) -> Result<(), PermissionError> {
-        if let Some(expires_at) = self.expires_at {
-            if expires_at < SystemTime::now() {
-                return Err(PermissionError::Expired);
-            }
-        }
+        self.expired()?;
+
         if self.actuate.is_match(path) {
             return Ok(());
         }
@@ -174,15 +189,31 @@ impl Permissions {
     }
 
     pub fn can_write_datapoint(&self, path: &str) -> Result<(), PermissionError> {
+        self.expired()?;
+
+        if self.provide.is_match(path) {
+            return Ok(());
+        }
+        Err(PermissionError::Denied)
+    }
+
+    pub fn can_create(&self, path: &str) -> Result<(), PermissionError> {
+        self.expired()?;
+
+        if self.create.is_match(path) {
+            return Ok(());
+        }
+        Err(PermissionError::Denied)
+    }
+
+    #[inline]
+    pub fn expired(&self) -> Result<(), PermissionError> {
         if let Some(expires_at) = self.expires_at {
             if expires_at < SystemTime::now() {
                 return Err(PermissionError::Expired);
             }
         }
-        if self.provide.is_match(path) {
-            return Ok(());
-        }
-        Err(PermissionError::Denied)
+        Ok(())
     }
 }
 

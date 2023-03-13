@@ -46,6 +46,13 @@ pub enum ReadError {
     PermissionExpired,
 }
 
+#[derive(Debug)]
+pub enum RegistrationError {
+    ValidationError,
+    PermissionDenied,
+    PermissionExpired,
+}
+
 #[derive(Debug, Clone)]
 pub struct Metadata {
     pub id: i32,
@@ -146,9 +153,6 @@ pub struct ChangeSubscription {
 
 #[derive(Debug)]
 pub struct NotificationError {}
-
-#[derive(Debug)]
-pub struct RegistrationError {}
 
 #[derive(Debug, Clone, Default)]
 pub struct EntryUpdate {
@@ -971,7 +975,12 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
         allowed: Option<types::DataValue>,
         datapoint: Option<Datapoint>,
     ) -> Result<i32, RegistrationError> {
-        // TODO: Add authorization
+        self.permissions
+            .can_create(&name)
+            .map_err(|err| match err {
+                PermissionError::Denied => RegistrationError::PermissionDenied,
+                PermissionError::Expired => RegistrationError::PermissionExpired,
+            })?;
 
         if let Some(id) = self.db.path_to_id.get(&name) {
             // It already exists
@@ -1002,7 +1011,7 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
 
         new_entry
             .validate_allowed_type(&new_entry.metadata.allowed)
-            .map_err(|_err| RegistrationError {})?;
+            .map_err(|_err| RegistrationError::ValidationError)?;
 
         // Get next id (and bump it)
         let id = self.db.next_id.fetch_add(1, Ordering::SeqCst);
