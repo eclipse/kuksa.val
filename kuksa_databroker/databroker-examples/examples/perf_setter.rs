@@ -44,7 +44,14 @@ async fn run_streaming_set_test(iterations: i32, n_th_message: i32) {
         .await;
     match connect {
         Ok(channel) => {
-            let mut client = proto::v1::collector_client::CollectorClient::new(channel);
+            let mut client = proto::v1::collector_client::CollectorClient::with_interceptor(
+                channel,
+                |mut req: tonic::Request<()>| {
+                    req.metadata_mut().append("authorization",
+                tonic::metadata::AsciiMetadataValue::from_str("Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3NjcyMjU1OTksInNjb3BlIjoicHJvdmlkZSBjcmVhdGUifQ.h7F2q5pXJ0VAGKQJQKrRwj_RZIhWRb5y6_7YXwhnAv-sH5tk_LSXy7UQPEE2pO8Bzp2xCOD3gjkulJZZ49Xk-0sLgedb9YLgONfgcsySaknOTLB0PSbdBMVXhtfuNyTN9RMoeW4gLsNaitVw-_QM027nmaqzaQmgNb8GyBqonqrZD8jjFTf2e6wHYg1DuvxooMoI1gn8r_weXYmK8ksBJrL4097FD5jghF9mJKzKG25oM6wl2vkibmv3l1ZmHdilA_QIbt7ZXAh0VO8NVwUfWWxitimSs27w3CE2wvcwWI7hgLHOR2wJEqkgaMaOckVbkbJPXDrWQz-uDyCwOr2oICpUELOp1j-lbHTIH1dunmilldLMJlVbatMDmYtGYDmvZQ470aAH-Df_fN4WtoxdWHQekNBjr0TIM-vP1-uucFPprMWFtUjjejwQVNVBRz_HaZiOObt4jku0VHv1fP3y7MJmJ6M--RSQlGNnvtKzJXG9exeN3wmkyBpdnVFQ4s_EUn88kkneiPZAas7zAhRQhBjwLS7n0j761wXAUrEQPQ0YQ7AhhopZLmrhiJeGAoZQ5kazUb8p2qIiIroLDGoO6gvd6RK_M-3EJ3mGaUdqrEKxWk9-r5lu6UcE1Zl7XXr_AHD2sD9mwVpuFJ_mYHN5hvvcZUjkmrBdGTkryAfatwY").unwrap());
+                    Ok(req)
+                },
+            );
 
             let datapoint1_id = match client
                 .register_datapoints(tonic::Request::new(proto::v1::RegisterDatapointsRequest {
@@ -64,6 +71,9 @@ async fn run_streaming_set_test(iterations: i32, n_th_message: i32) {
                 }
             };
 
+            if datapoint1_id == -1 {
+                return;
+            }
             let (tx, rx) = mpsc::channel(10);
             let now = Instant::now();
 
