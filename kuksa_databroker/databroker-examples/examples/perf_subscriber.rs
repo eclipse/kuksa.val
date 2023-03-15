@@ -22,8 +22,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
     {
         Ok(channel) => {
-            let mut client = proto::v1::broker_client::BrokerClient::new(channel.clone());
-
+            let mut client = proto::v1::broker_client::BrokerClient::with_interceptor(
+                channel,
+                |mut req: tonic::Request<()>| {
+                    req.metadata_mut().append("authorization",
+                tonic::metadata::AsciiMetadataValue::from_str("Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3NjcyMjU1OTksInNjb3BlIjoicmVhZCJ9.P6tJPRSJWB51UOFDFs8qQ-lGqb1NoWgCekHUKyMiYcs8sR3FGVKSRjSkcqv1tXOlILvqhUwyuTKui25_kFKkTPv47GI0xAqcXtaTmDwHAWZHFC6HWGWGXohu7XvURrim5kMRVHy_VGlzasGgVap0JFk3wmaY-nyFYL_PLDjvGjIQuOwFiUtKK1PfiKviZKyc5EzPUEAoHxFL_BSOsTdDDcaydFe9rSKJzpYrj7qXY0hMJCje2BUGlSUIttR95aSjOZflSxiGystWHME8fKMmDERAx749Jpt37M3taCxBsUzER5olPz65MGzFSikfC-jH_KGmJ4zNYS65_OM1a-CPfW7Ts__pyAXxFULNMHRMIfh8Wiig4UcooMy_ZJO_DN2rq95XdaBbzRua5mxvO2wM6iu5kv4lhNxhjVNGuWFRLLJ_icBUZlvAuC3eqp66B-Y3jJNI0cSnIvsVX8YFVS3ebW8tf40OdeVou8fWZPcQsFAAafBhIxNOW8FbLZ9sRvQ-FGwZy-GyF52IJ5ZKeGfAkeEh9ZLIcyJ2YlGp4q0EOKIdwIBsWfCFtZbAvi2ornO3XvJm94NBqprpvQYN_IB7yyRxDduLjNKqqcFqnrlWYI-ZhvghWH2rEblplgHZdyVD1G9Mbv0_zdNTKFs6J7IP96aV6-4hBOt3kROlS1G7ObA").unwrap());
+                    Ok(req)
+                },
+            );
             let mut n: i32 = 0;
 
             let args = tonic::Request::new(proto::v1::SubscribeRequest {
