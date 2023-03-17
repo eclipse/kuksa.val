@@ -19,9 +19,9 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-tonic = { workspace = true }
+tonic = { workspace = true, features = ["transport", "channel", "codegen", "prost"] }
 prost = { workspace = true }
 prost-types = { workspace = true }
 
 [build-dependencies]
-tonic-build = { workspace = true }
+tonic-build = { workspace = true, features = ["transport", "prost"] }
