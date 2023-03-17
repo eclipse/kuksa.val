@@ -1,5 +1,5 @@
 #********************************************************************************
-# Copyright (c) 2022 Contributors to the Eclipse Foundation
+# Copyright (c) 2022, 2023 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -21,20 +21,12 @@ members = [
 ]
 
 [workspace.dependencies]
-clap = { version = "3.1.10", default-features = false, features = [
-    "std",
-    "env",
-] }
+clap = "3.1.10"
 databroker-proto = { path = "kuksa_databroker/databroker-proto" }
 prost = "0.11"
 prost-types = "0.11"
-tokio = { version = "1.17.0", features = [
-    "macros",
-    "rt-multi-thread",
-    "time",
-    "signal",
-] }
-tokio-stream = { version = "0.1.8", features = ["sync", "net"] }
+tokio = "1.17.0"
+tokio-stream = "0.1.8"
 tonic = "0.8"
 tonic-build = "0.8"
 
@@ -43,5 +35,6 @@ lto = true                 # Link time optimization (dead code removal etc...)
 opt-level = "s"
 codegen-units = 1
 incremental = false
+strip = true
 # debug = true               # for profiling (turn off otherwise)
 # split-debuginfo = "packed" # only enable when `debug = true``

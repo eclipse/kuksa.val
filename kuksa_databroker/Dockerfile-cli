@@ -15,11 +15,11 @@
 
 # This builds the databroker-cli
 
-FROM messense/rust-musl-cross:x86_64-musl AS builder-amd64
+FROM ghcr.io/rust-cross/rust-musl-cross:x86_64-musl AS builder-amd64
 ENV BUILDTARGET="x86_64-unknown-linux-musl"
 
 
-FROM messense/rust-musl-cross:aarch64-musl AS builder-arm64
+FROM ghcr.io/rust-cross/rust-musl-cross:aarch64-musl AS builder-arm64
 ENV BUILDTARGET="aarch64-unknown-linux-musl"
 
 FROM builder-$TARGETARCH as builder
