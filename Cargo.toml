@@ -21,14 +21,18 @@ members = [
 ]
 
 [workspace.dependencies]
-clap = "3.1.10"
+clap = { version = "3.1.10", default-features = false }
 databroker-proto = { path = "kuksa_databroker/databroker-proto" }
+# prost has no features
 prost = "0.11"
+# prost-types has no features
 prost-types = "0.11"
+# tokio does not enable features by default
 tokio = "1.17.0"
+# tokio-stream has no features
 tokio-stream = "0.1.8"
-tonic = "0.8"
-tonic-build = "0.8"
+tonic = { version = "0.8", default-features = false }
+tonic-build = { version = "0.8", default-features = false }
 
 [profile.release]
 lto = true                 # Link time optimization (dead code removal etc...)

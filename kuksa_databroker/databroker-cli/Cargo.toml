@@ -20,7 +20,7 @@ license = "Apache-2.0"
 
 [dependencies]
 databroker-proto = { workspace = true }
-tonic = { workspace = true }
+tonic = { workspace = true, features = ["transport", "channel", "prost"] }
 prost = { workspace = true }
 prost-types = { workspace = true }
 tokio = { workspace = true, features = [
@@ -32,7 +32,7 @@ tokio = { workspace = true, features = [
 tokio-stream = { workspace = true, features = ["sync"] }
 linefeed = "0.6"
 ansi_term = "0.12"
-clap = { workspace = true, default-features = false, features = [
+clap = { workspace = true, features = [
     "std",
     "env",
     "derive",

@@ -24,7 +24,7 @@ path = "src/lib.rs"
 
 [dependencies]
 databroker-proto = { workspace = true }
-tonic = { workspace = true }
+tonic = { workspace = true, features = ["transport", "channel", "prost"] }
 prost = { workspace = true }
 prost-types = { workspace = true }
 tokio = { workspace = true, features = [
@@ -40,7 +40,7 @@ tracing-subscriber = { version = "0.3.11", default-features = false, features = 
     "env-filter",
     "ansi",
 ] }
-clap = { workspace = true, default-features = false, features = [
+clap = { workspace = true, features = [
     "std",
     "env",
 ] }
