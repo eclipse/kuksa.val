@@ -33,9 +33,7 @@ jobs:
 
     steps:
       - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-        with:
-          version: '3.x'
+        run: sudo apt-get install -y protobuf-compiler
       - uses: actions/checkout@v3
       - name: cargo fmt
         working-directory: ${{github.workspace}}
