@@ -23,7 +23,12 @@ databroker-proto = { workspace = true }
 tonic = { workspace = true }
 prost = { workspace = true }
 prost-types = { workspace = true }
-tokio = { workspace = true }
+tokio = { workspace = true, features = [
+    "macros",
+    "rt-multi-thread",
+    "time",
+    "signal",
+] }
 tokio-stream = { workspace = true, features = ["sync"] }
 linefeed = "0.6"
 ansi_term = "0.12"
