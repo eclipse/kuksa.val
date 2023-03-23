@@ -18,7 +18,7 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 use std::fmt::Write;
 
 use databroker::broker::RegistrationError;
-use databroker::grpc::server::Authorization;
+use databroker::grpc::server::{Authorization, ServerTLS};
 use tracing::{debug, error, info};
 use tracing_subscriber::filter::EnvFilter;
 
@@ -233,7 +233,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .alias("addr")
                 .help("Bind address")
                 .takes_value(true)
-                .value_name("ADDR")
+                .value_name("IP")
                 .required(false)
                 .env("KUKSA_DATA_BROKER_ADDR")
                 .default_value("127.0.0.1"),
@@ -247,14 +247,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .value_name("PORT")
                 .required(false)
                 .env("KUKSA_DATA_BROKER_PORT")
-                .value_parser(clap::value_parser!(u16).range(1..))
+                .value_parser(clap::value_parser!(u16))
                 .default_value("55555"),
         )
         .arg(
-            Arg::new("metadata")
+            Arg::new("vss-file")
                 .display_order(4)
-                .long("metadata")
-                .help("Populate data broker with metadata from (comma-separated) list of files")
+                .alias("metadata")
+                .long("vss")
+                .help("Populate data broker with VSS metadata from (comma-separated) list of files")
                 .takes_value(true)
                 .use_value_delimiter(true)
                 .require_value_delimiter(true)
@@ -274,6 +275,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .required(false),
         )
         .arg(
+            Arg::new("insecure")
+                .display_order(6)
+                .long("insecure")
+                .help("Allow insecure connections")
+                .takes_value(false),
+        )
+        .arg(
+            Arg::new("tls-cert")
+                .display_order(5)
+                .long("tls-cert")
+                .help("TLS certificate file (.pem)")
+                .takes_value(true)
+                .value_name("FILE")
+                .conflicts_with("insecure"),
+        )
+        .arg(
+            Arg::new("tls-private-key")
+                .display_order(5)
+                .long("tls-private-key")
+                .help("TLS private key file (.pem)")
+                .takes_value(true)
+                .value_name("FILE")
+                .conflicts_with("insecure"),
+        )
+        .arg(
             Arg::new("dummy-metadata")
                 .display_order(10)
                 .long("dummy-metadata")
@@ -286,12 +312,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // install global collector configured based on RUST_LOG env var.
     init_logging();
 
-    info!("Starting Kuksa Data Broker {}", version);
-    let addr = format!(
-        "{}:{}",
-        args.value_of("address").unwrap(),
-        args.get_one::<u16>("port").unwrap()
-    );
+    info!("Starting Kuksa Databroker {}", version);
+
+    let ip_addr = args.get_one::<String>("address").unwrap().parse()?;
+    let port = args
+        .get_one::<u16>("port")
+        .expect("port should be a number");
+    let addr = std::net::SocketAddr::new(ip_addr, *port);
 
     let broker = broker::DataBroker::new(version);
     let database = broker.authorized_access(&permissions::ALLOW_ALL);
@@ -342,11 +369,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Some(metadata_filenames) = args.get_many::<String>("metadata") {
+    if let Some(metadata_filenames) = args.get_many::<String>("vss-file") {
         for filename in metadata_filenames {
             read_metadata_file(&database, filename).await?;
         }
     }
+
+    let tls_config = if args.is_present("insecure") {
+        ServerTLS::Disabled
+    } else {
+        let cert_file = args.get_one::<String>("tls-cert");
+        let key_file = args.get_one::<String>("tls-private-key");
+        match (cert_file, key_file) {
+            (Some(cert_file), Some(key_file)) => {
+                let cert = std::fs::read(cert_file)?;
+                let key = std::fs::read(key_file)?;
+                let identity = tonic::transport::Identity::from_pem(cert, key);
+                ServerTLS::Enabled {
+                    tls_config: tonic::transport::ServerTlsConfig::new().identity(identity),
+                }
+            }
+            (Some(_), None) => {
+                return Err(
+                    "TLS private key (--tls-private-key) must be set if --tls-cert is.".into(),
+                );
+            }
+            (None, Some(_)) => {
+                return Err(
+                    "TLS certificate (--tls-cert) must be set if --tls-private-key is.".into(),
+                );
+            }
+            (None, None) => ServerTLS::Disabled,
+        }
+    };
 
     let jwt_public_key = match args.get_one::<String>("jwt-public-key") {
         Some(pub_key_filename) => match std::fs::read_to_string(pub_key_filename) {
@@ -370,7 +425,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => Authorization::Disabled,
     };
 
-    grpc::server::serve(&addr, broker, authorization, shutdown_handler()).await?;
+    grpc::server::serve(addr, broker, tls_config, authorization, shutdown_handler()).await?;
 
     Ok(())
 }
