@@ -13,7 +13,7 @@
 
 use std::{convert::TryFrom, future::Future, time::Duration};
 
-use tonic::transport::Server;
+use tonic::transport::ServerTlsConfig;
 use tracing::{debug, info, warn};
 
 use databroker_proto::{kuksa, sdv};
@@ -28,6 +28,11 @@ use crate::{
 pub enum Authorization {
     Disabled,
     Enabled { token_decoder: jwt::Decoder },
+}
+
+pub enum ServerTLS {
+    Disabled,
+    Enabled { tls_config: ServerTlsConfig },
 }
 
 impl tonic::service::Interceptor for Authorization {
@@ -73,6 +78,7 @@ impl tonic::service::Interceptor for Authorization {
         }
     }
 }
+
 async fn shutdown<F>(databroker: broker::DataBroker, signal: F)
 where
     F: Future<Output = ()>,
@@ -85,27 +91,38 @@ where
 }
 
 pub async fn serve<F>(
-    addr: &str,
+    addr: impl Into<std::net::SocketAddr>,
     broker: broker::DataBroker,
+    server_tls: ServerTLS,
     authorization: Authorization,
     signal: F,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
     F: Future<Output = ()>,
 {
-    let addr = addr.parse()?;
+    let socket_addr = addr.into();
 
     broker.start_housekeeping_task();
 
-    info!("Listening on {}", addr);
+    let mut builder = tonic::transport::Server::builder()
+        .http2_keepalive_interval(Some(Duration::from_secs(10)))
+        .http2_keepalive_timeout(Some(Duration::from_secs(20)));
+
+    match server_tls {
+        ServerTLS::Enabled { tls_config } => {
+            info!("Using TLS");
+            builder = builder.tls_config(tls_config)?;
+        }
+        ServerTLS::Disabled => {
+            warn!("TLS is not enabled")
+        }
+    }
 
     if let Authorization::Disabled = &authorization {
         warn!("Authorization is not enabled");
     }
 
-    Server::builder()
-        .http2_keepalive_interval(Some(Duration::from_secs(10)))
-        .http2_keepalive_timeout(Some(Duration::from_secs(20)))
+    let router = builder
         .add_service(
             sdv::databroker::v1::broker_server::BrokerServer::with_interceptor(
                 broker.clone(),
@@ -121,8 +138,11 @@ where
         .add_service(kuksa::val::v1::val_server::ValServer::with_interceptor(
             broker.clone(),
             authorization.clone(),
-        ))
-        .serve_with_shutdown(addr, shutdown(broker, signal))
+        ));
+
+    info!("Listening on {}", socket_addr);
+    router
+        .serve_with_shutdown(socket_addr, shutdown(broker, signal))
         .await?;
 
     Ok(())
