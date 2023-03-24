@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 
 genCAKey() {
@@ -17,7 +17,7 @@ genKey() {
 
 genCert() {
     openssl req -new -key $1.key -out $1.csr -passin pass:"temp" -subj "/C=CA/ST=Ontario/L=Ottawa/O=Eclipse.org Foundation, Inc./CN=$1/emailAddress=kuksa-dev@eclipse.org"
-    openssl x509 -req -in $1.csr -CA CA.pem -CAkey CA.key -CAcreateserial -days 365 -out $1.pem
+    openssl x509 -req -in $1.csr -extfile <(printf "subjectAltName=DNS:$1") -CA CA.pem -CAkey CA.key -CAcreateserial -days 365 -out $1.pem
     openssl verify -CAfile CA.pem $1.pem
 }
 
