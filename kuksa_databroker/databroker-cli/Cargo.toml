@@ -20,7 +20,7 @@ license = "Apache-2.0"
 
 [dependencies]
 databroker-proto = { workspace = true }
-tonic = { workspace = true, features = ["transport", "channel", "prost"] }
+tonic = { workspace = true, features = ["transport", "channel", "prost", "tls"] }
 prost = { workspace = true }
 prost-types = { workspace = true }
 tokio = { workspace = true, features = [

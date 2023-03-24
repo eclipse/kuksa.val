@@ -19,9 +19,10 @@ use tokio_stream::wrappers::BroadcastStream;
 use tonic::transport::Channel;
 
 pub struct Client {
-    pub uri: Uri,
-    pub token: Option<tonic::metadata::AsciiMetadataValue>,
-    pub channel: Option<tonic::transport::Channel>,
+    uri: Uri,
+    token: Option<tonic::metadata::AsciiMetadataValue>,
+    tls_config: Option<tonic::transport::ClientTlsConfig>,
+    channel: Option<tonic::transport::Channel>,
     connection_state_subs: Option<tokio::sync::broadcast::Sender<ConnectionState>>,
 }
 
@@ -66,9 +67,18 @@ impl Client {
         Client {
             uri,
             token: None,
+            tls_config: None,
             channel: None,
             connection_state_subs: None,
         }
+    }
+
+    pub fn get_uri(&self) -> String {
+        self.uri.to_string()
+    }
+
+    pub fn set_tls_config(&mut self, tls_config: tonic::transport::ClientTlsConfig) {
+        self.tls_config = Some(tls_config);
     }
 
     pub fn set_access_token(&mut self, token: impl AsRef<str>) -> Result<(), TokenError> {
@@ -97,10 +107,22 @@ impl Client {
     }
 
     async fn try_create_channel(&mut self) -> Result<&Channel, ClientError> {
-        match tonic::transport::Channel::builder(self.uri.clone())
-            .connect()
-            .await
-        {
+        let mut builder = tonic::transport::Channel::builder(self.uri.clone());
+
+        if let Some(tls_config) = &self.tls_config {
+            match builder.tls_config(tls_config.clone()) {
+                Ok(new_builder) => {
+                    builder = new_builder;
+                }
+                Err(err) => {
+                    return Err(ClientError::Connection(format!(
+                        "Failed to configure TLS: {err}"
+                    )));
+                }
+            }
+        }
+
+        match builder.connect().await {
             Ok(channel) => {
                 if let Some(subs) = &self.connection_state_subs {
                     subs.send(ConnectionState::Connected).map_err(|err| {

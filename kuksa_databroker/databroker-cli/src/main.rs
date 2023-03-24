@@ -69,6 +69,10 @@ struct Cli {
     #[clap(long, value_name = "FILE", display_order = 2)]
     token_file: Option<String>,
 
+    /// CA certificate used to verify server certificate
+    #[clap(long, value_name = "CERT", display_order = 3)]
+    ca_cert: Option<String>,
+
     // Sub command
     #[clap(subcommand)]
     command: Option<Commands>,
@@ -105,6 +109,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(token_filename) = cli.token_file {
         let token = std::fs::read_to_string(token_filename)?;
         client.set_access_token(token)?;
+    }
+
+    if let Some(ca_cert_filename) = cli.ca_cert {
+        let pem = std::fs::read(ca_cert_filename)?;
+        let ca_cert = tonic::transport::Certificate::from_pem(pem);
+
+        let tls_config = tonic::transport::ClientTlsConfig::new()
+            .ca_certificate(ca_cert)
+            .domain_name("Server");
+
+        client.set_tls_config(tls_config);
     }
 
     let mut connection_state_subscription = client.subscribe_to_connection_state();
@@ -156,7 +171,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             match client.try_connect().await {
                 Ok(()) => {
-                    print_info(format!("Successfully connected to {}", &client.uri))?;
+                    print_info(format!("Successfully connected to {}", client.get_uri()))?;
                     match client.get_metadata(vec![]).await {
                         Ok(metadata) => {
                             interface
@@ -558,8 +573,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     match client.try_connect().await {
                                         Ok(()) => {
                                             print_info(format!(
-                                                "Successfully connected to {}",
-                                                &client.uri
+                                                "[{cmd}] Successfully connected to {}",
+                                                client.get_uri()
                                             ))?;
                                         }
                                         Err(err) => {
@@ -572,8 +587,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             match client.try_connect_to(valid_uri).await {
                                                 Ok(()) => {
                                                     print_info(format!(
-                                                        "Successfully connected to {}",
-                                                        &client.uri
+                                                        "[{cmd}] Successfully connected to {}",
+                                                        client.get_uri()
                                                     ))?;
                                                 }
                                                 Err(err) => {
