@@ -80,7 +80,6 @@ jobs:
         push: true
         tags: |
           ${{ steps.meta.outputs.tags }}
-          ttl.sh/kuksa.val/kuksa-client-${{github.sha}}:1h
         labels: ${{ steps.meta.outputs.labels }}
 
     - name: Build ephemereal kuksa command line client docker and push to ttl.sh
