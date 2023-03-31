@@ -42,6 +42,18 @@ jobs:
         working-directory: ${{github.workspace}}
         run: cargo clippy --all-targets -- -W warnings -D warnings
 
+      - name: "Createbom: License check and Dash output generation"
+        run: |
+         cargo install cargo-license
+         working-directory: ${{github.workspace}}/kuksa_databroker/createbom
+         python3 createbom.py ${{github.workspace}}/dash-databroker.txt --dash ../databroker 
+        
+      - name: "Archive dash report"
+        uses: actions/upload-artifact@v3
+        with:
+          name: dash-databroker.txt
+          file: ${{github.workspace}}/dash-databroker.txt 
+
   test:
     name: Test
     runs-on: ubuntu-latest
