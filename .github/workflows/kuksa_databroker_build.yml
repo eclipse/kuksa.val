@@ -32,6 +32,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Installing JVM
+        run: sudo apt-get install -y default-jre
       - name: Install Protoc
         run: sudo apt-get install -y protobuf-compiler
       - uses: actions/checkout@v3
@@ -41,6 +43,17 @@ jobs:
       - name: cargo clippy
         working-directory: ${{github.workspace}}
         run: cargo clippy --all-targets -- -W warnings -D warnings
+
+      - name: "Createbom: License check and Dash output generation"
+        working-directory: ${{github.workspace}}/kuksa_databroker/createbom
+        run: |
+         cargo install cargo-license
+         python3 createbom.py --dash ${{github.workspace}}/dash-databroker-deps ../databroker
+
+      - name: Dash license check
+        uses: ./.github/actions/check-dash
+        with:
+          dashinput: ${{github.workspace}}/dash-databroker-deps
 
   test:
     name: Test
@@ -217,7 +230,7 @@ jobs:
 
     steps:
     
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         
       - name: Run integration test
         env:
