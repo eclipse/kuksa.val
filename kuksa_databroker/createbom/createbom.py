@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 ########################################################################
-# Copyright (c) 2022 Robert Bosch GmbH
+# Copyright (c) 2022,2023 Robert Bosch GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ def extract_license_filenames(crate):
     return license_files
 
 
-def generate_bom(source_path, target_path):
+def generate_bom(source_path, target_path, dashout):
     try:
         cargo_output = check_output(
             [
@@ -106,6 +106,12 @@ def generate_bom(source_path, target_path):
         raise RunCargoException(f"Error running cargo license: {e}")
 
     crates = json.loads(cargo_output)
+    dashlist = []
+
+    # Cargo will also pick up our own dependencies. As they are not thirdparty
+    # creating a new list without our own packages
+    crates = [
+        crate for crate in crates if not crate["name"].startswith("databroker")]
 
     license_files = set()
     errors = []
@@ -122,13 +128,16 @@ def generate_bom(source_path, target_path):
             print(" ".join(unpacked_filenames))
             del crate["license_file"]
             crate["license_files"] = unpacked_filenames
+            dashlist.append(
+                f"crate/cratesio/-/{crate['name']}/{crate['version']}")
         except LicenseException as e:
             errors.append(e)
 
     if errors:
         for error in errors:
             print(error)
-        raise LicenseException("BOM creation failed, unresolved licenses detected")
+        raise LicenseException(
+            "BOM creation failed, unresolved licenses detected")
 
     # Exporting
     os.mkdir(target_path)
@@ -146,10 +155,18 @@ def generate_bom(source_path, target_path):
     ) as jsonout:
         json.dump(crates, jsonout, indent=4)
 
+    if dashout is not None:
+        print(f"Exporting dash output to {dashout}")
+        with open(dashout, 'w') as f:
+            for line in dashlist:
+                f.write(f"{line}\n")
+
 
 def main(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("dir", help="Rust project directory")
+    parser.add_argument("--dash", default=None, type=str,
+                        help="if present, write an input file for dash PATH", metavar="PATH")
     args = parser.parse_args(args)
 
     source_path = os.path.abspath(args.dir)
@@ -161,9 +178,14 @@ def main(args=None):
         )
         return -2
 
+    if args.dash != None and os.path.exists(args.dash):
+        print(
+            f"Requested Dash output file {args.dash} exists. Remove it before running this script.")
+        return -3
+
     print(f"Generating BOM for project in {source_path}")
     try:
-        generate_bom(source_path, target_path)
+        generate_bom(source_path, target_path, args.dash)
     except LicenseException as e:
         print(f"Error: {e}")
         return -100
