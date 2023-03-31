@@ -1,0 +1,31 @@
+
+name: Checking dependencies with dash-license tool
+description: Check an input file via dash, and archive report. Print output in build step summary. Requires wget and an JRE on the runner
+
+inputs:
+  dashinput:
+    required: true
+    type: string
+    description: "Dash Input file"
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Run Dash"
+      shell: bash
+      run: |
+        wget -O dash.jar "https://repo.eclipse.org/service/local/artifact/maven/redirect?r=dash-licenses&g=org.eclipse.dash&a=org.eclipse.dash.licenses&v=LATEST"
+        java -jar dash.jar -summary ${{ inputs.dashinput }}.report  ${{ inputs.dashinput }} > ${{ inputs.dashinput }}.out 2>&1 || true
+        echo -e "Dash output: \n\`\`\` " >> $GITHUB_STEP_SUMMARY
+        cat ${{ inputs.dashinput }}.out >> $GITHUB_STEP_SUMMARY
+        echo -e "\n\`\`\`"
+    
+    - name: "Archive dash artifacts"
+      uses: actions/upload-artifact@v3
+      with:
+        name: "Dash data"
+        path: |
+         ${{ inputs.dashinput }}
+         ${{ inputs.dashinput }}.report
+         ${{ inputs.dashinput }}.out
