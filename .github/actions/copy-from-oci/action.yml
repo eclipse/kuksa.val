@@ -11,31 +11,30 @@ inputs:
       - linux/arm64
       - linux/amd64
       - linux/riscv64
-    image:
-      required: true
-      type: string
-      description: The OCI image
-    src:
-      required: true
-      type: string
-      description: Path inside container
-    id:
-      required: true
-      type: string
-      description: |
-        This will be the name of the temporary container, making sure we do not leave any stale containers around
-        (we try deleting and before and after running this, so we can recover should a workflow for a given id
-        fail before cleaning up)
-        Will be used for artifact name (if export=true) and to identify 
-        This will also be created as directory in cwd.
-        !No special characters allowed "/" !
-    export:
-      required: false
-      default: false
-      description: Archive dest and export as Action artifact
-    tar-transform:
-      required: false
-      description: Optionally applying chosen --transform to tar when export is set to true
+  image:
+    required: true
+    type: string
+    description: The OCI image
+  src:
+    required: true
+    type: string
+    description: Path inside container
+  id:
+    required: true
+    type: string
+    description: |
+      This will be the name of the temporary container, making sure we do not leave any stale containers around
+      (we try deleting and before and after running this, so we can recover should a workflow for a given id fail before cleaning up)
+      Will be used for artifact name (if export=true) and to identify 
+      This will also be created as directory in cwd.
+      !No special characters allowed "/" !
+  export:
+    required: false
+    default: false
+    description: Archive dest and export as Action artifact
+  transform:
+    required: false
+    description: Optionally applying chosen --transform to tar when export is set to true
       
 
 runs:
