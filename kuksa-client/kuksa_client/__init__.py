@@ -35,6 +35,7 @@ from kuksa_client._metadata import *
 
 from . import cli_backend
 
+
 class KuksaClientThread(threading.Thread):
 
     # Constructor
@@ -86,16 +87,22 @@ class KuksaClientThread(threading.Thread):
     # The given callback function will be called then, if the given path is updated:
     #   updateMessage = await webSocket.recv()
     #   callback(updateMessage)
-    def subscribe(self, path, callback, attribute = "value", timeout=5):
+    def subscribe(self, path, callback, attribute="value", timeout=5):
         return self.backend.subscribe(path, callback, attribute, timeout)
 
-    def subscribeMultiple(self, paths, callback, attribute = "value", timeout=5):
+    def subscribeMultiple(self, paths, callback, attribute="value", timeout=5):
         return self.backend.subscribeMultiple(paths, callback, attribute, timeout)
 
     # Unsubscribe value changes of to a given path.
     # The subscription id from the response of the corresponding subscription request will be required
     def unsubscribe(self, sub_id, timeout=5):
         return self.backend.unsubscribe(sub_id, timeout)
+
+    def disconnect(self, timeout=5):
+        return self.backend.disconnect(timeout)
+
+    def connect(self, timeout=5):
+        return self.backend.connect(timeout)
 
     # Thread function: Start the asyncio loop
     def run(self):

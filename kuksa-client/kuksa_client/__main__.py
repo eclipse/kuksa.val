@@ -138,8 +138,10 @@ class TestClient(Cmd):
 
     ap_getServerAddr = argparse.ArgumentParser()
     ap_connect = argparse.ArgumentParser()
-    ap_connect.add_argument('-i', "--insecure", default=False, action="store_true", help='Connect in insecure mode')
     ap_disconnect = argparse.ArgumentParser()
+    ap_connectThread = argparse.ArgumentParser()
+    ap_connectThread.add_argument('-i', "--insecure", default=False, action="store_true", help='Connect in insecure mode')
+    ap_disconnectThread = argparse.ArgumentParser()
     ap_authorize = argparse.ArgumentParser()
     tokenfile_completer_method = functools.partial(Cmd.path_complete,
         path_filter=lambda path: (os.path.isdir(path) or path.endswith(".token")))
@@ -414,13 +416,19 @@ class TestClient(Cmd):
 
 
     @with_category(COMM_SETUP_COMMANDS)
-    @with_argparser(ap_disconnect)
-    def do_disconnect(self, _args):
+    @with_argparser(ap_disconnectThread)
+    def do_disconnectThread(self, _args):
         """Disconnect from the VISS/gRPC Server"""
         if hasattr(self, "commThread"):
             if self.commThread is not None:
                 self.commThread.stop()
                 self.commThread = None
+    
+    @with_category(COMM_SETUP_COMMANDS)
+    @with_argparser(ap_disconnect)
+    def do_disconnect(self, _args):
+        """Disconnect from the VISS/gRPC Server"""
+        self.commThread.disconnect()
 
     def checkConnection(self):
         if self.commThread is None or not self.commThread.checkConnection():
@@ -454,9 +462,14 @@ class TestClient(Cmd):
             self.commThread = None
 
     @with_category(COMM_SETUP_COMMANDS)
+    @with_argparser(ap_connectThread)
+    def do_connectThread(self, args):
+        self.connect(args.insecure)
+    
+    @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_connect)
     def do_connect(self, args):
-        self.connect(args.insecure)
+        self.commThread.connect()
 
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_setServerAddr)

@@ -599,28 +599,39 @@ class VSSClient(BaseVSSClient):
         self.exit_stack = contextlib.ExitStack()
 
     def __enter__(self):
-        creds = self._load_creds()
-        if creds is not None:
-            channel = grpc.secure_channel(self.target_host, creds)
-        else:
-            channel = grpc.insecure_channel(self.target_host)
-        self.channel = self.exit_stack.enter_context(channel)
-        self.client_stub = val_pb2_grpc.VALStub(self.channel)
-        if self.authorization_header is None:
-            logger.debug(
-                "Can not ensure startup connection without token to authorize")
-        if self.ensure_startup_connection:
-            try:
-                info = self.get_server_info()
-                logger.debug("Connected to server: %s", info)
-            except:
-                logger.debug("Connection could not be ensured")
+        self.connect()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        self.disconnect()
+
+    def check_connected(func):
+        def wrapper(self, *args, **kwargs):
+            if self.ensure_startup_connection:
+                return func(self, *args, **kwargs)
+            else:
+                logger.info(
+                    "Disconnected from server! Try connect.")
+        return wrapper
+
+    def connect(self, target_host=None):
+        creds = self._load_creds()
+        if target_host is None:
+            target_host = self.target_host
+        if creds is not None:
+            channel = grpc.secure_channel(target_host, creds)
+        else:
+            channel = grpc.insecure_channel(target_host)
+        self.channel = self.exit_stack.enter_context(channel)
+        self.client_stub = val_pb2_grpc.VALStub(self.channel)
+        self.ensure_startup_connection = True
+        logger.debug("Connected to server: %s", self.get_server_info())
+
+    def disconnect(self):
         self.exit_stack.close()
         self.client_stub = None
         self.channel = None
+        self.ensure_startup_connection = False
 
     def get_current_values(self, paths: Iterable[str], **rpc_kwargs) -> Dict[str, Datapoint]:
         """
@@ -782,6 +793,7 @@ class VSSClient(BaseVSSClient):
         ):
             yield {update.entry.path: update.entry.metadata for update in updates}
 
+    @check_connected
     def get(self, *, entries: Iterable[EntryRequest], **rpc_kwargs) -> List[DataEntry]:
         """
         Parameters:
@@ -797,6 +809,7 @@ class VSSClient(BaseVSSClient):
             raise VSSClientError.from_grpc_error(exc) from exc
         return self._process_get_response(resp)
 
+    @check_connected
     def set(self, *, updates: Collection[EntryUpdate], **rpc_kwargs) -> None:
         """
         Parameters:
@@ -818,23 +831,29 @@ class VSSClient(BaseVSSClient):
             raise VSSClientError.from_grpc_error(exc) from exc
         self._process_set_response(resp)
 
+    # needs to be handled differently
     def subscribe(self, *, entries: Iterable[SubscribeEntry], **rpc_kwargs) -> Iterator[List[EntryUpdate]]:
         """
         Parameters:
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         """
-        rpc_kwargs["metadata"] = self.generate_metadata_header(
-            rpc_kwargs.get("metadata"))
-        req = self._prepare_subscribe_request(entries)
-        resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
-        try:
-            for resp in resp_stream:
-                logger.debug("%s: %s", type(resp).__name__, resp)
-                yield [EntryUpdate.from_message(update) for update in resp.updates]
-        except RpcError as exc:
-            raise VSSClientError.from_grpc_error(exc) from exc
 
+        if self.ensure_startup_connection:
+            rpc_kwargs["metadata"] = self.generate_metadata_header(
+                rpc_kwargs.get("metadata"))
+            req = self._prepare_subscribe_request(entries)
+            resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
+            try:
+                for resp in resp_stream:
+                    logger.debug("%s: %s", type(resp).__name__, resp)
+                    yield [EntryUpdate.from_message(update) for update in resp.updates]
+            except RpcError as exc:
+                raise VSSClientError.from_grpc_error(exc) from exc
+        else:
+            logger.info("Disconnected from server! Try connect.")
+
+    @check_connected
     def authorize(self, *, token: str, **rpc_kwargs) -> str:
         rpc_kwargs["metadata"] = self.generate_metadata_header(
             metadata=rpc_kwargs.get("metadata"), header=self.get_authorization_header(token))
@@ -847,6 +866,7 @@ class VSSClient(BaseVSSClient):
         self.authorization_header = self.get_authorization_header(token)
         return "Authenticated"
 
+    @check_connected
     def get_server_info(self, **rpc_kwargs) -> ServerInfo:
         """
         Parameters:
