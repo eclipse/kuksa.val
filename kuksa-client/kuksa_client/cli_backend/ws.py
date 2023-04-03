@@ -31,6 +31,7 @@ import websockets
 
 from kuksa_client import cli_backend
 
+
 class Backend(cli_backend.Backend):
     def __init__(self, config):
         super().__init__(config)
@@ -53,7 +54,8 @@ class Backend(cli_backend.Backend):
             else:
                 if "subscriptionId" in resJson and resJson["subscriptionId"] in self.subscriptionCallbacks:
                     try:
-                        self.subscriptionCallbacks[resJson["subscriptionId"]](message)
+                        self.subscriptionCallbacks[resJson["subscriptionId"]](
+                            message)
                     except Exception as e:  # pylint: disable=broad-except
                         print(e)
 
@@ -99,11 +101,11 @@ class Backend(cli_backend.Backend):
         # Wait on the receive queue
         try:
             res = recvQueue.get(timeout=timeout)
-            resJson =  json.loads(res)
+            resJson = json.loads(res)
             if "requestId" in res and str(req["requestId"]) == str(resJson["requestId"]):
                 return json.dumps(resJson, indent=2)
         except queue.Empty:
-            req["error"] =  "timeout"
+            req["error"] = "timeout"
             return json.dumps(req, indent=2)
 
     # Function to stop the communication
@@ -111,6 +113,9 @@ class Backend(cli_backend.Backend):
         self.wsConnected = False
         self.run = False
         print("Server disconnected.")
+
+    def disconnect(self):
+        self.stop()
 
     # Function to authorize against the kuksa.val server
     def authorize(self, tokenfile=None, timeout=2):
@@ -120,14 +125,14 @@ class Backend(cli_backend.Backend):
         token = tokenfile.expanduser().read_text(encoding='utf-8')
 
         req = {}
-        req["action"]= "authorize"
+        req["action"] = "authorize"
         req["tokens"] = token
         return self._sendReceiveMsg(req, timeout)
 
     # Update VSS Tree Entry
     def updateVSSTree(self, jsonStr, timeout=5):
         req = {}
-        req["action"]= "updateVSSTree"
+        req["action"] = "updateVSSTree"
         if os.path.isfile(jsonStr):
             with open(jsonStr, "r", encoding="utf-8") as f:
                 req["metadata"] = json.load(f)
@@ -138,7 +143,7 @@ class Backend(cli_backend.Backend):
    # Update Meta Data of a given path
     def updateMetaData(self, path, jsonStr, timeout=5):
         req = {}
-        req["action"]= "updateMetaData"
+        req["action"] = "updateMetaData"
         req["path"] = path
         req["metadata"] = json.loads(jsonStr)
         return self._sendReceiveMsg(req, timeout)
@@ -147,7 +152,7 @@ class Backend(cli_backend.Backend):
     def getMetaData(self, path, timeout=5):
         """Get MetaData of the parameter"""
         req = {}
-        req["action"]= "getMetaData"
+        req["action"] = "getMetaData"
         req["path"] = path
         return self._sendReceiveMsg(req, timeout)
 
@@ -156,7 +161,7 @@ class Backend(cli_backend.Backend):
         if 'nan' == value:
             return json.dumps({"error": path + " has an invalid value " + str(value)}, indent=2)
         req = {}
-        req["action"]= "set"
+        req["action"] = "set"
         req["path"] = path
         req["attribute"] = attribute
         try:
@@ -186,11 +191,11 @@ class Backend(cli_backend.Backend):
     #   callback(updateMessage)
     def subscribe(self, path, callback, attribute="value", timeout=5):
         req = {}
-        req["action"]= "subscribe"
+        req["action"] = "subscribe"
         req["path"] = path
         req["attribute"] = attribute
         res = self._sendReceiveMsg(req, timeout)
-        resJson =  json.loads(res)
+        resJson = json.loads(res)
         if "subscriptionId" in resJson:
             self.subscriptionCallbacks[resJson["subscriptionId"]] = callback
         return res
@@ -199,7 +204,7 @@ class Backend(cli_backend.Backend):
     # The subscription id from the response of the corresponding subscription request will be required
     def unsubscribe(self, subId, timeout=5):
         req = {}
-        req["action"]= "unsubscribe"
+        req["action"] = "unsubscribe"
         req["subscriptionId"] = subId
 
         res = {}
@@ -222,11 +227,11 @@ class Backend(cli_backend.Backend):
     def checkConnection(self):
         return self.wsConnected
 
-    # Main loop for handling websocket communication
-    async def mainLoop(self):
+    async def connect(self):
         if not self.insecure:
             context = ssl.create_default_context()
-            context.load_cert_chain(certfile=self.certificate, keyfile=self.keyfile)
+            context.load_cert_chain(
+                certfile=self.certificate, keyfile=self.keyfile)
             context.load_verify_locations(cafile=self.cacertificate)
             # Certificates in ../kuksa_certificates does not contain the IP address used for
             # connection to server so hostname check must be disabled
@@ -246,3 +251,7 @@ class Backend(cli_backend.Backend):
                     await self._msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))
+
+    # Main loop for handling websocket communication
+    async def mainLoop(self):
+        await self.connect()

@@ -126,7 +126,11 @@ class Backend(cli_backend.Backend):
             tokenfile = self.tokenfile
         tokenfile = pathlib.Path(tokenfile)
         requestArgs = {
+<<<<<<< HEAD
             'token': tokenfile.expanduser().read_text(encoding='utf-8').rstrip('\n')}
+=======
+            'token': tokenfile.expanduser().read_text(encoding='utf-8')}
+>>>>>>> 8de9460 (Add connect/disconnect to allow use of kuksa-client as non context-manager)
 
         return self._sendReceiveMsg(("authorize", requestArgs), timeout)
 
@@ -157,6 +161,14 @@ class Backend(cli_backend.Backend):
             return json.dumps({"error": str(exc)})
         requestArgs = {'subscription_id': sub_id}
         return self._sendReceiveMsg(("unsubscribe", requestArgs), timeout)
+
+    def connect(self, timeout=5):
+        requestArgs = {}
+        return self._sendReceiveMsg(("connect", requestArgs), timeout)
+
+    def disconnect(self, timeout=5):
+        requestArgs = {}
+        return self._sendReceiveMsg(("disconnect", requestArgs), timeout)
 
     def _sendReceiveMsg(self, req, timeout):
         (call, requestArgs) = req
@@ -189,8 +201,9 @@ class Backend(cli_backend.Backend):
             try:
                 if call == "get":
                     resp = await vss_client.get(**requestArgs)
-                    resp = [entry.to_dict() for entry in resp]
-                    resp = resp[0] if len(resp) == 1 else resp
+                    if resp != None:
+                        resp = [entry.to_dict() for entry in resp]
+                        resp = resp[0] if len(resp) == 1 else resp
                 elif call == "set":
                     resp = await vss_client.set(**requestArgs)
                 elif call == "authorize":
@@ -203,6 +216,10 @@ class Backend(cli_backend.Backend):
                     resp = {"subscriptionId": str(resp)}
                 elif call == "unsubscribe":
                     resp = await subscriber_manager.remove_subscriber(**requestArgs)
+                elif call == "connect":
+                    resp = await vss_client.connect()
+                elif call == "disconnect":
+                    resp = await vss_client.disconnect()
                 else:
                     raise Exception("Not Implemented.")
 
