@@ -3,7 +3,7 @@ name: Extract from OCI image
 description: Can copy files out of an OCI image
 
 inputs:
-  plattform:
+  platform:
     required: true
     type: choice
     description: Choose platform, e.g. linux/arm64
