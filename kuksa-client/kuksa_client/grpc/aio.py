@@ -67,8 +67,12 @@ class VSSClient(BaseVSSClient):
         if self.authorization_header is None:
             logger.debug(
                 "Can not ensure startup connection without token to authorize")
-        elif self.ensure_startup_connection:
-            logger.debug("Connected to server: %s", await self.get_server_info())
+        if self.ensure_startup_connection:
+            try:
+                info = await self.get_server_info()
+                logger.debug("Connected to server: %s", info)
+            except:
+                logger.debug("Connection could not be ensured")
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
