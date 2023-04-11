@@ -81,7 +81,8 @@ class Backend(cli_backend.Backend):
     def getValues(self, paths, attribute="value", timeout=5):
         if attribute in self.AttrDict:
             field, view = self.AttrDict[attribute]
-            entries = [kuksa_client.grpc.EntryRequest(path=path, view=view, fields=(field,)) for path in paths]
+            entries = [kuksa_client.grpc.EntryRequest(
+                path=path, view=view, fields=(field,)) for path in paths]
             requestArgs = {'entries': entries}
             return self._sendReceiveMsg(("get", requestArgs), timeout)
 
@@ -97,10 +98,12 @@ class Backend(cli_backend.Backend):
             entry_updates = []
             for path, value in updates.items():
                 if field is kuksa_client.grpc.Field.VALUE:
-                    entry = kuksa_client.grpc.DataEntry(path=path, value=kuksa_client.grpc.Datapoint(value=value))
+                    entry = kuksa_client.grpc.DataEntry(
+                        path=path, value=kuksa_client.grpc.Datapoint(value=value))
                 elif field is kuksa_client.grpc.Field.ACTUATOR_TARGET:
                     entry = kuksa_client.grpc.DataEntry(
-                        path=path, actuator_target=kuksa_client.grpc.Datapoint(value=value),
+                        path=path, actuator_target=kuksa_client.grpc.Datapoint(
+                            value=value),
                     )
                 elif field is kuksa_client.grpc.Field.METADATA:
                     try:
@@ -108,9 +111,11 @@ class Backend(cli_backend.Backend):
                     except json.JSONDecodeError:
                         return json.dumps({"error": "Metadata value needs to be a valid JSON object"})
                     entry = kuksa_client.grpc.DataEntry(
-                        path=path, metadata=kuksa_client.grpc.Metadata.from_dict(metadata_dict),
+                        path=path, metadata=kuksa_client.grpc.Metadata.from_dict(
+                            metadata_dict),
                     )
-                entry_updates.append(kuksa_client.grpc.EntryUpdate(entry=entry, fields=(field,)))
+                entry_updates.append(kuksa_client.grpc.EntryUpdate(
+                    entry=entry, fields=(field,)))
             requestArgs = {'updates': entry_updates}
             return self._sendReceiveMsg(("set", requestArgs), timeout)
         return json.dumps({"error": "Invalid Attribute"})
@@ -120,7 +125,8 @@ class Backend(cli_backend.Backend):
         if tokenfile is None:
             tokenfile = self.tokenfile
         tokenfile = pathlib.Path(tokenfile)
-        requestArgs = {'token': tokenfile.expanduser().read_text(encoding='utf-8')}
+        requestArgs = {
+            'token': tokenfile.expanduser().read_text(encoding='utf-8').rstrip('\n')}
 
         return self._sendReceiveMsg(("authorize", requestArgs), timeout)
 
@@ -132,7 +138,8 @@ class Backend(cli_backend.Backend):
     def subscribeMultiple(self, paths, callback, attribute="value", timeout=5):
         if attribute in self.AttrDict:
             field, view = self.AttrDict[attribute]
-            entries = [kuksa_client.grpc.SubscribeEntry(path=path, view=view, fields=(field,)) for path in paths]
+            entries = [kuksa_client.grpc.SubscribeEntry(
+                path=path, view=view, fields=(field,)) for path in paths]
             requestArgs = {
                 'entries': entries,
                 'callback': callback_wrapper(callback),
@@ -171,7 +178,8 @@ class Backend(cli_backend.Backend):
     async def _grpcHandler(self, vss_client):
         self.grpcConnected = True
         self.run = True
-        subscriber_manager = kuksa_client.grpc.aio.SubscriberManager(vss_client)
+        subscriber_manager = kuksa_client.grpc.aio.SubscriberManager(
+            vss_client)
         while self.run:
             try:
                 (call, requestArgs, responseQueue) = self.sendMsgQueue.get_nowait()
@@ -186,10 +194,11 @@ class Backend(cli_backend.Backend):
                 elif call == "set":
                     resp = await vss_client.set(**requestArgs)
                 elif call == "authorize":
-                    resp = await vss_client.authorize(**requestArgs)
+                    resp = await vss_client.authorize(str(requestArgs["token"]))
                 elif call == "subscribe":
                     callback = requestArgs.pop('callback')
-                    subscriber_response_stream = vss_client.subscribe(**requestArgs)
+                    subscriber_response_stream = vss_client.subscribe(
+                        **requestArgs)
                     resp = await subscriber_manager.add_subscriber(subscriber_response_stream, callback)
                     resp = {"subscriptionId": str(resp)}
                 elif call == "unsubscribe":
@@ -201,7 +210,8 @@ class Backend(cli_backend.Backend):
             except kuksa_client.grpc.VSSClientError as exc:
                 responseQueue.put((None, exc.to_dict()))
             except ValueError as exc:
-                responseQueue.put((None, {"error": "ValueError in casting the value."}))
+                responseQueue.put(
+                    (None, {"error": "ValueError in casting the value."}))
 
         self.grpcConnected = False
 

@@ -64,8 +64,15 @@ class VSSClient(BaseVSSClient):
             channel = grpc.aio.insecure_channel(self.target_host)
         self.channel = await self.exit_stack.enter_async_context(channel)
         self.client_stub = val_pb2_grpc.VALStub(self.channel)
+        if self.authorization_header is None:
+            logger.debug(
+                "Can not ensure startup connection without token to authorize")
         if self.ensure_startup_connection:
-            logger.debug("Connected to server: %s", await self.get_server_info())
+            try:
+                info = await self.get_server_info()
+                logger.debug("Connected to server: %s", info)
+            except:
+                logger.debug("Connection could not be ensured")
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
@@ -86,7 +93,8 @@ class VSSClient(BaseVSSClient):
             speed_value = current_values['Vehicle.Speed'].value
         """
         entries = await self.get(
-            entries=(EntryRequest(path, View.CURRENT_VALUE, (Field.VALUE,)) for path in paths),
+            entries=(EntryRequest(path, View.CURRENT_VALUE, (Field.VALUE,))
+                     for path in paths),
             **rpc_kwargs,
         )
         return {entry.path: entry.value for entry in entries}
@@ -104,8 +112,8 @@ class VSSClient(BaseVSSClient):
         """
         entries = await self.get(entries=(
             EntryRequest(path, View.TARGET_VALUE, (Field.ACTUATOR_TARGET,),
-            **rpc_kwargs,
-        ) for path in paths))
+                         **rpc_kwargs,
+                         ) for path in paths))
         return {entry.path: entry.actuator_target for entry in entries}
 
     async def get_metadata(
@@ -123,7 +131,8 @@ class VSSClient(BaseVSSClient):
             speed_unit = metadata['Vehicle.Speed'].unit
         """
         entries = await self.get(
-            entries=(EntryRequest(path, View.METADATA, (Field(field.value),)) for path in paths),
+            entries=(EntryRequest(path, View.METADATA, (Field(field.value),))
+                     for path in paths),
             **rpc_kwargs,
         )
         return {entry.path: entry.metadata for entry in entries}
@@ -140,7 +149,8 @@ class VSSClient(BaseVSSClient):
             })
         """
         await self.set(
-            updates=[EntryUpdate(DataEntry(path, value=dp), (Field.VALUE,)) for path, dp in updates.items()],
+            updates=[EntryUpdate(DataEntry(path, value=dp), (Field.VALUE,))
+                     for path, dp in updates.items()],
             **rpc_kwargs,
         )
 
@@ -185,7 +195,8 @@ class VSSClient(BaseVSSClient):
                     print(f"Current value for {path} is now: {dp.value}")
         """
         async for updates in self.subscribe(
-            entries=(SubscribeEntry(path, View.CURRENT_VALUE, (Field.VALUE,)) for path in paths),
+            entries=(SubscribeEntry(path, View.CURRENT_VALUE, (Field.VALUE,))
+                     for path in paths),
             **rpc_kwargs,
         ):
             yield {update.entry.path: update.entry.value for update in updates}
@@ -203,7 +214,8 @@ class VSSClient(BaseVSSClient):
                     print(f"Target value for {path} is now: {dp.value}")
         """
         async for updates in self.subscribe(
-            entries=(SubscribeEntry(path, View.TARGET_VALUE, (Field.ACTUATOR_TARGET,)) for path in paths),
+            entries=(SubscribeEntry(path, View.TARGET_VALUE,
+                     (Field.ACTUATOR_TARGET,)) for path in paths),
             **rpc_kwargs,
         ):
             yield {update.entry.path: update.entry.actuator_target for update in updates}
@@ -226,7 +238,8 @@ class VSSClient(BaseVSSClient):
                     print(f"Metadata for {path} are now: {md.to_dict()}")
         """
         async for updates in self.subscribe(
-            entries=(SubscribeEntry(path, View.METADATA, (Field(field.value),)) for path in paths),
+            entries=(SubscribeEntry(path, View.METADATA, (Field(field.value),))
+                     for path in paths),
             **rpc_kwargs,
         ):
             yield {update.entry.path: update.entry.metadata for update in updates}
@@ -237,6 +250,8 @@ class VSSClient(BaseVSSClient):
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         """
+        rpc_kwargs["metadata"] = self.generate_metadata_header(
+            rpc_kwargs.get("metadata"))
         req = self._prepare_get_request(entries)
         try:
             resp = await self.client_stub.Get(req, **rpc_kwargs)
@@ -250,6 +265,8 @@ class VSSClient(BaseVSSClient):
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         """
+        rpc_kwargs["metadata"] = self.generate_metadata_header(
+            rpc_kwargs.get("metadata"))
         paths_with_required_type = self._get_paths_with_required_type(updates)
         paths_without_type = [
             path for path, data_type in paths_with_required_type.items() if data_type is DataType.UNSPECIFIED
@@ -262,18 +279,17 @@ class VSSClient(BaseVSSClient):
             raise VSSClientError.from_grpc_error(exc) from exc
         self._process_set_response(resp)
 
-    async def authorize(self, *, token: str) -> str:
-        raise NotImplementedError('"authorize" is not yet implemented')
-
     async def subscribe(self, *,
-        entries: Iterable[SubscribeEntry],
-        **rpc_kwargs,
-    ) -> AsyncIterator[List[EntryUpdate]]:
+                        entries: Iterable[SubscribeEntry],
+                        **rpc_kwargs,
+                        ) -> AsyncIterator[List[EntryUpdate]]:
         """
         Parameters:
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         """
+        rpc_kwargs["metadata"] = self.generate_metadata_header(
+            rpc_kwargs.get("metadata"))
         req = self._prepare_subscribe_request(entries)
         resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
         try:
@@ -283,12 +299,26 @@ class VSSClient(BaseVSSClient):
         except AioRpcError as exc:
             raise VSSClientError.from_grpc_error(exc) from exc
 
+    async def authorize(self, token: str, **rpc_kwargs) -> str:
+        rpc_kwargs["metadata"] = self.generate_metadata_header(
+            metadata=rpc_kwargs.get("metadata"), header=self.get_authorization_header(token))
+        req = val_pb2.GetServerInfoRequest()
+        try:
+            resp = await self.client_stub.GetServerInfo(req, **rpc_kwargs)
+        except AioRpcError as exc:
+            raise VSSClientError.from_grpc_error(exc) from exc
+        logger.debug("%s: %s", type(resp).__name__, resp)
+        self.authorization_header = self.get_authorization_header(token)
+        return "Authenticated"
+
     async def get_server_info(self, **rpc_kwargs) -> ServerInfo:
         """
         Parameters:
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         """
+        rpc_kwargs["metadata"] = self.generate_metadata_header(
+            metadata=rpc_kwargs.get("metadata"))
         req = val_pb2.GetServerInfoRequest()
         logger.debug("%s: %s", type(req).__name__, req)
         try:
@@ -307,7 +337,8 @@ class VSSClient(BaseVSSClient):
         """
         if paths:
             entry_requests = (EntryRequest(
-                path=path, view=View.METADATA, fields=(Field.METADATA_DATA_TYPE,),
+                path=path, view=View.METADATA, fields=(
+                    Field.METADATA_DATA_TYPE,),
             ) for path in paths)
             entries = await self.get(entries=entry_requests, **rpc_kwargs)
             return {entry.path: DataType(entry.metadata.data_type) for entry in entries}
@@ -320,14 +351,15 @@ class SubscriberManager:
         self.subscribers = {}
 
     async def add_subscriber(self,
-        subscribe_response_stream: AsyncIterator[List[EntryUpdate]],
-        callback: Callable[[Iterable[EntryUpdate]], None],
-    ) -> uuid.UUID:
+                             subscribe_response_stream: AsyncIterator[List[EntryUpdate]],
+                             callback: Callable[[Iterable[EntryUpdate]], None],
+                             ) -> uuid.UUID:
         # We expect the first SubscribeResponse to be immediately available and to only hold a status
         await subscribe_response_stream.__aiter__().__anext__()  # pylint: disable=unnecessary-dunder-call
 
         sub_id = uuid.uuid4()
-        new_sub_task = asyncio.create_task(self._subscriber_loop(subscribe_response_stream, callback))
+        new_sub_task = asyncio.create_task(
+            self._subscriber_loop(subscribe_response_stream, callback))
         self.subscribers[sub_id] = new_sub_task
         return sub_id
 
@@ -335,7 +367,8 @@ class SubscriberManager:
         try:
             subscriber_task = self.subscribers.pop(subscription_id)
         except KeyError as exc:
-            raise ValueError(f"Could not find subscription {str(subscription_id)}") from exc
+            raise ValueError(
+                f"Could not find subscription {str(subscription_id)}") from exc
         subscriber_task.cancel()
         try:
             await subscriber_task
