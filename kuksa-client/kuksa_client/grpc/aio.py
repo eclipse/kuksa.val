@@ -73,18 +73,19 @@ class VSSClient(BaseVSSClient):
             channel = grpc.aio.insecure_channel(target_host)
         self.channel = await self.exit_stack.enter_async_context(channel)
         self.client_stub = val_pb2_grpc.VALStub(self.channel)
-        self.ensure_startup_connection = True
-        logger.debug("Connected to server: %s", await self.get_server_info())
+        self.connected = True
+        if self.ensure_startup_connection:
+            logger.debug("Connected to server: %s", await self.get_server_info())
 
     async def disconnect(self):
         await self.exit_stack.aclose()
         self.client_stub = None
         self.channel = None
-        self.ensure_startup_connection = False
+        self.connected = False
 
     def check_connected_async(func):
         async def wrapper(self, *args, **kwargs):
-            if self.ensure_startup_connection:
+            if self.connected:
                 return await func(self, *args, **kwargs)
             else:
                 logger.info(
@@ -301,7 +302,7 @@ class VSSClient(BaseVSSClient):
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         """
-        if self.ensure_startup_connection:
+        if self.connected:
             rpc_kwargs["metadata"] = self.generate_metadata_header(
                 rpc_kwargs.get("metadata"))
             req = self._prepare_subscribe_request(entries)
