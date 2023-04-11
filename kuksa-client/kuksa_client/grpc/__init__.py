@@ -480,6 +480,7 @@ class BaseVSSClient:
         certificate_chain: Optional[Path] = None,
         *,
         ensure_startup_connection: bool = True,
+        connected: bool = False,
     ):
         self.authorization_header = self.get_authorization_header(token)
         self.target_host = f'{host}:{port}'
@@ -487,6 +488,7 @@ class BaseVSSClient:
         self.private_key = private_key
         self.certificate_chain = certificate_chain
         self.ensure_startup_connection = ensure_startup_connection
+        self.connected = connected
         self.client_stub = None
 
     def _load_creds(self) -> Optional[grpc.ChannelCredentials]:
@@ -607,7 +609,7 @@ class VSSClient(BaseVSSClient):
 
     def check_connected(func):
         def wrapper(self, *args, **kwargs):
-            if self.ensure_startup_connection:
+            if self.connected:
                 return func(self, *args, **kwargs)
             else:
                 logger.info(
@@ -624,14 +626,15 @@ class VSSClient(BaseVSSClient):
             channel = grpc.insecure_channel(target_host)
         self.channel = self.exit_stack.enter_context(channel)
         self.client_stub = val_pb2_grpc.VALStub(self.channel)
-        self.ensure_startup_connection = True
-        logger.debug("Connected to server: %s", self.get_server_info())
+        self.connected = True
+        if self.ensure_startup_connection:
+            logger.debug("Connected to server: %s", self.get_server_info())
 
     def disconnect(self):
         self.exit_stack.close()
         self.client_stub = None
         self.channel = None
-        self.ensure_startup_connection = False
+        self.connected = False
 
     def get_current_values(self, paths: Iterable[str], **rpc_kwargs) -> Dict[str, Datapoint]:
         """
@@ -839,7 +842,7 @@ class VSSClient(BaseVSSClient):
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         """
 
-        if self.ensure_startup_connection:
+        if self.connected:
             rpc_kwargs["metadata"] = self.generate_metadata_header(
                 rpc_kwargs.get("metadata"))
             req = self._prepare_subscribe_request(entries)
