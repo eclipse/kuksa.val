@@ -64,6 +64,7 @@ class Backend(cli_backend.Backend):
 
     # Function to stop the communication
     def stop(self):
+        self.disconnect()
         self.run = False
         print("gRPC channel disconnected.")
 
@@ -126,11 +127,8 @@ class Backend(cli_backend.Backend):
             tokenfile = self.tokenfile
         tokenfile = pathlib.Path(tokenfile)
         requestArgs = {
-<<<<<<< HEAD
-            'token': tokenfile.expanduser().read_text(encoding='utf-8').rstrip('\n')}
-=======
-            'token': tokenfile.expanduser().read_text(encoding='utf-8')}
->>>>>>> 8de9460 (Add connect/disconnect to allow use of kuksa-client as non context-manager)
+            'token': tokenfile.expanduser().read_text(encoding='utf-8').rstrip('\n')
+        }
 
         return self._sendReceiveMsg(("authorize", requestArgs), timeout)
 
