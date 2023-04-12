@@ -1,8 +1,7 @@
-# Kuksa Data Broker
+# Kuksa Databroker
 
 - [Kuksa Databroker](#kuksa-data-broker)
   - [Intro](#intro)
-  - [Interface](#grpc-interfaces)
   - [Relation to the COVESA Vehicle Signal Specification (VSS)](#relation-to-the-covesa-vehicle-signal-specification-vss)
   - [Building](#building)
     - [Build all](#build-all)
@@ -15,46 +14,11 @@
     - [Build and run databroker container](#build-and-run-databroker)
   - [Limitations](#limitations)
   - [GRPC overview](#grpc-overview)
+  - [GRPC Interfaces](#grpc-interfaces)
 
 ## Intro
 
-Kuksa Data Broker is a GRPC service acting as a broker of vehicle data / data points / signals.
-
-## GRPC Interfaces
-
-Databroker implements a couple of GRPC interfaces.
-
-### `kuksa.val.v1.VAL`
-
-This GRPC interface is under development and is meant to be used by kuksa-databroker, kuksa-val-server and the feeders.
-
-### `sdv.databroker.v1.Broker`
-
-This interface is currently used by databroker clients. It is defined as follows (see [file](proto/sdv/databroker/v1/broker.proto) in the proto folder):
-
-```protobuf
-service Broker {
-    rpc GetDatapoints(GetDatapointsRequest) returns (GetDatapointsReply);
-    rpc SetDatapoints(SetDatapointsRequest) returns (SetDatapointsReply);
-
-    rpc Subscribe(SubscribeRequest) returns (stream Notification);
-
-    rpc GetMetadata(GetMetadataRequest) returns (GetMetadataReply);
-}
-```
-
-### `sdv.databroker.v1.Collector`
-There is also a [Collector](proto/sdv/databroker/v1/collector.proto) interface which is used by data point providers to feed data into the broker.
-
-```protobuf
-service Collector {
-    rpc RegisterDatapoints(RegisterDatapointsRequest) returns (RegisterDatapointsReply);
-
-    rpc UpdateDatapoints(UpdateDatapointsRequest) returns (UpdateDatapointsReply);
-
-    rpc StreamDatapoints(stream StreamDatapointsRequest) returns (stream StreamDatapointsReply);
-}
-```
+Kuksa Databroker is a GRPC service acting as a broker of vehicle data / data points / signals.
 
 ## Relation to the COVESA Vehicle Signal Specification (VSS)
 
@@ -105,15 +69,30 @@ USAGE:
     databroker [OPTIONS]
 
 OPTIONS:
-        --address <ADDR>           Bind address [env: KUKSA_DATA_BROKER_ADDR=] [default: 127.0.0.1]
-        --port <PORT>              Bind port [env: KUKSA_DATA_BROKER_PORT=] [default: 55555]
-        --metadata <FILE>...       Populate data broker with metadata from (comma-separated) list of
-                                   files [env: KUKSA_DATA_BROKER_METADATA_FILE=]
-        --jwt-public-key <FILE>    Public key used to verify JWT access tokens
-        --dummy-metadata           Populate data broker with dummy metadata
-    -h, --help                     Print help information
-    -V, --version                  Print version information
+        --address <IP>              Bind address [env: KUKSA_DATA_BROKER_ADDR=] [default: 127.0.0.1]
+        --port <PORT>               Bind port [env: KUKSA_DATA_BROKER_PORT=] [default: 55555]
+        --vss <FILE>...             Populate data broker with VSS metadata from (comma-separated)
+                                    list of files [env: KUKSA_DATA_BROKER_METADATA_FILE=]
+        --jwt-public-key <FILE>     Public key used to verify JWT access tokens
+        --tls-cert <FILE>           TLS certificate file (.pem)
+        --tls-private-key <FILE>    TLS private key file (.pem)
+        --insecure                  Allow insecure connections
+        --dummy-metadata            Populate data broker with dummy metadata
+    -h, --help                      Print help information
+    -V, --version                   Print version information
 
+```
+
+To enable authorization, provide a public key used to verify JWT access tokens (provided by connecting clients).
+
+```shell
+databroker --jwt-public-key kuksa_certificates/jwt/jwt.key.pub
+```
+
+To enable TLS, provide databroker with the path to the (public) certificate and it's corresponding private key.
+
+```shell
+databroker --tls-cert kuksa_certificates/Server.pem --tls-private-key kuksa_certificates/Server.key
 ```
 
 ### :warning: Default port not working on Mac OS
@@ -140,14 +119,14 @@ Run the cli with:
 To get help and an overview to the offered commands, run the cli and type :
 
 ```shell
-client> help
+sdv.databroker.v1 > help
 ```
 
 
 If server wasn't running at startup
 
 ```shell
-client> connect
+not connected> connect
 ```
 
 
@@ -166,6 +145,28 @@ Set data points by running "set"
 ```shell
 sdv.databroker.v1 > set Vehicle.ADAS.CruiseControl.IsEnabled false
 [set]  OK
+```
+
+#### Authorization
+```shell
+databroker-cli --token-file jwt/read-vehicle-speed.token
+```
+
+or interactively
+
+```shell
+sdv.databroker.v1 > token XXXXXXXXXX
+```
+
+or 
+
+```shell
+sdv.databroker.v1 > token-file jwt/read-vehicle-speed.token
+```
+
+#### Connect to databroker using TLS
+```shell
+databroker-cli --ca-cert kuksa_certificates/CA.pem
 ```
 
 ### Data Broker Query Syntax
@@ -190,11 +191,14 @@ Subscription is now running in the background. Received data is identified by [1
 
 | parameter      | default value | cli parameter    | environment variable              | description                                  |
 |----------------|---------------|------------------|-----------------------------------|----------------------------------------------|
-| metadata       | <no active>   | --metadata       | KUKSA_DATA_BROKER_METADATA_FILE   | Populate data broker with metadata from file |
-| dummy-metadata | <no active>   | --dummy-metadata | <no active>                       | Populate data broker with dummy metadata     |
+| vss       | <no active>   | --vss       | KUKSA_DATA_BROKER_METADATA_FILE   | Populate data broker with metadata from file |
+| dummy_metadata | <no active>   | --dummy-metadata | <no active>                       | Populate data broker with dummy metadata     |
 | listen_address | "127.0.0.1"   | --address        | KUKSA_DATA_BROKER_ADDR            | Listen for rpc calls                         |
 | listen_port    | 55555         | --port           | KUKSA_DATA_BROKER_PORT            | Listen for rpc calls                         |
-| jwt-public-key | <no active>   | --jwt-public-key | <no active>                       | Public key used to verify JWT access tokens
+| jwt_public_key | <no active>   | --jwt-public-key | <no active>                       | Public key used to verify JWT access tokens |
+| tls_cert | <no active> | --tls-cert | <no active> | TLS certificate file (.pem) |
+| tls_private_key | <no active> | --tls-private-key | <no active> | TLS private key file (.pem) |
+| insecure | <no active> | --insecure | <no active> | Allow insecure connections |
 
 To change the default configuration use the arguments during startup see [run section](#running) or environment variables.
 
@@ -268,3 +272,38 @@ This implementation uses the default GRPC transport HTTP/2 and the default seria
 
 HTTP/2 is a binary replacement for HTTP/1.1 used for handling connections / multiplexing (channels) & and providing a standardized way to add authorization headers for authorization & TLS for encryption / authentication. It support two way streaming between client and server.
 
+## GRPC Interfaces
+
+Databroker implements a couple of GRPC interfaces.
+
+### `kuksa.val.v1.VAL`
+
+This GRPC interface is under development and is meant to be used by kuksa-databroker, kuksa-val-server and the feeders.
+
+### `sdv.databroker.v1.Broker`
+
+This interface is currently used by databroker clients. It is defined as follows (see [file](proto/sdv/databroker/v1/broker.proto) in the proto folder):
+
+```protobuf
+service Broker {
+    rpc GetDatapoints(GetDatapointsRequest) returns (GetDatapointsReply);
+    rpc SetDatapoints(SetDatapointsRequest) returns (SetDatapointsReply);
+
+    rpc Subscribe(SubscribeRequest) returns (stream Notification);
+
+    rpc GetMetadata(GetMetadataRequest) returns (GetMetadataReply);
+}
+```
+
+### `sdv.databroker.v1.Collector`
+There is also a [Collector](proto/sdv/databroker/v1/collector.proto) interface which is used by providers to feed data into the broker.
+
+```protobuf
+service Collector {
+    rpc RegisterDatapoints(RegisterDatapointsRequest) returns (RegisterDatapointsReply);
+
+    rpc UpdateDatapoints(UpdateDatapointsRequest) returns (UpdateDatapointsReply);
+
+    rpc StreamDatapoints(stream StreamDatapointsRequest) returns (stream StreamDatapointsReply);
+}
+```
