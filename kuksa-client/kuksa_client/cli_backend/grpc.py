@@ -45,6 +45,12 @@ class Backend(cli_backend.Backend):
         self.cacertificate = pathlib.Path(self.cacertificate)
         self.keyfile = pathlib.Path(self.keyfile)
         self.certificate = pathlib.Path(self.certificate)
+        if self.tokenfile != None:
+            self.tokenfile = pathlib.Path(self.tokenfile)
+            self.token = self.tokenfile.expanduser(
+            ).read_text(encoding='utf-8').rstrip('\n')
+        else:
+            self.token = ""
         self.grpcConnected = False
 
         self.sendMsgQueue = queue.Queue()
@@ -233,7 +239,8 @@ class Backend(cli_backend.Backend):
     # Main loop for handling gRPC communication
     async def mainLoop(self):
         if self.insecure:
-            async with kuksa_client.grpc.aio.VSSClient(self.serverIP, self.serverPort) as vss_client:
+
+            async with kuksa_client.grpc.aio.VSSClient(self.serverIP, self.serverPort, token=self.token) as vss_client:
                 print("gRPC channel connected.")
                 await self._grpcHandler(vss_client)
         else:
@@ -243,6 +250,7 @@ class Backend(cli_backend.Backend):
                 root_certificates=self.cacertificate,
                 private_key=self.keyfile,
                 certificate_chain=self.certificate,
+                token=self.token
             ) as vss_client:
                 print("Secure gRPC channel connected.")
                 await self._grpcHandler(vss_client)

@@ -147,10 +147,9 @@ class TestClient(Cmd):
     tokenfile_completer_method = functools.partial(Cmd.path_complete,
                                                    path_filter=lambda path: (os.path.isdir(path) or path.endswith(".token")))
     ap_authorize.add_argument(
-        'Token',
+        'tokenfile',
         help='JWT(or the file storing the token) for authorizing the client.',
-        completer_method=tokenfile_completer_method,
-    )
+        completer_method=tokenfile_completer_method,)
     ap_setServerAddr = argparse.ArgumentParser()
     ap_setServerAddr.add_argument(
         'IP', help='VISS/gRPC Server IP Address', default=DEFAULT_SERVER_ADDR)
@@ -249,7 +248,7 @@ class TestClient(Cmd):
         "Json", help="Json tree to update VSS", completer_method=jsonfile_completer_method)
 
     # Constructor
-    def __init__(self, server_ip=None, server_port=None, server_protocol=None, insecure=False):
+    def __init__(self, server_ip=None, server_port=None, server_protocol=None, insecure=False, tokenfile=None):
         super().__init__(
             persistent_history_file=".vssclient_history", persistent_history_length=100, allow_cli_args=False,
         )
@@ -264,6 +263,7 @@ class TestClient(Cmd):
         self.pathCompletionItems = []
         self.subscribeIds = set()
         self.commThread = None
+        self.tokenfile = tokenfile
 
         print("Welcome to Kuksa Client version " + str(_metadata.__version__))
         print()
@@ -279,7 +279,9 @@ class TestClient(Cmd):
     def do_authorize(self, args):
         """Authorize the client to interact with the server"""
         if self.checkConnection():
-            resp = self.commThread.authorize(args.Token)
+            if args.tokenfile != None:
+                self.tokenfile = args.tokenfile
+            resp = self.commThread.authorize(self.tokenfile)
             print(highlight(resp, lexers.JsonLexer(),
                   formatters.TerminalFormatter()))
 
@@ -481,7 +483,8 @@ class TestClient(Cmd):
         config = {'ip': self.serverIP,
                   'port': self.serverPort,
                   'insecure': insecure,
-                  'protocol': self.serverProtocol
+                  'protocol': self.serverProtocol,
+                  'tokenfile': self.tokenfile,
                   }
         self.commThread = KuksaClientThread(config)
         self.commThread.start()
@@ -580,10 +583,14 @@ def main():
     parser.add_argument(
         '--logging-config', default=os.path.join(scriptDir, 'logging.ini'), help="Path to logging configuration file",
     )
+    parser.add_argument(
+        '--tokenfile', default=None, help="Path to jwt token file (.token)",
+    )
     args = parser.parse_args()
 
     logging.config.fileConfig(args.logging_config)
-    clientApp = TestClient(args.ip, args.port, args.protocol, args.insecure)
+    clientApp = TestClient(args.ip, args.port, args.protocol,
+                           args.insecure, args.tokenfile)
     try:
         # We exit the loop when the user types "quit" or hits Ctrl-D.
         clientApp.cmdloop()

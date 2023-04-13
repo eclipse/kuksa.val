@@ -20,6 +20,7 @@ import pathlib
 
 import kuksa_certificates
 
+
 class Backend:
     def __init__(self, config):
         self.serverIP = config.get('ip', "127.0.0.1")
@@ -29,10 +30,14 @@ class Backend:
         except AttributeError:
             self.insecure = config.get('insecure', False)
         self.default_cert_path = pathlib.Path(kuksa_certificates.__path__[0])
-        self.cacertificate = config.get('cacertificate', str(self.default_cert_path / 'CA.pem'))
-        self.certificate = config.get('certificate', str(self.default_cert_path / 'Client.pem'))
-        self.keyfile = config.get('key', str(self.default_cert_path / 'Client.key'))
-        self.tokenfile = config.get('token', str(self.default_cert_path / 'jwt/all-read-write.json.token'))
+        self.cacertificate = config.get(
+            'cacertificate', str(self.default_cert_path / 'CA.pem'))
+        self.certificate = config.get('certificate', str(
+            self.default_cert_path / 'Client.pem'))
+        self.keyfile = config.get('key', str(
+            self.default_cert_path / 'Client.key'))
+        self.tokenfile = config.get('tokenfile', str(
+            self.default_cert_path / 'jwt/all-read-write.json.token'))
 
     @staticmethod
     def from_config(config):
