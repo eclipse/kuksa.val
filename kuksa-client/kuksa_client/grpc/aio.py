@@ -318,6 +318,11 @@ class VSSClient(BaseVSSClient):
 
     @check_connected_async
     async def authorize(self, token: str, **rpc_kwargs) -> str:
+        """
+        Parameters:
+            rpc_kwargs
+                grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+        """
         rpc_kwargs["metadata"] = self.generate_metadata_header(
             metadata=rpc_kwargs.get("metadata"), header=self.get_authorization_header(token))
         req = val_pb2.GetServerInfoRequest()

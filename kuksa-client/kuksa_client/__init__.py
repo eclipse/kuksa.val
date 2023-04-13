@@ -52,23 +52,23 @@ class KuksaClientThread(threading.Thread):
         self.backend.stop()
 
     # Do authorization by passing a jwt token or a token file
-    def authorize(self, token_or_tokenfile=None, timeout=5):
+    def authorize(self, token_or_tokenfile: str=None, timeout=5):
         return self.backend.authorize(token_or_tokenfile, timeout)
 
     # Update VSS Tree Entry
-    def updateVSSTree(self, jsonStr, timeout=5):
+    def updateVSSTree(self, jsonStr: str, timeout=5):
         return self.backend.updateVSSTree(jsonStr, timeout)
 
     # Update Meta Data of a given path
-    def updateMetaData(self, path, jsonStr, timeout=5):
+    def updateMetaData(self, path: str, jsonStr: str, timeout=5):
         return self.backend.updateMetaData(path, jsonStr, timeout)
 
     # Get Meta Data of a given path
-    def getMetaData(self, path, timeout=5):
+    def getMetaData(self, path: str, timeout=5):
         return self.backend.getMetaData(path, timeout)
 
     # Set value to a given path
-    def setValue(self, path, value, attribute="value", timeout=5):
+    def setValue(self, path: str, value, attribute="value", timeout=5):
         return self.backend.setValue(path, value, attribute, timeout)
 
     # Set value of every given path
@@ -76,7 +76,7 @@ class KuksaClientThread(threading.Thread):
         return self.backend.setValues(updates, attribute, timeout)
 
     # Get value to a given path
-    def getValue(self, path, attribute="value", timeout=5):
+    def getValue(self, path: str, attribute="value", timeout=5):
         return self.backend.getValue(path, attribute, timeout)
 
     # Get value of every given path
@@ -87,15 +87,15 @@ class KuksaClientThread(threading.Thread):
     # The given callback function will be called then, if the given path is updated:
     #   updateMessage = await webSocket.recv()
     #   callback(updateMessage)
-    def subscribe(self, path, callback, attribute="value", timeout=5):
+    def subscribe(self, path: str, callback, attribute="value", timeout=5):
         return self.backend.subscribe(path, callback, attribute, timeout)
 
-    def subscribeMultiple(self, paths, callback, attribute="value", timeout=5):
+    def subscribeMultiple(self, paths: Iterable[str], callback, attribute="value", timeout=5):
         return self.backend.subscribeMultiple(paths, callback, attribute, timeout)
 
     # Unsubscribe value changes of to a given path.
     # The subscription id from the response of the corresponding subscription request will be required
-    def unsubscribe(self, sub_id, timeout=5):
+    def unsubscribe(self, sub_id: int, timeout=5):
         return self.backend.unsubscribe(sub_id, timeout)
 
     def disconnect(self, timeout=5):
