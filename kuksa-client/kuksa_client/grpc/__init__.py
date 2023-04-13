@@ -479,7 +479,7 @@ class BaseVSSClient:
         private_key: Optional[Path] = None,
         certificate_chain: Optional[Path] = None,
         *,
-        ensure_startup_connection: bool = False,
+        ensure_startup_connection: bool = True,
         connected: bool = False,
     ):
         self.authorization_header = self.get_authorization_header(token)
