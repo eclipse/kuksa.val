@@ -79,17 +79,17 @@ class Backend(cli_backend.Backend):
         print("gRPC channel disconnected.")
 
     # Function to implement fetching of metadata
-    def getMetaData(self, path, timeout=5):
+    def getMetaData(self, path: str, timeout=5):
         return self.getValue(path, "metadata", timeout)
 
-    def updateMetaData(self, path, jsonStr, timeout=5):
+    def updateMetaData(self, path: str, jsonStr, timeout=5):
         return self.setValue(path, jsonStr, "metadata", timeout)
 
     # Function to implement get
-    def getValue(self, path, attribute="value", timeout=5):
+    def getValue(self, path: str, attribute="value", timeout=5):
         return self.getValues((path,), attribute, timeout)
 
-    def getValues(self, paths, attribute="value", timeout=5):
+    def getValues(self, paths: Iterable[str], attribute="value", timeout=5):
         if attribute in self.AttrDict:
             field, view = self.AttrDict[attribute]
             entries = [kuksa_client.grpc.EntryRequest(
@@ -100,7 +100,7 @@ class Backend(cli_backend.Backend):
         return json.dumps({"error": "Invalid Attribute"})
 
     # Function to implement set
-    def setValue(self, path, value, attribute="value", timeout=5):
+    def setValue(self, path: str, value, attribute="value", timeout=5):
         return self.setValues({path: value}, attribute, timeout)
 
     def setValues(self, updates: Dict[str, Any], attribute="value", timeout=5):
@@ -132,7 +132,7 @@ class Backend(cli_backend.Backend):
         return json.dumps({"error": "Invalid Attribute"})
 
     # Function for authorization
-    def authorize(self, token_or_tokenfile=None, timeout=5):
+    def authorize(self, token_or_tokenfile:str =None, timeout=5):
         if token_or_tokenfile is None:
             token_or_tokenfile = self.token_or_tokenfile
         if os.path.isfile(token_or_tokenfile):
@@ -148,10 +148,10 @@ class Backend(cli_backend.Backend):
 
     # Subscribe value changes of to a given path.
     # The given callback function will be called then, if the given path is updated.
-    def subscribe(self, path, callback, attribute="value", timeout=5):
+    def subscribe(self, path: str, callback, attribute="value", timeout=5):
         return self.subscribeMultiple((path,), callback, attribute, timeout)
 
-    def subscribeMultiple(self, paths, callback, attribute="value", timeout=5):
+    def subscribeMultiple(self, paths: Iterable[str], callback, attribute="value", timeout=5):
         if attribute in self.AttrDict:
             field, view = self.AttrDict[attribute]
             entries = [kuksa_client.grpc.SubscribeEntry(
@@ -166,7 +166,7 @@ class Backend(cli_backend.Backend):
 
     # Unsubscribe value changes of to a given path.
     # The subscription id from the response of the corresponding subscription request will be required
-    def unsubscribe(self, sub_id, timeout=5):
+    def unsubscribe(self, sub_id: int, timeout=5):
         try:
             sub_id = uuid.UUID(sub_id)
         except ValueError as exc:
@@ -199,7 +199,7 @@ class Backend(cli_backend.Backend):
         return respJson
 
     # Async function to handle the gRPC calls
-    async def _grpcHandler(self, vss_client):
+    async def _grpcHandler(self, vss_client: kuksa_client.grpc.aio.VSSClient):
         self.grpcConnected = True
         self.run = True
         subscriber_manager = kuksa_client.grpc.aio.SubscriberManager(
