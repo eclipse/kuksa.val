@@ -584,7 +584,7 @@ def main():
         '--logging-config', default=os.path.join(scriptDir, 'logging.ini'), help="Path to logging configuration file",
     )
     parser.add_argument(
-        '--token_or_tokenfile', default=None, help="Path to jwt token file (.token)",
+        '--token_or_tokenfile', default=None, help="JWT token or path to a JWT token file (.token)",
     )
     args = parser.parse_args()
 
