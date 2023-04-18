@@ -257,7 +257,7 @@ class VSSClient(BaseVSSClient):
             yield {update.entry.path: update.entry.metadata for update in updates}
 
     @check_connected_async
-    async def get(self, *, entries: Iterable[EntryRequest], **rpc_kwargs) -> List[DataEntry]:
+    async def get(self, entries: Iterable[EntryRequest], **rpc_kwargs) -> List[DataEntry]:
         """
         Parameters:
             rpc_kwargs
@@ -273,7 +273,7 @@ class VSSClient(BaseVSSClient):
         return self._process_get_response(resp)
 
     @check_connected_async
-    async def set(self, *, updates: Collection[EntryUpdate], **rpc_kwargs) -> None:
+    async def set(self, updates: Collection[EntryUpdate], **rpc_kwargs) -> None:
         """
         Parameters:
             rpc_kwargs
@@ -293,7 +293,7 @@ class VSSClient(BaseVSSClient):
             raise VSSClientError.from_grpc_error(exc) from exc
         self._process_set_response(resp)
 
-    async def subscribe(self, *,
+    async def subscribe(self,
                         entries: Iterable[SubscribeEntry],
                         **rpc_kwargs,
                         ) -> AsyncIterator[List[EntryUpdate]]:
