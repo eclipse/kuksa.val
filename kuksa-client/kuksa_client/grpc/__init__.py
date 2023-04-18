@@ -572,8 +572,8 @@ class BaseVSSClient:
                 err, preserving_proto_field_name=True) for err in response.errors]
         else:
             errors = []
-        if (error and error['code'] != http.HTTPStatus.OK) or any(
-            sub_error['error']['code'] != http.HTTPStatus.OK for sub_error in errors
+        if (error and error['code'] is not http.HTTPStatus.OK) or any(
+            sub_error['error']['code'] is not http.HTTPStatus.OK for sub_error in errors
         ):
             raise VSSClientError(error, errors)
 
