@@ -279,7 +279,7 @@ class TestClient(Cmd):
     def do_authorize(self, args):
         """Authorize the client to interact with the server"""
         if self.checkConnection():
-            if args.tokenfile != None:
+            if args.tokenfile is not None:
                 self.tokenfile = args.tokenfile
             resp = self.commThread.authorize(self.tokenfile)
             print(highlight(resp, lexers.JsonLexer(),

@@ -45,7 +45,7 @@ class Backend(cli_backend.Backend):
         self.cacertificate = pathlib.Path(self.cacertificate)
         self.keyfile = pathlib.Path(self.keyfile)
         self.certificate = pathlib.Path(self.certificate)
-        if self.tokenfile != None:
+        if self.tokenfile is not None:
             self.tokenfile = pathlib.Path(self.tokenfile)
             self.token = self.tokenfile.expanduser(
             ).read_text(encoding='utf-8').rstrip('\n')
@@ -205,7 +205,7 @@ class Backend(cli_backend.Backend):
             try:
                 if call == "get":
                     resp = await vss_client.get(**requestArgs)
-                    if resp != None:
+                    if resp is not None:
                         resp = [entry.to_dict() for entry in resp]
                         resp = resp[0] if len(resp) == 1 else resp
                 elif call == "set":
