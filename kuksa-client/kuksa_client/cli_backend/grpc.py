@@ -26,6 +26,7 @@ from typing import Callable
 from typing import Dict
 from typing import Iterable
 import uuid
+import os
 
 from kuksa_client import cli_backend
 import kuksa_client.grpc
@@ -45,10 +46,13 @@ class Backend(cli_backend.Backend):
         self.cacertificate = pathlib.Path(self.cacertificate)
         self.keyfile = pathlib.Path(self.keyfile)
         self.certificate = pathlib.Path(self.certificate)
-        if self.tokenfile is not None:
-            self.tokenfile = pathlib.Path(self.tokenfile)
-            self.token = self.tokenfile.expanduser(
-            ).read_text(encoding='utf-8').rstrip('\n')
+        if self.token_or_tokenfile is not None:
+            if os.path.isfile(self.token_or_tokenfile):
+                self.token_or_tokenfile = pathlib.Path(self.token_or_tokenfile)
+                self.token = self.token_or_tokenfile.expanduser(
+                ).read_text(encoding='utf-8').rstrip('\n')
+            else:
+                self.token = str(self.token_or_tokenfile)
         else:
             self.token = ""
         self.grpcConnected = False
@@ -128,12 +132,16 @@ class Backend(cli_backend.Backend):
         return json.dumps({"error": "Invalid Attribute"})
 
     # Function for authorization
-    def authorize(self, tokenfile=None, timeout=5):
-        if tokenfile is None:
-            tokenfile = self.tokenfile
-        tokenfile = pathlib.Path(tokenfile)
+    def authorize(self, token_or_tokenfile=None, timeout=5):
+        if token_or_tokenfile is None:
+            token_or_tokenfile = self.token_or_tokenfile
+        if os.path.isfile(token_or_tokenfile):
+            token_or_tokenfile = pathlib.Path(token_or_tokenfile)
+            token = token_or_tokenfile.expanduser().read_text(encoding='utf-8').rstrip('\n')
+        else:
+            token = token_or_tokenfile
         requestArgs = {
-            'token': tokenfile.expanduser().read_text(encoding='utf-8').rstrip('\n')
+            'token': token
         }
 
         return self._sendReceiveMsg(("authorize", requestArgs), timeout)

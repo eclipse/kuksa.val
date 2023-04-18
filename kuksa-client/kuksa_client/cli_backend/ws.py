@@ -118,12 +118,14 @@ class Backend(cli_backend.Backend):
         self.stop()
 
     # Function to authorize against the kuksa.val server
-    def authorize(self, tokenfile=None, timeout=2):
-        if tokenfile is None:
-            tokenfile = self.tokenfile
-        tokenfile = pathlib.Path(tokenfile)
-        token = tokenfile.expanduser().read_text(encoding='utf-8')
-
+    def authorize(self, token_or_tokenfile=None, timeout=2):
+        if token_or_tokenfile is None:
+            token_or_tokenfile = self.token_or_tokenfile
+        if os.path.isfile(token_or_tokenfile):
+            token_or_tokenfile = pathlib.Path(token_or_tokenfile)
+            token = token_or_tokenfile.expanduser().read_text(encoding='utf-8')
+        else:
+            token = token_or_tokenfile
         req = {}
         req["action"] = "authorize"
         req["tokens"] = token

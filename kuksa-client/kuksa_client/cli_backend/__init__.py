@@ -36,7 +36,7 @@ class Backend:
             self.default_cert_path / 'Client.pem'))
         self.keyfile = config.get('key', str(
             self.default_cert_path / 'Client.key'))
-        self.tokenfile = config.get('tokenfile', str(
+        self.token_or_tokenfile = config.get('token_or_tokenfile', str(
             self.default_cert_path / 'jwt/all-read-write.json.token'))
 
     @staticmethod
