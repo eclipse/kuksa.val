@@ -478,7 +478,6 @@ class BaseVSSClient:
         root_certificates: Optional[Path] = None,
         private_key: Optional[Path] = None,
         certificate_chain: Optional[Path] = None,
-        *,
         ensure_startup_connection: bool = True,
         connected: bool = False,
     ):
@@ -797,7 +796,7 @@ class VSSClient(BaseVSSClient):
             yield {update.entry.path: update.entry.metadata for update in updates}
 
     @check_connected
-    def get(self, *, entries: Iterable[EntryRequest], **rpc_kwargs) -> List[DataEntry]:
+    def get(self, entries: Iterable[EntryRequest], **rpc_kwargs) -> List[DataEntry]:
         """
         Parameters:
             rpc_kwargs
@@ -813,7 +812,7 @@ class VSSClient(BaseVSSClient):
         return self._process_get_response(resp)
 
     @check_connected
-    def set(self, *, updates: Collection[EntryUpdate], **rpc_kwargs) -> None:
+    def set(self, updates: Collection[EntryUpdate], **rpc_kwargs) -> None:
         """
         Parameters:
             rpc_kwargs
@@ -835,7 +834,7 @@ class VSSClient(BaseVSSClient):
         self._process_set_response(resp)
 
     # needs to be handled differently
-    def subscribe(self, *, entries: Iterable[SubscribeEntry], **rpc_kwargs) -> Iterator[List[EntryUpdate]]:
+    def subscribe(self, entries: Iterable[SubscribeEntry], **rpc_kwargs) -> Iterator[List[EntryUpdate]]:
         """
         Parameters:
             rpc_kwargs
@@ -857,11 +856,13 @@ class VSSClient(BaseVSSClient):
             logger.info("Disconnected from server! Try connect.")
 
     @check_connected
-    def authorize(self, *, token: str, **rpc_kwargs) -> str:
+    def authorize(self, token: str, **rpc_kwargs) -> str:
         """
         Parameters:
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+            token
+                string containing the actual token
         """
         rpc_kwargs["metadata"] = self.generate_metadata_header(
             metadata=rpc_kwargs.get("metadata"), header=self.get_authorization_header(token))
