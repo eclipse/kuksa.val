@@ -322,6 +322,8 @@ class VSSClient(BaseVSSClient):
         Parameters:
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
+            token
+                string containing the actual token
         """
         rpc_kwargs["metadata"] = self.generate_metadata_header(
             metadata=rpc_kwargs.get("metadata"), header=self.get_authorization_header(token))
