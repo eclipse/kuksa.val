@@ -882,11 +882,15 @@ class VSSClient(BaseVSSClient):
         logger.debug("%s: %s", type(req).__name__, req)
         try:
             resp = self.client_stub.GetServerInfo(req, **rpc_kwargs)
+            logger.debug("%s: %s", type(resp).__name__, resp)
+            return ServerInfo.from_message(resp)
         except RpcError as exc:
-            raise VSSClientError.from_grpc_error(exc) from exc
-        logger.debug("%s: %s", type(resp).__name__, resp)
-
-        return ServerInfo.from_message(resp)
+            if exc.code() == grpc.StatusCode.UNAUTHENTICATED:
+                logger.info("Unauthenticated channel started")
+            else:
+                raise VSSClientError.from_grpc_error(exc) from exc
+        return None
+        
 
     def get_value_types(self, paths: Collection[str], **rpc_kwargs) -> Dict[str, DataType]:
         """

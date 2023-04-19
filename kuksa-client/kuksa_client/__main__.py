@@ -264,6 +264,7 @@ class TestClient(Cmd):
         self.subscribeIds = set()
         self.commThread = None
         self.token_or_tokenfile = token_or_tokenfile
+        self.insecure = insecure
 
         print("Welcome to Kuksa Client version " + str(_metadata.__version__))
         print()
@@ -272,18 +273,18 @@ class TestClient(Cmd):
         print("Default tokens directory: " + self.getDefaultTokenDir())
 
         print()
-        self.connect(insecure)
+        self.connect()
 
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_authorize)
     def do_authorize(self, args):
         """Authorize the client to interact with the server"""
+        if args.token_or_tokenfile is not None:
+            self.token_or_tokenfile = args.token_or_tokenfile
         if self.checkConnection():
-            if args.token_or_tokenfile is not None:
-                self.token_or_tokenfile = args.token_or_tokenfile
             resp = self.commThread.authorize(self.token_or_tokenfile)
             print(highlight(resp, lexers.JsonLexer(),
-                  formatters.TerminalFormatter()))
+                    formatters.TerminalFormatter()))
 
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_setValue)
@@ -474,7 +475,7 @@ class TestClient(Cmd):
             self.connect()
         return self.commThread.checkConnection()
 
-    def connect(self, insecure=False):
+    def connect(self):
         """Connect to the VISS/gRPC Server"""
         if hasattr(self, "commThread"):
             if self.commThread is not None:
@@ -482,7 +483,7 @@ class TestClient(Cmd):
                 self.commThread = None
         config = {'ip': self.serverIP,
                   'port': self.serverPort,
-                  'insecure': insecure,
+                  'insecure': self.insecure,
                   'protocol': self.serverProtocol,
                   'token_or_tokenfile': self.token_or_tokenfile,
                   }
@@ -505,7 +506,8 @@ class TestClient(Cmd):
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_connect)
     def do_connect(self, args):
-        self.connect(args.insecure)
+        self.insecure = args.insecure
+        self.connect()
 
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_setServerAddr)
