@@ -170,7 +170,7 @@ jobs:
     - name: Build kuksa.val databroker container container and push to ghcr.io (and ttl.sh)
       id: ghcr-build
       if: ${{ needs.checkrights.outputs.have_secrets == 'true' && github.event_name != 'pull_request' }}
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v4
       with:
         platforms: |
           linux/amd64
@@ -186,7 +186,7 @@ jobs:
     - name: Build ephemereal kuksa.val databroker container and push to ttl.sh
       if: ${{ needs.checkrights.outputs.have_secrets == 'false' || github.event_name == 'pull_request' }}
       id: tmp-build
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v4
       with:
         platforms: |
           linux/amd64
