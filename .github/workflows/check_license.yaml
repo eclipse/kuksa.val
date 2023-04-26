@@ -1,0 +1,33 @@
+name: spdx
+
+on:
+  pull_request
+
+jobs:
+  check-spdx-headers:
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Get changed files
+      run: |
+        git remote add forked ${{github.event.pull_request.head.repo.clone_url}}
+        git fetch origin
+        git fetch forked
+        if git rev-parse --verify origin/${{ github.event.pull_request.head.ref }} >/dev/null 2>&1; then
+          echo "files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}..origin/${{ github.event.pull_request.head.ref }} | tr '\n' ',')" >> $GITHUB_ENV
+        elif git rev-parse --verify forked/${{ github.event.pull_request.head.ref }} >/dev/null 2>&1; then
+          echo "Failed to run git diff command with origin. Trying with forked repo..."
+          echo "files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}..forked/${{ github.event.pull_request.head.ref }} | tr '\n' ',')" >> $GITHUB_ENV
+        else
+          echo "Base branch not found"
+          exit 1
+        fi
+        
+    - name: Check SPDX Licenses
+      run: |
+        chmod u+x .github/workflows/verify-spdx-headers
+        echo "export INPUT_FILES="${{ env.files }}""| echo "export INPUT_LICENSES="Apache 2.0 MIT"" | xargs .github/workflows/verify-spdx-headers
+      shell: bash
