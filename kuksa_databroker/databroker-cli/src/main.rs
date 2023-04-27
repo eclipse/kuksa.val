@@ -1278,6 +1278,22 @@ impl fmt::Display for ParseError {
     }
 }
 
+fn get_array_from_input<T: std::str::FromStr>(values: String) -> Result<Vec<T>, ParseError> {
+    let raw_input = values
+        .strip_prefix('[')
+        .and_then(|s| s.strip_suffix(']'))
+        .ok_or(ParseError {})?;
+    let inputs = raw_input.split(',');
+    let mut array: Vec<T> = vec![];
+    for part in inputs {
+        match part.trim().parse::<T>() {
+            Ok(value) => array.push(value),
+            Err(_) => return Err(ParseError {}),
+        }
+    }
+    Ok(array)
+}
+
 fn try_into_data_value(
     input: &str,
     data_type: proto::v1::DataType,
@@ -1286,49 +1302,121 @@ fn try_into_data_value(
         proto::v1::DataType::String => {
             Ok(proto::v1::datapoint::Value::StringValue(input.to_owned()))
         }
+        proto::v1::DataType::StringArray => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::StringArray(
+                databroker_proto::sdv::databroker::v1::StringArray { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Bool => match input.parse::<bool>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::BoolValue(value)),
             Err(_) => Err(ParseError {}),
+        },
+        proto::v1::DataType::BoolArray => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::BoolArray(
+                databroker_proto::sdv::databroker::v1::BoolArray { values: value },
+            )),
+            Err(err) => Err(err),
         },
         proto::v1::DataType::Int8 => match input.parse::<i8>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Int32Value(value as i32)),
             Err(_) => Err(ParseError {}),
         },
+        proto::v1::DataType::Int8Array => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Int32Array(
+                databroker_proto::sdv::databroker::v1::Int32Array { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Int16 => match input.parse::<i16>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Int32Value(value as i32)),
             Err(_) => Err(ParseError {}),
+        },
+        proto::v1::DataType::Int16Array => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Int32Array(
+                databroker_proto::sdv::databroker::v1::Int32Array { values: value },
+            )),
+            Err(err) => Err(err),
         },
         proto::v1::DataType::Int32 => match input.parse::<i32>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Int32Value(value)),
             Err(_) => Err(ParseError {}),
         },
+        proto::v1::DataType::Int32Array => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Int32Array(
+                databroker_proto::sdv::databroker::v1::Int32Array { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Int64 => match input.parse::<i64>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Int64Value(value)),
             Err(_) => Err(ParseError {}),
+        },
+        proto::v1::DataType::Int64Array => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Int64Array(
+                databroker_proto::sdv::databroker::v1::Int64Array { values: value },
+            )),
+            Err(err) => Err(err),
         },
         proto::v1::DataType::Uint8 => match input.parse::<u8>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Value(value as u32)),
             Err(_) => Err(ParseError {}),
         },
+        proto::v1::DataType::Uint8Array => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
+                databroker_proto::sdv::databroker::v1::Uint32Array { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Uint16 => match input.parse::<u16>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Value(value as u32)),
             Err(_) => Err(ParseError {}),
+        },
+        proto::v1::DataType::Uint16Array => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
+                databroker_proto::sdv::databroker::v1::Uint32Array { values: value },
+            )),
+            Err(err) => Err(err),
         },
         proto::v1::DataType::Uint32 => match input.parse::<u32>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Value(value)),
             Err(_) => Err(ParseError {}),
         },
+        proto::v1::DataType::Uint32Array => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
+                databroker_proto::sdv::databroker::v1::Uint32Array { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Uint64 => match input.parse::<u64>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Uint64Value(value)),
             Err(_) => Err(ParseError {}),
+        },
+        proto::v1::DataType::Uint64Array => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Uint64Array(
+                databroker_proto::sdv::databroker::v1::Uint64Array { values: value },
+            )),
+            Err(err) => Err(err),
         },
         proto::v1::DataType::Float => match input.parse::<f32>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::FloatValue(value)),
             Err(_) => Err(ParseError {}),
         },
+        proto::v1::DataType::FloatArray => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::FloatArray(
+                databroker_proto::sdv::databroker::v1::FloatArray { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Double => match input.parse::<f64>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::DoubleValue(value)),
             Err(_) => Err(ParseError {}),
+        },
+        proto::v1::DataType::DoubleArray => match get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::DoubleArray(
+                databroker_proto::sdv::databroker::v1::DoubleArray { values: value },
+            )),
+            Err(err) => Err(err),
         },
         _ => Err(ParseError {}),
     }
@@ -1336,6 +1424,7 @@ fn try_into_data_value(
 
 #[cfg(test)]
 mod test {
+
     use super::*;
 
     #[test]
@@ -1346,11 +1435,18 @@ mod test {
             Ok(proto::v1::datapoint::Value::StringValue(value)) if value == "test"
         ));
 
+        // StringArray
+        assert!(matches!(
+            try_into_data_value("[test, test2, test4]", proto::v1::DataType::StringArray),
+            Ok(proto::v1::datapoint::Value::StringArray(value)) if value == databroker_proto::sdv::databroker::v1::StringArray{values: vec!["test".to_string(), "test2".to_string(), "test4".to_string()]}
+        ));
+
         // Bool
         assert!(matches!(
             try_into_data_value("true", proto::v1::DataType::Bool),
             Ok(proto::v1::datapoint::Value::BoolValue(value)) if value
         ));
+
         assert!(matches!(
             try_into_data_value("false", proto::v1::DataType::Bool),
             Ok(proto::v1::datapoint::Value::BoolValue(value)) if !value
@@ -1358,6 +1454,11 @@ mod test {
         assert!(matches!(
             try_into_data_value("truefalse", proto::v1::DataType::Bool),
             Err(_)
+        ));
+        // BoolArray
+        assert!(matches!(
+            try_into_data_value("[true, false, true]", proto::v1::DataType::BoolArray),
+            Ok(proto::v1::datapoint::Value::BoolArray(value)) if value == databroker_proto::sdv::databroker::v1::BoolArray{values: vec![true, false, true]}
         ));
 
         // Int8
