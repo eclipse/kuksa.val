@@ -8,16 +8,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - name: Checkout forked repo
+      uses: actions/checkout@v2
       with:
-        # required to grab the history of the PR
-        fetch-depth: 0
+          ref: pull/${{ github.event.number }}/head:${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+      
+    - name: Checkout original repo
+      uses: actions/checkout@v2
+      with:
+        ref: pull/${{ github.event.number }}/head:${{ github.event.pull_request.head.ref }}
+        repository: ${{ github.event.pull_request.base.repo.full_name }}
+
 
     - name: Get changed files
       run: |
         git fetch origin
-        echo "files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}..origin/${{ github.event.pull_request.head.ref }} | tr '\n' ',')" >> $GITHUB_ENV
+        echo "files=$(git diff --name-only  ${{ github.event.pull_request.base.repo.full_name }}/${{ github.event.pull_request.base.ref }}..${{ github.event.pull_request.head.repo.full_name }}/${{ github.event.pull_request.head.ref }} | tr '\n' ',')" >> $GITHUB_ENV
         
     - name: Check SPDX Licenses
       run: |
