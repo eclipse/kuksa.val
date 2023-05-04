@@ -32,12 +32,22 @@ from kuksa_client import cli_backend
 import kuksa_client.grpc
 import kuksa_client.grpc.aio
 from kuksa_client.grpc import EntryUpdate
-
+from kuksa.val.v1 import types_pb2
 
 def callback_wrapper(callback: Callable[[str], None]) -> Callable[[Iterable[EntryUpdate]], None]:
     def wrapper(updates: Iterable[EntryUpdate]) -> None:
         callback(json.dumps([update.to_dict() for update in updates]))
     return wrapper
+
+class DatabrokerEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (types_pb2.StringArray, types_pb2.BoolArray, types_pb2.Uint32Array, types_pb2.Uint64Array, types_pb2.FloatArray, types_pb2.Int32Array, types_pb2.Int64Array, types_pb2.DoubleArray)):
+            string_values = []
+            for value in obj.values:
+                value = str(value)
+                string_values.append(value)
+            return {'values': string_values}
+        return super().default(obj)
 
 
 class Backend(cli_backend.Backend):
@@ -109,9 +119,19 @@ class Backend(cli_backend.Backend):
             entry_updates = []
             for path, value in updates.items():
                 if field is kuksa_client.grpc.Field.VALUE:
+                    values = value.strip('[]').split(',') 
+                    array = []
+                    for val in values:
+                        array.append(val)
+                    value = array
                     entry = kuksa_client.grpc.DataEntry(
                         path=path, value=kuksa_client.grpc.Datapoint(value=value))
                 elif field is kuksa_client.grpc.Field.ACTUATOR_TARGET:
+                    values = value.strip('[]').split(',')
+                    array = []
+                    for val in values:
+                        array.append(val)
+                    value = array
                     entry = kuksa_client.grpc.DataEntry(
                         path=path, actuator_target=kuksa_client.grpc.Datapoint(
                             value=value),
@@ -191,7 +211,7 @@ class Backend(cli_backend.Backend):
             if error:
                 respJson = json.dumps(error, indent=4)
             elif resp:
-                respJson = json.dumps(resp, indent=4)
+                respJson = json.dumps(resp, indent=4, cls=DatabrokerEncoder)
             else:
                 respJson = "OK"
         except queue.Empty:

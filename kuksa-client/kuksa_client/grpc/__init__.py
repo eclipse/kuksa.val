@@ -325,7 +325,11 @@ class Datapoint:
 
         def cast_array_values(cast, array):
             for item in array:
-                yield cast(item)
+                if item == '':
+                    #skip
+                    pass
+                else:
+                    yield cast(item)
 
         def cast_bool(value):
             if value in ('False', 'false', 'F', 'f'):
