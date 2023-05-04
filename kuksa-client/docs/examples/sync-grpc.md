@@ -30,6 +30,19 @@ with VSSClient('127.0.0.1', 55555) as client:
     print(current_values['Vehicle.Speed'].value)
 ```
 
+Besides this there is a solution where you are not using the client as context-manager
+```python
+import asyncio
+
+from kuksa_client.grpc.aio import VSSClient
+
+client = VSSClient('127.0.0.1', 55555):
+current_values = client.get_current_values([
+    'Vehicle.Speed',
+])
+print(current_values['Vehicle.Speed'].value)
+```
+
 Here's another example how one can actuate a wiping system:
 ```python
 from kuksa_client.grpc import Datapoint
