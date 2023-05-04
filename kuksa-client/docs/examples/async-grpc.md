@@ -34,6 +34,22 @@ async def main():
 asyncio.run(main())
 ```
 
+Besides this there is a solution where you are not using the client as context-manager
+```python
+import asyncio
+
+from kuksa_client.grpc.aio import VSSClient
+
+async def main():
+    client = VSSClient('127.0.0.1', 55555):
+    current_values = await client.get_current_values([
+        'Vehicle.Speed',
+    ])
+    print(current_values['Vehicle.Speed'].value)
+
+asyncio.run(main())
+```
+
 Here's another example how one can actuate a wiping system:
 ```python
 import asyncio
