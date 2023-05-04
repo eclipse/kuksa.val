@@ -18,6 +18,8 @@ This API makes the assumption you're interested in getting/setting/subscribing t
 
 Hence this is the go-to API if you're seeking minimum boilerplate and the most basic functionality.
 
+#### Unauthorized
+
 Here's the simplest example how one can retrieve vehicle's current speed using the asynchronous API:
 ```python
 import asyncio
@@ -41,10 +43,9 @@ import asyncio
 from kuksa_client.grpc.aio import VSSClient
 
 async def main():
-    client = VSSClient('127.0.0.1', 55555):
-    current_values = await client.get_current_values([
-        'Vehicle.Speed',
-    ])
+    client = VSSClient('127.0.0.1', 55555, ensure_startup_connection=True)
+    await client.connect()
+    current_values = await client.get_current_values(['Vehicle.Speed'])
     print(current_values['Vehicle.Speed'].value)
 
 asyncio.run(main())
@@ -85,6 +86,44 @@ async def main():
             current_position = updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'].value
             print(f"Current wiper position is: {current_position}")
 
+
+asyncio.run(main())
+```
+
+#### Authorized
+Here's an example how to use authorization with kuksa-client
+```python
+import asyncio
+
+from kuksa_client.grpc.aio import VSSClient
+
+async def main():
+    async with VSSClient('127.0.0.1', 55555) as client:
+        # token from kuksa.val/jwt/provide-all.json
+        token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3NjcyMjU1OTksInNjb3BlIjoicHJvdmlkZSJ9.OJWzTvDjcmeWyg3vmBR5TEtqYaHq8HrpFLlTKZAfDBAQBUHpyUEboJ97jfWuWgBnTpnfboyfAbwvLqo6bEVZ6tXzF8n9LtW6HmPbIWoDqXuobM2grUCVaGKuOcnCpMCQYChziqHbYwRJYP9nkYgbQU1kE4dN7880Io4xzq0GEbWksB2CVpOoExQUmCZpCohPs-XEkdmXhcUKnWnOeiSsRGKusx987vpY_WOXh6WE7DfJgzAgpPDo33qI7zQuTzUILORQsiHmsrQO0-zcvokNjaQUzlt5ETZ7MQLCtiUQaN0NMbDMCWkmSfNvZ5hKCNbfr2FaiMzrGBOQdvQiFo-DqZKGNweaGpufYXuaKfn3SXKoDr8u1xDE5oKgWMjxDR9pQYGzIF5bDXITSywCm4kN5DIn7e2_Ga28h3rBl0t0ZT0cwlszftQRueDTFcMns1u9PEDOqf7fRrhjq3zqpxuMAoRANVd2z237eBsS0AvdSIxL52N4xO8P_h93NN8Vaum28fTPxzm8p9WlQh4mgUelggtT415hLcxizx15ARIRG0RiW91Pglzt4WRtXHnsg93Ixd3yXXzZ2i4Y0hqhj_L12SsXunK2VxKup2sFCQz6wM-t_7ADmNYcs80idzsadY8rYKDV8N1WqOOd4ANG_nzWa86Tyu6wAwhDVag5nbFmLZQ"
+        await client.authorize(token)
+        current_values = await client.get_current_values([
+            'Vehicle.Speed',
+        ])
+        print(current_values['Vehicle.Speed'].value)
+
+asyncio.run(main())
+```
+
+It is also possible to give the token to the client during initialization.
+```python
+import asyncio
+
+from kuksa_client.grpc.aio import VSSClient
+
+async def main():
+    # token from kuksa.val/jwt/provide-all.json
+    _token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3NjcyMjU1OTksInNjb3BlIjoicHJvdmlkZSJ9.OJWzTvDjcmeWyg3vmBR5TEtqYaHq8HrpFLlTKZAfDBAQBUHpyUEboJ97jfWuWgBnTpnfboyfAbwvLqo6bEVZ6tXzF8n9LtW6HmPbIWoDqXuobM2grUCVaGKuOcnCpMCQYChziqHbYwRJYP9nkYgbQU1kE4dN7880Io4xzq0GEbWksB2CVpOoExQUmCZpCohPs-XEkdmXhcUKnWnOeiSsRGKusx987vpY_WOXh6WE7DfJgzAgpPDo33qI7zQuTzUILORQsiHmsrQO0-zcvokNjaQUzlt5ETZ7MQLCtiUQaN0NMbDMCWkmSfNvZ5hKCNbfr2FaiMzrGBOQdvQiFo-DqZKGNweaGpufYXuaKfn3SXKoDr8u1xDE5oKgWMjxDR9pQYGzIF5bDXITSywCm4kN5DIn7e2_Ga28h3rBl0t0ZT0cwlszftQRueDTFcMns1u9PEDOqf7fRrhjq3zqpxuMAoRANVd2z237eBsS0AvdSIxL52N4xO8P_h93NN8Vaum28fTPxzm8p9WlQh4mgUelggtT415hLcxizx15ARIRG0RiW91Pglzt4WRtXHnsg93Ixd3yXXzZ2i4Y0hqhj_L12SsXunK2VxKup2sFCQz6wM-t_7ADmNYcs80idzsadY8rYKDV8N1WqOOd4ANG_nzWa86Tyu6wAwhDVag5nbFmLZQ"
+    async with VSSClient('127.0.0.1', 55555, token=_token) as client:
+        current_values = await client.get_current_values([
+            'Vehicle.Speed',
+        ])
+        print(current_values['Vehicle.Speed'].value)
 
 asyncio.run(main())
 ```
