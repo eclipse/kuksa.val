@@ -62,10 +62,11 @@ COPY --from=builder /home/rust/src/databroker /app/databroker
 COPY --from=builder /home/rust/src/kuksa_databroker/databroker/thirdparty /app/thirdparty
 
 ADD ./data/vss-core/vss_release_3.1.1.json vss_release_3.1.1.json
+ADD ./data/vss-core/vss_release_4.0.json vss_release_4.0.json
 
 ENV KUKSA_DATA_BROKER_ADDR=0.0.0.0
 ENV KUKSA_DATA_BROKER_PORT=55555
-ENV KUKSA_DATA_BROKER_METADATA_FILE=vss_release_3.1.1.json
+ENV KUKSA_DATA_BROKER_METADATA_FILE=vss_release_4.0.json
 
 EXPOSE $KUKSA_DATA_BROKER_PORT
 
