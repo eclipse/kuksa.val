@@ -131,4 +131,4 @@ However, the security and safety implications in such a scenario are the highest
  # Mixing
  The aforementioned blueprints are examples and any specific deployment might combine aspects of several of them.
  
- There could be many domains in a vehicle, where a fully static "walled" deployment as described in Blueprint 1 is the right thing to do, while other use cases in the same vehicle require  the capabilities found in Blueprint 4. In that case, the right design choice could be to deploy several KUKSA.val instances in a car as sketched in [System Architecture -> Where to deploy KUKSA.val](./system-architecture#where-to-deploy-kuksaval-in-a-vehicle).
+ There could be many domains in a vehicle, where a fully static "walled" deployment as described in Blueprint 1 is the right thing to do, while other use cases in the same vehicle require  the capabilities found in Blueprint 4. In that case, the right design choice could be to deploy several KUKSA.val instances in a car as sketched in [System Architecture -> (Distributed) KUKSA.val deployment](./system-architecture.md#distributed-kuksaval-deployment).
