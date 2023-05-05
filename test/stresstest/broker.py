@@ -25,7 +25,7 @@ class Broker:
     def start(self):
         port = self.cfg.get("port")
         address = self.cfg.get("ip")
-        kuksa_val_databroker_cmd = ['cargo', 'run', '--release', '--bin', 'databroker', '--', '--metadata', '../../data/vss-core/vss_release_3.1.1.json', '--port', port, '--address', address]
+        kuksa_val_databroker_cmd = ['cargo', 'run', '--release', '--bin', 'databroker', '--', '--metadata', '../../data/vss-core/vss_release_4.0.json', '--port', port, '--address', address]
         self.process = subprocess.check_call(kuksa_val_databroker_cmd)
     def __init__(self, config):
         self.cfg = config

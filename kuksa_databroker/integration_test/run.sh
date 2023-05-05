@@ -27,7 +27,7 @@ VSS_DATA_DIR="$SCRIPT_DIR/../../data"
 
 echo "Starting databroker container (\"${DATABROKER_IMAGE}\")"
 RUNNING_IMAGE=$(
-    docker run -d -v ${VSS_DATA_DIR}:/data -p 55555:55555 --rm ${DATABROKER_IMAGE} --metadata data/vss-core/vss_release_2.1.json
+    docker run -d -v ${VSS_DATA_DIR}:/data -p 55555:55555 --rm ${DATABROKER_IMAGE} --metadata data/vss-core/vss_release_4.0.json
 )
 
 python3 -m pytest -v "${SCRIPT_DIR}/test_databroker.py"

@@ -502,7 +502,7 @@ BOOST_AUTO_TEST_CASE(getDataTypeForAttribute) {
 
 BOOST_AUTO_TEST_CASE(getDataTypeForActuator) {
   db->initJsonTree(validFilename);
-  std::string path = "Vehicle/Cabin/Door/Row1/Right/IsLocked";
+  std::string path = "Vehicle/Cabin/Door/Row1/PassengerSide/IsLocked";
   std::string dt = db->getDatatypeForPath(VSSPath::fromVSS(path));
   BOOST_TEST(dt == "boolean");
 }

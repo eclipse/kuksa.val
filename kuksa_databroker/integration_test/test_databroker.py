@@ -49,7 +49,7 @@ async def test_feeder_metadata_registered(setup_helper: Databroker) -> None:
     helper = await setup_helper
     feeder_names = [
         "Vehicle.OBD.Speed",
-        "Vehicle.Powertrain.Transmission.Gear",
+        "Vehicle.Powertrain.Transmission.CurrentGear",
         "Vehicle.Chassis.ParkingBrake.IsEngaged",
         "Vehicle.OBD.EngineLoad",
     ]
