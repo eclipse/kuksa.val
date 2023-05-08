@@ -12,9 +12,8 @@ inputs:
     default: ''
   licenses:
     description: >
-      A space-separated list of all accepted licenses. For example:
-
-      Apache-2.0 MIT
+      A comma-separated list of all accepted licenses. For example:
+      Apache-2.0,MIT
     required: true
     default: ''
 runs:

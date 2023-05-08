@@ -11,3 +11,11 @@ that files modified in a Pull Request has an SPDX license identifier.
 It shall be possible to use this action from other repositories by referencing:
 
 `- uses: eclipse/kuksa.val/.github/actions/spdx@master`
+
+If you accept multiple licenses it can be specified like:
+
+```
+    - name: Set license
+      run: |
+        echo "licenses=Apache-2.0, MIT" >> $GITHUB_ENV
+```
