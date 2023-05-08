@@ -17,8 +17,12 @@ jobs:
     - name: Get changed files
       run: |
         echo "files=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | tr '\n' ',')" >> $GITHUB_ENV
+
+    - name: Set license
+      run: |
+        echo "licenses=Apache-2.0" >> $GITHUB_ENV
         
     - uses: ./.github/actions/spdx
       with:
         files: "${{ env.files }}"
-        licenses: Apache-2.0
+        licenses: "${{ env.licenses }}"

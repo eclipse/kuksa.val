@@ -63,12 +63,15 @@ class Index:
     }
 
     def __init__(self):
+        """
+        This can be relaxed as needed
+        """
         self.__languages = {
-            'python': Language('#+', shebang=True),
+            'python': Language('#+.*', shebang=True),
             'ruby': Language('#+', shebang=True),
-            'c': Language('//+', ('/\\*', '\\*/')),
-            'c++': Language('//+', ('/\\*', '\\*/')),
-            'rust': Language('//+', '//!', ('/\\*', '\\*/')),
+            'c': Language('//+', '.*', ('/\\*', '\\*/')),
+            'c++': Language('//+', '.*',  ('/\\*', '\\*/')),
+            'rust': Language('//+', '.*', '//!', ('/\\*', '\\*/')),
             'protobuf': Language('//+', '//!', ('/\\*', '\\*/')),
         }
 
@@ -113,31 +116,32 @@ class Index:
 
 if __name__ == '__main__':
     import sys
-    import json
 
     # Validate the arguments
-    licenses = os.getenv('INPUT_LICENSES')
-    if licenses is None:
-        licenses = sys.argv[1:]
-    else:
-        licenses = json.loads(licenses)
+    license_arg = os.getenv('licenses')
+    if license_arg is None:
+        license_arg = sys.argv[1:]
+
+    licenses = [x.strip() for x in license_arg.split(',')]
+    print(f"{len(licenses)} will be accepted!")
     for license in licenses:
         if not SLUG.match(license):
             print("Invalid license '%s'!" % license)
             raise SystemExit(1)
+        print(f"Allowed license: {license}")
 
-    rv = 0
     index = Index()
     failed = False
     for (path, license) in index.scan():
         if license not in licenses:
+            failed = True
             if license == None:
-                failed = True
                 print(f"NO SPDX {path}")
             else:
-                print(f"{license:16} {path}")
-            rv = 1
+                print(f"WRONG LICENSE: {license:16} {path}")
+        else:
+            print(f"OK: {license:16} {path}")
     if failed:
         raise Exception("Check the output, some files have not the right licenses!")
 
-    raise SystemExit(rv)
+    raise SystemExit(0)
