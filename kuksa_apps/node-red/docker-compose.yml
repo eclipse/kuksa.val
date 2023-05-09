@@ -16,7 +16,7 @@ services:
     ports:
       - 1883:1883
   kuksa-val:
-    image: ${ARCH}/kuksa-val:0.2.0
+    image: ghcr.io/eclipse/kuksa.val/kuksa-val:master
     restart: unless-stopped 
     ports:
       - 8090:8090
