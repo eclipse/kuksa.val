@@ -18,26 +18,19 @@ sudo apt install docker.io
 
 Then load `kuksa.val` docker images:
 ```
-wget https://github.com/eclipse/kuksa.val/releases/download/0.1.8/kuksa-val-0.1.8-amd64.tar.xz
-docker load -i kuksa-val-0.1.8-amd64.tar.xz
-```
-
-Or for arm64:
-```
-wget https://github.com/eclipse/kuksa.val/releases/download/0.1.8/kuksa-val-0.1.8-arm64.tar.xz
-docker load -i kuksa-val-0.1.8-arm64.tar.xz
+docker pull ghcr.io/eclipse/kuksa.val/kuksa-val:master
 ```
 
 After that, just start all needed container using [`docker-compose.yml`](./docker-compose.yml):
 ```
 sudo apt install docker-compose
-ARCH=arm64 docker-compose up -d
+docker-compose up -d
 ```
 `-d` for detach.
 
 **Note**: You need to be in this [directory](./) to be able to start the [`docker-compose.yml`](./docker-compose.yml) to use `docker-compose` to start all docker containers or shut down all docker containers:
 ```
-ARCH=arm64 docker-compose down
+docker-compose down
 ```
 
 **Note**: At first start, you may need to install the [node red extensions](#Node-red-extensions) under the [palette manager](https://nodered.org/docs/user-guide/editor/palette/manager).
@@ -46,10 +39,10 @@ By default, the mqtt flows will be configured in node-red. You can also use the 
 
 Now you can view the example under [http://&lt;node-red server ip&gt;:1880](http://localhost:1880/).
 To test the example, you can use [Kuksa Client](../../kuksa-client) or use the [gps feeder](../../kuksa-feeders/gps2val).
-In [`feeders.yml`](./feeders.yml), you can find the experimental config for gps feeder container. You use the following command to also start containers of feeders:
+In [`feeders.yml`](./feeders.yml), you can find the experimental [config](kuksa_config/gpsd_feeder.ini) for gps feeder container. You use the following command to also start containers of feeders:
 
 ```
-ARCH=arm64 docker-compose -f docker-compose.yml  -f feeders.yml up
+docker-compose -f docker-compose.yml  -f feeders.yml up
 ```
 
 
