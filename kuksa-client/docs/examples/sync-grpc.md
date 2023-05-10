@@ -19,7 +19,7 @@ This API makes the assumption you're interested in getting/setting/subscribing t
 
 Hence this is the go-to API if you're seeking minimum boilerplate and the most basic functionality.
 
-#### Unauthorized
+#### Examples not leveraging authorization
 
 Here's the simplest example how one can retrieve vehicle's current speed using the synchronous API:
 ```python
@@ -72,7 +72,7 @@ with VSSClient('127.0.0.1', 55555) as client:
         print(f"Current wiper position is: {current_position}")
 ```
 
-#### Authorized
+#### Examples leveraging authorization
 Here's an example how to use authorization with kuksa-client
 ```python
 from kuksa_client.grpc import VSSClient
