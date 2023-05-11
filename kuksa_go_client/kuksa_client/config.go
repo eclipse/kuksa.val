@@ -26,7 +26,7 @@ type KuksaClientConfig struct {
 	ServerPort        string `mapstructure:"serverPort"`
 	Insecure          bool   `mapstructure:"insecure"`
 	CertsDir          string `mapstructure:"certsDir"`
-	TokenPath         string `mapstructure:"tokenPath"`
+	TokenOrTokenfile         string `mapstructure:"TokenOrTokenfile"`
 	TransportProtocol string `mapstructure:"protocol"`
 }
 
@@ -60,7 +60,7 @@ func (config KuksaClientConfig) String() string {
 	retString += "\tServer Port: " + config.ServerPort + "\n"
 	retString += "\tInsecure: " + strconv.FormatBool(config.Insecure) + "\n"
 	retString += "\tCertsDir: " + config.CertsDir + "\n"
-	retString += "\tTokenPath: " + config.TokenPath + "\n"
+	retString += "\tTokenOrTokenfile: " + config.TokenOrTokenfile + "\n"
 	retString += "\tTransport Protocol: " + string(config.TransportProtocol) + "\n"
 
 	return retString

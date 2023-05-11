@@ -45,13 +45,14 @@ type KuksaClientCommWs struct {
 }
 
 type KuksaClientCommGrpc struct {
-	Config                 *KuksaClientConfig
-	conn                   *grpc.ClientConn
-	client                 grpcpb.VALClient
-	cancel                 map[string]*context.CancelFunc
-	subsChannel            map[string]*grpcpb.VAL_SubscribeClient
-	subsAttr               string
-	subscriptionStateMutex sync.RWMutex
+	Config                 	*KuksaClientConfig
+	conn                   	*grpc.ClientConn
+	client                 	grpcpb.VALClient
+	cancel                 	map[string]*context.CancelFunc
+	subsChannel            	map[string]*grpcpb.VAL_SubscribeClient
+	subsAttr               	string
+	subscriptionStateMutex 	sync.RWMutex
+	authorizationHeader		string
 }
 
 const (
