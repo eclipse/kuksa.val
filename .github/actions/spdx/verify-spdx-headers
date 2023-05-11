@@ -72,7 +72,7 @@ class Index:
             'c': Language('//+', '.*', ('/\\*', '\\*/')),
             'c++': Language('//+', '.*',  ('/\\*', '\\*/')),
             'rust': Language('//+', '.*', '//!', ('/\\*', '\\*/')),
-            'protobuf': Language('//+', '//!', ('/\\*', '\\*/')),
+            'protobuf': Language('//+', '//!', '.*', ('/\\*', '\\*/')),
         }
 
     def language(self, path):
