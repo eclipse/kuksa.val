@@ -46,6 +46,12 @@ class Databroker:
     Databroker wraps collector and broker APIs of the databroker.
     """
 
+    @classmethod
+    async def ConnectedDatabroker(cls, address: str):
+        self = Databroker(address)
+        await self.await_connectivity()
+        return self
+
     def __init__(self, address: str) -> None:
 
         self._address = address
@@ -87,6 +93,23 @@ class Databroker:
             GetDatapointsRequest(datapoints=datapoints)
         )
         return response
+ 
+    async def await_connectivity(self):
+        # We need to "manually" wait in a loop, as wait_for_state_change can not wait for a
+        # specific target state
+        tries = 0
+        while tries < 10:
+            state = self._channel.get_state(try_to_connect=True)
+            logger.info("GRPC State is %s", state)
+            if state == grpc.ChannelConnectivity.READY:
+                break
+            logger.info("Try %i: Waiting for GRPC connection to become READY...", tries)
+            tries = tries + 1
+            try:
+                await asyncio.wait_for(self._channel.wait_for_state_change(state), timeout=2)
+            except asyncio.exceptions.TimeoutError:
+                # We need to catch this, and will wait again until tries are used up
+                pass
 
     async def get_metadata(self, names=[]):
         """Requests metadata from databroker, allows for optional list of names

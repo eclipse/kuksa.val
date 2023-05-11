@@ -31,14 +31,14 @@ DATABROKER_ADDRESS = os.environ.get("DATABROKER_ADDRESS", "127.0.0.1:55555")
 @pytest.fixture
 async def setup_helper() -> Databroker:
     logger.info("Using DATABROKER_ADDRESS={}".format(DATABROKER_ADDRESS))
-    helper = Databroker(DATABROKER_ADDRESS)
+    helper = await Databroker.ConnectedDatabroker(DATABROKER_ADDRESS)
     return helper
 
 
 @pytest.mark.asyncio
 async def test_databroker_connection() -> None:
     logger.info("Connecting to VehicleDataBroker {}".format(DATABROKER_ADDRESS))
-    helper = Databroker(DATABROKER_ADDRESS)
+    helper = await Databroker.ConnectedDatabroker(DATABROKER_ADDRESS)
     await helper.get_metadata()
     logger.info("Databroker._address =  {}".format(helper._address))
     await helper.close()
