@@ -16,12 +16,16 @@ package kuksa_client
 
 import (
 	"context"
+	"errors"
 	"log"
+	"os"
 	"strconv"
 	"time"
 
-	grpcpb "github.com/eclipse/kuksa.val/kuksa_go_client/proto/kuksa/val/v1"
 	"github.com/google/uuid"
+	"google.golang.org/grpc/metadata"
+
+	grpcpb "github.com/eclipse/kuksa.val/kuksa_go_client/proto/kuksa/val/v1"
 )
 
 type FieldView struct {
@@ -45,6 +49,7 @@ func (cg *KuksaClientCommGrpc) ConnectToKuksaVal() error {
 func (cg *KuksaClientCommGrpc) GetGoValuesFromKuksaVal(path string, attr string) ([]*grpcpb.DataEntry, error) {
 	// Contact the server and return the Value
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx = metadata.AppendToOutgoingContext(ctx, "Authorization", cg.authorizationHeader)
 	defer cancel()
 	view := dict[attr].View
 	fields := []grpcpb.Field{dict[attr].Field}
@@ -73,6 +78,7 @@ func (cg *KuksaClientCommGrpc) GetValueFromKuksaVal(path string, attr string) ([
 func (cg *KuksaClientCommGrpc) SetValueFromKuksaVal(path string, value string, attr string) error {
 	// Contact the server and set the Value
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx = metadata.AppendToOutgoingContext(ctx, "Authorization", cg.authorizationHeader)
 	defer cancel()
 	entries, getErr := cg.GetGoValuesFromKuksaVal(path, "metadata")
 	if getErr != nil {
@@ -278,6 +284,7 @@ func (cg *KuksaClientCommGrpc) SubscribeFromKuksaVal(path string, attr string) (
 	// Contact the server and return SubscriptionId
 	cg.subsAttr = attr
 	ctx, cancel := context.WithCancel(context.Background())
+	ctx = metadata.AppendToOutgoingContext(ctx, "Authorization", cg.authorizationHeader)
 	id := uuid.New().String()
 	cg.cancel[id] = &cancel
 	view := dict[attr].View
@@ -304,8 +311,32 @@ func (cg *KuksaClientCommGrpc) UnsubscribeFromKuksaVal(id string) error {
 }
 
 // Function to authorize to kuksa.val server
-func (cg *KuksaClientCommGrpc) AuthorizeKuksaValConn() error {
-	log.Println("KUKSA.val databroker does not support authorization mechanism yet. If you want to use authorization please use KUKSA.val server")
+func (cg *KuksaClientCommGrpc) AuthorizeKuksaValConn(TokenOrTokenfile string) error {
+	var tokenString string
+	// Data in config has precedence over hardcoded token
+	if cg.Config.TokenOrTokenfile != ""{
+		tokenString = cg.Config.TokenOrTokenfile
+	}else{
+		if TokenOrTokenfile == "" {
+			return errors.New("No token given!")
+		}
+		tokenString = TokenOrTokenfile
+	}
+	
+	log.Printf("Using token: %s", tokenString)
+
+	info, err := os.Stat(tokenString)
+    if err != nil {
+        // the TokenOrTokenfile is read like its a token
+    } else if info.Mode().IsRegular() {
+        tokenByteString, err := os.ReadFile(tokenString)
+		tokenString = string(tokenByteString)
+		if err != nil {
+			log.Fatal("Error reading token: ", err)
+			return err
+		}
+    }
+	cg.authorizationHeader = "Bearer " + tokenString
 	return nil
 }
 

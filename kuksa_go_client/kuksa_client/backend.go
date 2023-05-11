@@ -17,7 +17,7 @@ package kuksa_client
 type KuksaBackend interface {
 	ConnectToKuksaVal() error
 	Close()
-	AuthorizeKuksaValConn() error
+	AuthorizeKuksaValConn(TokenOrTokenfile string) error
 	GetValueFromKuksaVal(path string, attr string) ([]string, error)
 	SetValueFromKuksaVal(path string, value string, attr string) error
 	SubscribeFromKuksaVal(path string, attr string) (string, error)

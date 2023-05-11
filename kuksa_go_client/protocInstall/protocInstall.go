@@ -1,13 +1,13 @@
-package protocInstall
+package main
 
 import (
 	"archive/zip"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
-	"net/http"
-	"io"
 )
 
 const (
@@ -155,4 +155,8 @@ func Protoc() {
 		}
 	}
 	ProtoExists()
+}
+
+func main() {
+	Protoc()
 }

@@ -15,6 +15,7 @@
 package kuksa_client
 
 import (
+	"errors"
 	"log"
 	"os"
 
@@ -122,20 +123,38 @@ func (cc *KuksaClientCommWs) SetValueFromKuksaVal(path string, value string, att
 }
 
 // Function to authorize to kuksa.val server
-func (cc *KuksaClientCommWs) AuthorizeKuksaValConn() error {
+func (cc *KuksaClientCommWs) AuthorizeKuksaValConn(TokenOrTokenfile string) error {
 
-	// Get the authorization token
-	tokenByteString, err := os.ReadFile(cc.Config.TokenPath)
-	if err != nil {
-		log.Fatal("Error reading token: ", err)
-		return err
+	var tokenString string
+	// Data in config has precedence over hardcoded token
+	if cc.Config.TokenOrTokenfile != ""{
+		tokenString = cc.Config.TokenOrTokenfile
+	}else{
+		if TokenOrTokenfile == "" {
+			return errors.New("No token given!")
+		}
+		tokenString = TokenOrTokenfile
 	}
+	
+	log.Printf("Using token: %s", tokenString)
+
+	info, err := os.Stat(tokenString)
+    if err != nil {
+        // the TokenOrTokenfile is read like its a token
+    } else if info.Mode().IsRegular() {
+        tokenByteString, err := os.ReadFile(tokenString)
+		tokenString = string(tokenByteString)
+		if err != nil {
+			log.Fatal("Error reading token: ", err)
+			return err
+		}
+    }
 
 	// Create new KuksaValRequest
 	req := objx.New(make(map[string]interface{}))
 	req.Set("requestId", uuid.New().String())
 	req.Set("action", "authorize")
-	req.Set("tokens", string(tokenByteString))
+	req.Set("tokens", tokenString)
 
 	_, err = cc.communicationHandler(req)
 	return err
