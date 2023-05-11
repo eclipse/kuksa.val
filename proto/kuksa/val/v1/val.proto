@@ -1,12 +1,15 @@
-// Copyright Robert Bosch GmbH, 2022. Part of the Eclipse Kuksa Project.
-//
-// All rights reserved. This configuration file is provided to you under the
-// terms and conditions of the Eclipse Distribution License v1.0 which
-// accompanies this distribution, and is available at
-// http://www.eclipse.org/org/documents/edl-v10.php
-
-// This is a base proto file for databroker and kuksa-val-basic
-// function set
+/********************************************************************************
+ * Copyright (c) 2022 Contributors to the Eclipse Foundation
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License 2.0 which is available at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ********************************************************************************/
 
 syntax = "proto3";
 
