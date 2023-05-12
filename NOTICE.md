@@ -2,7 +2,7 @@
 
 This content is produced and maintained by the Eclipse Kuksa project.
 
-* Project home: https://projects.eclipse.org/projects/iot.kuksa
+* Project home: https://projects.eclipse.org/projects/automotive.kuksa
 
 ## Trademarks
 
@@ -104,7 +104,7 @@ com.squareup.okhttp3:okhttp:3.12.0 (3.12.0)
 com.squareup.okio:okio:1.15.0 (1.15.0)
 
 * License: Apache-2.0
-* Project: https://square.github.io/okio/2.x/okio/jvm/okio/index.html
+* Project: https://square.github.io/okio/
 * Source: https://github.com/square/okio/tree/okio-parent-1.15.0
 
 com.squareup.retrofit2:converter-moshi:2.4.0 (2.4.0)
@@ -309,7 +309,7 @@ jwt-cpp (0.1.0)
 log4j-to-slf4j (2.11.1)
 
 * License: Apache-2.0 AND MIT
-* Project: https://logging.apache.org/log4j/2.x/log4j-to-slf4j/
+* Project: https://logging.apache.org/log4j/2.x/
 * Source:
    https://github.com/apache/logging-log4j2/tree/log4j-2.11.1/log4j-to-slf4j
 
@@ -672,7 +672,7 @@ spring-security-config (4.1.4)
 spring-security-config (5.0.7)
 
 * License: Apache-2.0
-* Project: http://spring.io/spring-security
+* Project: https://spring.io/projects/spring-security
 * Source: https://github.com/spring-projects/spring-security
 
 spring-security-config (5.1.2)
@@ -698,7 +698,7 @@ spring-security-rsa:1.0.7.RELEASE (1.0.7)
 spring-security-web (5.0.7)
 
 * License: Apache-2.0
-* Project: http://spring.io/spring-security
+* Project: https://spring.io/projects/spring-security
 * Source: https://github.com/spring-projects/spring-security
 
 spring-security-web (5.1.1)

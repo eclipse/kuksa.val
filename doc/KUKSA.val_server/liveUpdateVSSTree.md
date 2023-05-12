@@ -54,9 +54,9 @@ updateVSSTree roadster-elon.json
 
 Then you can check, that the new signal is available and the max speed limit has increased:
 
-![Alt text](./pictures/testclient_updateVSSTree.gif "test client update vss tree")
+![Alt text](../pictures/testclient_updateVSSTree.gif "test client update vss tree")
 
-**Note:** You may need the [super-admin.json.token](../kuksa_certificates/jwt/super-admin.json.token) for authorization. 
+**Note:** You may need the [super-admin.json.token](../../kuksa_certificates/jwt/super-admin.json.token) for authorization. 
 
 ## Hot-patching with updateMetaData
 if you just want to add or change a single metadata item in a signal or sensor, going through the whole VSS tooling may be a little cumbersome. Instead, you can use the testclient to update metadata of a single path directly, if you have the permission to modify metadata:
@@ -65,7 +65,7 @@ if you just want to add or change a single metadata item in a signal or sensor, 
 updateMetaData updateMetaData Vehicle.Speed '{"max":9999}'
 ```
 
-![Alt text](./pictures/testclient_updateMetaData.gif "test client update metadata")
+![Alt text](../pictures/testclient_updateMetaData.gif "test client update metadata")
 
 **Note:**: `updateMetaData` is only performing one-level-deep shallow merge. If multi-level merge is required, use `updateVSSTree` instead.
 

@@ -6,7 +6,7 @@ the GRPC interface of the Vehicle Data Broker (VDB).
 
 The GRPC interface uses [protobuf](https://developers.google.com/protocol-buffers/docs/proto3#scalar) to serialize the data and provides metadata to describes the data types
 
-See `enum DataType` in [databroker.proto](../proto/sdv/edge/databroker/v1/databroker.proto) for the data types and `value` in `Datapoint` for for what is actually sent on the wire.
+See `enum DataType` in [types.proto](../proto/kuksa/val/v1/types.proto) for the data types and `value` in `Datapoint` for for what is actually sent on the wire.
 
 **Note:** Support for timestamps are currently not implemented (except for setting it as the data type).
 
