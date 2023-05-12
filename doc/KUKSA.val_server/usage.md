@@ -85,7 +85,7 @@ MQTT Options:
                                         multiple path and "*" as wildcard
 ```                                      
 
-Server demo certificates are located in [../kuksa_certificates](../kuksa_certificates) directory of git repo. Certificates from 'kuksa_certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
+Server demo certificates are located in [../../kuksa_certificates](../../kuksa_certificates) directory of git repo. Certificates from 'kuksa_certificates' are automatically copied to build directory, so invoking '_--cert-path=._' should be enough when demo certificates are used.  
 For authorizing client, file 'jwt.key.pub' contains public key used to verify that JWT authorization token is valid. To generated different 'jwt.key.pub' file, see [KUKSA.val JWT authorization](./jwt.md) for more details.
 
 Default configuration shall provide both Web-Socket and GRPC API connectivity.

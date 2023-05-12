@@ -1,6 +1,6 @@
 # S3 uploader
 
-This client periodically gets data from either kuksa_val_server or kuksa_databroker, packs it using [parquet format](https://parquet.apache.org/documentation/latest/) and upload it to a S3 server.
+This client periodically gets data from either kuksa_val_server or kuksa_databroker, packs it using [parquet format](https://parquet.apache.org/docs/) and upload it to a S3 server.
 
 Check [config.ini](./config.ini) file for the configuration of this client.
 

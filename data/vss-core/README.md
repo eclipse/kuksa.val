@@ -94,7 +94,7 @@ Test Client> getValue Vehicle.CurrentLocation.Longitude
 
 ### Kuksa-val-server and dbc2val smoke test
 
-Run dbc2val as described in [documentation](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/Readme.md) using example [dump file](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/candump.log). Verify that no errors appear in kuksa-val-server log. Not all signals in the [mapping file](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/mapping.yml) are used by the example dump file, but it can be verified using Kuksa Client that e.g. `Vehicle.Speed` has been given a value.
+Run dbc2val as described in [documentation](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/Readme.md) using example [dump file](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/candump.log). Verify that no errors appear in kuksa-val-server log. Not all signals in the [mapping files](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/mapping/) are used by the example dump file, but it can be verified using Kuksa Client that e.g. `Vehicle.Speed` has been given a value.
 
 
 ### Kuksa-val-server and gps2val smoke test
@@ -149,5 +149,5 @@ Run dbc2val as described in [documentation](https://github.com/eclipse/kuksa.val
 ```sh
 ./dbcfeeder.py --usecase databroker --address=127.0.0.1:55555
 ```
-Verify that no errors appear in kuksa-val-server log. Not all signals in the [mapping file](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/mapping.yml) are used by the example dump file, but it can be verified using Kuksa Client that e.g. `Vehicle.Speed` has been given a value.
+Verify that no errors appear in kuksa-val-server log. Not all signals in the [mapping files](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/mapping) are used by the example dump file, but it can be verified using Kuksa Client that e.g. `Vehicle.Speed` has been given a value.
 

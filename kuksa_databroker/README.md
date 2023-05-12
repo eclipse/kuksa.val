@@ -1,6 +1,6 @@
 # Kuksa Databroker
 
-- [Kuksa Databroker](#kuksa-data-broker)
+- [Kuksa Databroker](#kuksa-databroker)
   - [Intro](#intro)
   - [Relation to the COVESA Vehicle Signal Specification (VSS)](#relation-to-the-covesa-vehicle-signal-specification-vss)
   - [Building](#building)

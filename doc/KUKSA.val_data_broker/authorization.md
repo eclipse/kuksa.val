@@ -20,11 +20,11 @@
   * [Add "tag" as alternative to path](#add-tag-to-scope-as-alternative-to-path)
 * [References](#references)
   * [The OAuth 2.0 Authorization Framework](#the-oauth-20-authorization-framework)
-    * [Introduction](#introduction-1)
+    * [Introduction](#introduction)
     * [Access Token](#access-token)
     * [Roles](#roles)
   * [JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens]()
-    * [Introduction](#introduction-2)
+    * [Introduction](#introduction-1)
     * [Authorization Claims](#authorization-claims-1)
   * [Examples of other API scope implementations](#examples-of-other-api-scope-implementations)
   * [Links](#links)
@@ -275,7 +275,7 @@ access to everything. `read:Vehicle.Speed` is an example of a _sub selection_ (a
 limits the access rights otherwise granted by the overall `read`. Furthermore, this can be
 expanded in the future to include other _sub actions_ such as `read:field:FIELD` which can also
 be combined with further _sub selections_ such as the path above or things like tags etc. See
-[Limit access (additional possibilities)](#limit-access-additional-possibilities).
+[possible future extensions](#possible-future-extensions).
 
 | Scope                 | Description                 |
 |-----------------------|-----------------------------|
