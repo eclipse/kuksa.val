@@ -19,7 +19,9 @@ import (
 	"errors"
 	"log"
 	"os"
+	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,6 +33,12 @@ import (
 type FieldView struct {
 	Field grpcpb.Field
 	View  grpcpb.View
+}
+
+type ParseError struct{}
+
+func (e ParseError) Error() string {
+	return "parse error"
 }
 
 var dict map[string]FieldView
@@ -73,6 +81,94 @@ func (cg *KuksaClientCommGrpc) GetValueFromKuksaVal(path string, attr string) ([
 	}
 
 	return values, err
+}
+
+func getArrayFromInput[T any](input string) ([]T, error) {
+	// Strip the brackets from the input
+	input = strings.TrimSuffix(strings.TrimPrefix(input, "["), "]")
+	
+	// Split the input string into separate values
+	values := strings.Split(input, ",")
+	
+	// Parse each value as type T and append to the array
+	array := make([]T, len(values))
+	for i, v := range values {
+		value, err := parseValue[T](v)
+		if err != nil {
+			return nil, ParseError{}
+		}
+		array[i] = value
+	}
+	
+	return array, nil
+}
+
+func parseValue[T any](value string) (T, error) {
+	t := reflect.TypeOf((*T)(nil)).Elem()
+	switch t.Kind() {
+	case reflect.Bool:
+		parsed, err := strconv.ParseBool(strings.TrimSpace(value))
+		if err != nil {
+			return reflect.Zero(t).Interface().(T), err
+		}
+		v := reflect.New(t).Elem().Interface().(T)
+		reflect.ValueOf(&v).Elem().SetBool(parsed)
+		return v, nil
+	case reflect.Int32:
+		parsed, err := strconv.ParseInt(strings.TrimSpace(value), 10, 32)
+		if err != nil {
+			return reflect.Zero(t).Interface().(T), err
+		}
+		v := reflect.New(t).Elem().Interface().(T)
+		reflect.ValueOf(&v).Elem().SetInt(parsed)
+		return v, nil
+	case reflect.Int64:
+		parsed, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+		if err != nil {
+			return reflect.Zero(t).Interface().(T), err
+		}
+		v := reflect.New(t).Elem().Interface().(T)
+		reflect.ValueOf(&v).Elem().SetInt(parsed)
+		return v, nil
+	case reflect.Float32:
+		parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 32)
+		if err != nil {
+			return reflect.Zero(t).Interface().(T), err
+		}
+		v := reflect.New(t).Elem().Interface().(T)
+		reflect.ValueOf(&v).Elem().SetFloat(parsed)
+		return v, nil
+	case reflect.Float64:
+		parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+		if err != nil {
+			return reflect.Zero(t).Interface().(T), err
+		}
+		v := reflect.New(t).Elem().Interface().(T)
+		reflect.ValueOf(&v).Elem().SetFloat(parsed)
+		return v, nil
+	case reflect.Uint32:
+		parsed, err := strconv.ParseUint(strings.TrimSpace(value), 10, 32)
+		if err != nil {
+			return reflect.Zero(t).Interface().(T), err
+		}
+		v := reflect.New(t).Elem().Interface().(T)
+		reflect.ValueOf(&v).Elem().SetUint(parsed)
+		return v, nil
+	case reflect.Uint64:
+		parsed, err := strconv.ParseUint(strings.TrimSpace(value), 10, 64)
+		if err != nil {
+			return reflect.Zero(t).Interface().(T), err
+		}
+		v := reflect.New(t).Elem().Interface().(T)
+		reflect.ValueOf(&v).Elem().SetUint(parsed)
+		return v, nil
+	case reflect.String:
+		v := reflect.New(t).Elem().Interface().(T)
+		reflect.ValueOf(&v).Elem().SetString(strings.TrimSpace(value))
+		return v, nil
+	default:
+		return reflect.Zero(t).Interface().(T), errors.New("unsupported type")
+	}
 }
 
 func (cg *KuksaClientCommGrpc) SetValueFromKuksaVal(path string, value string, attr string) error {
@@ -169,73 +265,77 @@ func (cg *KuksaClientCommGrpc) SetValueFromKuksaVal(path string, value string, a
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Double{Double: float_}}
 	case 20:
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_StringArray{StringArray: &grpcpb.StringArray{Values: []string{value}}}}
+		array, err := getArrayFromInput[string](value)
+		if err != nil {
+			return err
+		}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_StringArray{StringArray: &grpcpb.StringArray{Values: array}}}
 	case 21:
-		boolean, convErr := strconv.ParseBool(value)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[bool](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_BoolArray{BoolArray: &grpcpb.BoolArray{Values: []bool{boolean}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_BoolArray{BoolArray: &grpcpb.BoolArray{Values: array}}}
 	case 22:
-		int32_, convErr := strconv.ParseInt(value, 10, 8)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[int32](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int32Array{Int32Array: &grpcpb.Int32Array{Values: []int32{int32(int32_)}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int32Array{Int32Array: &grpcpb.Int32Array{Values: array}}}
 	case 23:
-		int32_, convErr := strconv.ParseInt(value, 10, 16)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[int32](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int32Array{Int32Array: &grpcpb.Int32Array{Values: []int32{int32(int32_)}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int32Array{Int32Array: &grpcpb.Int32Array{Values: array}}}
 	case 24:
-		int32_, convErr := strconv.ParseInt(value, 10, 32)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[int32](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int32Array{Int32Array: &grpcpb.Int32Array{Values: []int32{int32(int32_)}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int32Array{Int32Array: &grpcpb.Int32Array{Values: array}}}
 	case 25:
-		int64_, convErr := strconv.ParseInt(value, 10, 32)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[int64](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int64Array{Int64Array: &grpcpb.Int64Array{Values: []int64{int64_}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int64Array{Int64Array: &grpcpb.Int64Array{Values: array}}}
 	case 26:
-		uint32_, convErr := strconv.ParseUint(value, 10, 8)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[uint32](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint32Array{Uint32Array: &grpcpb.Uint32Array{Values: []uint32{uint32(uint32_)}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint32Array{Uint32Array: &grpcpb.Uint32Array{Values: array}}}
 	case 27:
-		uint32_, convErr := strconv.ParseUint(value, 10, 16)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[uint32](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint32Array{Uint32Array: &grpcpb.Uint32Array{Values: []uint32{uint32(uint32_)}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint32Array{Uint32Array: &grpcpb.Uint32Array{Values: array}}}
 	case 28:
-		uint32_, convErr := strconv.ParseUint(value, 10, 32)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[uint32](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint32Array{Uint32Array: &grpcpb.Uint32Array{Values: []uint32{uint32(uint32_)}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint32Array{Uint32Array: &grpcpb.Uint32Array{Values: array}}}
 	case 29:
-		uint64_, convErr := strconv.ParseUint(value, 10, 64)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[uint64](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint64Array{Uint64Array: &grpcpb.Uint64Array{Values: []uint64{uint64_}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint64Array{Uint64Array: &grpcpb.Uint64Array{Values: array}}}
 	case 30:
-		float_, convErr := strconv.ParseFloat(value, 32)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[float32](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_FloatArray{FloatArray: &grpcpb.FloatArray{Values: []float32{float32(float_)}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_FloatArray{FloatArray: &grpcpb.FloatArray{Values: array}}}
 	case 31:
-		float_, convErr := strconv.ParseFloat(value, 64)
-		if convErr != nil {
-			return convErr
+		array, err := getArrayFromInput[float64](value)
+		if err != nil {
+			return err
 		}
-		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_DoubleArray{DoubleArray: &grpcpb.DoubleArray{Values: []float64{float_}}}}
+		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_DoubleArray{DoubleArray: &grpcpb.DoubleArray{Values: array}}}
 	}
 
 	fields := []grpcpb.Field{dict[attr].Field}

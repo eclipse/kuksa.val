@@ -25,18 +25,18 @@ import (
 )
 
 func main() {
-log.Println("Starting Kuksa Client!!")
+	log.Println("Starting Kuksa Client!!")
 
-// Load the Kuksa Configuration
-var configKuksaClient kuksa_client.KuksaClientConfig
-kuksa_client.ReadConfig(&configKuksaClient)
-protocol := flag.String("protocol", "undefined", "Could be grpc or ws. Per default the protocol variable is undefined. Then the value from the config file kuksa_client.json will be used.")
-flag.Parse()
-if *protocol == "undefined" {
-	protocol = &configKuksaClient.TransportProtocol
-}
+	// Load the Kuksa Configuration
+	var configKuksaClient kuksa_client.KuksaClientConfig
+	kuksa_client.ReadConfig(&configKuksaClient)
+	protocol := flag.String("protocol", "undefined", "Could be grpc or ws. Per default the protocol variable is undefined. Then the value from the config file kuksa_client.json will be used.")
+	flag.Parse()
+	if *protocol == "undefined" {
+		protocol = &configKuksaClient.TransportProtocol
+	}
 
-var backend kuksa_client.KuksaBackend
+	var backend kuksa_client.KuksaBackend
 
 var token string
 if *protocol == "ws" {
@@ -51,11 +51,11 @@ if *protocol == "ws" {
 	log.Println("Specify -protocol=ws or -protocol=grpc")
 }
 
-err := backend.ConnectToKuksaVal()
-if err != nil {
-	log.Fatalf("Connection Error: %v", err)
-}
-defer backend.Close()
+	err := backend.ConnectToKuksaVal()
+	if err != nil {
+		log.Fatalf("Connection Error: %v", err)
+	}
+	defer backend.Close()
 
 //Authorize the connection
 err = backend.AuthorizeKuksaValConn(token)
@@ -63,21 +63,37 @@ if err != nil {
 	log.Fatalf("Authorization Error: %v", err)
 }
 
-err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "value")
-if err != nil {
-	log.Printf("Set Value Error: %v", err)
-} else {
-	log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
-}
-
-values, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "value")
-if err != nil {
-	log.Printf("Get Value Error: %v", err)
-} else {
-	for _, value := range values {
-		log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value)
+	err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "value")
+	if err != nil {
+		log.Printf("Set Value Error: %v", err)
+	} else {
+		log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
 	}
-}
+
+	values, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "value")
+	if err != nil {
+		log.Printf("Get Value Error: %v", err)
+	} else {
+		for _, value := range values {
+			log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value)
+		}
+	}
+
+	err = backend.SetValueFromKuksaVal("Vehicle.OBD.DTCList", "[dtc1, dtc2, dtc3]", "value")
+	if err != nil {
+		log.Printf("Set Value Error: %v", err)
+	} else {
+		log.Printf("Vehicle.OBD.DTCList Set: [dtc1, dtc2, dtc3]")
+	}
+
+	values, err = backend.GetValueFromKuksaVal("Vehicle.OBD.DTCList", "value")
+	if err != nil {
+		log.Printf("Get Value Error: %v", err)
+	} else {
+		for _, value := range values {
+			log.Println("Vehicle.OBD.DTCList: " + value)
+		}
+	}
 
 err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "targetValue")
 if err != nil {
