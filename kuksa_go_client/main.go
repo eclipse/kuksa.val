@@ -22,104 +22,111 @@ import (
 	"log"
 
 	"github.com/eclipse/kuksa.val/kuksa_go_client/kuksa_client"
-	"github.com/eclipse/kuksa.val/kuksa_go_client/protocInstall"
 )
 
 func main() {
+	log.Println("Starting Kuksa Client!!")
 
-	protoc := flag.Bool("protoc", false, "")
+	// Load the Kuksa Configuration
+	var configKuksaClient kuksa_client.KuksaClientConfig
+	kuksa_client.ReadConfig(&configKuksaClient)
+	protocol := flag.String("protocol", "undefined", "Could be grpc or ws. Per default the protocol variable is undefined. Then the value from the config file kuksa_client.json will be used.")
+	flag.Parse()
+	if *protocol == "undefined" {
+		protocol = &configKuksaClient.TransportProtocol
+	}
 
-	if *protoc {
-		protocInstall.Protoc()
+	var backend kuksa_client.KuksaBackend
+
+	if *protocol == "ws" {
+		backend = &kuksa_client.KuksaClientCommWs{Config: &configKuksaClient}
+	} else if *protocol == "grpc" {
+		backend = &kuksa_client.KuksaClientCommGrpc{Config: &configKuksaClient}
 	} else {
-		log.Println("Starting Kuksa Client!!")
+		log.Println("Specify -protocol=ws or -protocol=grpc")
+	}
 
-		// Load the Kuksa Configuration
-		var configKuksaClient kuksa_client.KuksaClientConfig
-		kuksa_client.ReadConfig(&configKuksaClient)
-		log.Println(configKuksaClient)
-		protocol := flag.String("protocol", "undefined", "Could be grpc or ws. Per default the protocol variable is undefined. Then the value from the config file kuksa_client.json will be used.")
-		flag.Parse()
-		if *protocol == "undefined" {
-			protocol = &configKuksaClient.TransportProtocol
+	err := backend.ConnectToKuksaVal()
+	if err != nil {
+		log.Fatalf("Connection Error: %v", err)
+	}
+	defer backend.Close()
+
+	//Authorize the connection
+	err = backend.AuthorizeKuksaValConn()
+	if err != nil {
+		log.Fatalf("Authorization Error: %v", err)
+	}
+
+	err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "value")
+	if err != nil {
+		log.Printf("Set Value Error: %v", err)
+	} else {
+		log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
+	}
+
+	values, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "value")
+	if err != nil {
+		log.Printf("Get Value Error: %v", err)
+	} else {
+		for _, value := range values {
+			log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value)
 		}
+	}
 
-		var backend kuksa_client.KuksaBackend
+	err = backend.SetValueFromKuksaVal("Vehicle.OBD.DTCList", "[dtc1, dtc2, dtc3]", "value")
+	if err != nil {
+		log.Printf("Set Value Error: %v", err)
+	} else {
+		log.Printf("Vehicle.OBD.DTCList Set: [dtc1, dtc2, dtc3]")
+	}
 
-		if *protocol == "ws" {
-			backend = &kuksa_client.KuksaClientCommWs{Config: &configKuksaClient}
-		} else if *protocol == "grpc" {
-			backend = &kuksa_client.KuksaClientCommGrpc{Config: &configKuksaClient}
-		} else {
-			log.Println("Specify -protocol=ws or -protocol=grpc")
+	values, err = backend.GetValueFromKuksaVal("Vehicle.OBD.DTCList", "value")
+	if err != nil {
+		log.Printf("Get Value Error: %v", err)
+	} else {
+		for _, value := range values {
+			log.Println("Vehicle.OBD.DTCList: " + value)
 		}
+	}
 
-		err := backend.ConnectToKuksaVal()
-		if err != nil {
-			log.Fatalf("Connection Error: %v", err)
-		}
-		defer backend.Close()
+	err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "targetValue")
+	if err != nil {
+		log.Printf("Set Value Error: %v", err)
+	} else {
+		log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
+	}
 
-		//Authorize the connection
-		err = backend.AuthorizeKuksaValConn()
-		if err != nil {
-			log.Fatalf("Authorization Error: %v", err)
+	tValues, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "targetValue")
+	if err != nil {
+		log.Printf("Get Value Error: %v", err)
+	} else {
+		for _, value := range tValues {
+			log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value)
 		}
+	}
 
-		err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "value")
-		if err != nil {
-			log.Printf("Set Value Error: %v", err)
-		} else {
-			log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
+	// Get MetaData of Vehicle.Speed
+	value, err := backend.GetMetadataFromKuksaVal("Vehicle.Speed")
+	if err == nil {
+		for _, val := range value {
+			log.Printf("Vehicle.Speed Metadata: " + val)
 		}
+	} else {
+		log.Printf("Error while getting metadata: %s", err)
+	}
 
-		values, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "value")
-		if err != nil {
-			log.Printf("Get Value Error: %v", err)
-		} else {
-			for _, value := range values {
-				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value)
-			}
-		}
+	//Subscribe to Vehicle.Speed
 
-		err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "targetValue")
-		if err != nil {
-			log.Printf("Set Value Error: %v", err)
-		} else {
-			log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
-		}
-
-		tValues, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "targetValue")
-		if err != nil {
-			log.Printf("Get Value Error: %v", err)
-		} else {
-			for _, value := range tValues {
-				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value)
-			}
-		}
-
-		// Get MetaData of Vehicle.Speed
-		value, err := backend.GetMetadataFromKuksaVal("Vehicle.Speed")
-		if err == nil {
-			for _, val := range value {
-				log.Printf("Vehicle.Speed Metadata: " + val)
-			}
-		} else {
-			log.Printf("Error while getting metadata: %s", err)
-		}
-
-		//Subscribe to Vehicle.Speed
-
-		id, err := backend.SubscribeFromKuksaVal("Vehicle.Speed", "value")
-		if err == nil {
-			log.Printf("Vehicle.Speed Subscription Id: %s", id)
-		} else {
-			log.Printf("Subscription Error %s", err)
-		}
-		err = backend.PrintSubscriptionMessages(id)
-		if err != nil {
-			log.Printf("Printing the subscription messages failed with: %s", err)
-		}
+	id, err := backend.SubscribeFromKuksaVal("Vehicle.Speed", "value")
+	if err == nil {
+		log.Printf("Vehicle.Speed Subscription Id: %s", id)
+	} else {
+		log.Printf("Subscription Error %s", err)
+	}
+	err = backend.PrintSubscriptionMessages(id)
+	if err != nil {
+		log.Printf("Printing the subscription messages failed with: %s", err)
 	}
 }
 
