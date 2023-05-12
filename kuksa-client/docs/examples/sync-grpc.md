@@ -29,7 +29,8 @@ with VSSClient('127.0.0.1', 55555) as client:
     current_values = client.get_current_values([
         'Vehicle.Speed',
     ])
-    print(current_values['Vehicle.Speed'].value)
+     if current_values['Vehicle.Speed'] is not None:
+        print(current_values['Vehicle.Speed'].value)
 ```
 
 Besides this there is a solution where you are not using the client as context-manager
@@ -41,7 +42,8 @@ client.connect()
 current_values = client.get_current_values([
     'Vehicle.Speed',
 ])
-print(current_values['Vehicle.Speed'].value)
+if current_values['Vehicle.Speed'] is not None:
+    print(current_values['Vehicle.Speed'].value)
 ```
 
 Here's another example how one can actuate a wiping system:
@@ -68,8 +70,9 @@ with VSSClient('127.0.0.1', 55555) as client:
     for updates in client.subscribe_current_values([
         'Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition',
     ]):
-        current_position = updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'].value
-        print(f"Current wiper position is: {current_position}")
+        if updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'] is not None:
+            current_position = updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'].value
+            print(f"Current wiper position is: {current_position}")
 ```
 
 #### Examples leveraging authorization
@@ -84,7 +87,8 @@ with VSSClient('127.0.0.1', 55555) as client:
     current_values = client.get_current_values([
         'Vehicle.Speed',
     ])
-    print(current_values['Vehicle.Speed'].value)
+    if current_values['Vehicle.Speed'] is not None:
+        print(current_values['Vehicle.Speed'].value)
 ```
 
 It is also possible to give the token to the client during initialization.
@@ -97,7 +101,8 @@ with VSSClient('127.0.0.1', 55555, token=_token) as client:
     current_values = await client.get_current_values([
         'Vehicle.Speed',
     ])
-    print(current_values['Vehicle.Speed'].value)
+    if current_values['Vehicle.Speed'] is not None:
+        print(current_values['Vehicle.Speed'].value)
 ```
 
 ### Full-fledged API
@@ -115,9 +120,10 @@ with VSSClient('127.0.0.1', 55555) as client:
     entries = client.get(entries=[
         EntryRequest(path, View.ALL, (Field.UNSPECIFIED,)),
     ])
-    print(f"{path} current value: {entries[0].value}")
-    print(f"{path} target value: {entries[0].actuator_target}")
-    print(f"{path} metadata: {entries[0].metadata}")
+    if entries[0] is not None:
+        print(f"{path} current value: {entries[0].value}")
+        print(f"{path} target value: {entries[0].actuator_target}")
+        print(f"{path} metadata: {entries[0].metadata}")
 ```
 
 #### Simple vehicle speed feeder

@@ -31,7 +31,8 @@ async def main():
         current_values = await client.get_current_values([
             'Vehicle.Speed',
         ])
-        print(current_values['Vehicle.Speed'].value)
+        if current_values['Vehicle.Speed'] is not None:
+            print(current_values['Vehicle.Speed'].value)
 
 asyncio.run(main())
 ```
@@ -46,7 +47,8 @@ async def main():
     client = VSSClient('127.0.0.1', 55555, ensure_startup_connection=True)
     await client.connect()
     current_values = await client.get_current_values(['Vehicle.Speed'])
-    print(current_values['Vehicle.Speed'].value)
+    if current_values['Vehicle.Speed'] is not None:
+        print(current_values['Vehicle.Speed'].value)
 
 asyncio.run(main())
 ```
@@ -83,8 +85,9 @@ async def main():
         async for updates in client.subscribe_current_values([
             'Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition',
         ]):
-            current_position = updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'].value
-            print(f"Current wiper position is: {current_position}")
+             if current_values['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'] is not None:
+                current_position = updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'].value
+                print(f"Current wiper position is: {current_position}")
 
 
 asyncio.run(main())
@@ -105,7 +108,9 @@ async def main():
         current_values = await client.get_current_values([
             'Vehicle.Speed',
         ])
-        print(current_values['Vehicle.Speed'].value)
+        
+        if current_values['Vehicle.Speed'] is not None:
+            print(current_values['Vehicle.Speed'].value)
 
 asyncio.run(main())
 ```
@@ -123,7 +128,8 @@ async def main():
         current_values = await client.get_current_values([
             'Vehicle.Speed',
         ])
-        print(current_values['Vehicle.Speed'].value)
+        if current_values['Vehicle.Speed'] is not None:
+            print(current_values['Vehicle.Speed'].value)
 
 asyncio.run(main())
 ```
@@ -146,9 +152,10 @@ async def main():
         entries = await client.get(entries=[
             EntryRequest(path, View.ALL, (Field.UNSPECIFIED,)),
         ])
-        print(f"{path} current value: {entries[0].value}")
-        print(f"{path} target value: {entries[0].actuator_target}")
-        print(f"{path} metadata: {entries[0].metadata}")
+        if entries[0] is not None:
+            print(f"{path} current value: {entries[0].value}")
+            print(f"{path} target value: {entries[0].actuator_target}")
+            print(f"{path} metadata: {entries[0].metadata}")
 
 asyncio.run(main())
 ```
