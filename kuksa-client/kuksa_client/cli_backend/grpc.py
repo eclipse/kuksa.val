@@ -118,25 +118,14 @@ class Backend(cli_backend.Backend):
             field, _ = self.AttrDict[attribute]
             entry_updates = []
             for path, value in updates.items():
+                values = value.strip('[]').split(',')
                 if field is kuksa_client.grpc.Field.VALUE:
-                    values = value.strip('[]').split(',') 
-                    array = []
-                    if len(values) > 1 or values[0] == '':
-                        for val in values:
-                            array.append(val)
-                        value = array
                     entry = kuksa_client.grpc.DataEntry(
-                        path=path, value=kuksa_client.grpc.Datapoint(value=value))
+                        path=path, value=kuksa_client.grpc.Datapoint(value=values))
                 elif field is kuksa_client.grpc.Field.ACTUATOR_TARGET:
-                    values = value.strip('[]').split(',')
-                    array = []
-                    if len(values) > 1 or values[0] == '':
-                        for val in values:
-                            array.append(val)
-                        value = array
                     entry = kuksa_client.grpc.DataEntry(
                         path=path, actuator_target=kuksa_client.grpc.Datapoint(
-                            value=value),
+                            value=values),
                     )
                 elif field is kuksa_client.grpc.Field.METADATA:
                     try:
