@@ -324,11 +324,14 @@ class Datapoint:
             array.values.extend(values)
 
         def cast_array_values(cast, array):
+            
             for item in array:
                 if item == '':
                     #skip
                     pass
                 else:
+                    if cast == str:
+                        item = item.replace('\"', '').replace('\\', '"').strip()
                     yield cast(item)
 
         def cast_bool(value):
