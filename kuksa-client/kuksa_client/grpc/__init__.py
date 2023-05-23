@@ -22,6 +22,7 @@ import datetime
 import enum
 import http
 import logging
+import re
 from typing import Any
 from typing import Collection
 from typing import Dict
@@ -324,8 +325,10 @@ class Datapoint:
             array.values.extend(values)
 
         def cast_array_values(cast, array):
-            
-            for item in array:
+            array = array.strip('[]')
+            pattern = r'(?:\\.|[^",])*"(?:\\.|[^"])*"|[^",]+'
+            values = re.findall(pattern, array)
+            for item in values:
                 if item == '':
                     #skip
                     pass
@@ -338,6 +341,10 @@ class Datapoint:
             if value in ('False', 'false', 'F', 'f'):
                 value = 0
             return bool(value)
+        
+        def cast_str(value):
+            return str(value).replace('\"', '').replace('\\', '"').strip()
+            
 
         field, set_field, cast_field = {
             DataType.INT8: ('int32', setattr, int),
@@ -351,7 +358,7 @@ class Datapoint:
             DataType.FLOAT: ('float', setattr, float),
             DataType.DOUBLE: ('double', setattr, float),
             DataType.BOOLEAN: ('bool', setattr, cast_bool),
-            DataType.STRING: ('string', setattr, str),
+            DataType.STRING: ('string', setattr, cast_str),
             DataType.INT8_ARRAY: ('int32_array', set_array_attr, lambda array: cast_array_values(int, array)),
             DataType.INT16_ARRAY: ('int32_array', set_array_attr, lambda array: cast_array_values(int, array)),
             DataType.INT32_ARRAY: ('int32_array', set_array_attr, lambda array: cast_array_values(int, array)),
