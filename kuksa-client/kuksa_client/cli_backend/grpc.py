@@ -27,6 +27,7 @@ from typing import Dict
 from typing import Iterable
 import uuid
 import os
+import re
 
 from kuksa_client import cli_backend
 import kuksa_client.grpc
@@ -118,14 +119,14 @@ class Backend(cli_backend.Backend):
             field, _ = self.AttrDict[attribute]
             entry_updates = []
             for path, value in updates.items():
-                values = value.strip('[]').split(',')
+
                 if field is kuksa_client.grpc.Field.VALUE:
                     entry = kuksa_client.grpc.DataEntry(
-                        path=path, value=kuksa_client.grpc.Datapoint(value=values))
+                        path=path, value=kuksa_client.grpc.Datapoint(value=value))
                 elif field is kuksa_client.grpc.Field.ACTUATOR_TARGET:
                     entry = kuksa_client.grpc.DataEntry(
                         path=path, actuator_target=kuksa_client.grpc.Datapoint(
-                            value=values),
+                            value=value),
                     )
                 elif field is kuksa_client.grpc.Field.METADATA:
                     try:
