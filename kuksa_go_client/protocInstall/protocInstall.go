@@ -147,7 +147,7 @@ func ProtoExists() {
 	}
 }
 
-func Protoc() {
+func main() {
 	if !Exists(){
 		_, err := Install()
 		if err != nil {
@@ -155,8 +155,4 @@ func Protoc() {
 		}
 	}
 	ProtoExists()
-}
-
-func main() {
-	Protoc()
 }
