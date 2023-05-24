@@ -148,6 +148,16 @@ impl proto::val_server::Val for broker::DataBroker {
                                 |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
                             ));
 
+                        if entry.actuator_target.is_some() {
+                            if let Some(metadata) = broker.get_metadata(id).await {
+                                if metadata.entry_type != broker::EntryType::Actuator {
+                                    return Err(tonic::Status::invalid_argument(
+                                        "Tried to set a target value for a non-actuator. Non-actuators have no target value.".to_string(),
+                                    ));
+                                }
+                            }
+                        }
+
                         let entry = match &request.entry {
                             Some(entry) => entry,
                             None => {
