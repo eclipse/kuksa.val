@@ -7,10 +7,8 @@
 - If you do not have a protobuf compiler installed execute the following from this directory:
 ```
 > go run protocInstall/protocInstall.go
-> go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-> go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 ```
-Or install the protobuf compiler yourself
+Or install the protobuf compiler yourself(https://grpc.io/docs/protoc-installation/)
 - Add the protobuf compiler (e.g. HOME_DIR/protoc/bin) to your PATH variable. For example for linux do:
 ```
 > export PATH=$PATH:$HOME/protoc/bin

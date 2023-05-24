@@ -95,12 +95,30 @@ if err != nil {
 		}
 	}
 
-err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "targetValue")
-if err != nil {
-	log.Printf("Set Value Error: %v", err)
-} else {
-	log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
-}
+	// set string with "" and \"
+	err = backend.SetValueFromKuksaVal("Vehicle.OBD.DTCList", "['dtc1, dtc2', dtc2, \"dtc3, dtc3\"]", "value")
+	if err != nil {
+		log.Printf("Set Value Error: %v", err)
+	} else {
+		log.Printf("Vehicle.OBD.DTCList Set: [dtc1, dtc2, dtc3]")
+	}
+
+	values, err = backend.GetValueFromKuksaVal("Vehicle.OBD.DTCList", "value")
+	if err != nil {
+		log.Printf("Get Value Error: %v", err)
+	} else {
+		for _, value := range values {
+			log.Println("Vehicle.OBD.DTCList: " + value)
+		}
+	}
+
+
+	err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "targetValue")
+	if err != nil {
+		log.Printf("Set Value Error: %v", err)
+	} else {
+		log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
+	}
 
 tValues, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "targetValue")
 if err != nil {

@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -88,11 +89,16 @@ func getArrayFromInput[T any](input string) ([]T, error) {
 	input = strings.TrimSuffix(strings.TrimPrefix(input, "["), "]")
 	
 	// Split the input string into separate values
-	values := strings.Split(input, ",")
+	pattern := `(?:\\.|[^",])*"(?:\\.|[^"])*"|'(?:\\.|[^']|\\')*'|[^",]+`
+
+	r := regexp.MustCompile(pattern)
+	values := r.FindAllString(input, -1)
 	
 	// Parse each value as type T and append to the array
 	array := make([]T, len(values))
 	for i, v := range values {
+		// make the ' disappear
+		v = strings.ReplaceAll(v,"'", "")
 		value, err := parseValue[T](v)
 		if err != nil {
 			return nil, ParseError{}
