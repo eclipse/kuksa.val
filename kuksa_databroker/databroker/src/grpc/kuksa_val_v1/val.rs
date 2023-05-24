@@ -148,6 +148,15 @@ impl proto::val_server::Val for broker::DataBroker {
                                 |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
                             ));
 
+                        if let Some(metadata) = broker.get_metadata(id).await {
+                            if metadata.entry_type != broker::EntryType::Actuator
+                            {
+                                return Err(tonic::Status::invalid_argument(
+                                    "Target value is not an actuator. Only Actuactor EntryType can be set".to_string(),
+                                ))
+                            }
+                        }
+
                         let entry = match &request.entry {
                             Some(entry) => entry,
                             None => {
