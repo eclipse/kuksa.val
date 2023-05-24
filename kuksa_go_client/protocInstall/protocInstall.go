@@ -1,13 +1,13 @@
-package protocInstall
+package main
 
 import (
 	"archive/zip"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
-	"net/http"
-	"io"
 )
 
 const (
@@ -147,7 +147,7 @@ func ProtoExists() {
 	}
 }
 
-func Protoc() {
+func main() {
 	if !Exists(){
 		_, err := Install()
 		if err != nil {
