@@ -189,20 +189,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let about = format!(
         concat!(
-            "{}\n",
             "\n  Commit Date:      {}",
             "\n  Commit SHA:       {}",
             "\n  Commit Branch:    {}",
             "\n",
             "\n  Package version:  {}",
-            "\n  Cargo Profile:    {}"
+            "\n  Debug build:      {}"
         ),
-        option_env!("CARGO_PKG_DESCRIPTION").unwrap_or(""),
         option_env!("VERGEN_GIT_COMMIT_TIMESTAMP").unwrap_or(""),
         option_env!("VERGEN_GIT_SHA").unwrap_or(""),
         option_env!("VERGEN_GIT_BRANCH").unwrap_or(""),
         option_env!("CARGO_PKG_VERSION").unwrap_or(""),
-        option_env!("VERGEN_CARGO_PROFILE").unwrap_or(""),
+        option_env!("VERGEN_CARGO_DEBUG").unwrap_or(""),
     );
 
     let parser = Command::new("Kuksa Data Broker")
