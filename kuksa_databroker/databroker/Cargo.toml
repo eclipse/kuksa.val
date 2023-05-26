@@ -66,9 +66,10 @@ libtest = []
 
 [build-dependencies]
 anyhow = "1.0"
-vergen = { version = "7", default-features = false, features = [
+vergen = { version = "8", features = [
     "cargo",
-    "git",
+    "git", 
+    "gitoxide",
 ] }
 
 [dev-dependencies]
