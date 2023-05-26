@@ -1283,10 +1283,20 @@ fn get_array_from_input<T: std::str::FromStr>(values: String) -> Result<Vec<T>, 
         .strip_prefix('[')
         .and_then(|s| s.strip_suffix(']'))
         .ok_or(ParseError {})?;
-    let inputs = raw_input.split(',');
+
+    let pattern = r#"(?:\\.|[^",])*"(?:\\.|[^"])*"|[^",]+"#;
+
+    let regex = regex::Regex::new(pattern).unwrap();
+    let inputs = regex.captures_iter(raw_input);
+
     let mut array: Vec<T> = vec![];
     for part in inputs {
-        match part.trim().parse::<T>() {
+        match part[0]
+            .trim()
+            .replace('\"', "")
+            .replace('\\', "\"")
+            .parse::<T>()
+        {
             Ok(value) => array.push(value),
             Err(_) => return Err(ParseError {}),
         }
