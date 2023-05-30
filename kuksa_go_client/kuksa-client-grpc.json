@@ -3,6 +3,6 @@
     "serverPort": 55555,
     "insecure": true,
     "certsDir": "../kuksa_certificates/",
-    "TokenOrTokenfile" : "../jwt/provide-all.token",
+    "TokenOrTokenfile": "../jwt/provide-all.token",
     "protocol": "grpc"
 }

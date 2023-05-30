@@ -22,6 +22,7 @@ import (
 	"log"
 
 	"github.com/eclipse/kuksa.val/kuksa_go_client/kuksa_client"
+	v1 "github.com/eclipse/kuksa.val/kuksa_go_client/proto/kuksa/val/v1"
 )
 
 func main() {
@@ -75,7 +76,12 @@ if err != nil {
 		log.Printf("Get Value Error: %v", err)
 	} else {
 		for _, value := range values {
-			log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value)
+			if *protocol == "grpc"{
+				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(*v1.DataEntry).String())
+			}else{
+				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(string))
+			}
+			
 		}
 	}
 
@@ -91,7 +97,11 @@ if err != nil {
 		log.Printf("Get Value Error: %v", err)
 	} else {
 		for _, value := range values {
-			log.Println("Vehicle.OBD.DTCList: " + value)
+			if *protocol == "grpc"{
+				log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())	
+			}else{
+				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(string))
+			}
 		}
 	}
 
@@ -100,7 +110,7 @@ if err != nil {
 	if err != nil {
 		log.Printf("Set Value Error: %v", err)
 	} else {
-		log.Printf("Vehicle.OBD.DTCList Set: [dtc1, dtc2, dtc3]")
+		log.Printf("Vehicle.OBD.DTCList Set: ['dtc1, dtc2', dtc2, \"dtc3, dtc3\"]")
 	}
 
 	values, err = backend.GetValueFromKuksaVal("Vehicle.OBD.DTCList", "value")
@@ -108,7 +118,11 @@ if err != nil {
 		log.Printf("Get Value Error: %v", err)
 	} else {
 		for _, value := range values {
-			log.Println("Vehicle.OBD.DTCList: " + value)
+			if *protocol == "grpc"{
+				log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())	
+			}else{
+				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(string))
+			}			
 		}
 	}
 
@@ -125,7 +139,11 @@ if err != nil {
 	log.Printf("Get Value Error: %v", err)
 } else {
 	for _, value := range tValues {
-		log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value)
+		if *protocol == "grpc"{
+			log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(*v1.DataEntry).String())
+		}else{
+			log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(string))
+		}		
 	}
 }
 
@@ -133,7 +151,11 @@ if err != nil {
 value, err := backend.GetMetadataFromKuksaVal("Vehicle.Speed")
 if err == nil {
 	for _, val := range value {
-		log.Printf("Vehicle.Speed Metadata: " + val)
+		if *protocol == "grpc"{
+			log.Println("Vehicle.Speed Metadata: " + val.(*v1.DataEntry).String())
+		}else{
+			log.Println("Vehicle.ADAS.ABS.IsEnabled: " + val.(string))
+		}		
 	}
 } else {
 	log.Printf("Error while getting metadata: %s", err)
