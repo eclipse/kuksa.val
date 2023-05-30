@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	grpcpb "github.com/eclipse/kuksa.val/kuksa_go_client/proto/kuksa/val/v1"
+	v1 "github.com/eclipse/kuksa.val/kuksa_go_client/proto/kuksa/val/v1"
 )
 
 type FieldView struct {
@@ -54,8 +55,9 @@ func (cg *KuksaClientCommGrpc) ConnectToKuksaVal() error {
 	return err
 }
 
-// function to get back go values to further work with them
-func (cg *KuksaClientCommGrpc) GetGoValuesFromKuksaVal(path string, attr string) ([]*grpcpb.DataEntry, error) {
+// Function to get attribute value from databroker
+func (cg *KuksaClientCommGrpc) GetValueFromKuksaVal(path string, attr string) ([]interface{}, error) {
+
 	// Contact the server and return the Value
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	ctx = metadata.AppendToOutgoingContext(ctx, "Authorization", cg.authorizationHeader)
@@ -69,19 +71,11 @@ func (cg *KuksaClientCommGrpc) GetGoValuesFromKuksaVal(path string, attr string)
 		log.Fatalf("Get call failed: %v", err)
 	}
 	respEntries := resp.GetEntries()
-	return respEntries, nil
-}
-
-// Function to get attribute value in string format from VSS tree
-func (cg *KuksaClientCommGrpc) GetValueFromKuksaVal(path string, attr string) ([]string, error) {
-
-	entries, err := cg.GetGoValuesFromKuksaVal(path, attr)
-	values := []string{}
-	for _, entry := range entries {
-		values = append(values, entry.String())
-	}
-
-	return values, err
+	response := make([]interface{}, len(respEntries))
+    for i, entry := range respEntries {
+        response[i] = interface{}(entry)
+    }
+	return response, nil
 }
 
 func getArrayFromInput[T any](input string) ([]T, error) {
@@ -182,14 +176,14 @@ func (cg *KuksaClientCommGrpc) SetValueFromKuksaVal(path string, value string, a
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	ctx = metadata.AppendToOutgoingContext(ctx, "Authorization", cg.authorizationHeader)
 	defer cancel()
-	entries, getErr := cg.GetGoValuesFromKuksaVal(path, "metadata")
+	entries, getErr := cg.GetValueFromKuksaVal(path, "metadata")
 	if getErr != nil {
 		return getErr
 	}
 
 	var datatype int32
 	for _, entry := range entries {
-		metadata := entry.GetMetadata()
+		metadata := entry.(*v1.DataEntry).GetMetadata()
 		datatype = int32(metadata.GetDataType().Number())
 	}
 
@@ -447,10 +441,11 @@ func (cg *KuksaClientCommGrpc) AuthorizeKuksaValConn(TokenOrTokenfile string) er
 }
 
 // Function to get metadata from kuksa.val server
-func (cg *KuksaClientCommGrpc) GetMetadataFromKuksaVal(path string) ([]string, error) {
+func (cg *KuksaClientCommGrpc) GetMetadataFromKuksaVal(path string) ([]interface{}, error) {
 	metadata, err := cg.GetValueFromKuksaVal(path, "metadata")
 	if err != nil {
-		return []string{""}, err
+		metadata = []interface{}{}
+		return metadata, err
 	}
 	return metadata, nil
 }

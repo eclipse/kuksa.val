@@ -92,7 +92,7 @@ func (m *NotFoundError) Error() string {
 	return "HOME was not found"
 }
 
-func Install() (string, error) {
+func Install() error {
 	goos := runtime.GOOS
 	bit := 32 << (^uint(0) >> 63)
 	var downloadUrl string
@@ -104,12 +104,13 @@ func Install() (string, error) {
 		case OsLinux:
 			downloadUrl = url[fmt.Sprintf("%s_%d", OsLinux, bit)]
 		default:
-			return "", fmt.Errorf("unsupport OS: %q", goos)
+			return fmt.Errorf("unsupport OS: %q", goos)
 	}
 
+	print("Downloading protobuf compiler...\n")
 	err := DownloadPackage(downloadUrl)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	var home string
@@ -117,12 +118,13 @@ func Install() (string, error) {
     if found {
 		home = os.Getenv("HOME")
     } else {
-        return "", &NotFoundError{}
+        return &NotFoundError{}
     }
 
 	dest := filepath.Join(home, Name)
 
-	return "", UnzipSource(ZipFileName, dest)
+	print("Unziping source...")
+	return UnzipSource(ZipFileName, dest)
 }
 
 func Exists() bool {
@@ -143,16 +145,19 @@ func Exists() bool {
 
 func ProtoExists() {
 	if _, err := os.Stat("proto"); os.IsNotExist(err) {
+		print("no directory proto exists. Creating...\n")
 		os.MkdirAll("proto", os.ModePerm)
 	}
 }
 
 func main() {
 	if !Exists(){
-		_, err := Install()
+		print("No installed protobuf compiler found! Installing... \n")
+		err := Install()
 		if err != nil {
 			panic(err)
 		}
 	}
 	ProtoExists()
+	print("All done!\n")
 }
