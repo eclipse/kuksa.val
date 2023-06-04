@@ -102,6 +102,7 @@ int main(int argc, const char *argv[]) {
   std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
 
   former_handler = signal(SIGINT,ctrlC_Handler);
+  (void) signal(SIGTERM,ctrlC_Handler);
 
   program_options::options_description desc{"OPTIONS"};
   desc.add_options()
