@@ -100,7 +100,7 @@ if err != nil {
 			if *protocol == "grpc"{
 				log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())	
 			}else{
-				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(string))
+				log.Println("Vehicle.OBD.DTCList: " + value.(string))
 			}
 		}
 	}
@@ -121,7 +121,7 @@ if err != nil {
 			if *protocol == "grpc"{
 				log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())	
 			}else{
-				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(string))
+				log.Println("Vehicle.OBD.DTCList: " + value.(string))
 			}			
 		}
 	}
@@ -154,7 +154,7 @@ if err == nil {
 		if *protocol == "grpc"{
 			log.Println("Vehicle.Speed Metadata: " + val.(*v1.DataEntry).String())
 		}else{
-			log.Println("Vehicle.ADAS.ABS.IsEnabled: " + val.(string))
+			log.Println("Vehicle.Speed Metadata: " + val.(string))
 		}		
 	}
 } else {
