@@ -22,7 +22,7 @@ KUKSA.val only supports the Websocket transport defined in VISS v2.
 Support of VISSv2:
 
 ### Security model
-KUKSA.val does not support the VISS V2 security model and currently we are not planning to support. KUKSA.val server does support authenticated access to VSS ressources. For details check [here.](../KUKSA.val_server/jwt.md).
+KUKSA.val does not support the VISS V2 security model and currently we are not planning to support. KUKSA.val server does support authenticated access to VSS resources. For details check [here.](../KUKSA.val_server/jwt.md).
 
 ### Supported VISS (v2) calls
 
@@ -65,5 +65,4 @@ The VISS Standard is not applicable for gRPC protocol. Here is an overview what 
     * Subscribing sensor values
     * Subscribing current or target value for actuators
 
-Authorization is currently not supported, but planned.
 
