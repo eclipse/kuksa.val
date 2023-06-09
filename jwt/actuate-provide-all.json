@@ -6,5 +6,5 @@
   ],
   "iat": 1516239022,
   "exp": 1767225599,
-  "scope": "provide:Vehicle.Speed"
+  "scope": "actuate provide"
 }
