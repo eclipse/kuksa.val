@@ -1,19 +1,19 @@
-# Kuksa Client
+# KUKSA.val Client
 ![kuksa.val Logo](https://raw.githubusercontent.com/eclipse/kuksa.val/0.2.5/doc/pictures/logo.png)
 
-`kuksa.val` is a part of the opensource project [eclipse kuksa](https://www.eclipse.org/kuksa/).
+`kuksa.val` is a part of the opensource project [Eclipse Kuksa](https://www.eclipse.org/kuksa/).
 More about `kuksa.val` can be found in the [repository](https://github.com/eclipse/kuksa.val).
 
 ## Introduction
 
-`kuksa-client` provides both a command-line interface (CLI) and a standalone library to interact with either
-[KUKSA.val server](https://github.com/eclipse/kuksa.val/tree/master/kuksa-val-server) or
-[KUKSA databroker](https://github.com/eclipse/kuksa.val/tree/master/kuksa_databroker).
+KUKSA.val Client provides both a command-line interface (CLI) and a standalone library to interact with either
+[KUKSA.val Server](https://github.com/eclipse/kuksa.val/tree/master/kuksa-val-server) or
+[KUKSA.val Databroker](https://github.com/eclipse/kuksa.val/tree/master/kuksa_databroker).
 
 
 ## Installing the client and starting its CLI
 
-The fastest way to start using kuksa-client is to install a pre-built version from pypi.org:
+The fastest way to start using KUKSA.val Client is to install a pre-built version from pypi.org:
 
 ```console
 $ pip install kuksa-client
@@ -33,7 +33,7 @@ If you wish to connect to a gRPC server e.g. `kuksa-databroker`, you should inst
 ```console
 $ kuksa-client --ip 127.0.0.1 --port 55555 --protocol grpc --insecure
 ```
-Note: `--insecure` is required because `kuksa-databroker` does not yet support encryption or authentication.
+Note: `--insecure` is required because `kuksa-databroker` does not yet support TLS encryption or authentication.
 
 If everything works as expected and the server can be contacted you will get an output similar to below.
 
@@ -61,8 +61,13 @@ Websocket connected securely.
 Test Client>
 ```
 
-The next step is to authorize against the server.
-The jwt tokens for testing can either be found under [kuksa_certificates/jwt](https://github.com/eclipse/kuksa.val/tree/0.2.5/kuksa_certificates/jwt) or you can also use following command inside `kuksa-client` to find the via `pip` installed certificate directory.
+If the connected KUKSA.val Server or KUKSA.val Databroker require authorization the next step is to authorize.
+KUKSA.val Server and KUKSA.val Databroker use different token formats.
+
+### Authorizing against KUKSA.val Server
+
+The jwt tokens for testing can either be found under [../kuksa_certificates/jwt](../kuksa_certificates/jwt)
+or you can also use following command inside `kuksa-client` to find the via `pip` installed certificate directory.
 
 ```console
 Test Client> printTokenDir
