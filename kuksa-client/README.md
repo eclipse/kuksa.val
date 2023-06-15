@@ -72,17 +72,29 @@ or you can also use following command inside `kuksa-client` to find the via `pip
 ```console
 Test Client> printTokenDir
 ```
-Select one of the tokens and use the `authorize` command like below.
+Select one of the tokens and use the `authorize` command like below:
 
 ```console
 Test Client> authorize /some/path/kuksa_certificates/jwt/super-admin.json.token
 ```
 
+### Authorizing against KUKSA.val Databroker
+
+If connecting to Databroker the command `printTokenDir` is not much help as it shows the default token directories
+for KUKSA.val Server example tokens. If the KUKSA.val Databroker use default example tokens then one of the
+tokens in [../jwt](..//jwt) can be used, like in the example below:
+
+```console
+Test Client> authorize /some/path//jwt/provide-all.token
+```
+
+
 ## Usage Instructions
 
 Refer help for further information
+
 ```console
-VSS Client> help -v
+Test Client> help -v
 
 Documented commands (use 'help -v' for verbose/'help <topic>' for details):
 
@@ -90,9 +102,9 @@ Communication Set-up Commands
 ================================================================================
 authorize           Authorize the client to interact with the server
 connect
-disconnect          Disconnect from the VSS Server
-getServerAddress    Gets the IP Address for the VSS Server
-setServerAddress    Sets the IP Address for the VSS Server
+disconnect          Disconnect from the VISS/gRPC Server
+getServerAddress    Gets the IP Address for the VISS/gRPC Server
+setServerAddress    Sets the IP Address for the VISS/gRPC Server
 
 Info Commands
 ================================================================================
@@ -102,20 +114,31 @@ version             Show version of the client
 
 Kuksa Interaction Commands
 ================================================================================
-getMetaData         Get MetaData of the path
-getValue            Get the value of a path
-setValue            Set the value of a path
-updateMetaData      Update MetaData of a given path
-updateVSSTree      Update VSS Tree Entry
+getMetaData          Get MetaData of the path
+getTargetValue       Get the value of a path
+getTargetValues      Get the value of given paths
+getValue             Get the value of a path
+getValues            Get the value of given paths
+setTargetValue       Set the target value of a path
+setTargetValues      Set the target value of given paths
+setValue             Set the value of a path
+setValues            Set the value of given paths
+subscribe            Subscribe the value of a path
+subscribeMultiple    Subscribe to updates of given paths
+unsubscribe          Unsubscribe an existing subscription
+updateMetaData       Update MetaData of a given path
+updateVSSTree        Update VSS Tree Entry
+
 ```
 
 This is an example showing how some of the commands can be used:
 
-![try kuksa-client out](https://raw.githubusercontent.com/eclipse/kuksa.val/0.2.5/doc/pictures/testclient_basic.gif "test client usage")
+![try kuksa-client out](https://raw.githubusercontent.com/eclipse/kuksa.val/master/doc/pictures/testclient_basic.gif "test client usage")
 
 ### Updating VSS Structure
 
-Using the testclient, it is also possible to update and extend the VSS data structure. More details can be found [here](https://github.com/eclipse/kuksa.val/blob/0.2.5/doc/liveUpdateVSSTree.md).
+Using the test client, it is also possible to update and extend the VSS data structure.
+More details can be found [here](https://github.com/eclipse/kuksa.val/blob/master/doc/KUKSA.val_server/liveUpdateVSSTree.md).
 
 **Note**: You can also use `setValue` to change the value of an array, but the value should not contains any non-quoted spaces. Consider the following examples:
 
@@ -138,7 +161,6 @@ Test Client> setValue Vehicle.OBD.DTCList ["dtc1", "dtc2"]
 usage: setValue [-h] Path Value
 setValue: error: unrecognized arguments: dtc2 ]
 ```
-
 
 ## Building and running a local version
 
@@ -176,7 +198,9 @@ $
 ```
 
 ## Using Docker
-You can build a docker image of the testclient using the [`Dockerfile`](./Dockerfile). Not the most effcient way to pack a small python script, but it is easy to get started. The Dockerfile needs to be executed on the parent directory (so it include the needed certificates and `pip` package configuration).
+You can build a docker image of the testclient using the [`Dockerfile`](./Dockerfile).
+Not the most effcient way to pack a small python script, but it is easy to get started.
+The Dockerfile needs to be executed on the parent directory (so it include the needed certificates and `pip` package configuration).
 
 
 ```console
