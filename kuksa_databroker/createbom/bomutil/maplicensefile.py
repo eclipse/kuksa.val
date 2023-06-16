@@ -32,5 +32,5 @@ MAP = {
     "Zlib": "Zlib.txt.gz",
     "ISC": "ISC.txt.gz",
     "ring": "ring.LICENSE.txt.gz",
-    "webpki": "webpki.LICENSE.txt.gz",
+    "rustls-webpki": "webpki.LICENSE.txt.gz",
 }
