@@ -272,7 +272,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Arg::new("tls-private-key")
                 .display_order(5)
                 .long("tls-private-key")
-                .help("TLS private key file (.pem)")
+                .help("TLS private key file (.key)")
                 .action(ArgAction::Set)
                 .value_name("FILE")
                 .conflicts_with("insecure"),
@@ -377,7 +377,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "TLS certificate (--tls-cert) must be set if --tls-private-key is.".into(),
                 );
             }
-            (None, None) => ServerTLS::Disabled,
+            (None, None) => {
+                return Err(
+                    "You must either provide TLS certificate and key or request insecure mode by --insecure.".into(),
+                );
+            }
         }
     };
 

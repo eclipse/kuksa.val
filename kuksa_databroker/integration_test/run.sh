@@ -25,9 +25,9 @@ DATABROKER_ADDRESS=${DATABROKER_ADDRESS:-"127.0.0.1:55555"}
 
 VSS_DATA_DIR="$SCRIPT_DIR/../../data"
 
-echo "Starting databroker container (\"${DATABROKER_IMAGE}\")"
+echo "Starting databroker container (\"${DATABROKER_IMAGE}\") in insecure mode"
 RUNNING_IMAGE=$(
-    docker run -d -v ${VSS_DATA_DIR}:/data -p 55555:55555 --rm ${DATABROKER_IMAGE} --metadata data/vss-core/vss_release_4.0.json
+    docker run -d -v ${VSS_DATA_DIR}:/data -p 55555:55555 --rm ${DATABROKER_IMAGE} --metadata data/vss-core/vss_release_4.0.json --insecure
 )
 
 python3 -m pytest -v "${SCRIPT_DIR}/test_databroker.py"

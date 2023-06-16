@@ -285,7 +285,7 @@ class TestDatapoint:
         (DataType.BOOLEAN, (True, datetime.datetime(2022, 11, 16, tzinfo=datetime.timezone.utc)), types_pb2.Datapoint(
             bool=True, timestamp=timestamp_pb2.Timestamp(seconds=1668556800),
         )),
-        (DataType.INT8_ARRAY, ([-128, 127],), types_pb2.Datapoint(
+        (DataType.INT8_ARRAY, ('[-128, 127]',), types_pb2.Datapoint(
             int32_array=types_pb2.Int32Array(values=[-128, 127]))),
     ])
     def test_to_message(self, value_type, init_args, message):

@@ -21,6 +21,7 @@ import pathlib
 import kuksa_certificates
 
 
+
 class Backend:
     def __init__(self, config):
         self.serverIP = config.get('ip', "127.0.0.1")
@@ -34,8 +35,9 @@ class Backend:
             'cacertificate', str(self.default_cert_path / 'CA.pem'))
         self.certificate = config.get('certificate', str(
             self.default_cert_path / 'Client.pem'))
-        self.keyfile = config.get('key', str(
+        self.keyfile = config.get('keyfile', str(
             self.default_cert_path / 'Client.key'))
+        self.tls_server_name = config.get('tls_server_name', "")
         self.token_or_tokenfile = config.get('token_or_tokenfile', str(
             self.default_cert_path / 'jwt/all-read-write.json.token'))
 

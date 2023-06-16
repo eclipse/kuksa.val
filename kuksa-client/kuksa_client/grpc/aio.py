@@ -68,8 +68,16 @@ class VSSClient(BaseVSSClient):
         if target_host is None:
             target_host = self.target_host
         if creds is not None:
-            channel = grpc.aio.secure_channel(target_host, creds)
+            logger.info("Establishing secure channel")
+            if self.tls_server_name:
+                logger.info(f"Using TLS server name {self.tls_server_name}")
+                options = [('grpc.ssl_target_name_override', self.tls_server_name)]
+                channel = grpc.aio.secure_channel(target_host, creds, options)
+            else:
+                logger.debug(f"Not providing explicit TLS server name")
+                channel = grpc.aio.secure_channel(target_host, creds)
         else:
+            logger.info("Establishing insecure channel")
             channel = grpc.aio.insecure_channel(target_host)
         self.channel = await self.exit_stack.enter_async_context(channel)
         self.client_stub = val_pb2_grpc.VALStub(self.channel)

@@ -115,9 +115,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let pem = std::fs::read(ca_cert_filename)?;
         let ca_cert = tonic::transport::Certificate::from_pem(pem);
 
-        let tls_config = tonic::transport::ClientTlsConfig::new()
-            .ca_certificate(ca_cert)
-            .domain_name("Server");
+        let tls_config = tonic::transport::ClientTlsConfig::new().ca_certificate(ca_cert);
 
         client.set_tls_config(tls_config);
     }

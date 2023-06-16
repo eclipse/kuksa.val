@@ -21,6 +21,7 @@ import argparse
 import functools
 import json
 import logging.config
+import logging
 import os
 import pathlib
 import sys
@@ -46,6 +47,9 @@ DEFAULT_SERVER_PROTOCOL = "ws"
 SUPPORTED_SERVER_PROTOCOLS = ("ws", "grpc")
 
 scriptDir = os.path.dirname(os.path.realpath(__file__))
+
+
+logger = logging.getLogger(__name__)
 
 
 def assignment_statement(arg):
@@ -247,8 +251,10 @@ class TestClient(Cmd):
     ap_updateVSSTree.add_argument(
         "Json", help="Json tree to update VSS", completer_method=jsonfile_completer_method)
 
-    # Constructor
-    def __init__(self, server_ip=None, server_port=None, server_protocol=None, insecure=False, token_or_tokenfile=None):
+    # Constructor, request names after protocol to avoid errors
+    def __init__(self, server_ip=None, server_port=None, server_protocol=None, *, insecure=False, token_or_tokenfile=None,
+                 certificate=None, keyfile=None,
+                 cacertificate=None, tls_server_name=None):
         super().__init__(
             persistent_history_file=".vssclient_history", persistent_history_length=100, allow_cli_args=False,
         )
@@ -265,6 +271,10 @@ class TestClient(Cmd):
         self.commThread = None
         self.token_or_tokenfile = token_or_tokenfile
         self.insecure = insecure
+        self.certificate = certificate
+        self.keyfile = keyfile
+        self.cacertificate = cacertificate
+        self.tls_server_name = tls_server_name
 
         print("Welcome to Kuksa Client version " + str(_metadata.__version__))
         print()
@@ -485,9 +495,21 @@ class TestClient(Cmd):
         config = {'ip': self.serverIP,
                   'port': self.serverPort,
                   'insecure': self.insecure,
-                  'protocol': self.serverProtocol,
-                  'token_or_tokenfile': self.token_or_tokenfile,
+                  'protocol': self.serverProtocol
                   }
+                  
+        # Configs should only be added if they actually have a value
+        if self.token_or_tokenfile:
+            config['token_or_tokenfile'] = self.token_or_tokenfile
+        if self.certificate:
+            config['certificate'] = self.certificate
+        if self.keyfile:
+            config['keyfile'] = self.keyfile
+        if self.cacertificate:
+            config['cacertificate'] = self.cacertificate
+        if self.tls_server_name:
+            config['tls_server_name'] = self.tls_server_name
+            
         self.commThread = KuksaClientThread(config)
         self.commThread.start()
 
@@ -589,11 +611,34 @@ def main():
     parser.add_argument(
         '--token_or_tokenfile', default=None, help="JWT token or path to a JWT token file (.token)",
     )
+    
+    # Add TLS arguments
+    # Note: Databroker does not yet support mutual authentication, so no need to use two first arguments
+    parser.add_argument(
+        '--certificate', default=None, help="Client cert file(.pem), only needed for mutual authentication",
+    )
+    parser.add_argument(
+        '--keyfile', default=None, help="Client private key file (.key), only needed for mutual authentication",
+    )
+    parser.add_argument(
+        '--cacertificate', default=None, help="Client root cert file (.pem), needed unless insecure mode used",
+    )
+    # Observations for Python
+    # Connecting to "localhost" works well, subjectAltName seems to suffice
+    # Connecting to "127.0.0.1" does not work unless server-name specified
+    # For KUKSA.val example certs default name is "Server"
+    parser.add_argument(
+        '--tls-server-name', default=None, help="CA name of server, needed in some cases where subjectAltName does not suffice",
+    )
+    
     args = parser.parse_args()
 
     logging.config.fileConfig(args.logging_config)
+    
     clientApp = TestClient(args.ip, args.port, args.protocol,
-                           args.insecure, args.token_or_tokenfile)
+                           insecure = args.insecure, token_or_tokenfile = args.token_or_tokenfile,
+                           certificate = args.certificate, keyfile = args.keyfile,
+                           cacertificate = args.cacertificate, tls_server_name = args.tls_server_name)
     try:
         # We exit the loop when the user types "quit" or hits Ctrl-D.
         clientApp.cmdloop()
