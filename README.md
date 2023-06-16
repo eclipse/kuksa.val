@@ -28,5 +28,7 @@ KUKSA.val contains several components
 | [Examples](./kuksa_apps) | Multiple example apps for different programming languages and frameworks
 | [Feeders](https://github.com/eclipse/kuksa.val.feeders/) | Multiple feeders to gathering vehicle data and transforming it to VSS suitable for kuksa-val-server
 
+## More information
 
+* [KUKSA.val TLS Concept](doc/tls.md)
 

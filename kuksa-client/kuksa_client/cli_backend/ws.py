@@ -31,7 +31,6 @@ import websockets
 
 from kuksa_client import cli_backend
 
-
 class Backend(cli_backend.Backend):
     def __init__(self, config):
         super().__init__(config)
@@ -235,12 +234,20 @@ class Backend(cli_backend.Backend):
             context.load_cert_chain(
                 certfile=self.certificate, keyfile=self.keyfile)
             context.load_verify_locations(cafile=self.cacertificate)
-            # Certificates in ../kuksa_certificates does not contain the IP address used for
-            # connection to server so hostname check must be disabled
-            context.check_hostname = False
+            # We want host name to match
+            # For example certificates we use subjectAltName to make it match for Server, localahost and 127.0.0.1
+            # If using your own certificates make sure that name is included or use tls_server_name work-around
+            context.check_hostname = True
             try:
                 print("connect to wss://"+self.serverIP+":"+str(self.serverPort))
-                async with websockets.connect("wss://"+self.serverIP+":"+str(self.serverPort), ssl=context) as ws:
+                args = {'uri':"wss://"+self.serverIP+":"+str(self.serverPort),'ssl':context}
+                # If your certificates does not contain the name of the server 
+                # (for example during testing, in production it should match)
+                # then you can specify that checks should be against a different name
+                if self.tls_server_name:
+                    args['server_hostname'] = self.tls_server_name
+
+                async with websockets.connect(**args) as ws:
                     print("Websocket connected securely.")
                     await self._msgHandler(ws)
             except OSError as e:

@@ -31,9 +31,8 @@ With default CLI arguments, the client will try to connect to a local VISS serve
 If you wish to connect to a gRPC server e.g. `kuksa-databroker`, you should instead run:
 
 ```console
-$ kuksa-client --ip 127.0.0.1 --port 55555 --protocol grpc --insecure
+$ kuksa-client --ip 127.0.0.1 --port 55555 --protocol grpc
 ```
-Note: `--insecure` is required because `kuksa-databroker` does not yet support TLS encryption or authentication.
 
 If everything works as expected and the server can be contacted you will get an output similar to below.
 
@@ -64,6 +63,55 @@ Test Client>
 If the connected KUKSA.val Server or KUKSA.val Databroker require authorization the next step is to authorize.
 KUKSA.val Server and KUKSA.val Databroker use different token formats.
 
+### Connecting to KUKSA.val Databroker
+
+A gRPC connection to KUKSA.val Databroker is started by specifying address and port for the Databroker and giving
+`--protocol grpc` as argument.
+KUKSA.val Client use TLS by default, it only run in insecure mode if `--insecure` is given as argument.
+By default the KUKSA.val example Root CA and Client keys are used, but client keys have no effect as mutual authentication is not supported by KUKSA.val Databroker or KUKSA.val Server.
+
+```
+~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc
+```
+
+This call with all parameters specified give same effect:
+
+```
+~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc --certificate ../kuksa_certificates/Client.pem --keyfile ../kuksa_certificates/Client.key --cacertificate ./kuksa_certificates/CA.pem
+```
+
+There is actually no reason to specify client key and certificate, as mutual authentication is not supported in KUKSA.val Databroker,
+so the command can be simplified like this:
+
+
+```
+~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc --cacertificate ./kuksa_certificates/CA.pem
+```
+
+The example server protocol list 127.0.0.1 as an alternative name, but the TLS-client currently used does not accept it,
+instead a valid server name must be given as argument.
+Currently `Server` and `localhost`are valid names from the example certificates.
+
+```
+~/kuksa.val/kuksa-client$ kuksa-client --ip 127.0.0.1 --port 55555 --protocol grpc  --cacertificate ../kuksa_certificates/CA.pem --tls-server-name Server
+```
+
+### Connecting to KUKSA.val Server
+
+Connecting to KUKSA.val Server is default, and TLS is used by default by KUKSA.val Server.
+`--tls-server-name` does not need to be used when connecting to KUKSA.val Server,
+that is the only difference compared to connecting to KUKSA.val Databroker.
+
+```
+~/kuksa.val/kuksa-client$ kuksa-client
+```
+
+This corresponds to this call:
+
+```
+kuksa-client --ip 127.0.0.1 --port 8090 --protocol ws --cacertificate ./kuksa_certificates/CA.pem
+```
+
 ### Authorizing against KUKSA.val Server
 
 The jwt tokens for testing can either be found under [../kuksa_certificates/jwt](../kuksa_certificates/jwt)
@@ -82,12 +130,11 @@ Test Client> authorize /some/path/kuksa_certificates/jwt/super-admin.json.token
 
 If connecting to Databroker the command `printTokenDir` is not much help as it shows the default token directories
 for KUKSA.val Server example tokens. If the KUKSA.val Databroker use default example tokens then one of the
-tokens in [../jwt](..//jwt) can be used, like in the example below:
+tokens in [../jwt](../jwt) can be used, like in the example below:
 
 ```console
-Test Client> authorize /some/path//jwt/provide-all.token
+Test Client> authorize /some/path/jwt/provide-all.token
 ```
-
 
 ## Usage Instructions
 
@@ -250,6 +297,26 @@ Import library's main package.
 This package holds different APIs depending on your application's requirements.
 For more information, see ([Documentation](https://github.com/eclipse/kuksa.val/blob/master/kuksa-client/docs/main.md)).
 
+
+### TLS configuration
+
+Clients like [KUKSA.val CAN Feeder](https://github.com/eclipse/kuksa.val.feeders/tree/main/dbc2val)
+that use KUKSA.val Client library must typically set the path to the root CA certificate.
+If the path is set the VSSClient will try to establish a secure connection.
+
+```
+# Shall TLS be used (default False for Databroker, True for KUKSA.val Server)
+# tls = False
+tls = True
+
+# TLS-related settings
+# Path to root CA, needed if using TLS
+root_ca_path=../../kuksa.val/kuksa_certificates/CA.pem
+# Server name, typically only needed if accessing server by IP address like 127.0.0.1
+# and typically only if connection to KUKSA.val Databroker
+# If using KUKSA.val example certificates the names "Server" or "localhost" can be used.
+# tls_server_name=Server
+```
 
 ## Troubleshooting
 

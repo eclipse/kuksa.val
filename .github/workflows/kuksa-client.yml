@@ -23,7 +23,6 @@ on:
     - "kuksa-client/**"
   workflow_dispatch:
 
-    
 jobs:
   checkrights:
     uses: ./.github/workflows/check_push_rights.yml
@@ -95,3 +94,28 @@ jobs:
         push: false
         tags: "ttl.sh/kuksa.val/kuksa-client-${{github.sha}}:1h"
         labels: ${{ steps.meta.outputs.labels }}
+        
+
+  dbc2val-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kuksa.val
+        uses: actions/checkout@v3
+      - name: Install pip
+        run: |
+          python -m pip --quiet --no-input install --upgrade pip
+      - name: Install dependencies with pip
+        run: |
+          cd kuksa-client
+          pip install -r requirements.txt -e .
+          pip install -r test-requirements.txt
+      - name: Run tests
+        run: |
+          cd kuksa-client
+          pytest
+      - name: Build pypi package
+        run: |
+          cd kuksa-client
+          pip install --upgrade build
+          python -m build
+

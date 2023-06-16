@@ -37,7 +37,7 @@ The resulting vss.json can be loaded at startup by supplying the data broker wit
 --metadata vss.json
 ```
 
-## Building
+## Building KUKSA.val Databroker
 
 Prerequsites:
 - [Rust](https://www.rust-lang.org/tools/install)
@@ -51,12 +51,7 @@ Prerequsites:
 
 `cargo build --examples --bins --release`
 
-## Running
-
-### Databroker
-Run the broker with:
-
-`cargo run --bin databroker`
+## Running KUKSA.val Databroker
 
 Get help, options and version number with:
 
@@ -75,32 +70,40 @@ OPTIONS:
                                     list of files [env: KUKSA_DATA_BROKER_METADATA_FILE=]
         --jwt-public-key <FILE>     Public key used to verify JWT access tokens
         --tls-cert <FILE>           TLS certificate file (.pem)
-        --tls-private-key <FILE>    TLS private key file (.pem)
+        --tls-private-key <FILE>    TLS private key file (.key)
         --insecure                  Allow insecure connections
         --dummy-metadata            Populate data broker with dummy metadata
     -h, --help                      Print help information
     -V, --version                   Print version information
+```
 
+Before starting KUKSA.val Databroker you must decide if you want to use TLS for incoming connections or not.
+It is is recommended to use TLS and the you must provide server key by `--tls-private-key`
+and server certificate by `--tls-cert`. If you want to run without TLS you must give `--insecure`.
+
+*Note: Unless stated otherwise, the examples below show KUKSA.val Databroker running in insecure mode!*
+
+Run the broker in insecure mode with:
+
+`cargo run --bin databroker -- --insecure`
+
+To enable TLS, provide databroker with the path to the (public) certificate and it's corresponding private key.
+
+```shell
+cargo run --bin databroker -- --tls-cert kuksa_certificates/Server.pem --tls-private-key kuksa_certificates/Server.key
 ```
 
 To enable authorization, provide a public key used to verify JWT access tokens (provided by connecting clients).
 
 ```shell
-databroker --jwt-public-key kuksa_certificates/jwt/jwt.key.pub
+cargo run --bin databroker -- --jwt-public-key kuksa_certificates/jwt/jwt.key.pub --insecure
 ```
-
-To enable TLS, provide databroker with the path to the (public) certificate and it's corresponding private key.
-
-```shell
-databroker --tls-cert kuksa_certificates/Server.pem --tls-private-key kuksa_certificates/Server.key
-```
-
 ### :warning: Default port not working on Mac OS
 The databroker default port `55555` is not usable in many versions of Mac OS. You can not bind it, or if it seems bound you still can not receive messages.
 Therefore, on Mac OS you need to start databroker on another port, e.g.
 
 ```
-databroker --port 55556
+cargo run --bin databroker -- --port 55556
 ```
 
 Please note, this also applies if you use a container environment like K3S or Docker on Mac OS. If you forward the port or exposing the host network
@@ -110,7 +113,7 @@ For more information see also https://developer.apple.com/forums/thread/671197
 
 Currently, to run databroker-cli (see below), you do need to change the port it connects to in databroker-cli code and recompile it.
 
-### Test the databroker
+## Test the Databroker using CLI
 
 Run the cli with:
 
@@ -147,7 +150,7 @@ sdv.databroker.v1 > set Vehicle.ADAS.CruiseControl.IsEnabled false
 [set]  OK
 ```
 
-#### Authorization
+### Authorization
 ```shell
 databroker-cli --token-file jwt/read-vehicle-speed.token
 ```
@@ -164,7 +167,7 @@ or
 sdv.databroker.v1 > token-file jwt/read-vehicle-speed.token
 ```
 
-#### Connect to databroker using TLS
+### Connect to databroker using TLS
 ```shell
 databroker-cli --ca-cert kuksa_certificates/CA.pem
 ```
@@ -202,13 +205,22 @@ Subscription is now running in the background. Received data is identified by [1
 
 To change the default configuration use the arguments during startup see [run section](#running) or environment variables.
 
-### Build and run databroker
+## Run Databroker test cases
+
+Use the following command to run Databroker test cases
+
+```shell
+ cargo test --all-targets
+ ```
+ 
+## Build and run Databroker using Docker
 
 To build the release version of databroker, run the following command:
 
 ```shell
 RUSTFLAGS='-C link-arg=-s' cargo build --release --bins --examples
 ```
+
 Or use following commands for aarch64
 ```
 cargo install cross
@@ -248,7 +260,8 @@ After the image is created the databroker container can be ran from any director
 
 ```shell
 #By default the container will execute the ./databroker command and load the latest VSS file.
-docker run --rm -it  -p 55555:55555/tcp databroker
+# You must explicitly specify that you want insecure mode
+docker run --rm -it  -p 55555:55555/tcp databroker --insecure
 ```
 
 To run any specific command, just append you command at the end.

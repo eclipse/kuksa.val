@@ -40,7 +40,6 @@ from kuksa.val.v1 import types_pb2
 from kuksa.val.v1 import val_pb2
 from kuksa.val.v1 import val_pb2_grpc
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -482,35 +481,47 @@ class ServerInfo:
     def from_message(cls, message: val_pb2.GetServerInfoResponse):
         return cls(name=message.name, version=message.version)
 
-
 class BaseVSSClient:
     def __init__(
         self,
         host: str,
         port: int,
-        token: str = None,
+        token: Optional[str] = None,
         root_certificates: Optional[Path] = None,
         private_key: Optional[Path] = None,
         certificate_chain: Optional[Path] = None,
         ensure_startup_connection: bool = True,
         connected: bool = False,
+        tls_server_name: Optional[str] = None
     ):
+    
+
         self.authorization_header = self.get_authorization_header(token)
         self.target_host = f'{host}:{port}'
         self.root_certificates = root_certificates
         self.private_key = private_key
         self.certificate_chain = certificate_chain
+        self.tls_server_name = tls_server_name
         self.ensure_startup_connection = ensure_startup_connection
         self.connected = connected
         self.client_stub = None
 
     def _load_creds(self) -> Optional[grpc.ChannelCredentials]:
-        if all((self.root_certificates, self.private_key, self.certificate_chain)):
+        if self.root_certificates:
+            logger.info(f"Using TLS with Root CA from {self.root_certificates}")
             root_certificates = self.root_certificates.read_bytes()
-            private_key = self.private_key.read_bytes()
-            certificate_chain = self.certificate_chain.read_bytes()
-            return grpc.ssl_channel_credentials(root_certificates, private_key, certificate_chain)
+            if self.private_key and self.certificate_chain:
+                private_key = self.private_key.read_bytes()
+                certificate_chain = self.certificate_chain.read_bytes()
+                logger.info(f"Using private client key {self.private_key} "
+                                 f"and chain/certificate {self.certificate_chain}")
+                return grpc.ssl_channel_credentials(root_certificates, private_key, certificate_chain)
+            else:
+                logger.info(f"No client certificates provided, mutual TLS not supported!")
+                return grpc.ssl_channel_credentials(root_certificates)
+        logger.info(f"No Root CA present, it will not be posible to use a secure connection!")
         return None
+        
 
     def _prepare_get_request(self, entries: Iterable[EntryRequest]) -> val_pb2.GetRequest:
         req = val_pb2.GetRequest(entries=[])
@@ -633,10 +644,20 @@ class VSSClient(BaseVSSClient):
         creds = self._load_creds()
         if target_host is None:
             target_host = self.target_host
+            
         if creds is not None:
-            channel = grpc.secure_channel(target_host, creds)
+            logger.info("Establishing secure channel")
+            if self.tls_server_name:
+                logger.info(f"Using TLS server name {self.tls_server_name}")
+                options = [('grpc.ssl_target_name_override', self.tls_server_name)]
+                channel = grpc.secure_channel(target_host, creds, options)
+            else:
+                logger.debug(f"Not providing explicit TLS server name")
+                channel = grpc.secure_channel(target_host, creds)
         else:
+            logger.info("Establishing insecure channel")
             channel = grpc.insecure_channel(target_host)
+            
         self.channel = self.exit_stack.enter_context(channel)
         self.client_stub = val_pb2_grpc.VALStub(self.channel)
         self.connected = True

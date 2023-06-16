@@ -15,9 +15,16 @@ genKey() {
     openssl genrsa -out $1.key 2048
 }
 
+# This method (and how it is called) contains some hacks to pass name verification
+# CN is called as per argument
+# We also include that as subjectAltName
+# We add localhost and 127.0.0.1 as subjectAltName as they are common host names used in test
+# Also Server/Client as that can be a work-around (by setting tls-server-name in e.g. kuksa-client)
+# as some TLS client integrations cannot handle name verification towards IP-addresses
+# (Only client for now in KUKSA.val that has problem with IP host validation is the kuksa-client gRPC integration)
 genCert() {
     openssl req -new -key $1.key -out $1.csr -passin pass:"temp" -subj "/C=CA/ST=Ontario/L=Ottawa/O=Eclipse.org Foundation, Inc./CN=$1/emailAddress=kuksa-dev@eclipse.org"
-    openssl x509 -req -in $1.csr -extfile <(printf "subjectAltName=DNS:$1") -CA CA.pem -CAkey CA.key -CAcreateserial -days 365 -out $1.pem
+    openssl x509 -req -in $1.csr -extfile <(printf "subjectAltName=DNS:$1, DNS:localhost, IP:127.0.0.1") -CA CA.pem -CAkey CA.key -CAcreateserial -days 365 -out $1.pem
     openssl verify -CAfile CA.pem $1.pem
 }
 

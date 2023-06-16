@@ -270,6 +270,7 @@ class Backend(cli_backend.Backend):
                 root_certificates=self.cacertificate,
                 private_key=self.keyfile,
                 certificate_chain=self.certificate,
+                tls_server_name=self.tls_server_name,
                 token=self.token
             ) as vss_client:
                 print("Secure gRPC channel connected.")

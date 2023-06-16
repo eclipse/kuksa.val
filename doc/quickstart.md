@@ -2,11 +2,13 @@
 
 The quickest possible way to get KUKSA.val up and running
 
+*Note: The examples in this document do not use TLS or access control.*
+
 ## Starting broker
 First we want to run KUKSA.val databroker
 
 ```
-docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/databroker:master 
+docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/databroker:master --insecure
 ```
 
 
@@ -16,7 +18,7 @@ You can interact with the VSS datapoints using the cli clients. The first option
 This is, how you start it:
 
 ```
-docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/databroker-cli:master       
+docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/databroker-cli:master
 ```
 
 Here is how you can use it:
@@ -91,7 +93,10 @@ print("Finished.")
 ```
 
 Do a `pip install kuksa-client` and start with
+
+```
 python ./speed_provider.py
+```
 
 ### Subscribing data:
 Create a file `speed_subscriber.py` with the following content
@@ -109,26 +114,29 @@ with VSSClient('127.0.0.1', 55555) as client:
 ```
 
 Do a `pip install kuksa-client` and start with
-python ./speed_subscriber.py
-
-
-## FAQ & Notes
-Frequently anticipated questions and tipps.
-
-### This is not working on OS X
-Unfortunately OS X has a bug that does not allow you to use the databroker default 55555. To change when starting the server:
 
 ```
-docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/databroker:master  --port 55556
+python ./speed_subscriber.py
+```
+
+## FAQ & Notes
+Frequently anticipated questions and tips.
+
+### This is not working on OS X
+Unfortunately OS X has a bug that does not allow you to use the Databroker default port 55555. To change when starting the server:
+
+```
+docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/databroker:master  --port 55556 --insecure
 ```
 
 Using the databroker-cli
 
 ```
-docker run -it --rm --net=host -e KUKSA_DATA_BROKER_PORT=55556 ghcr.io/eclipse/kuksa.val/databroker-cli:master                   
+docker run -it --rm --net=host -e KUKSA_DATA_BROKER_PORT=55556 ghcr.io/eclipse/kuksa.val/databroker-cli:master
 ```
 
 Using kuksa-client CLI
+
 ```
 docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/kuksa-client:master --port 55556 --protocol grpc --insecure 
 ```
@@ -143,7 +151,7 @@ One alternative is using a Docker distribution, that does support it even on Mac
 With Docker Desktop you can still forward ports, so this should work:
 
 ```
-docker run -it --rm  --publish 55556:55556 ghcr.io/eclipse/kuksa.val/databroker:master  --port 55556
+docker run -it --rm  --publish 55556:55556 ghcr.io/eclipse/kuksa.val/databroker:master  --port 55556 --insecure
 ```
 
 From your host computer you can now reach databroker at `127.0.0.1:55556`. To connect from another container, you need to use your computers IP address (**not** 127.0.0.1), i.e. to use the client
@@ -162,7 +170,7 @@ docker run -it --rm   ghcr.io/eclipse/kuksa.val/databroker-cli:master  --server 
 
 ### feed/set: Why is my data not updated?
 Some VSS points are "sensors", e.g. Vehicle.Speed. You can read/get Vehicle speed, but we are not expecting to be able to influence it via VSS.
-Historically components, that gather the actual vehicle speed from some sensors/busses in a vehicle and providing a VSS  representation to kuksa.val have been called `feeders`. Hence, to update the current speed in the Rust-cli, you use
+Historically components, that gather the actual vehicle speed from some sensors/busses in a vehicle and providing a VSS representation to kuksa.val have been called `feeders`. Hence, to update the current speed in the Rust-cli, you use
 
 ```
 feed Vehicle.Speed 200
