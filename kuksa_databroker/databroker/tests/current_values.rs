@@ -1,10 +1,23 @@
+/********************************************************************************
+ * Copyright (c) 2023 Contributors to the Eclipse Foundation
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License 2.0 which is available at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ********************************************************************************/
+
 use core::panic;
 use std::{future, time::SystemTime, vec};
 
 use cucumber::{cli, given, then, when, writer, World as _};
 use databroker_proto::kuksa::val::v1::{
-    datapoint::Value, DataEntry, DataType, Datapoint, EntryRequest, EntryType, EntryUpdate, Field,
-    GetRequest, Metadata, SetRequest, View,
+    datapoint::Value, DataEntry, DataType, Datapoint, EntryRequest, EntryUpdate, Field, GetRequest,
+    SetRequest, View,
 };
 use tracing::debug;
 use world::DataBrokerWorld;
@@ -51,11 +64,7 @@ async fn set_current_value(
                 path: path.clone(),
                 value: Some(datapoint),
                 actuator_target: None,
-                metadata: Some(Metadata {
-                    data_type: data_type.into(),
-                    entry_type: EntryType::Sensor.into(),
-                    ..Default::default()
-                }),
+                metadata: None,
             }),
             fields: vec![Field::Value.into(), Field::Path.into()],
         }],
@@ -158,7 +167,7 @@ fn assert_set_request_failure(w: &mut DataBrokerWorld, path: String, expected_er
 
 #[tokio::main]
 async fn main() {
-    databroker::init_logging();
+    // databroker::init_logging();
 
     let opts = cli::Opts::<_, _, _, world::UnsupportedLibtestArgs>::parsed();
 
@@ -171,6 +180,6 @@ async fn main() {
             }
             Box::pin(future::ready(()))
         })
-        .run("tests/features/current_values.feature")
+        .run_and_exit("tests/features/current_values.feature")
         .await;
 }

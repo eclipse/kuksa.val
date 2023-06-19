@@ -152,6 +152,7 @@ where
 pub async fn serve_with_incoming_shutdown<F>(
     stream: TcpListenerStream,
     broker: broker::DataBroker,
+    authorization: Authorization,
     signal: F,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
@@ -162,13 +163,22 @@ where
     Server::builder()
         .http2_keepalive_interval(Some(Duration::from_secs(10)))
         .http2_keepalive_timeout(Some(Duration::from_secs(20)))
-        .add_service(sdv::databroker::v1::broker_server::BrokerServer::new(
+        .add_service(
+            sdv::databroker::v1::broker_server::BrokerServer::with_interceptor(
+                broker.clone(),
+                authorization.clone(),
+            ),
+        )
+        .add_service(
+            sdv::databroker::v1::collector_server::CollectorServer::with_interceptor(
+                broker.clone(),
+                authorization.clone(),
+            ),
+        )
+        .add_service(kuksa::val::v1::val_server::ValServer::with_interceptor(
             broker.clone(),
+            authorization,
         ))
-        .add_service(sdv::databroker::v1::collector_server::CollectorServer::new(
-            broker.clone(),
-        ))
-        .add_service(kuksa::val::v1::val_server::ValServer::new(broker.clone()))
         .serve_with_incoming_shutdown(stream, shutdown(broker, signal))
         .await?;
 
