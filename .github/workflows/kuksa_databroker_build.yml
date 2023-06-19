@@ -78,31 +78,13 @@ jobs:
           crate: cargo-strip
           version: latest
 
-      - uses: actions-rs/install@v0.1
-        with:
-          crate: cargo2junit
-          version: latest
-
-      - name: Run Tests
+      - name: Show toolchain information
         working-directory: ${{github.workspace}}
         run: |
-          cargo test --all-targets -- -Z unstable-options --report-time --format json | cargo2junit > results.xml;
+          rustup toolchain list
+          cargo --version
 
-      # - name: Publish test results as PR comment
-      #   uses: EnricoMi/publish-unit-test-result-action@v1
-      #   if: github.event_name == 'pull_request'
-      #   with:
-      #     check_name: Test Results
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     files: results.xml
-
-      - name: Upload testing report
-        uses: actions/upload-artifact@v3
-        with:
-          name: Unit test results
-          path: results.xml
-
-      - name: Run code coverage
+      - name: Run tests and report code coverage
         run: |
           cargo tarpaulin -o Xml
 

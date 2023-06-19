@@ -108,9 +108,9 @@ const DATAPOINTS: &[(
 #[derive(clap::Args)] // re-export of `clap::Args`
 pub struct UnsupportedLibtestArgs {
     #[arg(long)]
-    report_time: bool,
+    report_time: Option<bool>,
     #[arg(long)]
-    test_threads: u16,
+    test_threads: Option<u16>,
 }
 
 #[derive(Debug)]
@@ -195,6 +195,7 @@ impl DataBrokerWorld {
             grpc::server::serve_with_incoming_shutdown(
                 tokio_stream::wrappers::TcpListenerStream::new(listener),
                 data_broker,
+                grpc::server::Authorization::Disabled,
                 poll_fn(|cx| {
                     let mut state = owned_state
                         .lock()

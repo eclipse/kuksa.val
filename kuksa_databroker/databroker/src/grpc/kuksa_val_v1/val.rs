@@ -520,11 +520,6 @@ impl broker::EntryUpdate {
         entry: &proto::DataEntry,
         fields: HashSet<proto::Field>,
     ) -> Self {
-        let path = if fields.contains(&proto::Field::Path) {
-            Some(entry.path.clone())
-        } else {
-            None
-        };
         let datapoint = if fields.contains(&proto::Field::Value) {
             entry
                 .value
@@ -542,7 +537,7 @@ impl broker::EntryUpdate {
             None
         };
         Self {
-            path,
+            path: None,
             datapoint,
             actuator_target,
             entry_type: None,
