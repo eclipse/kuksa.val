@@ -25,3 +25,4 @@ prost-types = { workspace = true }
 
 [build-dependencies]
 tonic-build = { workspace = true, features = ["transport", "prost"] }
+protobuf-src = "1.1.0"
