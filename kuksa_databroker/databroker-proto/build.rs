@@ -12,6 +12,7 @@
 ********************************************************************************/
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    std::env::set_var("PROTOC", protobuf_src::protoc());
     tonic_build::configure()
         .compile_well_known_types(false)
         .protoc_arg("--experimental_allow_proto3_optional")
