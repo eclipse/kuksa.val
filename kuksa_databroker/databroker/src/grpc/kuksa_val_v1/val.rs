@@ -24,6 +24,7 @@ use tracing::debug;
 
 use crate::broker;
 use crate::broker::ReadError;
+use crate::broker::SubscriptionError;
 use crate::permissions::Permissions;
 
 #[tonic::async_trait]
@@ -326,10 +327,16 @@ impl proto::val_server::Val for broker::DataBroker {
                 let stream = convert_to_proto_stream(stream);
                 Ok(tonic::Response::new(Box::pin(stream)))
             }
-            Err(e) => Err(tonic::Status::new(
+            Err(SubscriptionError::NotFound) => {
+                Err(tonic::Status::new(tonic::Code::NotFound, "Path not found"))
+            }
+            Err(SubscriptionError::InvalidInput) => Err(tonic::Status::new(
                 tonic::Code::InvalidArgument,
-                format!("{e:?}"),
+                "Invalid Argument",
             )),
+            Err(SubscriptionError::InternalError) => {
+                Err(tonic::Status::new(tonic::Code::Internal, "Internal Error"))
+            }
         }
     }
 
