@@ -24,7 +24,7 @@ If you want to install from sources instead see [Building and running a local ve
 After you have installed the kuksa-client package via pip you can run the test client CLI directly by executing:
 
 ```console
-$ kuksa-client
+$ kuksa-client 
 ```
 
 With default CLI arguments, the client will try to connect to a local VISS server e.g. `kuksa-val-server`.
@@ -67,7 +67,7 @@ KUKSA.val Server and KUKSA.val Databroker use different token formats.
 
 A gRPC connection to KUKSA.val Databroker is started by specifying address and port for the Databroker and giving
 `--protocol grpc` as argument.
-KUKSA.val Client use TLS by default, it only run in insecure mode if `--insecure` is given as argument.
+KUKSA.val Client use TLS by default, it only run in insecure mode if `--no-tls` is given as argument.
 By default the KUKSA.val example Root CA and Client keys are used, but client keys have no effect as mutual authentication is not supported by KUKSA.val Databroker or KUKSA.val Server.
 
 ```
@@ -77,15 +77,7 @@ By default the KUKSA.val example Root CA and Client keys are used, but client ke
 This call with all parameters specified give same effect:
 
 ```
-~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc --certificate ../kuksa_certificates/Client.pem --keyfile ../kuksa_certificates/Client.key --cacertificate ./kuksa_certificates/CA.pem
-```
-
-There is actually no reason to specify client key and certificate, as mutual authentication is not supported in KUKSA.val Databroker,
-so the command can be simplified like this:
-
-
-```
-~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc --cacertificate ./kuksa_certificates/CA.pem
+~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc  --tls-ca-cert ./kuksa_certificates/CA.pem
 ```
 
 The example server protocol list 127.0.0.1 as an alternative name, but the TLS-client currently used does not accept it,
@@ -93,7 +85,7 @@ instead a valid server name must be given as argument.
 Currently `Server` and `localhost`are valid names from the example certificates.
 
 ```
-~/kuksa.val/kuksa-client$ kuksa-client --ip 127.0.0.1 --port 55555 --protocol grpc  --cacertificate ../kuksa_certificates/CA.pem --tls-server-name Server
+~/kuksa.val/kuksa-client$ kuksa-client --ip 127.0.0.1 --port 55555 --protocol grpc  --tls-ca-cert ../kuksa_certificates/CA.pem --tls-server-name Server
 ```
 
 ### Connecting to KUKSA.val Server
@@ -109,7 +101,7 @@ that is the only difference compared to connecting to KUKSA.val Databroker.
 This corresponds to this call:
 
 ```
-kuksa-client --ip 127.0.0.1 --port 8090 --protocol ws --cacertificate ./kuksa_certificates/CA.pem
+kuksa-client --ip 127.0.0.1 --port 8090 --protocol ws --tls-ca-cert ./kuksa_certificates/CA.pem
 ```
 
 ### Authorizing against KUKSA.val Server

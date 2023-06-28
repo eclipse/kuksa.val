@@ -171,7 +171,9 @@ class KuksaDatabrokerClient(KuksaClient):
         print("Init kuksa databroker client...")
         self.exit_stack = contextlib.ExitStack()
         self.client = self.exit_stack.enter_context(
-            kuksa_client.grpc.VSSClient(host=config['ip'], port=int(config['port']), ensure_startup_connection=False),
+            # S3 uploader currently only supports insecure connections (i.e. no TLS)
+            kuksa_client.grpc.VSSClient(host=config['ip'], port=int(config['port']),
+                                        ensure_startup_connection=False, no_tls=True),
         )
 
     def get_datatypes(self, paths):

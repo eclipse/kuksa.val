@@ -145,7 +145,7 @@ class TestClient(Cmd):
     ap_getServerAddr = argparse.ArgumentParser()
     ap_connect = argparse.ArgumentParser()
     ap_connect.add_argument(
-        '-i', "--insecure", default=False, action="store_true", help='Connect in insecure mode')
+        '-n', "--no-tls", default=False, action="store_true", help='Connect in insecure mode (not using TLS)')
     ap_disconnect = argparse.ArgumentParser()
     ap_authorize = argparse.ArgumentParser()
     tokenfile_completer_method = functools.partial(Cmd.path_complete,
@@ -252,9 +252,9 @@ class TestClient(Cmd):
         "Json", help="Json tree to update VSS", completer_method=jsonfile_completer_method)
 
     # Constructor, request names after protocol to avoid errors
-    def __init__(self, server_ip=None, server_port=None, server_protocol=None, *, insecure=False, token_or_tokenfile=None,
-                 certificate=None, keyfile=None,
-                 cacertificate=None, tls_server_name=None):
+    def __init__(self, server_ip=None, server_port=None, server_protocol=None, *, no_tls=False, token_or_tokenfile=None,
+                 tls_cert=None, tls_private_key=None,
+                 tls_ca_cert=None, tls_server_name=None):
         super().__init__(
             persistent_history_file=".vssclient_history", persistent_history_length=100, allow_cli_args=False,
         )
@@ -270,10 +270,10 @@ class TestClient(Cmd):
         self.subscribeIds = set()
         self.commThread = None
         self.token_or_tokenfile = token_or_tokenfile
-        self.insecure = insecure
-        self.certificate = certificate
-        self.keyfile = keyfile
-        self.cacertificate = cacertificate
+        self.no_tls = no_tls
+        self.tls_cert = tls_cert
+        self.tls_private_key = tls_private_key
+        self.tls_ca_cert = tls_ca_cert
         self.tls_server_name = tls_server_name
 
         print("Welcome to Kuksa Client version " + str(_metadata.__version__))
@@ -494,19 +494,19 @@ class TestClient(Cmd):
                 self.commThread = None
         config = {'ip': self.serverIP,
                   'port': self.serverPort,
-                  'insecure': self.insecure,
+                  'no_tls': self.no_tls,
                   'protocol': self.serverProtocol
                   }
                   
         # Configs should only be added if they actually have a value
         if self.token_or_tokenfile:
             config['token_or_tokenfile'] = self.token_or_tokenfile
-        if self.certificate:
-            config['certificate'] = self.certificate
-        if self.keyfile:
-            config['keyfile'] = self.keyfile
-        if self.cacertificate:
-            config['cacertificate'] = self.cacertificate
+        if self.tls_cert:
+            config['tls_cert'] = self.tls_cert
+        if self.tls_private_key:
+            config['tls_private_key'] = self.tls_private_key
+        if self.tls_ca_cert:
+            config['tls_ca_cert'] = self.tls_ca_cert
         if self.tls_server_name:
             config['tls_server_name'] = self.tls_server_name
             
@@ -529,7 +529,7 @@ class TestClient(Cmd):
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_connect)
     def do_connect(self, args):
-        self.insecure = args.insecure
+        self.no_tls = args.no_tls
         self.connect()
 
     @with_category(COMM_SETUP_COMMANDS)
@@ -603,8 +603,8 @@ def main():
         choices=SUPPORTED_SERVER_PROTOCOLS,
         default=DEFAULT_SERVER_PROTOCOL,
     )
-    parser.add_argument('--insecure', default=False,
-                        action='store_true', help='Connect in insecure mode')
+    parser.add_argument('--no-tls', default=False,
+                        action='store_true', help='Connect in insecure mode (not using TLS)')
     parser.add_argument(
         '--logging-config', default=os.path.join(scriptDir, 'logging.ini'), help="Path to logging configuration file",
     )
@@ -612,16 +612,10 @@ def main():
         '--token_or_tokenfile', default=None, help="JWT token or path to a JWT token file (.token)",
     )
     
-    # Add TLS arguments
-    # Note: Databroker does not yet support mutual authentication, so no need to use two first arguments
+    # Add TLS arguments - note we do not provide command line arguments for setting client certificates
+    # (tls-cert and tls-private-key) as neither Broker nor Server supports mutual authentication
     parser.add_argument(
-        '--certificate', default=None, help="Client cert file(.pem), only needed for mutual authentication",
-    )
-    parser.add_argument(
-        '--keyfile', default=None, help="Client private key file (.key), only needed for mutual authentication",
-    )
-    parser.add_argument(
-        '--cacertificate', default=None, help="Client root cert file (.pem), needed unless insecure mode used",
+        '--tls-ca-cert', default=None, help="Client root cert file (.pem), needed unless insecure mode used",
     )
     # Observations for Python
     # Connecting to "localhost" works well, subjectAltName seems to suffice
@@ -636,9 +630,8 @@ def main():
     logging.config.fileConfig(args.logging_config)
     
     clientApp = TestClient(args.ip, args.port, args.protocol,
-                           insecure = args.insecure, token_or_tokenfile = args.token_or_tokenfile,
-                           certificate = args.certificate, keyfile = args.keyfile,
-                           cacertificate = args.cacertificate, tls_server_name = args.tls_server_name)
+                           no_tls = args.no_tls, token_or_tokenfile = args.token_or_tokenfile,
+                           tls_ca_cert = args.tls_ca_cert, tls_server_name = args.tls_server_name)
     try:
         # We exit the loop when the user types "quit" or hits Ctrl-D.
         clientApp.cmdloop()

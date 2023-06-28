@@ -31,7 +31,8 @@ Download a current KUKSA.val server docker image from one of our container regis
 
 The container images should work with any OCI compliant container runtime, in this document we assume you are using docker
 
-Pull the docker image
+Pull the docker image. Use `master`as version to get latest version from master branch, and `latest`to get latest
+released version
 
 ```
 docker pull ghcr.io/eclipse/kuksa.val/kuksa-val:latest
@@ -41,7 +42,7 @@ docker pull ghcr.io/eclipse/kuksa.val/kuksa-val:latest
 Prepare an empty directory `$HOME/kuksaval.config`.  Run the desired docker image using `docker run`:
 
 ```bash
-docker run -it --rm --net=host -v $HOME/kuksaval.config:/config  -p 127.0.0.1:8090:8090 -e LOG_LEVEL=ALL ghcr.io/eclipse/kuksa.val/kuksa-val:master
+docker run -it --rm --net=host -v $HOME/kuksaval.config:/config  -p 127.0.0.1:8090:8090 -e LOG_LEVEL=ALL ghcr.io/eclipse/kuksa.val/kuksa-val:latest
 ```
 
 More information on using the docker images can be found [here](../doc/KUKSA.val_server/run-docker.md).

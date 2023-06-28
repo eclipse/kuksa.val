@@ -23,6 +23,7 @@ import enum
 import http
 import logging
 import re
+import sys
 from typing import Any
 from typing import Collection
 from typing import Dict
@@ -487,9 +488,10 @@ class BaseVSSClient:
         host: str,
         port: int,
         token: Optional[str] = None,
-        root_certificates: Optional[Path] = None,
-        private_key: Optional[Path] = None,
-        certificate_chain: Optional[Path] = None,
+        no_tls: bool = False,  # Always use TLS unless other explicitly requested
+        tls_cert: Optional[Path] = None,
+        tls_private_key: Optional[Path] = None,
+        tls_ca_cert: Optional[Path] = None,
         ensure_startup_connection: bool = True,
         connected: bool = False,
         tls_server_name: Optional[str] = None
@@ -498,30 +500,33 @@ class BaseVSSClient:
 
         self.authorization_header = self.get_authorization_header(token)
         self.target_host = f'{host}:{port}'
-        self.root_certificates = root_certificates
-        self.private_key = private_key
-        self.certificate_chain = certificate_chain
+        self.no_tls = no_tls
+        self.tls_cert = tls_cert
+        self.tls_private_key = tls_private_key
+        self.tls_ca_cert = tls_ca_cert
         self.tls_server_name = tls_server_name
         self.ensure_startup_connection = ensure_startup_connection
         self.connected = connected
         self.client_stub = None
 
     def _load_creds(self) -> Optional[grpc.ChannelCredentials]:
-        if self.root_certificates:
-            logger.info(f"Using TLS with Root CA from {self.root_certificates}")
-            root_certificates = self.root_certificates.read_bytes()
-            if self.private_key and self.certificate_chain:
-                private_key = self.private_key.read_bytes()
-                certificate_chain = self.certificate_chain.read_bytes()
-                logger.info(f"Using private client key {self.private_key} "
-                                 f"and chain/certificate {self.certificate_chain}")
-                return grpc.ssl_channel_credentials(root_certificates, private_key, certificate_chain)
+        if self.tls_ca_cert:
+            logger.info(f"Using TLS with Root CA from {self.tls_ca_cert}")
+            tls_ca_cert = self.tls_ca_cert.read_bytes()
+            
+            if self.tls_private_key and self.tls_cert:
+                # This means that client can be authenticated if server wants it
+                # As of today KUKSA.val databroker does not support that
+                private_key = self.tls_private_key.read_bytes()
+                certificate_chain = self.tls_cert.read_bytes()
+                logger.debug(f"Using private client key {self.tls_private_key} "
+                                 f"and chain/certificate {self.tls_cert}")
+                return grpc.ssl_channel_credentials(tls_ca_cert, private_key, certificate_chain)
             else:
-                logger.info(f"No client certificates provided, mutual TLS not supported!")
-                return grpc.ssl_channel_credentials(root_certificates)
-        logger.info(f"No Root CA present, it will not be posible to use a secure connection!")
+                logger.debug(f"No client certificates provided, mutual TLS not supported!")
+                return grpc.ssl_channel_credentials(tls_ca_cert)
+        logger.info("No Root CA present, it will not be possible to use a secure connection!")
         return None
-        
 
     def _prepare_get_request(self, entries: Iterable[EntryRequest]) -> val_pb2.GetRequest:
         req = val_pb2.GetRequest(entries=[])
@@ -645,7 +650,14 @@ class VSSClient(BaseVSSClient):
         if target_host is None:
             target_host = self.target_host
             
-        if creds is not None:
+        if self.no_tls:
+            logger.info("Establishing insecure channel")
+            channel = grpc.insecure_channel(target_host)
+        else:
+            if creds is None:
+                logger.error("TLS requested but not credentials provided. "
+                             "Use --no-tls if you want an insecure connection.")
+                sys.exit(-1)
             logger.info("Establishing secure channel")
             if self.tls_server_name:
                 logger.info(f"Using TLS server name {self.tls_server_name}")
@@ -654,9 +666,6 @@ class VSSClient(BaseVSSClient):
             else:
                 logger.debug(f"Not providing explicit TLS server name")
                 channel = grpc.secure_channel(target_host, creds)
-        else:
-            logger.info("Establishing insecure channel")
-            channel = grpc.insecure_channel(target_host)
             
         self.channel = self.exit_stack.enter_context(channel)
         self.client_stub = val_pb2_grpc.VALStub(self.channel)

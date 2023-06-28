@@ -19,6 +19,7 @@
 import asyncio
 import contextlib
 import logging
+import sys
 from typing import AsyncIterator
 from typing import Callable
 from typing import Collection
@@ -67,7 +68,15 @@ class VSSClient(BaseVSSClient):
         creds = self._load_creds()
         if target_host is None:
             target_host = self.target_host
-        if creds is not None:
+            
+        if self.no_tls:
+            logger.info("Establishing insecure channel")
+            channel = grpc.aio.insecure_channel(target_host)
+        else:
+            if creds is None:
+                logger.error("TLS requested but not credentials provided. "
+                             "Use --no-tls if you want an insecure connection.")
+                sys.exit(-1)
             logger.info("Establishing secure channel")
             if self.tls_server_name:
                 logger.info(f"Using TLS server name {self.tls_server_name}")
@@ -76,9 +85,7 @@ class VSSClient(BaseVSSClient):
             else:
                 logger.debug(f"Not providing explicit TLS server name")
                 channel = grpc.aio.secure_channel(target_host, creds)
-        else:
-            logger.info("Establishing insecure channel")
-            channel = grpc.aio.insecure_channel(target_host)
+        
         self.channel = await self.exit_stack.enter_async_context(channel)
         self.client_stub = val_pb2_grpc.VALStub(self.channel)
         self.connected = True

@@ -11,19 +11,19 @@ Be also aware that this API returns JSON responses whose schema may vary from on
 - `ip` server/databroker hostname or IP address, default: "127.0.0.1"
 - `port` server/databroker port, default: 8090
 - `protocol` protocol used to interact with server/databroker ("ws" or "grpc"), default: "ws"
-- `insecure` whether the communication should be unencrypted or not, default: `False`
-- `cacertificate` root certificate path, default: "../kuksa_certificates/CA.pem"
-- `certificate` client certificate path, default: "../kuksa_certificates/Client.pem"
-- `key` client private key path, default: "../kuksa_certificates/Client.key"
+- `no_tls` whether the communication should be unencrypted or not, default: `False`
+- `tls_ca_cert` root certificate path, default: "../kuksa_certificates/CA.pem"
+- `tls_cert` client certificate path, default: "../kuksa_certificates/Client.pem"
+- `tls_private_key` client private key path, default: "../kuksa_certificates/Client.key"
 
 ```python
 # An empty configuration dictionary will use the aforementioned default values:
 config = {}
-# Here is what a databroker configuration would look like:
+# Here is what a databroker configuration with an insecure connection would look like:
 config = {
     'port': 55555,
     'protocol': 'grpc',
-    'insecure': True,  # databroker does not yet support encryption
+    'no_tls': True, 
 }
 client = kuksa_client.KuksaClientThread(config)
 ```

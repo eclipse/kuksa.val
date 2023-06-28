@@ -64,6 +64,8 @@ async def secure_val_server_fixture(unused_tcp_port, resources_path, val_service
             (resources_path / 'test-server.key').read_bytes(),
             (resources_path / 'test-server.pem').read_bytes(),
         )],
+        # Next lines enable mutual authentication,
+        # that is however not supported by KUKSA.val Server and Databroker
         root_certificates=(resources_path / 'test-ca.pem').read_bytes(),
         require_client_auth=True,
     ))

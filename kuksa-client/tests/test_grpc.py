@@ -344,16 +344,19 @@ class TestVSSClient:
     async def test_secure_connection(self, unused_tcp_port, resources_path, val_servicer):
         val_servicer.GetServerInfo.return_value = val_pb2.GetServerInfoResponse(
             name='test_server', version='1.2.3')
+        """
+        Test with mutual autentication (not supported by KUKSA.val Databroker or Server)
+        """
         async with VSSClient('localhost', unused_tcp_port,
-                             root_certificates=resources_path / 'test-ca.pem',
-                             private_key=resources_path / 'test-client.key',
-                             certificate_chain=resources_path / 'test-client.pem',
+                             tls_ca_cert=resources_path / 'test-ca.pem',
+                             tls_private_key=resources_path / 'test-client.key',
+                             tls_cert=resources_path / 'test-client.pem',
                              ensure_startup_connection=True
                              ):
             assert val_servicer.GetServerInfo.call_count == 1
 
     async def test_get_current_values(self, mocker, unused_tcp_port):
-        client = VSSClient('127.0.0.1', unused_tcp_port)
+        client = VSSClient('127.0.0.1', unused_tcp_port, no_tls=True)
         mocker.patch.object(client, 'get', return_value=[
             DataEntry('Vehicle.Speed', value=Datapoint(
                 42.0, datetime.datetime(
@@ -381,7 +384,7 @@ class TestVSSClient:
         ]
 
     async def test_get_target_values(self, mocker, unused_tcp_port):
-        client = VSSClient('127.0.0.1', unused_tcp_port)
+        client = VSSClient('127.0.0.1', unused_tcp_port, no_tls=True)
         mocker.patch.object(client, 'get', return_value=[
             DataEntry('Vehicle.ADAS.ABS.IsActive', actuator_target=Datapoint(
                 True, datetime.datetime(
@@ -404,7 +407,7 @@ class TestVSSClient:
         ]
 
     async def test_get_metadata(self, mocker, unused_tcp_port):
-        client = VSSClient('127.0.0.1', unused_tcp_port)
+        client = VSSClient('127.0.0.1', unused_tcp_port, no_tls=True)
         mocker.patch.object(client, 'get', return_value=[
             DataEntry('Vehicle.Speed', metadata=Metadata(
                 entry_type=EntryType.SENSOR)),
@@ -432,7 +435,7 @@ class TestVSSClient:
         ]
 
     async def test_set_current_values(self, mocker, unused_tcp_port):
-        client = VSSClient('127.0.0.1', unused_tcp_port)
+        client = VSSClient('127.0.0.1', unused_tcp_port, no_tls=True)
         mocker.patch.object(client, 'set')
         await client.set_current_values({
             'Vehicle.Speed': Datapoint(42.0, datetime.datetime(2022, 11, 7, 16, 18, 35, 247307, tzinfo=datetime.timezone.utc)),
@@ -451,7 +454,7 @@ class TestVSSClient:
         ]
 
     async def test_set_target_values(self, mocker, unused_tcp_port):
-        client = VSSClient('127.0.0.1', unused_tcp_port)
+        client = VSSClient('127.0.0.1', unused_tcp_port, no_tls=True)
         mocker.patch.object(client, 'set')
         await client.set_target_values({
             'Vehicle.ADAS.ABS.IsActive': Datapoint(True, datetime.datetime(2022, 11, 7, tzinfo=datetime.timezone.utc)),
@@ -467,7 +470,7 @@ class TestVSSClient:
         ]
 
     async def test_set_metadata(self, mocker, unused_tcp_port):
-        client = VSSClient('127.0.0.1', unused_tcp_port)
+        client = VSSClient('127.0.0.1', unused_tcp_port, no_tls=True)
         mocker.patch.object(client, 'set')
         await client.set_metadata({
             'Vehicle.Speed': Metadata(entry_type=EntryType.SENSOR),
@@ -487,7 +490,7 @@ class TestVSSClient:
         ]
 
     async def test_subscribe_current_values(self, mocker, unused_tcp_port):
-        client = VSSClient('127.0.0.1', unused_tcp_port)
+        client = VSSClient('127.0.0.1', unused_tcp_port, no_tls=True)
 
         async def subscribe_response_stream(**kwargs):
             yield [
@@ -524,7 +527,7 @@ class TestVSSClient:
         }
 
     async def test_subscribe_target_values(self, mocker, unused_tcp_port):
-        client = VSSClient('127.0.0.1', unused_tcp_port)
+        client = VSSClient('127.0.0.1', unused_tcp_port, no_tls=True)
 
         async def subscribe_response_stream(**kwargs):
             yield [
@@ -556,7 +559,7 @@ class TestVSSClient:
         }
 
     async def test_subscribe_metadata(self, mocker, unused_tcp_port):
-        client = VSSClient('127.0.0.1', unused_tcp_port)
+        client = VSSClient('127.0.0.1', unused_tcp_port, no_tls=True)
 
         async def subscribe_response_stream(**kwargs):
             yield [
@@ -651,7 +654,7 @@ class TestVSSClient:
                 )),
             ),
         ])
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             entries = await client.get(entries=(entry for entry in (  # generator is intentional as get accepts Iterable
                 EntryRequest('Vehicle.Speed',
                              View.CURRENT_VALUE, (Field.VALUE,)),
@@ -771,7 +774,7 @@ class TestVSSClient:
     async def test_get_no_entries_requested(self, unused_tcp_port, val_servicer):
         val_servicer.Get.side_effect = generate_error(
             grpc.StatusCode.INVALID_ARGUMENT, 'No datapoints requested')
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             with pytest.raises(kuksa_client.grpc.VSSClientError) as exc_info:
                 await client.get(entries=[])
 
@@ -788,7 +791,7 @@ class TestVSSClient:
             types_pb2.DataEntry(path='Vehicle.Speed'),
             types_pb2.DataEntry(path='Vehicle.ADAS.ABS.IsActive'),
         ])
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             entries = await client.get(entries=(
                 EntryRequest('Vehicle.Speed',
                              View.CURRENT_VALUE, (Field.VALUE,)),
@@ -807,7 +810,7 @@ class TestVSSClient:
             path='Does.Not.Exist', error=error),)
         val_servicer.Get.return_value = val_pb2.GetResponse(
             error=error, errors=errors)
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             with pytest.raises(VSSClientError):
                 await client.get(entries=(
                     EntryRequest('Does.Not.Exist',
@@ -832,7 +835,7 @@ class TestVSSClient:
             ),
         ))
         val_servicer.Set.return_value = val_pb2.SetResponse()
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             await client.set(updates=[
                 EntryUpdate(DataEntry('Vehicle.Speed',
                             value=Datapoint(value=42.0)), (Field.VALUE,)),
@@ -942,7 +945,7 @@ class TestVSSClient:
     async def test_set_no_updates_provided(self, unused_tcp_port, val_servicer):
         val_servicer.Set.side_effect = generate_error(
             grpc.StatusCode.INVALID_ARGUMENT, 'No datapoints requested')
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             with pytest.raises(kuksa_client.grpc.VSSClientError) as exc_info:
                 await client.set(updates=[])
 
@@ -965,7 +968,7 @@ class TestVSSClient:
             error=error, errors=errors)
         val_servicer.Set.return_value = val_pb2.SetResponse(
             error=error, errors=errors)
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             with pytest.raises(VSSClientError):
                 await client.set(updates=(
                     EntryUpdate(DataEntry('Does.Not.Exist', value=Datapoint(value=42.0)), (Field.VALUE,)),),
@@ -989,7 +992,7 @@ class TestVSSClient:
     async def test_authorize_successful(self, unused_tcp_port, val_servicer):
         val_servicer.GetServerInfo.return_value = val_pb2.GetServerInfoResponse(
             name='test_server', version='1.2.3')
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             # token from kuksa.val directory under jwt/provide-vehicle-speed.token
             success = await client.authorize(token='eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3NjcyMjU1OTksInNjb3BlIjoicmVhZDpWZWhpY2xlLldpZHRoIHByb3ZpZGU6VmVoaWNsZS5TcGVlZCJ9.w2c8xrYwBVgMav3f0Se6E8H8E36Nd03rJiSS2A8s-CL3GtlwB7wVanjXHhppNsCdWym3tK4JwgslQdMQF-UL4hd7vzdtt-Mx6VjH_jO9mDxz4Z0Uzw7aJtbtQSpi2h6kwceTVTllkbLRF7WRHWIpwzXFF9yZolX6lH-BE9xf1AB62d6icd9SKxFnVvYs3MVK5D1xNmDNOmm-Fr0d2K604MmIIXGW5kPZJYIvBKO4NYRLklhJe47It_lGo3gnh1ppmzTOIo1kB4sDe55hplUCbTCJVricpyQSgTYsf7aFRPK51XMRwwwJ8kShWeaTggMLKpv1W-9dhVWDk4isC8BxsOjaVloArausMmjLmTz6KwAsfARgfXtaCrMsESUBNXi5KIdAyHVXZpmERvc9yeYPcaWlknVFrFsHbV6bw4nwqBX-0Ubuga0NGNQDFKmyTKQrbuZmQ3L9iipxY8_BOSCkdiYtWbE3lpplxpS_PaZl10KAaMmUfbcF9aYZunDEzEtoJgJe2EeGu3XDBtbyXVUKruImdSEdjaImfUGQIWl5bMbVH4N4zK5jE45wT5FJiRUcA5pMN5wNmDYJJzgbxWNpYW40KZYPFc_7XUH8EZ2Cs69wDHam3ArkOs1qMgMIoEPWVzHakjlVJfrPR9zQKxfirBtNNENIoHsBjJ_P4FEJCN4')
             assert client.authorization_header == 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3NjcyMjU1OTksInNjb3BlIjoicmVhZDpWZWhpY2xlLldpZHRoIHByb3ZpZGU6VmVoaWNsZS5TcGVlZCJ9.w2c8xrYwBVgMav3f0Se6E8H8E36Nd03rJiSS2A8s-CL3GtlwB7wVanjXHhppNsCdWym3tK4JwgslQdMQF-UL4hd7vzdtt-Mx6VjH_jO9mDxz4Z0Uzw7aJtbtQSpi2h6kwceTVTllkbLRF7WRHWIpwzXFF9yZolX6lH-BE9xf1AB62d6icd9SKxFnVvYs3MVK5D1xNmDNOmm-Fr0d2K604MmIIXGW5kPZJYIvBKO4NYRLklhJe47It_lGo3gnh1ppmzTOIo1kB4sDe55hplUCbTCJVricpyQSgTYsf7aFRPK51XMRwwwJ8kShWeaTggMLKpv1W-9dhVWDk4isC8BxsOjaVloArausMmjLmTz6KwAsfARgfXtaCrMsESUBNXi5KIdAyHVXZpmERvc9yeYPcaWlknVFrFsHbV6bw4nwqBX-0Ubuga0NGNQDFKmyTKQrbuZmQ3L9iipxY8_BOSCkdiYtWbE3lpplxpS_PaZl10KAaMmUfbcF9aYZunDEzEtoJgJe2EeGu3XDBtbyXVUKruImdSEdjaImfUGQIWl5bMbVH4N4zK5jE45wT5FJiRUcA5pMN5wNmDYJJzgbxWNpYW40KZYPFc_7XUH8EZ2Cs69wDHam3ArkOs1qMgMIoEPWVzHakjlVJfrPR9zQKxfirBtNNENIoHsBjJ_P4FEJCN4'
@@ -999,14 +1002,14 @@ class TestVSSClient:
     async def test_authorize_unsuccessful(self, unused_tcp_port, val_servicer):
         val_servicer.GetServerInfo.side_effect = generate_error(
             grpc.StatusCode.UNAUTHENTICATED, 'Invalid auth token: DecodeError(\"InvalidToken\")')
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             with pytest.raises(VSSClientError):
                 await client.authorize(token='')
             assert client.authorization_header == None
 
     @pytest.mark.usefixtures('val_server')
     async def test_subscribe_some_entries(self, mocker, unused_tcp_port, val_servicer):
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             responses = (
                 # 1st response is subscription ack
                 val_pb2.SubscribeResponse(updates=[
@@ -1103,7 +1106,7 @@ class TestVSSClient:
         val_servicer.Subscribe.side_effect = generate_error(
             grpc.StatusCode.INVALID_ARGUMENT, 'Subscription request must contain at least one entry.',
         )
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             with pytest.raises(VSSClientError):
                 async for _ in client.subscribe(entries=()):
                     pass
@@ -1112,7 +1115,7 @@ class TestVSSClient:
     async def test_subscribe_nonexistent_entries(self, mocker, unused_tcp_port, val_servicer):
         val_servicer.Subscribe.side_effect = generate_error(
             grpc.StatusCode.INVALID_ARGUMENT, 'NotFound')
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             with pytest.raises(VSSClientError):
                 async for _ in client.subscribe(entries=(entry for entry in (  # generator is intentional (Iterable)
                     EntryRequest('Does.Not.Exist',
@@ -1124,7 +1127,7 @@ class TestVSSClient:
     async def test_get_server_info(self, unused_tcp_port, val_servicer):
         val_servicer.GetServerInfo.return_value = val_pb2.GetServerInfoResponse(
             name='test_server', version='1.2.3')
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             server_info = await client.get_server_info()
             assert server_info == ServerInfo(
                 name='test_server', version='1.2.3')
@@ -1133,7 +1136,7 @@ class TestVSSClient:
     async def test_get_server_info_unavailable(self, unused_tcp_port, val_servicer):
         val_servicer.GetServerInfo.side_effect = generate_error(
             grpc.StatusCode.UNAVAILABLE, 'Unavailable')
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             with pytest.raises(VSSClientError):
                 await client.get_server_info()
 
@@ -1142,7 +1145,7 @@ class TestVSSClient:
 class TestSubscriberManager:
     @pytest.mark.usefixtures('val_server')
     async def test_add_subscriber(self, mocker, unused_tcp_port, val_servicer):
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             subscriber_manager = SubscriberManager(client)
             responses = (
                 # 1st response is subscription ack
@@ -1193,7 +1196,7 @@ class TestSubscriberManager:
 
     @pytest.mark.usefixtures('val_server')
     async def test_remove_subscriber(self, mocker, unused_tcp_port, val_servicer):
-        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False) as client:
+        async with VSSClient('127.0.0.1', unused_tcp_port, ensure_startup_connection=False, no_tls=True) as client:
             subscriber_manager = SubscriberManager(client)
             responses = (
                 val_pb2.SubscribeResponse(updates=[

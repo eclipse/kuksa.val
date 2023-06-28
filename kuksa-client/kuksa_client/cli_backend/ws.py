@@ -229,13 +229,13 @@ class Backend(cli_backend.Backend):
         return self.wsConnected
 
     async def connect(self):
-        if not self.insecure:
+        if not self.no_tls:
             context = ssl.create_default_context()
             context.load_cert_chain(
-                certfile=self.certificate, keyfile=self.keyfile)
-            context.load_verify_locations(cafile=self.cacertificate)
+                certfile=self.tls_cert, keyfile=self.tls_private_key)
+            context.load_verify_locations(cafile=self.tls_ca_cert)
             # We want host name to match
-            # For example certificates we use subjectAltName to make it match for Server, localahost and 127.0.0.1
+            # For example certificates we use subjectAltName to make it match for Server, localhost and 127.0.0.1
             # If using your own certificates make sure that name is included or use tls_server_name work-around
             context.check_hostname = True
             try:

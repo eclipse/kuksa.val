@@ -54,9 +54,9 @@ class DatabrokerEncoder(json.JSONEncoder):
 class Backend(cli_backend.Backend):
     def __init__(self, config):
         super().__init__(config)
-        self.cacertificate = pathlib.Path(self.cacertificate)
-        self.keyfile = pathlib.Path(self.keyfile)
-        self.certificate = pathlib.Path(self.certificate)
+        self.tls_cert = pathlib.Path(self.tls_cert)
+        self.tls_private_key = pathlib.Path(self.tls_private_key)
+        self.tls_ca_cert = pathlib.Path(self.tls_ca_cert)
         if self.token_or_tokenfile is not None:
             if os.path.isfile(self.token_or_tokenfile):
                 self.token_or_tokenfile = pathlib.Path(self.token_or_tokenfile)
@@ -258,18 +258,20 @@ class Backend(cli_backend.Backend):
 
     # Main loop for handling gRPC communication
     async def mainLoop(self):
-        if self.insecure:
+        if self.no_tls:
 
-            async with kuksa_client.grpc.aio.VSSClient(self.serverIP, self.serverPort, token=self.token) as vss_client:
-                print("gRPC channel connected.")
+            async with kuksa_client.grpc.aio.VSSClient(self.serverIP, self.serverPort, no_tls=self.no_tls, 
+                                                       token=self.token) as vss_client:
+                print("Insecure gRPC channel connected.")
                 await self._grpcHandler(vss_client)
         else:
             async with kuksa_client.grpc.aio.VSSClient(
                 self.serverIP,
                 self.serverPort,
-                root_certificates=self.cacertificate,
-                private_key=self.keyfile,
-                certificate_chain=self.certificate,
+                no_tls=self.no_tls,
+                tls_cert=self.tls_cert,
+                tls_private_key=self.tls_private_key,
+                tls_ca_cert=self.tls_ca_cert,
                 tls_server_name=self.tls_server_name,
                 token=self.token
             ) as vss_client:

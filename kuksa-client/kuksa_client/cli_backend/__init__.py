@@ -27,16 +27,16 @@ class Backend:
         self.serverIP = config.get('ip', "127.0.0.1")
         self.serverPort = config.get('port', 8090)
         try:
-            self.insecure = config.getboolean('insecure', False)
+            self.no_tls = config.getboolean('no_tls', False)
         except AttributeError:
-            self.insecure = config.get('insecure', False)
-        self.default_cert_path = pathlib.Path(kuksa_certificates.__path__[0])
-        self.cacertificate = config.get(
-            'cacertificate', str(self.default_cert_path / 'CA.pem'))
-        self.certificate = config.get('certificate', str(
+            self.no_tls = config.get('no_tls', False)
+        self.default_cert_path = pathlib.Path(kuksa_certificates.__path__[0])        
+        self.tls_cert = config.get('tls_cert', str(
             self.default_cert_path / 'Client.pem'))
-        self.keyfile = config.get('keyfile', str(
+        self.tls_private_key = config.get('tls_private_key', str(
             self.default_cert_path / 'Client.key'))
+        self.tls_ca_cert = config.get(
+            'tls_ca_cert', str(self.default_cert_path / 'CA.pem'))
         self.tls_server_name = config.get('tls_server_name', "")
         self.token_or_tokenfile = config.get('token_or_tokenfile', str(
             self.default_cert_path / 'jwt/all-read-write.json.token'))
