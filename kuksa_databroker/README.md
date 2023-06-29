@@ -79,8 +79,8 @@ OPTIONS:
 ```
 
 Before starting KUKSA.val Databroker you must decide if you want to use TLS for incoming connections or not.
-It is is recommended to use TLS and then you must provide server key by `--tls-private-key`
-and server certificate by `--tls-cert`. If you do not give those arguments KUKSA.val Databroker will only accept
+It is recommended to use TLS which is enabled by providing a private key with `--tls-private-key`
+and a server certificate with `--tls-cert`. If you do not give those arguments KUKSA.val Databroker will only accept
 insecure connections. The default behavior may change in the future, so if you want insecure connections it is
 recommended to use the `--insecure` argument.
 

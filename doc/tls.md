@@ -8,7 +8,7 @@ KUKSA.val supports TLS for connection between KUKSA.val Databroker/Server and cl
 
 General design concept in short:
 
-* KUKSA.val Server and KUKSA.val Databroker supports to use either connections secured with TLS or insecure connections.
+* KUKSA.val Server and KUKSA.val Databroker supports either connections secured with TLS or insecure connections.
 * You can use configuration settings to control whether Server or databroker shall require secure connections.
 * Default connection type may vary between tools, and may be changed in future releases.
 * Mutual authentication is not supported, i.e. KUKSA.val Server and KUKSA.val Databroker does not authenticate clients
@@ -32,7 +32,7 @@ It is based on using the example certificates.
 ## KUKSA.val Databroker
 
 KUKSA.val Databroker supports TLS, but not mutual authentication.
-As of today, if not specified KUKSA.val Databroker will accept only insecure connecttions.
+As of today, if TLS is not configured, KUKSA.val Databroker will accept insecure connections.
 
 ```
 ~/kuksa.val/kuksa_databroker$ cargo run --bin databroker -- --metadata ../data/vss-core/vss_release_4.0.json
