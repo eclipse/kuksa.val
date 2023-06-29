@@ -17,7 +17,7 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use databroker::broker::RegistrationError;
 use databroker::grpc::server::{Authorization, ServerTLS};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 use tokio::select;
 use tokio::signal::unix::{signal, SignalKind};
@@ -378,9 +378,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
             }
             (None, None) => {
-                return Err(
-                    "You must either provide TLS certificate and key or request insecure mode by --insecure.".into(),
+                warn!(
+                    "Default behavior of accepting insecure connections \
+                    when TLS is not configured may change in the future! \
+                    Please use --insecure to explicitly enable this behavior."
                 );
+                ServerTLS::Disabled
             }
         }
     };

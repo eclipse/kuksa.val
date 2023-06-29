@@ -8,8 +8,10 @@ KUKSA.val supports TLS for connection between KUKSA.val Databroker/Server and cl
 
 General design concept in short:
 
-* KUKSA.val Server and KUKSA.val Databroker by default only accept TLS connection. Insecure connections can be allowed by a configuration setting
-* Mutual authentication not supported, i.e. KUKSA.val Server and KUKSA.val Databroker does not authenticate clients
+* KUKSA.val Server and KUKSA.val Databroker supports either connections secured with TLS or insecure connections.
+* You can use configuration settings to control whether Server or databroker shall require secure connections.
+* Default connection type may vary between tools, and may be changed in future releases.
+* Mutual authentication is not supported, i.e. KUKSA.val Server and KUKSA.val Databroker does not authenticate clients
 * A set of example certificates and keys exist in the [kuksa_certificates](kuksa_certificates) repository
 * The example certificates are used as default by some applications
 * The example certificates shall only be used during development and re not suitable for production use
@@ -19,7 +21,7 @@ General design concept in short:
 
 For more information see the [README.md](kuksa_certificates/README.md).
 
-**NOTE: The example keys and certificates shall not be used in your production environment!  **
+**NOTE: The example keys and certificates shall not be used in your production environment!**
 
 ## Examples using example certificates
 
@@ -27,12 +29,23 @@ This section intends to give guidelines on how you can verify TLS functionality 
 It is based on using the example certificates.
 
 
-## KUKSA.val databroker
+## KUKSA.val Databroker
 
 KUKSA.val Databroker supports TLS, but not mutual authentication.
-You cannot start KUKSA.val Databroker just using default arguments as you either must specify that insecure connections
-shall be used (`--insecure`) or provide data for a secure connection.
-To use a secure connection specify `--tls-cert`and `--tls-private-key`
+As of today, if TLS is not configured, KUKSA.val Databroker will accept insecure connections.
+
+```
+~/kuksa.val/kuksa_databroker$ cargo run --bin databroker -- --metadata ../data/vss-core/vss_release_4.0.json
+```
+
+The default behavior may change in the future. By that reason, it is recommended to use the `--insecure` argument
+if you want to use insecure connections.
+
+```
+~/kuksa.val/kuksa_databroker$ cargo run --bin databroker -- --metadata ../data/vss-core/vss_release_4.0.json --insecure
+```
+
+To use a secure connection specify both `--tls-cert`and `--tls-private-key`
 
 ```
 ~/kuksa.val/kuksa_databroker$ cargo run --bin databroker -- --metadata ../data/vss-core/vss_release_4.0.json --tls-cert ../kuksa_certificates/Server.pem --tls-private-key ../kuksa_certificates/Server.key
@@ -64,13 +77,14 @@ docker run --rm -it --net=host -v /home/user/kuksa.val/kuksa_certificates:/certs
 
 ## KUKSA.val Server
 
-Uses TLS by default, but doe not support mutual TLS. By default it uses KUKSA.val example certificates/keys `Server.key`, `Server.pem` and `CA.pem`.
+KUKSA.val Server uses TLS by default, but does not support mutual TLS.
+By default it uses KUKSA.val example certificates/keys `Server.key`, `Server.pem` and `CA.pem`.
 
 ```
 ~/kuksa.val/kuksa-val-server/build/src$ ./kuksa-val-server  --vss ./vss_release_4.0.json
 ```
 
-It is posible to specify a different certificate path, but the file names must be the same as listed above.
+It is possible to specify a different certificate path, but the file names must be the same as listed above.
 
 ```
 ~/kuksa.val/kuksa-val-server/build/src$ ./kuksa-val-server  --vss ./vss_release_4.0.json -cert-path ../../../kuksa_certificates
