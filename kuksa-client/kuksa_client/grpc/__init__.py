@@ -911,7 +911,7 @@ class VSSClient(BaseVSSClient):
         return "Authenticated"
 
     @check_connected
-    def get_server_info(self, **rpc_kwargs) -> ServerInfo:
+    def get_server_info(self, **rpc_kwargs) -> Optional[ServerInfo]:
         """
         Parameters:
             rpc_kwargs

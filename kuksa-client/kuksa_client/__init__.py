@@ -19,19 +19,11 @@
 ########################################################################
 
 import asyncio
-import json
-import os
-import queue
-import ssl
-import sys
 import threading
-import time
 from typing import Any
 from typing import Dict
 from typing import Iterable
-import uuid
-
-from kuksa_client._metadata import *
+from typing import Optional
 
 from . import cli_backend
 
@@ -52,7 +44,7 @@ class KuksaClientThread(threading.Thread):
         self.backend.stop()
 
     # Do authorization by passing a jwt token or a token file
-    def authorize(self, token_or_tokenfile: str=None, timeout=5):
+    def authorize(self, token_or_tokenfile: Optional[str]=None, timeout=5):
         return self.backend.authorize(token_or_tokenfile, timeout)
 
     # Update VSS Tree Entry
