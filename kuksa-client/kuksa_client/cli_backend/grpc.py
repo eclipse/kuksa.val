@@ -25,6 +25,7 @@ from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Iterable
+from typing import Optional
 import uuid
 import os
 import re
@@ -144,12 +145,12 @@ class Backend(cli_backend.Backend):
         return json.dumps({"error": "Invalid Attribute"})
 
     # Function for authorization
-    def authorize(self, token_or_tokenfile:str =None, timeout=5):
+    def authorize(self, token_or_tokenfile:Optional[str] =None, timeout=5):
         if token_or_tokenfile is None:
             token_or_tokenfile = self.token_or_tokenfile
         if os.path.isfile(token_or_tokenfile):
-            token_or_tokenfile = pathlib.Path(token_or_tokenfile)
-            token = token_or_tokenfile.expanduser().read_text(encoding='utf-8').rstrip('\n')
+            token_or_tokenfile_path = pathlib.Path(token_or_tokenfile)
+            token = token_or_tokenfile_path.expanduser().read_text(encoding='utf-8').rstrip('\n')
         else:
             token = token_or_tokenfile
         requestArgs = {
@@ -178,12 +179,12 @@ class Backend(cli_backend.Backend):
 
     # Unsubscribe value changes of to a given path.
     # The subscription id from the response of the corresponding subscription request will be required
-    def unsubscribe(self, sub_id: int, timeout=5):
+    def unsubscribe(self, sub_id: str, timeout=5):
         try:
-            sub_id = uuid.UUID(sub_id)
+            sub_uuid = uuid.UUID(sub_id)
         except ValueError as exc:
             return json.dumps({"error": str(exc)})
-        requestArgs = {'subscription_id': sub_id}
+        requestArgs = {'subscription_id': sub_uuid}
         return self._sendReceiveMsg(("unsubscribe", requestArgs), timeout)
 
     def connect(self, timeout=5):
