@@ -11,7 +11,7 @@
 # * SPDX-License-Identifier: Apache-2.0
 # ********************************************************************************/
 
-name: kuksa_client_docker
+name: kuksa_client
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
     uses: ./.github/workflows/check_push_rights.yml
     secrets: inherit
 
-  build:
+  build-docker:
     runs-on: self-hosted
     needs: checkrights
 
@@ -96,7 +96,7 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         
 
-  dbc2val-test:
+  kuksa-client-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout kuksa.val
