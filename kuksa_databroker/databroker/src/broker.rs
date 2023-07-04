@@ -882,6 +882,20 @@ impl<'a, 'b> DatabaseReadAccess<'a, 'b> {
         }
     }
 
+    pub fn get_entries_by_wildcards(&self, sub_path: impl AsRef<str>) -> Result<Vec<Entry>, ReadError> {
+        let mut entries: Vec<Entry> = Vec::new();
+        for key in self.db.path_to_id.keys() {
+            if key.contains(sub_path.as_ref()) {
+                entries.push(self.get_entry_by_id(self.db.path_to_id.get(key).unwrap().to_owned()).unwrap().to_owned());
+            }
+        }
+        if entries.is_empty() {
+            return Err(ReadError::NotFound);
+        }
+        
+        Ok(entries)
+    }
+
     pub fn get_metadata_by_id(&self, id: i32) -> Option<&Metadata> {
         self.db.entries.get(&id).map(|entry| &entry.metadata)
     }
@@ -1157,6 +1171,15 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
             .authorized_read_access(self.permissions)
             .get_entry_by_path(path)
             .cloned()
+    }
+
+    pub async fn get_entries_by_wildcards(&self, sub_path: &str) -> Result<Vec<Entry>, ReadError> {
+        self.broker
+            .database
+            .read()
+            .await
+            .authorized_read_access(self.permissions)
+            .get_entries_by_wildcards(sub_path)
     }
 
     pub async fn get_entry_by_id(&self, id: i32) -> Result<Entry, ReadError> {

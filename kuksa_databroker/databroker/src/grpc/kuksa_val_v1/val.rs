@@ -73,14 +73,53 @@ impl proto::val_server::Val for broker::DataBroker {
                         entries.push(proto_entry);
                     }
                     Err(ReadError::NotFound) => {
-                        errors.push(proto::DataEntryError {
-                            path: request.path,
-                            error: Some(proto::Error {
-                                code: 404,
-                                reason: "not_found".to_owned(),
-                                message: "Path not found".to_owned(),
-                            }),
-                        });
+                        if request.path.ends_with('*') {
+                            let mut sub_path_new = request.path.clone();
+                            sub_path_new.pop();
+                            sub_path_new.pop();
+                            match broker.get_entries_by_wildcards(sub_path_new.as_ref()).await {
+                                Ok(entries_result) => {
+                                    for data_entry in entries_result {
+                                        let view = proto::View::from_i32(request.view).ok_or_else(|| {
+                                            tonic::Status::invalid_argument(format!(
+                                                "Invalid View (id: {}",
+                                                request.view
+                                            ))
+                                        })?;
+                                        let fields =
+                                            HashSet::<proto::Field>::from_iter(request.fields.iter().filter_map(
+                                                |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
+                                            ));
+                                        let fields = combine_view_and_fields(view, fields);
+                                        debug!("Getting fields: {:?}", fields);
+                                        let proto_entry = proto_entry_from_entry_and_fields(data_entry, fields);
+                                        debug!("Getting datapoint: {:?}", proto_entry);
+                                        entries.push(proto_entry);
+                                    }
+                                }
+                                Err(ReadError::NotFound) => {
+                                    errors.push(proto::DataEntryError {
+                                        path: request.path,
+                                        error: Some(proto::Error {
+                                            code: 404,
+                                            reason: "not_found".to_owned(),
+                                            message: "Path not found".to_owned(),
+                                        }),
+                                    });
+                                }
+                                Err(ReadError::PermissionExpired)=>{}
+                                Err(ReadError::PermissionDenied)=>{}
+                            }
+                        } else {
+                            errors.push(proto::DataEntryError {
+                                path: request.path,
+                                error: Some(proto::Error {
+                                    code: 404,
+                                    reason: "not_found".to_owned(),
+                                    message: "Path not found".to_owned(),
+                                }),
+                            });
+                        }
                     }
                     Err(ReadError::PermissionExpired) => {
                         errors.push(proto::DataEntryError {
