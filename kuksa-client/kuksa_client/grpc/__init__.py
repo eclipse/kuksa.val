@@ -315,6 +315,57 @@ class Datapoint:
             ) if message.HasField('timestamp') else None,
         )
 
+
+    def cast_array_values(cast, array):
+        """
+        Parses array input and cast individual values to wanted type.
+        Note that input value to this function is not the same as given if you use kuksa-client command line
+        as parts (e.g. surrounding quotes) are removed by shell, and then do_setValue also do some magic.
+        """
+        array = array.strip('[]')
+
+        # Split the input string into separate values
+        # First alternative, not quotes including escaped single or double quote, ends at comma, whitespace or EOL
+        # Second group is double quoted string, may contain quoted strings and single quotes inside, ends at non-escaped
+        # double quote
+        # Third is similar but for single quote
+        # Using raw strings with surrounding single/double quotes to minimize need for escapes
+        pattern = r'(?:\\"|\\' + \
+                  r"'|[^'" + r'",])+|"(?:\\"|[^"])*"|' + \
+                  r"'(?:\\'|[^'])*'"
+        values = re.findall(pattern, array)
+        for item in values:
+            # We may in some cases match blanks, that is intended as we want to be able to write arguments like
+            # My Way
+            # ... without quotes
+            if item.strip() == '':
+                #skip
+                pass
+            else:
+                yield cast(item)
+
+    def cast_bool(value) -> bool:
+        if value in ('False', 'false', 'F', 'f'):
+            value = 0
+        return bool(value)
+
+    def cast_str(value) -> str:
+        """
+        Strip based on the following rules.
+        - Leading/Trailing blanks are removed
+        - If there are single or double quote at both start and end they are removed
+        - Finally any quote escapes are removed
+        """
+        new_val = value.strip()
+        if new_val.startswith('"') and new_val.endswith('"'):
+            new_val = new_val[1:-1]
+        if new_val.startswith("'") and new_val.endswith("'"):
+            new_val = new_val[1:-1]
+        # Replace escaped quotes with normal quotes
+        new_val = new_val.replace('\\\"', '\"')
+        new_val = new_val.replace("\\\'", "\'")
+        return new_val
+            
     def to_message(self, value_type: DataType) -> types_pb2.Datapoint:
         message = types_pb2.Datapoint()
 
@@ -323,27 +374,6 @@ class Datapoint:
             array.Clear()
             array.values.extend(values)
 
-        def cast_array_values(cast, array):
-            array = array.strip('[]')
-            pattern = r'(?:\\.|[^",])*"(?:\\.|[^"])*"|[^",]+'
-            values = re.findall(pattern, array)
-            for item in values:
-                if item == '':
-                    #skip
-                    pass
-                else:
-                    if cast == str:
-                        item = item.replace('\"', '').replace('\\', '"').strip()
-                    yield cast(item)
-
-        def cast_bool(value):
-            if value in ('False', 'false', 'F', 'f'):
-                value = 0
-            return bool(value)
-        
-        def cast_str(value):
-            return str(value).replace('\"', '').replace('\\', '"').strip()
-            
 
         field, set_field, cast_field = {
             DataType.INT8: ('int32', setattr, int),
@@ -356,20 +386,32 @@ class Datapoint:
             DataType.INT64: ('int64', setattr, int),
             DataType.FLOAT: ('float', setattr, float),
             DataType.DOUBLE: ('double', setattr, float),
-            DataType.BOOLEAN: ('bool', setattr, cast_bool),
-            DataType.STRING: ('string', setattr, cast_str),
-            DataType.INT8_ARRAY: ('int32_array', set_array_attr, lambda array: cast_array_values(int, array)),
-            DataType.INT16_ARRAY: ('int32_array', set_array_attr, lambda array: cast_array_values(int, array)),
-            DataType.INT32_ARRAY: ('int32_array', set_array_attr, lambda array: cast_array_values(int, array)),
-            DataType.UINT8_ARRAY: ('uint32_array', set_array_attr, lambda array: cast_array_values(int, array)),
-            DataType.UINT16_ARRAY: ('uint32_array', set_array_attr, lambda array: cast_array_values(int, array)),
-            DataType.UINT32_ARRAY: ('uint32_array', set_array_attr, lambda array: cast_array_values(int, array)),
-            DataType.UINT64_ARRAY: ('uint64_array', set_array_attr, lambda array: cast_array_values(int, array)),
-            DataType.INT64_ARRAY: ('int64_array', set_array_attr, lambda array: cast_array_values(int, array)),
-            DataType.FLOAT_ARRAY: ('float_array', set_array_attr, lambda array: cast_array_values(float, array)),
-            DataType.DOUBLE_ARRAY: ('double_array', set_array_attr, lambda array: cast_array_values(float, array)),
-            DataType.BOOLEAN_ARRAY: ('bool_array', set_array_attr, lambda array: cast_array_values(cast_bool, array)),
-            DataType.STRING_ARRAY: ('string_array', set_array_attr, lambda array: cast_array_values(str, array)),
+            DataType.BOOLEAN: ('bool', setattr, Datapoint.cast_bool),
+            DataType.STRING: ('string', setattr, Datapoint.cast_str),
+            DataType.INT8_ARRAY: ('int32_array', set_array_attr, 
+                                  lambda array: Datapoint.cast_array_values(int, array)),
+            DataType.INT16_ARRAY: ('int32_array', set_array_attr, 
+                                   lambda array: Datapoint.cast_array_values(int, array)),
+            DataType.INT32_ARRAY: ('int32_array', set_array_attr, 
+                                   lambda array: Datapoint.cast_array_values(int, array)),
+            DataType.UINT8_ARRAY: ('uint32_array', set_array_attr, 
+                                   lambda array: Datapoint.cast_array_values(int, array)),
+            DataType.UINT16_ARRAY: ('uint32_array', set_array_attr, 
+                                    lambda array: Datapoint.cast_array_values(int, array)),
+            DataType.UINT32_ARRAY: ('uint32_array', set_array_attr, 
+                                    lambda array: Datapoint.cast_array_values(int, array)),
+            DataType.UINT64_ARRAY: ('uint64_array', set_array_attr, 
+                                    lambda array: Datapoint.cast_array_values(int, array)),
+            DataType.INT64_ARRAY: ('int64_array', set_array_attr, 
+                                   lambda array: Datapoint.cast_array_values(int, array)),
+            DataType.FLOAT_ARRAY: ('float_array', set_array_attr, 
+                                   lambda array: Datapoint.cast_array_values(float, array)),
+            DataType.DOUBLE_ARRAY: ('double_array', set_array_attr, 
+                                    lambda array: Datapoint.cast_array_values(float, array)),
+            DataType.BOOLEAN_ARRAY: ('bool_array', set_array_attr, 
+                                     lambda array: Datapoint.cast_array_values(Datapoint.cast_bool, array)),
+            DataType.STRING_ARRAY: ('string_array', set_array_attr, 
+                                    lambda array: Datapoint.cast_array_values(Datapoint.cast_str, array)),
         }.get(value_type, (None, None, None))
         if self.value is not None:
             if all((field, set_field, cast_field)):

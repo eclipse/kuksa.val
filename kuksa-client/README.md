@@ -182,6 +182,79 @@ This is an example showing how some of the commands can be used:
 
 ![try kuksa-client out](https://raw.githubusercontent.com/eclipse/kuksa.val/master/doc/pictures/testclient_basic.gif "test client usage")
 
+### Syntax for specifying data in the command line interface
+
+Values used as argument to for example `setValue` shall match the type given. Quotes (single and double) are 
+generally not needed, except in a few special cases. A few valid examples on setting float is shown below:
+
+```
+setValue Vehicle.Speed 43
+setValue Vehicle.Speed "45"
+setValue Vehicle.Speed '45.2'
+```
+
+For strings escaped quotes are needed if you want quotes to be sent to Server/Databroker, like if you want to store
+`Almost "red"` as value. Alternatively you can use outer single quotes and inner double quotes.
+
+The two examples below are equal:
+
+```
+setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect 'Almost \"red\"'
+setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect 'Almost "red"'
+```
+
+Alternatively you can use inner single quotes, but then the value will be represented by double quotes (`Almost "blue"`)
+when stored anyhow.
+
+```
+setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect "Almost 'blue'"
+setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect "Almost \'blue\'"
+```
+
+If not using outer quotes the inner quotes will be lost, the examples below are equal.
+Leading/trialing spaces are ignored.
+
+```
+setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect Almost 'green'
+setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect Almost green
+setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect 'Almost green'
+setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect "Almost green"
+setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect 'Almost green         '
+```
+
+
+It is possible to set array values. Setting a string array with simple identifiers is not a problem. Also not if they
+contain blanks
+
+```
+// Array with two elements
+setValue Vehicle.OBD.DTCList [abc,def]
+// Array with two elements, "hello there" and "def"
+setValue Vehicle.OBD.DTCList [hello there,def]
+```
+
+Setting values that includes comma or quotation marks is more tricky, as the shell argument parser handling affects
+how they are interpreted. The recommended approach is to have outer quotes of one type and user inner quotes of the
+other type.
+
+Example 1: First item should be `hello, there`
+
+```
+setValue Vehicle.OBD.DTCList '[ "hello, there",def]'
+```
+
+Example 2: First item should be `hello, "there"`
+
+```
+setValue Vehicle.OBD.DTCList '["hello, \"there\"",def]'
+```
+
+Example 3: First item should be `hello, 'there'`
+
+```
+setValue Vehicle.OBD.DTCList "['hello, \'there\'',def]"
+```
+
 ### Updating VSS Structure
 
 Using the test client, it is also possible to update and extend the VSS data structure.
