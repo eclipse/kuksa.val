@@ -301,6 +301,20 @@ class TestClient(Cmd):
     def do_setValue(self, args):
         """Set the value of a path"""
         if self.checkConnection():
+            # If there is a blank before a single/double quote on the kuksa-client cli then
+            # the argparser shell will remove it, there is nothing we can do to it
+            # This gives off behavior for examples like:
+            # setValue Vehicle.OBD.DTCList [ "dtc1, dtc2", ddd]
+            # which will be treated as input of 3 elements
+            # The recommended approach is to have quotes (of a different type) around the whole value
+            # if your strings includes quotes, commas or other items
+            # setValue Vehicle.OBD.DTCList '[ "dtc1, dtc2", ddd]'
+            # or
+            # setValue Vehicle.OBD.DTCList "[ 'dtc1, dtc2', ddd]"
+            # If you really need to include a quote in the values use backslash and use the quote type
+            # you want as inner value:
+            # setValue Vehicle.OBD.DTCList "[ 'dtc1, \'dtc2', ddd]"
+            # Will result in two elements in the array; "dtc1, 'dtc2" and "ddd"
             value = str(' '.join(args.Value))
             resp = self.commThread.setValue(
                 args.Path, value, args.attribute)

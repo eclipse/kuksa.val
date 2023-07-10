@@ -106,11 +106,17 @@ if err != nil {
 	}
 
 	// set string with "" and \"
-	err = backend.SetValueFromKuksaVal("Vehicle.OBD.DTCList", "['dtc1, dtc2', dtc2, \"dtc3, dtc3\"]", "value")
+	// Expected result is 4 items in the list
+	// dtc1, dtc2
+	// dtc2
+	// dtc3, dtc3
+	// dtc4
+	var valstr = "['dtc1, dtc2', dtc2, \"dtc3, dtc3\", dtc4]"
+	err = backend.SetValueFromKuksaVal("Vehicle.OBD.DTCList", valstr, "value")
 	if err != nil {
 		log.Printf("Set Value Error: %v", err)
 	} else {
-		log.Printf("Vehicle.OBD.DTCList Set: ['dtc1, dtc2', dtc2, \"dtc3, dtc3\"]")
+		log.Printf("Vehicle.OBD.DTCList Set: " + valstr)
 	}
 
 	values, err = backend.GetValueFromKuksaVal("Vehicle.OBD.DTCList", "value")

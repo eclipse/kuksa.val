@@ -72,34 +72,49 @@ func (cg *KuksaClientCommGrpc) GetValueFromKuksaVal(path string, attr string) ([
 	}
 	respEntries := resp.GetEntries()
 	response := make([]interface{}, len(respEntries))
-    for i, entry := range respEntries {
-        response[i] = interface{}(entry)
-    }
+	for i, entry := range respEntries {
+		response[i] = interface{}(entry)
+	}
 	return response, nil
 }
 
-func getArrayFromInput[T any](input string) ([]T, error) {
+func GetArrayFromInput[T any](input string) ([]T, error) {
 	// Strip the brackets from the input
 	input = strings.TrimSuffix(strings.TrimPrefix(input, "["), "]")
 	
 	// Split the input string into separate values
-	pattern := `(?:\\.|[^",])*"(?:\\.|[^"])*"|'(?:\\.|[^']|\\')*'|[^",]+`
+	// First alternative, not quotes including escaped double quote, ends at comma, single/double quote or EOL
+	// Second group is double quoted string, may contain double quoted strings inside, ends at non-escaped
+	// double quote
+	pattern := `(?:\\"|\\'|[^"',])+|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'`
 
 	r := regexp.MustCompile(pattern)
 	values := r.FindAllString(input, -1)
-	
+
 	// Parse each value as type T and append to the array
-	array := make([]T, len(values))
-	for i, v := range values {
-		// make the ' disappear
-		v = strings.ReplaceAll(v,"'", "")
-		value, err := parseValue[T](v)
-		if err != nil {
-			return nil, ParseError{}
+	array := make([]T, 0)
+	for _, v := range values {
+
+		v = strings.TrimSpace(v)
+		var consider = len(v) > 0
+		// make the ' or " disappear
+		if len(v) > 1 && (v[0] == '"') && (v[len(v)-1] == '"')  {
+			v = v[1:len(v)-1]
 		}
-		array[i] = value
+		if len(v) > 1 && (v[0] == '\'') && (v[len(v)-1] == '\'')  {
+			v = v[1:len(v)-1]
+		}
+		v = strings.ReplaceAll(v,"\\\"", "\"")
+		v = strings.ReplaceAll(v,"\\'", "'")
+		if consider {
+			value, err := parseValue[T](v)
+			if err != nil {
+				return nil, ParseError{}
+			}
+			array = append(array,value)
+		}
 	}
-	
+
 	return array, nil
 }
 
@@ -164,7 +179,7 @@ func parseValue[T any](value string) (T, error) {
 		return v, nil
 	case reflect.String:
 		v := reflect.New(t).Elem().Interface().(T)
-		reflect.ValueOf(&v).Elem().SetString(strings.TrimSpace(value))
+		reflect.ValueOf(&v).Elem().SetString(value)
 		return v, nil
 	default:
 		return reflect.Zero(t).Interface().(T), errors.New("unsupported type")
@@ -265,73 +280,73 @@ func (cg *KuksaClientCommGrpc) SetValueFromKuksaVal(path string, value string, a
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Double{Double: float_}}
 	case 20:
-		array, err := getArrayFromInput[string](value)
+		array, err := GetArrayFromInput[string](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_StringArray{StringArray: &grpcpb.StringArray{Values: array}}}
 	case 21:
-		array, err := getArrayFromInput[bool](value)
+		array, err := GetArrayFromInput[bool](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_BoolArray{BoolArray: &grpcpb.BoolArray{Values: array}}}
 	case 22:
-		array, err := getArrayFromInput[int32](value)
+		array, err := GetArrayFromInput[int32](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int32Array{Int32Array: &grpcpb.Int32Array{Values: array}}}
 	case 23:
-		array, err := getArrayFromInput[int32](value)
+		array, err := GetArrayFromInput[int32](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int32Array{Int32Array: &grpcpb.Int32Array{Values: array}}}
 	case 24:
-		array, err := getArrayFromInput[int32](value)
+		array, err := GetArrayFromInput[int32](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int32Array{Int32Array: &grpcpb.Int32Array{Values: array}}}
 	case 25:
-		array, err := getArrayFromInput[int64](value)
+		array, err := GetArrayFromInput[int64](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Int64Array{Int64Array: &grpcpb.Int64Array{Values: array}}}
 	case 26:
-		array, err := getArrayFromInput[uint32](value)
+		array, err := GetArrayFromInput[uint32](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint32Array{Uint32Array: &grpcpb.Uint32Array{Values: array}}}
 	case 27:
-		array, err := getArrayFromInput[uint32](value)
+		array, err := GetArrayFromInput[uint32](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint32Array{Uint32Array: &grpcpb.Uint32Array{Values: array}}}
 	case 28:
-		array, err := getArrayFromInput[uint32](value)
+		array, err := GetArrayFromInput[uint32](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint32Array{Uint32Array: &grpcpb.Uint32Array{Values: array}}}
 	case 29:
-		array, err := getArrayFromInput[uint64](value)
+		array, err := GetArrayFromInput[uint64](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_Uint64Array{Uint64Array: &grpcpb.Uint64Array{Values: array}}}
 	case 30:
-		array, err := getArrayFromInput[float32](value)
+		array, err := GetArrayFromInput[float32](value)
 		if err != nil {
 			return err
 		}
 		datapoint = grpcpb.Datapoint{Value: &grpcpb.Datapoint_FloatArray{FloatArray: &grpcpb.FloatArray{Values: array}}}
 	case 31:
-		array, err := getArrayFromInput[float64](value)
+		array, err := GetArrayFromInput[float64](value)
 		if err != nil {
 			return err
 		}
@@ -426,16 +441,16 @@ func (cg *KuksaClientCommGrpc) AuthorizeKuksaValConn(TokenOrTokenfile string) er
 	log.Printf("Using token: %s", tokenString)
 
 	info, err := os.Stat(tokenString)
-    if err != nil {
-        // the TokenOrTokenfile is read like its a token
-    } else if info.Mode().IsRegular() {
-        tokenByteString, err := os.ReadFile(tokenString)
+	if err != nil {
+		// the TokenOrTokenfile is read like its a token
+	} else if info.Mode().IsRegular() {
+		tokenByteString, err := os.ReadFile(tokenString)
 		tokenString = string(tokenByteString)
 		if err != nil {
 			log.Fatal("Error reading token: ", err)
 			return err
 		}
-    }
+	}
 	cg.authorizationHeader = "Bearer " + tokenString
 	return nil
 }
