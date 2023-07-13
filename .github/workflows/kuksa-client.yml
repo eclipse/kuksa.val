@@ -92,7 +92,7 @@ jobs:
         context: .
         file: kuksa-client/Dockerfile
         push: false
-        tags: "ttl.sh/kuksa.val/kuksa-client-${{github.sha}}:1h"
+        tags: "ttl.sh/kuksa.val/kuksa-client-${{github.sha}}"
         labels: ${{ steps.meta.outputs.labels }}
         
 
