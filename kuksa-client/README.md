@@ -1,19 +1,19 @@
-# KUKSA.val Client
+# KUKSA Python Client and SDK
 ![kuksa.val Logo](https://raw.githubusercontent.com/eclipse/kuksa.val/0.2.5/doc/pictures/logo.png)
 
-`kuksa.val` is a part of the opensource project [Eclipse Kuksa](https://www.eclipse.org/kuksa/).
-More about `kuksa.val` can be found in the [repository](https://github.com/eclipse/kuksa.val).
+KUKSA Python Client and SDK is a part of the open source project [Eclipse KUKSA](https://www.eclipse.org/kuksa/).
+More about Eclipse KUKSA can be found in the [repository](https://github.com/eclipse/kuksa.val).
 
 ## Introduction
 
-KUKSA.val Client provides both a command-line interface (CLI) and a standalone library to interact with either
-[KUKSA.val Server](https://github.com/eclipse/kuksa.val/tree/master/kuksa-val-server) or
-[KUKSA.val Databroker](https://github.com/eclipse/kuksa.val/tree/master/kuksa_databroker).
+KUKSA Python Client and SDK provides both a command-line interface (CLI) and a standalone library to interact with either
+[KUKSA Server](https://github.com/eclipse/kuksa.val/tree/master/kuksa-val-server) or
+[KUKSA Databroker](https://github.com/eclipse/kuksa.val/tree/master/kuksa_databroker).
 
 
 ## Installing the client and starting its CLI
 
-The fastest way to start using KUKSA.val Client is to install a pre-built version from pypi.org:
+The fastest way to start using KUKSA Python Client is to install a pre-built version from pypi.org:
 
 ```console
 $ pip install kuksa-client
@@ -60,15 +60,15 @@ Websocket connected securely.
 Test Client>
 ```
 
-If the connected KUKSA.val Server or KUKSA.val Databroker require authorization the next step is to authorize.
-KUKSA.val Server and KUKSA.val Databroker use different token formats.
+If the connected KUKSA Server or KUKSA Databroker require authorization the next step is to authorize.
+KUKSA Server and KUKSA Databroker use different token formats.
 
-### Connecting to KUKSA.val Databroker
+### Connecting to KUKSA Databroker
 
-A gRPC connection to KUKSA.val Databroker is started by specifying address and port for the Databroker and giving
+A gRPC connection to KUKSA Databroker is started by specifying address and port for the Databroker and giving
 `--protocol grpc` as argument.
-KUKSA.val Client use TLS by default, it only run in insecure mode if `--insecure` is given as argument.
-By default the KUKSA.val example Root CA and Client keys are used, but client keys have no effect as mutual authentication is not supported by KUKSA.val Databroker or KUKSA.val Server.
+KUKSA Client use TLS by default, it only run in insecure mode if `--insecure` is given as argument.
+By default the KUKSA example Root CA and Client keys are used, but client keys have no effect as mutual authentication is not supported by KUKSA Databroker or KUKSA Server.
 
 ```
 ~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc
@@ -80,9 +80,8 @@ This call with all parameters specified give same effect:
 ~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc --certificate ../kuksa_certificates/Client.pem --keyfile ../kuksa_certificates/Client.key --cacertificate ./kuksa_certificates/CA.pem
 ```
 
-There is actually no reason to specify client key and certificate, as mutual authentication is not supported in KUKSA.val Databroker,
+There is actually no reason to specify client key and certificate, as mutual authentication is not supported in KUKSA Databroker,
 so the command can be simplified like this:
-
 
 ```
 ~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc --cacertificate ./kuksa_certificates/CA.pem
@@ -90,17 +89,17 @@ so the command can be simplified like this:
 
 The example server protocol list 127.0.0.1 as an alternative name, but the TLS-client currently used does not accept it,
 instead a valid server name must be given as argument.
-Currently `Server` and `localhost`are valid names from the example certificates.
+Currently `Server` and `localhost` are valid names from the example certificates.
 
 ```
 ~/kuksa.val/kuksa-client$ kuksa-client --ip 127.0.0.1 --port 55555 --protocol grpc  --cacertificate ../kuksa_certificates/CA.pem --tls-server-name Server
 ```
 
-### Connecting to KUKSA.val Server
+### Connecting to KUKSA Server
 
-Connecting to KUKSA.val Server is default, and TLS is used by default by KUKSA.val Server.
-`--tls-server-name` does not need to be used when connecting to KUKSA.val Server,
-that is the only difference compared to connecting to KUKSA.val Databroker.
+Connecting to KUKSA Server is default, and TLS is used by default by KUKSA Server.
+`--tls-server-name` does not need to be used when connecting to KUKSA Server,
+that is the only difference compared to connecting to KUKSA Databroker.
 
 ```
 ~/kuksa.val/kuksa-client$ kuksa-client
@@ -112,7 +111,7 @@ This corresponds to this call:
 kuksa-client --ip 127.0.0.1 --port 8090 --protocol ws --cacertificate ./kuksa_certificates/CA.pem
 ```
 
-### Authorizing against KUKSA.val Server
+### Authorizing against KUKSA Server
 
 The jwt tokens for testing can either be found under [../kuksa_certificates/jwt](../kuksa_certificates/jwt)
 or you can also use following command inside `kuksa-client` to find the via `pip` installed certificate directory.
@@ -126,10 +125,10 @@ Select one of the tokens and use the `authorize` command like below:
 Test Client> authorize /some/path/kuksa_certificates/jwt/super-admin.json.token
 ```
 
-### Authorizing against KUKSA.val Databroker
+### Authorizing against KUKSA Databroker
 
 If connecting to Databroker the command `printTokenDir` is not much help as it shows the default token directories
-for KUKSA.val Server example tokens. If the KUKSA.val Databroker use default example tokens then one of the
+for KUKSA Server example tokens. If the KUKSA Databroker use default example tokens then one of the
 tokens in [../jwt](../jwt) can be used, like in the example below:
 
 ```console
@@ -212,7 +211,7 @@ setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect "Almost \'blue\'"
 ```
 
 If not using outer quotes the inner quotes will be lost, the examples below are equal.
-Leading/trialing spaces are ignored.
+Leading/trailing spaces are ignored.
 
 ```
 setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect Almost 'green'
@@ -373,12 +372,12 @@ For more information, see ([Documentation](https://github.com/eclipse/kuksa.val/
 
 ### TLS configuration
 
-Clients like [KUKSA.val CAN Feeder](https://github.com/eclipse/kuksa.val.feeders/tree/main/dbc2val)
-that use KUKSA.val Client library must typically set the path to the root CA certificate.
+Clients like [KUKSA CAN Feeder](https://github.com/eclipse/kuksa.val.feeders/tree/main/dbc2val)
+that use KUKSA Client library must typically set the path to the root CA certificate.
 If the path is set the VSSClient will try to establish a secure connection.
 
 ```
-# Shall TLS be used (default False for Databroker, True for KUKSA.val Server)
+# Shall TLS be used (default False for Databroker, True for KUKSA Server)
 # tls = False
 tls = True
 
@@ -386,8 +385,8 @@ tls = True
 # Path to root CA, needed if using TLS
 root_ca_path=../../kuksa.val/kuksa_certificates/CA.pem
 # Server name, typically only needed if accessing server by IP address like 127.0.0.1
-# and typically only if connection to KUKSA.val Databroker
-# If using KUKSA.val example certificates the names "Server" or "localhost" can be used.
+# and typically only if connection to KUKSA Databroker
+# If using KUKSA example certificates the names "Server" or "localhost" can be used.
 # tls_server_name=Server
 ```
 
