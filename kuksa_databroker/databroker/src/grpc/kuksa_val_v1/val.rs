@@ -592,7 +592,7 @@ fn combine_view_and_fields(
 }
 
 fn matches_path_pattern(input: &str) -> bool {
-    let pattern = r"^(?:\w+\.)+\w+(?:\.\*)?$";
+    let pattern = r"^(?:\w+(?:\.\w+)*)(?:\.\*+)?$";
     let regex = Regex::new(pattern).unwrap();
     regex.is_match(input)
 }
@@ -692,18 +692,29 @@ mod tests {
 
     #[tokio::test]
     async fn test_valid_request_path() {
-        let input1 = "Path1.Path2.Path3.PathN.*";
-        let input2 = "Path1.Path2.Path3.PathN";
-        let input3 = "Path1.Path2.Path3.PathN.";
-        let input4 = "Path1.Path2.Path3.PathN.**";
-        let input5 = "Path1.Path2.Path3.PathN..";
-        let input6 = "Path1.*.Path3.PathN..";
+
+        let inputs = vec![
+            "String.*",
+            "String.**",
+            "String.String.String.String.*",
+            "String.String.String.String.**",
+            "String.String.String.String",
+            "String.String.String.String.String.**",
+            "String.String.String.",
+            "String.String.String.String..",
+            "String.*.String.String..",
+            "*.String.String.String..",
+        ];
     
-        assert!(matches_path_pattern(input1));
-        assert!(matches_path_pattern(input2));
-        assert!(!matches_path_pattern(input3));
-        assert!(!matches_path_pattern(input4));
-        assert!(!matches_path_pattern(input5));
-        assert!(!matches_path_pattern(input6));
+        assert!(matches_path_pattern(inputs[0]));
+        assert!(matches_path_pattern(inputs[1]));
+        assert!(matches_path_pattern(inputs[2]));
+        assert!(matches_path_pattern(inputs[3]));
+        assert!(matches_path_pattern(inputs[4]));
+        assert!(matches_path_pattern(inputs[5]));
+        assert!(!matches_path_pattern(inputs[6]));
+        assert!(!matches_path_pattern(inputs[7]));
+        assert!(!matches_path_pattern(inputs[8]));
+        assert!(!matches_path_pattern(inputs[9]));
     }
 }
