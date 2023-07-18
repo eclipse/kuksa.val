@@ -13,9 +13,9 @@ import (
 const (
 	Name        = "protoc"
 	ZipFileName = Name + ".zip"
-	OsMac = "darwin"
-	OsWindows = "windows"
-	OsLinux = "linux"
+	OsMac       = "darwin"
+	OsWindows   = "windows"
+	OsLinux     = "linux"
 )
 
 func DownloadPackage(url string) error {
@@ -23,13 +23,13 @@ func DownloadPackage(url string) error {
 	if err != nil {
 		return err
 	}
-    defer resp.Body.Close()
+	defer resp.Body.Close()
 
 	out, err := os.Create(ZipFileName)
-    if err != nil {
+	if err != nil {
 		return err
 	}
-    defer out.Close()
+	defer out.Close()
 
 	if _, err := io.Copy(out, resp.Body); err != nil {
 		return err
@@ -38,26 +38,29 @@ func DownloadPackage(url string) error {
 }
 
 func UnzipSource(source, destination string) error {
-    reader, err := zip.OpenReader(source)
-    if err != nil {
-        return err
-    }
-    defer reader.Close()
+	reader, err := zip.OpenReader(source)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
 
-    destination, err = filepath.Abs(destination)
-    if err != nil {
-        return err
-    }
+	destination, err = filepath.Abs(destination)
+	if err != nil {
+		return err
+	}
 
-    for _, f := range reader.File {
+	for _, f := range reader.File {
 		filePath := filepath.Join(destination, f.Name)
 
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(filePath, os.ModePerm)
+			err := os.MkdirAll(filePath, os.ModePerm)
+			if err != nil {
+				return err
+			}
 			continue
 		} else {
 			fmt.Println("unziping files to", filePath)
-			
+
 			out, err := os.Create(filePath)
 			if err != nil {
 				return err
@@ -73,9 +76,9 @@ func UnzipSource(source, destination string) error {
 				return err
 			}
 		}
-    }
+	}
 
-    return nil
+	return nil
 }
 
 var url = map[string]string{
@@ -97,14 +100,14 @@ func Install() error {
 	bit := 32 << (^uint(0) >> 63)
 	var downloadUrl string
 	switch goos {
-		case OsMac:
-			downloadUrl = url[OsMac]
-		case OsWindows:
-			downloadUrl = url[fmt.Sprintf("%s_%d", OsWindows, bit)]
-		case OsLinux:
-			downloadUrl = url[fmt.Sprintf("%s_%d", OsLinux, bit)]
-		default:
-			return fmt.Errorf("unsupport OS: %q", goos)
+	case OsMac:
+		downloadUrl = url[OsMac]
+	case OsWindows:
+		downloadUrl = url[fmt.Sprintf("%s_%d", OsWindows, bit)]
+	case OsLinux:
+		downloadUrl = url[fmt.Sprintf("%s_%d", OsLinux, bit)]
+	default:
+		return fmt.Errorf("unsupport OS: %q", goos)
 	}
 
 	print("Downloading protobuf compiler...\n")
@@ -115,11 +118,11 @@ func Install() error {
 
 	var home string
 	_, found := os.LookupEnv("HOME")
-    if found {
+	if found {
 		home = os.Getenv("HOME")
-    } else {
-        return &NotFoundError{}
-    }
+	} else {
+		return &NotFoundError{}
+	}
 
 	dest := filepath.Join(home, Name)
 
@@ -130,11 +133,11 @@ func Install() error {
 func Exists() bool {
 	var root string
 	_, found := os.LookupEnv("HOME")
-    if found {
+	if found {
 		root = os.Getenv("HOME")
-    } else {
-        return false
-    }
+	} else {
+		return false
+	}
 	protocPath := filepath.Join(root, Name)
 	if _, err := os.Stat(protocPath); os.IsNotExist(err) {
 		return false
@@ -146,12 +149,15 @@ func Exists() bool {
 func ProtoExists() {
 	if _, err := os.Stat("proto"); os.IsNotExist(err) {
 		print("no directory proto exists. Creating...\n")
-		os.MkdirAll("proto", os.ModePerm)
+		err := os.MkdirAll("proto", os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
 func main() {
-	if !Exists(){
+	if !Exists() {
 		print("No installed protobuf compiler found! Installing... \n")
 		err := Install()
 		if err != nil {

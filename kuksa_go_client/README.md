@@ -79,3 +79,7 @@ go mod tidy
 
 This will update `go.mod`and `go.sum`.
 
+## Linters
+
+Our Continuous Integration verifies that the code pass the [Golang Linter](https://golangci-lint.run/usage/install).
+To avoid failing PR builds it is recommended to run the linter manually before creating a Pull Request.

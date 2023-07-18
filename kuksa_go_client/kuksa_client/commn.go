@@ -130,7 +130,10 @@ func (cc *KuksaClientCommWs) startCommunication() error {
 		for {
 			req, ok := <-cc.sendChannel
 			if ok {
-				cc.connSocket.WriteMessage(websocket.TextMessage, []byte(req))
+				err := cc.connSocket.WriteMessage(websocket.TextMessage, []byte(req))
+				if err != nil {
+					log.Fatal("WriteMessage error: ", err)
+		}
 			}
 		}
 	}()
