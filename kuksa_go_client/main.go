@@ -39,18 +39,18 @@ func main() {
 
 	var backend kuksa_client.KuksaBackend
 
-var token string
-if *protocol == "ws" {
-	// example token from kuksa.val/kuksa_certificates/jwt/all-read-write.json.token
-	token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJrdWtzYS52YWwiLCJpc3MiOiJFY2xpcHNlIEtVS1NBIERldiIsImFkbWluIjp0cnVlLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTc2NzIyNTU5OSwia3Vrc2EtdnNzIjp7IioiOiJydyJ9fQ.QQcVR0RuRJIoasPXYsMGZhdvhLjUalk4GcRaxhh3-0_j3CtVSZ0lTbv_Z3As5BfIYzaMlwUzFGvCVOq2MXVjRK81XOAZ6wIsyKOxva16zjbZryr2V_m3yZ4twI3CPEzJch11_qnhInirHltej-tGg6ySfLaTYeAkw4xYGwENMBBhN5t9odANpScZP_xx5bNfwdW1so6FkV1WhpKlCywoxk_vYZxo187d89bbiu-xOZUa5D-ycFkd1-1rjPXLGE_g5bc4jcQBvNBc-5FDbvt4aJlTQqjpdeppxhxn_gjkPGIAacYDI7szOLC-WYajTStbksUju1iQCyli11kPx0E66me_ZVwOX07f1lRF6D2brWm1LcMAHM3bQUK0LuyVwWPxld64uSAEsvSKsRyJERc7nZUgLf7COnUrrkxgIUNjukbdT2JVN_I-3l3b4YXg6JVD7Y5g0QYBKgXEFpZrDbBVhzo7PXPAhJD6-c3DcUQyRZExbrnFV56RwWuExphw8lYnbMvxPWImiVmB9nRVgFKD0TYaw1sidPSSlZt8Uw34VZzHWIZQAQY0BMjR33fefg42XQ1YzIwPmDx4GYXLl7HNIIVbsRsibKaJnf49mz2qnLC1K272zXSPljO11Ke1MNnsnKyUH7mcwEs9nhTsnMgEOx_TyMLRYo-VEHBDLuEOiBo"
-	backend = &kuksa_client.KuksaClientCommWs{Config: &configKuksaClient}
-} else if *protocol == "grpc" {
-	// example token from kuksa.val/jwt/provide-all.token
-	token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3NjcyMjU1OTksInNjb3BlIjoicHJvdmlkZSJ9.OJWzTvDjcmeWyg3vmBR5TEtqYaHq8HrpFLlTKZAfDBAQBUHpyUEboJ97jfWuWgBnTpnfboyfAbwvLqo6bEVZ6tXzF8n9LtW6HmPbIWoDqXuobM2grUCVaGKuOcnCpMCQYChziqHbYwRJYP9nkYgbQU1kE4dN7880Io4xzq0GEbWksB2CVpOoExQUmCZpCohPs-XEkdmXhcUKnWnOeiSsRGKusx987vpY_WOXh6WE7DfJgzAgpPDo33qI7zQuTzUILORQsiHmsrQO0-zcvokNjaQUzlt5ETZ7MQLCtiUQaN0NMbDMCWkmSfNvZ5hKCNbfr2FaiMzrGBOQdvQiFo-DqZKGNweaGpufYXuaKfn3SXKoDr8u1xDE5oKgWMjxDR9pQYGzIF5bDXITSywCm4kN5DIn7e2_Ga28h3rBl0t0ZT0cwlszftQRueDTFcMns1u9PEDOqf7fRrhjq3zqpxuMAoRANVd2z237eBsS0AvdSIxL52N4xO8P_h93NN8Vaum28fTPxzm8p9WlQh4mgUelggtT415hLcxizx15ARIRG0RiW91Pglzt4WRtXHnsg93Ixd3yXXzZ2i4Y0hqhj_L12SsXunK2VxKup2sFCQz6wM-t_7ADmNYcs80idzsadY8rYKDV8N1WqOOd4ANG_nzWa86Tyu6wAwhDVag5nbFmLZQ"
-	backend = &kuksa_client.KuksaClientCommGrpc{Config: &configKuksaClient}
-} else {
-	log.Println("Specify -protocol=ws or -protocol=grpc")
-}
+	var token string
+	if *protocol == "ws" {
+		// example token from kuksa.val/kuksa_certificates/jwt/all-read-write.json.token
+		token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJrdWtzYS52YWwiLCJpc3MiOiJFY2xpcHNlIEtVS1NBIERldiIsImFkbWluIjp0cnVlLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTc2NzIyNTU5OSwia3Vrc2EtdnNzIjp7IioiOiJydyJ9fQ.QQcVR0RuRJIoasPXYsMGZhdvhLjUalk4GcRaxhh3-0_j3CtVSZ0lTbv_Z3As5BfIYzaMlwUzFGvCVOq2MXVjRK81XOAZ6wIsyKOxva16zjbZryr2V_m3yZ4twI3CPEzJch11_qnhInirHltej-tGg6ySfLaTYeAkw4xYGwENMBBhN5t9odANpScZP_xx5bNfwdW1so6FkV1WhpKlCywoxk_vYZxo187d89bbiu-xOZUa5D-ycFkd1-1rjPXLGE_g5bc4jcQBvNBc-5FDbvt4aJlTQqjpdeppxhxn_gjkPGIAacYDI7szOLC-WYajTStbksUju1iQCyli11kPx0E66me_ZVwOX07f1lRF6D2brWm1LcMAHM3bQUK0LuyVwWPxld64uSAEsvSKsRyJERc7nZUgLf7COnUrrkxgIUNjukbdT2JVN_I-3l3b4YXg6JVD7Y5g0QYBKgXEFpZrDbBVhzo7PXPAhJD6-c3DcUQyRZExbrnFV56RwWuExphw8lYnbMvxPWImiVmB9nRVgFKD0TYaw1sidPSSlZt8Uw34VZzHWIZQAQY0BMjR33fefg42XQ1YzIwPmDx4GYXLl7HNIIVbsRsibKaJnf49mz2qnLC1K272zXSPljO11Ke1MNnsnKyUH7mcwEs9nhTsnMgEOx_TyMLRYo-VEHBDLuEOiBo"
+		backend = &kuksa_client.KuksaClientCommWs{Config: &configKuksaClient}
+	} else if *protocol == "grpc" {
+		// example token from kuksa.val/jwt/provide-all.token
+		token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3NjcyMjU1OTksInNjb3BlIjoicHJvdmlkZSJ9.OJWzTvDjcmeWyg3vmBR5TEtqYaHq8HrpFLlTKZAfDBAQBUHpyUEboJ97jfWuWgBnTpnfboyfAbwvLqo6bEVZ6tXzF8n9LtW6HmPbIWoDqXuobM2grUCVaGKuOcnCpMCQYChziqHbYwRJYP9nkYgbQU1kE4dN7880Io4xzq0GEbWksB2CVpOoExQUmCZpCohPs-XEkdmXhcUKnWnOeiSsRGKusx987vpY_WOXh6WE7DfJgzAgpPDo33qI7zQuTzUILORQsiHmsrQO0-zcvokNjaQUzlt5ETZ7MQLCtiUQaN0NMbDMCWkmSfNvZ5hKCNbfr2FaiMzrGBOQdvQiFo-DqZKGNweaGpufYXuaKfn3SXKoDr8u1xDE5oKgWMjxDR9pQYGzIF5bDXITSywCm4kN5DIn7e2_Ga28h3rBl0t0ZT0cwlszftQRueDTFcMns1u9PEDOqf7fRrhjq3zqpxuMAoRANVd2z237eBsS0AvdSIxL52N4xO8P_h93NN8Vaum28fTPxzm8p9WlQh4mgUelggtT415hLcxizx15ARIRG0RiW91Pglzt4WRtXHnsg93Ixd3yXXzZ2i4Y0hqhj_L12SsXunK2VxKup2sFCQz6wM-t_7ADmNYcs80idzsadY8rYKDV8N1WqOOd4ANG_nzWa86Tyu6wAwhDVag5nbFmLZQ"
+		backend = &kuksa_client.KuksaClientCommGrpc{Config: &configKuksaClient}
+	} else {
+		log.Println("Specify -protocol=ws or -protocol=grpc")
+	}
 
 	err := backend.ConnectToKuksaVal()
 	if err != nil {
@@ -58,11 +58,11 @@ if *protocol == "ws" {
 	}
 	defer backend.Close()
 
-//Authorize the connection
-err = backend.AuthorizeKuksaValConn(token)
-if err != nil {
-	log.Fatalf("Authorization Error: %v", err)
-}
+	// Authorize the connection
+	err = backend.AuthorizeKuksaValConn(token)
+	if err != nil {
+		log.Fatalf("Authorization Error: %v", err)
+	}
 
 	err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "value")
 	if err != nil {
@@ -76,12 +76,12 @@ if err != nil {
 		log.Printf("Get Value Error: %v", err)
 	} else {
 		for _, value := range values {
-			if *protocol == "grpc"{
+			if *protocol == "grpc" {
 				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(*v1.DataEntry).String())
-			}else{
+			} else {
 				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(string))
 			}
-			
+
 		}
 	}
 
@@ -97,9 +97,9 @@ if err != nil {
 		log.Printf("Get Value Error: %v", err)
 	} else {
 		for _, value := range values {
-			if *protocol == "grpc"{
-				log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())	
-			}else{
+			if *protocol == "grpc" {
+				log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())
+			} else {
 				log.Println("Vehicle.OBD.DTCList: " + value.(string))
 			}
 		}
@@ -124,14 +124,13 @@ if err != nil {
 		log.Printf("Get Value Error: %v", err)
 	} else {
 		for _, value := range values {
-			if *protocol == "grpc"{
-				log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())	
-			}else{
+			if *protocol == "grpc" {
+				log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())
+			} else {
 				log.Println("Vehicle.OBD.DTCList: " + value.(string))
-			}			
+			}
 		}
 	}
-
 
 	err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "targetValue")
 	if err != nil {
@@ -140,45 +139,45 @@ if err != nil {
 		log.Printf("Vehicle.ADAS.ABS.IsEnabled Set: true")
 	}
 
-tValues, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "targetValue")
-if err != nil {
-	log.Printf("Get Value Error: %v", err)
-} else {
-	for _, value := range tValues {
-		if *protocol == "grpc"{
-			log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(*v1.DataEntry).String())
-		}else{
-			log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(string))
-		}		
+	tValues, err := backend.GetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "targetValue")
+	if err != nil {
+		log.Printf("Get Value Error: %v", err)
+	} else {
+		for _, value := range tValues {
+			if *protocol == "grpc" {
+				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(*v1.DataEntry).String())
+			} else {
+				log.Println("Vehicle.ADAS.ABS.IsEnabled: " + value.(string))
+			}
+		}
 	}
-}
 
-// Get MetaData of Vehicle.Speed
-value, err := backend.GetMetadataFromKuksaVal("Vehicle.Speed")
-if err == nil {
-	for _, val := range value {
-		if *protocol == "grpc"{
-			log.Println("Vehicle.Speed Metadata: " + val.(*v1.DataEntry).String())
-		}else{
-			log.Println("Vehicle.Speed Metadata: " + val.(string))
-		}		
+	// Get MetaData of Vehicle.Speed
+	value, err := backend.GetMetadataFromKuksaVal("Vehicle.Speed")
+	if err == nil {
+		for _, val := range value {
+			if *protocol == "grpc" {
+				log.Println("Vehicle.Speed Metadata: " + val.(*v1.DataEntry).String())
+			} else {
+				log.Println("Vehicle.Speed Metadata: " + val.(string))
+			}
+		}
+	} else {
+		log.Printf("Error while getting metadata: %s", err)
 	}
-} else {
-	log.Printf("Error while getting metadata: %s", err)
-}
 
-//Subscribe to Vehicle.Speed
+	//Subscribe to Vehicle.Speed
 
-id, err := backend.SubscribeFromKuksaVal("Vehicle.Speed", "value")
-if err == nil {
-	log.Printf("Vehicle.Speed Subscription Id: %s", id)
-} else {
-	log.Printf("Subscription Error %s", err)
-}
-err = backend.PrintSubscriptionMessages(id)
-if err != nil {
-	log.Printf("Printing the subscription messages failed with: %s", err)
-}
+	id, err := backend.SubscribeFromKuksaVal("Vehicle.Speed", "value")
+	if err == nil {
+		log.Printf("Vehicle.Speed Subscription Id: %s", id)
+	} else {
+		log.Printf("Subscription Error %s", err)
+	}
+	err = backend.PrintSubscriptionMessages(id)
+	if err != nil {
+		log.Printf("Printing the subscription messages failed with: %s", err)
+	}
 }
 
 // More subscribing examples

@@ -555,8 +555,8 @@ class BaseVSSClient:
             if self.private_key and self.certificate_chain:
                 private_key = self.private_key.read_bytes()
                 certificate_chain = self.certificate_chain.read_bytes()
-                logger.info(f"Using private client key {self.private_key} "
-                                 f"and chain/certificate {self.certificate_chain}")
+                # As of today there is no option in KUKSA.val Databroker to require client authentication
+                logger.info("Using client private key and certificates, mutual TLS supported if supported by server")
                 return grpc.ssl_channel_credentials(root_certificates, private_key, certificate_chain)
             else:
                 logger.info(f"No client certificates provided, mutual TLS not supported!")

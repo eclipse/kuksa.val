@@ -420,7 +420,11 @@ func (cg *KuksaClientCommGrpc) UnsubscribeFromKuksaVal(id string) error {
 	cancel := *cg.cancel[id]
 	cancel()
 	client := *cg.subsChannel[id]
-	client.CloseSend()
+	err := client.CloseSend()
+	if err != nil {
+		log.Fatal("Error with CloseSend: ", err)
+		return err
+	}
 
 	return nil
 }
