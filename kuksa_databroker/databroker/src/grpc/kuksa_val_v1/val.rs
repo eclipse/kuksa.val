@@ -15,6 +15,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::pin::Pin;
+use regex::Regex;
 
 use databroker_proto::kuksa::val::v1 as proto;
 use databroker_proto::kuksa::val::v1::DataEntryError;
@@ -54,94 +55,123 @@ impl proto::val_server::Val for broker::DataBroker {
             let mut errors = Vec::new();
 
             for request in requested {
-                match broker.get_entry_by_path(&request.path).await {
-                    Ok(entry) => {
-                        let view = proto::View::from_i32(request.view).ok_or_else(|| {
-                            tonic::Status::invalid_argument(format!(
-                                "Invalid View (id: {}",
-                                request.view
-                            ))
-                        })?;
-                        let fields =
-                            HashSet::<proto::Field>::from_iter(request.fields.iter().filter_map(
-                                |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                            ));
-                        let fields = combine_view_and_fields(view, fields);
-                        debug!("Getting fields: {:?}", fields);
-                        let proto_entry = proto_entry_from_entry_and_fields(entry, fields);
-                        debug!("Getting datapoint: {:?}", proto_entry);
-                        entries.push(proto_entry);
-                    }
-                    Err(ReadError::NotFound) => {
-                        if request.path.ends_with('*') {
-                            let mut sub_path_new = request.path.clone();
-                            sub_path_new.pop();
-                            sub_path_new.pop();
-                            match broker.get_entries_by_wildcards(sub_path_new.as_ref()).await {
-                                Ok(entries_result) => {
-                                    for data_entry in entries_result {
-                                        let view = proto::View::from_i32(request.view).ok_or_else(|| {
-                                            tonic::Status::invalid_argument(format!(
-                                                "Invalid View (id: {}",
-                                                request.view
-                                            ))
-                                        })?;
-                                        let fields =
-                                            HashSet::<proto::Field>::from_iter(request.fields.iter().filter_map(
-                                                |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                            ));
-                                        let fields = combine_view_and_fields(view, fields);
-                                        debug!("Getting fields: {:?}", fields);
-                                        let proto_entry = proto_entry_from_entry_and_fields(data_entry, fields);
-                                        debug!("Getting datapoint: {:?}", proto_entry);
-                                        entries.push(proto_entry);
+                match matches_path_pattern(&request.path) {
+                    true => {
+                        match broker.get_entry_by_path(&request.path).await {
+                            Ok(entry) => {
+                                let view = proto::View::from_i32(request.view).ok_or_else(|| {
+                                    tonic::Status::invalid_argument(format!(
+                                        "Invalid View (id: {}",
+                                        request.view
+                                    ))
+                                })?;
+                                let fields =
+                                    HashSet::<proto::Field>::from_iter(request.fields.iter().filter_map(
+                                        |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
+                                    ));
+                                let fields = combine_view_and_fields(view, fields);
+                                debug!("Getting fields: {:?}", fields);
+                                let proto_entry = proto_entry_from_entry_and_fields(entry, fields);
+                                debug!("Getting datapoint: {:?}", proto_entry);
+                                entries.push(proto_entry);
+                            }
+                            Err(ReadError::NotFound) => {
+                                if request.path.ends_with('*') {
+                                    let mut sub_path_new = request.path.clone();
+                                    sub_path_new.pop();
+                                    sub_path_new.pop();
+                                    match broker.get_entries_by_wildcards(sub_path_new.as_ref()).await {
+                                        Ok(entries_result) => {
+                                            for data_entry in entries_result {
+                                                let view = proto::View::from_i32(request.view).ok_or_else(|| {
+                                                    tonic::Status::invalid_argument(format!(
+                                                        "Invalid View (id: {}",
+                                                        request.view
+                                                    ))
+                                                })?;
+                                                let fields =
+                                                    HashSet::<proto::Field>::from_iter(request.fields.iter().filter_map(
+                                                        |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
+                                                    ));
+                                                let fields = combine_view_and_fields(view, fields);
+                                                debug!("Getting fields: {:?}", fields);
+                                                let proto_entry = proto_entry_from_entry_and_fields(data_entry, fields);
+                                                debug!("Getting datapoint: {:?}", proto_entry);
+                                                entries.push(proto_entry);
+                                            }
+                                        }
+                                        Err(ReadError::NotFound) => {
+                                            errors.push(proto::DataEntryError {
+                                                path: request.path,
+                                                error: Some(proto::Error {
+                                                    code: 404,
+                                                    reason: "not_found".to_owned(),
+                                                    message: "Path not found".to_owned(),
+                                                }),
+                                            });
+                                        }
+                                        Err(ReadError::PermissionExpired)=>{}
+                                        Err(ReadError::PermissionDenied)=>{}
+                                    }
+                                } else {
+                                    match broker.get_entries_by_wildcards(request.path.as_ref()).await {
+                                        Ok(entries_result) => {
+                                            let path = request.path.clone();
+                                            let proto_entry = proto::DataEntry {path, 
+                                                                                value: None, 
+                                                                                actuator_target: None,
+                                                                                metadata: None};
+                                            entries.push(proto_entry);
+                                        }
+                                        Err(ReadError::NotFound) => {
+                                            errors.push(proto::DataEntryError {
+                                                path: request.path,
+                                                error: Some(proto::Error {
+                                                    code: 404,
+                                                    reason: "not_found".to_owned(),
+                                                    message: "Path not found".to_owned(),
+                                                }),
+                                            });
+                                        }
+                                        Err(ReadError::PermissionExpired)=>{}
+                                        Err(ReadError::PermissionDenied)=>{}
                                     }
                                 }
-                                Err(ReadError::NotFound) => {
-                                    errors.push(proto::DataEntryError {
-                                        path: request.path,
-                                        error: Some(proto::Error {
-                                            code: 404,
-                                            reason: "not_found".to_owned(),
-                                            message: "Path not found".to_owned(),
-                                        }),
-                                    });
-                                }
-                                Err(ReadError::PermissionExpired)=>{}
-                                Err(ReadError::PermissionDenied)=>{}
                             }
-                        } else {
-                            errors.push(proto::DataEntryError {
-                                path: request.path,
-                                error: Some(proto::Error {
-                                    code: 404,
-                                    reason: "not_found".to_owned(),
-                                    message: "Path not found".to_owned(),
-                                }),
-                            });
+                            Err(ReadError::PermissionExpired) => {
+                                errors.push(proto::DataEntryError {
+                                    path: request.path,
+                                    error: Some(proto::Error {
+                                        code: 401,
+                                        reason: "unauthorized".to_owned(),
+                                        message: "Authorization expired".to_owned(),
+                                    }),
+                                });
+                            }
+                            Err(ReadError::PermissionDenied) => {
+                                errors.push(proto::DataEntryError {
+                                    path: request.path,
+                                    error: Some(proto::Error {
+                                        code: 403,
+                                        reason: "forbidden".to_owned(),
+                                        message: "Permission denied".to_owned(),
+                                    }),
+                                });
+                            }
                         }
-                    }
-                    Err(ReadError::PermissionExpired) => {
+                    },
+                    false => {
                         errors.push(proto::DataEntryError {
                             path: request.path,
                             error: Some(proto::Error {
-                                code: 401,
-                                reason: "unauthorized".to_owned(),
-                                message: "Authorization expired".to_owned(),
+                                code: 400,
+                                reason: "bad_request".to_owned(),
+                                message: "Bad Request".to_owned(),
                             }),
                         });
-                    }
-                    Err(ReadError::PermissionDenied) => {
-                        errors.push(proto::DataEntryError {
-                            path: request.path,
-                            error: Some(proto::Error {
-                                code: 403,
-                                reason: "forbidden".to_owned(),
-                                message: "Permission denied".to_owned(),
-                            }),
-                        });
-                    }
-                }
+                    },
+                };
+
             }
 
             // Not sure how to handle the "global error".
@@ -561,6 +591,12 @@ fn combine_view_and_fields(
     combined
 }
 
+fn matches_path_pattern(input: &str) -> bool {
+    let pattern = r"^(?:\w+\.)+\w+(?:\.\*)?$";
+    let regex = Regex::new(pattern).unwrap();
+    regex.is_match(input)
+}
+
 impl broker::EntryUpdate {
     fn from_proto_entry_and_fields(
         entry: &proto::DataEntry,
@@ -598,6 +634,7 @@ impl broker::EntryUpdate {
 mod tests {
     use super::*;
     use crate::{broker::DataBroker, permissions};
+    use regex::Regex;
 
     #[tokio::test]
     async fn test_update_datapoint_using_wrong_type() {
@@ -651,5 +688,22 @@ mod tests {
             }
             Err(_status) => panic!("failed to execute set request"),
         }
+    }
+
+    #[tokio::test]
+    async fn test_valid_request_path() {
+        let input1 = "Path1.Path2.Path3.PathN.*";
+        let input2 = "Path1.Path2.Path3.PathN";
+        let input3 = "Path1.Path2.Path3.PathN.";
+        let input4 = "Path1.Path2.Path3.PathN.**";
+        let input5 = "Path1.Path2.Path3.PathN..";
+        let input6 = "Path1.*.Path3.PathN..";
+    
+        assert!(matches_path_pattern(input1));
+        assert!(matches_path_pattern(input2));
+        assert!(!matches_path_pattern(input3));
+        assert!(!matches_path_pattern(input4));
+        assert!(!matches_path_pattern(input5));
+        assert!(!matches_path_pattern(input6));
     }
 }
