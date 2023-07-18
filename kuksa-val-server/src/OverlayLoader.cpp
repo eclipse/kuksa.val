@@ -24,6 +24,7 @@
 
 #include <stdexcept>
 #include <jsoncons/json.hpp>
+#include <fstream>
 
 #include "OverlayLoader.hpp"
 #include "kuksa.pb.h"

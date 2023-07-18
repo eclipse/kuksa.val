@@ -113,7 +113,7 @@ class Backend(cli_backend.Backend):
         self.run = False
         print("Server disconnected.")
 
-    def disconnect(self):
+    def disconnect(self, _):
         self.stop()
 
     # Function to authorize against the kuksa.val server
@@ -228,7 +228,7 @@ class Backend(cli_backend.Backend):
     def checkConnection(self):
         return self.wsConnected
 
-    async def connect(self):
+    async def connect(self, _=None):
         if not self.insecure:
             context = ssl.create_default_context()
             context.load_cert_chain(

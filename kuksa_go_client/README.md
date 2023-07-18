@@ -66,3 +66,16 @@ KUKSA.val Databroker (`kuksa-client-grpc.json`) and KUKSA.val Server (`kuksa-cli
 The file `kuksa-client.json` is by default linked to `kuksa-client-grpc.json`.
 
 For using the GO client with the kuksa.val server set protocol = ws and for a connection to kuksa.val databroker set protocol = grpc. On the command line it's available through -protocol ws/grpc.
+
+### Dependency updates
+
+If dependencies needs to be updated the following commands can be used:
+
+```
+go generate .
+go get -u
+go mod tidy
+```
+
+This will update `go.mod`and `go.sum`.
+

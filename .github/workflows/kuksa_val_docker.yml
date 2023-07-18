@@ -66,7 +66,7 @@ jobs:
         push: true
         tags: | 
           ${{ steps.meta.outputs.tags }}
-          ttl.sh/kuksa.val/kuksa-server-${{github.sha}}:1h
+          ttl.sh/kuksa.val/kuksa-server-${{github.sha}}
         labels: ${{ steps.meta.outputs.labels }}
 
     - name: Build ephemereal kuksa-val docker and push to ttl.sh
@@ -79,5 +79,5 @@ jobs:
         file: ./kuksa-val-server/docker/Dockerfile
         context: .
         push: true
-        tags: ttl.sh/kuksa.val/kuksa-server-${{github.sha}}:1h
+        tags: ttl.sh/kuksa.val/kuksa-server-${{github.sha}}
         labels: ${{ steps.meta.outputs.labels }}

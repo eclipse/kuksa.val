@@ -9,9 +9,17 @@
 #  Contributors:
 #      Robert Bosch GmbH 
 # *****************************************************************************
+#
+# If you want to update Boost version do like this:
+# 1. Change BOOST_VER below
+# 2. Look at the source page (e.g. https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/)
+#    and download the tar.bz2.json file
+#    (e.g. https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.bz2.json)
+# 3. Extract the SHA from the file and add it to BOOST_URL_SHA256 below
+# 4. Change version in main README.md file for KUKSA.val Server
 
 set(Boost_USE_STATIC_LIBS OFF)
-set(BOOST_VER 1.75.0)
+set(BOOST_VER 1.82.0)
 set(Boost_NO_BOOST_CMAKE ON)
 set(BOOST_COMPONENTS filesystem program_options system log thread)
 ADD_DEFINITIONS(-DBOOST_LOG_DYN_LINK)
@@ -32,7 +40,7 @@ findBoost("")
 if(NOT Boost_FOUND)
   string(REPLACE "." "_" BOOST_VER_ ${BOOST_VER}) 
   set(BOOST_URL "https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER}/source/boost_${BOOST_VER_}.tar.bz2" CACHE STRING "Boost download URL")
-  set(BOOST_URL_SHA256 "953db31e016db7bb207f11432bef7df100516eeb746843fa0486a222e3fd49cb" CACHE STRING "Boost download URL SHA256 checksum")
+  set(BOOST_URL_SHA256 "a6e1ab9b0860e6a2881dd7b21fe9f737a095e5f33a3a874afc6a345228597ee6" CACHE STRING "Boost download URL SHA256 checksum")
   option(BOOST_DISABLE_TESTS "Do not build test targets" OFF)
   include(FetchContent)
   set(FETCHCONTENT_QUIET OFF)

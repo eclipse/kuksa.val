@@ -1,0 +1,46 @@
+# /********************************************************************************
+# * Copyright (c) 2022 Contributors to the Eclipse Foundation
+# *
+# * See the NOTICE file(s) distributed with this work for additional
+# * information regarding copyright ownership.
+# *
+# * This program and the accompanying materials are made available under the
+# * terms of the Apache License 2.0 which is available at
+# * http://www.apache.org/licenses/LICENSE-2.0
+# *
+# * SPDX-License-Identifier: Apache-2.0
+# ********************************************************************************/
+
+name: kuksa_go_client
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+    paths:
+    - ".github/workflows/kuksa-go.yml"
+    - "kuksa_go_client/**"
+  workflow_dispatch:
+
+jobs:
+
+  kuksa-go-client-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kuksa.val
+        uses: actions/checkout@v3
+      - name: Run go tests
+        run: |
+          cd kuksa_go_client
+          # We cannot use sudo apt install protobuf-compiler
+          # as default in Ubuntu 22.04 (3.12) consider optional as experimental feature
+          go run protocInstall/protocInstall.go
+          export PATH=$PATH:$HOME/protoc/bin
+          sudo chmod +x $HOME/protoc/bin/protoc
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          export PATH=$PATH:$HOME/go/bin
+          go generate .
+          go test .
+
