@@ -76,28 +76,47 @@ impl proto::val_server::Val for broker::DataBroker {
                                 entries.push(proto_entry);
                             }
                             Err(ReadError::NotFound) => {
-                                if request.path.ends_with('*') {
+                                if request.path.ends_with("**") {
                                     let mut sub_path_new = request.path.clone();
                                     sub_path_new.pop();
                                     sub_path_new.pop();
+                                    sub_path_new.pop();
+
                                     match broker.get_entries_by_wildcards(sub_path_new.as_ref()).await {
                                         Ok(entries_result) => {
                                             for data_entry in entries_result {
-                                                let view = proto::View::from_i32(request.view).ok_or_else(|| {
-                                                    tonic::Status::invalid_argument(format!(
-                                                        "Invalid View (id: {}",
-                                                        request.view
-                                                    ))
-                                                })?;
-                                                let fields =
-                                                    HashSet::<proto::Field>::from_iter(request.fields.iter().filter_map(
-                                                        |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                                    ));
-                                                let fields = combine_view_and_fields(view, fields);
-                                                debug!("Getting fields: {:?}", fields);
-                                                let proto_entry = proto_entry_from_entry_and_fields(data_entry, fields);
-                                                debug!("Getting datapoint: {:?}", proto_entry);
-                                                entries.push(proto_entry);
+                                                let count_path = data_entry.metadata.path.clone();
+                                                let remaining_path = count_path.replace(&sub_path_new, "");
+                                                
+                                                let dot_count = remaining_path.chars().filter(|&c| c == '.').count();
+
+                                                if dot_count > 1 {
+                                                    
+                                                    let second_dot_index = remaining_path.find('.').and_then(|i| remaining_path[i + 1..].find('.').map(|j| i + j + 1)).unwrap();
+
+                                                    let result_branch = sub_path_new.clone() + &remaining_path[..second_dot_index];
+
+                                                    if !entries.iter().any(|obj| obj.path == result_branch)
+                                                    {
+                                                        entries.push(proto::DataEntry {
+                                                            path: result_branch,
+                                                            value: None,
+                                                            actuator_target: None,
+                                                            metadata: None,
+                                                        });
+                                                    }
+                                                }
+                                            }
+
+                                            if entries.is_empty() {
+                                                errors.push(proto::DataEntryError {
+                                                    path: request.path,
+                                                    error: Some(proto::Error {
+                                                        code: 404,
+                                                        reason: "not_found".to_owned(),
+                                                        message: "Path branch has no branches".to_owned(),
+                                                    }),
+                                                });
                                             }
                                         }
                                         Err(ReadError::NotFound) => {
@@ -113,15 +132,36 @@ impl proto::val_server::Val for broker::DataBroker {
                                         Err(ReadError::PermissionExpired)=>{}
                                         Err(ReadError::PermissionDenied)=>{}
                                     }
-                                } else {
-                                    match broker.get_entries_by_wildcards(request.path.as_ref()).await {
+                                } else if request.path.ends_with('*') {
+                                    let mut sub_path_new = request.path.clone();
+                                    sub_path_new.pop();
+                                    sub_path_new.pop();
+                                    match broker.get_entries_by_wildcards(sub_path_new.as_ref()).await {
                                         Ok(entries_result) => {
-                                            let path = request.path.clone();
-                                            let proto_entry = proto::DataEntry {path, 
-                                                                                value: None, 
-                                                                                actuator_target: None,
-                                                                                metadata: None};
-                                            entries.push(proto_entry);
+                                            for data_entry in entries_result {
+                                                let count_path = data_entry.metadata.path.clone();
+                                                let remaining_path = count_path.replace(&sub_path_new, "");
+                                                
+                                                let dot_count = remaining_path.chars().filter(|&c| c == '.').count();
+
+                                                if dot_count == 1 {
+                                                    let view = proto::View::from_i32(request.view).ok_or_else(|| {
+                                                        tonic::Status::invalid_argument(format!(
+                                                            "Invalid View (id: {}",
+                                                            request.view
+                                                        ))
+                                                    })?;
+                                                    let fields =
+                                                        HashSet::<proto::Field>::from_iter(request.fields.iter().filter_map(
+                                                            |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
+                                                        ));
+                                                    let fields = combine_view_and_fields(view, fields);
+                                                    debug!("Getting fields: {:?}", fields);
+                                                    let proto_entry = proto_entry_from_entry_and_fields(data_entry, fields);
+                                                    debug!("Getting datapoint: {:?}", proto_entry);
+                                                    entries.push(proto_entry);
+                                                }
+                                            }
                                         }
                                         Err(ReadError::NotFound) => {
                                             errors.push(proto::DataEntryError {
@@ -136,6 +176,15 @@ impl proto::val_server::Val for broker::DataBroker {
                                         Err(ReadError::PermissionExpired)=>{}
                                         Err(ReadError::PermissionDenied)=>{}
                                     }
+                                } else {  
+                                    errors.push(proto::DataEntryError {
+                                        path: request.path,
+                                        error: Some(proto::Error {
+                                            code: 404,
+                                            reason: "not_found".to_owned(),
+                                            message: "Path branch has no entries".to_owned(),
+                                        }),
+                                    });
                                 }
                             }
                             Err(ReadError::PermissionExpired) => {
