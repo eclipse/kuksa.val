@@ -716,7 +716,6 @@ impl broker::EntryUpdate {
 mod tests {
     use super::*;
     use crate::{broker::DataBroker, permissions};
-    use regex::Regex;
 
     #[tokio::test]
     async fn test_update_datapoint_using_wrong_type() {
