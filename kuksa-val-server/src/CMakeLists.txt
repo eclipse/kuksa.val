@@ -22,7 +22,6 @@ set(SERVER_OBJ_LIB_NAME ${SERVER_EXE_NAME}-object )
 set(SERVER_LIB_NAME ${SERVER_EXE_NAME}-core )
 set(SERVER_LIB_STATIC_NAME ${SERVER_LIB_NAME}-static )
 set(GRPC_GENERATED_LIB_NAME kuksa_grpc_client_generated-object)
-set(GRPC_CLIENT_EXE_NAME kuksa_grpc_client)
 
 
 ###
