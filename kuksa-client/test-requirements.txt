@@ -46,7 +46,7 @@ ply==3.11
     # via jsonpath-ng
 protobuf==4.21.11
     # via grpcio-tools
-pygments==2.13.0
+pygments==2.15.0
     # via kuksa-client (setup.cfg)
 pylint==2.15.8
     # via kuksa-client (setup.cfg)
