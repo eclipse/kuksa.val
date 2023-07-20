@@ -9,7 +9,7 @@ KUKSA.val provides in-vehicle software components for working with in-vehicle si
 If you are new here, try the [Quickstart](doc/quickstart.md), which should not take more than 10 min of your time.
 
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0) 
+[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Gitter](https://img.shields.io/gitter/room/kuksa-val/community)](https://gitter.im/kuksa-val/community)
 
 [![Build kuksa-val-server](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_val_docker.yml/badge.svg)](https://github.com/eclipse/kuksa.val/actions/workflows/kuksa_val_docker.yml?query=branch%3Amaster)
@@ -32,3 +32,9 @@ KUKSA.val contains several components
 
 * [KUKSA.val TLS Concept](doc/tls.md)
 
+## Pre-commit set up
+This repository is set up to use [pre-commit](https://pre-commit.com/) hooks.
+Use `pip install pre-commit` to install pre-commit.
+After you clone the project, run `pre-commit install` to install pre-commit into your git hooks.
+Pre-commit will now run on every commit.
+Every time you clone a project using pre-commit running pre-commit install should always be the first thing you do.
