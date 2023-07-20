@@ -21,6 +21,8 @@ on:
     paths:
     - ".github/workflows/kuksa-client.yml"
     - "kuksa-client/**"
+    - "kuksa_certificates/**"
+    - "proto/**"
   workflow_dispatch:
 
 jobs:

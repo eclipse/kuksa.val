@@ -5,15 +5,12 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-    paths-ignore:
-    - ".github/workflows/kuksa_databroker_build.yml"
-    - "kuksa_databroker/**"
-    - "kuksa_go_client/**"
-    - "kuksa_client/**"
-    - "Cargo.*"
-    - "Cross.toml"
+    paths:
+    - ".github/workflows/kuksa_val_docker.yml"
+    - "kuksa-val-server/**"
+    - "kuksa_certificates/**"
   workflow_dispatch:
-    
+
 jobs:
   checkrights:
     uses: ./.github/workflows/check_push_rights.yml
@@ -26,7 +23,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-      with: 
+      with:
         submodules: recursive
 
     - name: Docker meta
@@ -64,7 +61,7 @@ jobs:
         file: ./kuksa-val-server/docker/Dockerfile
         context: .
         push: true
-        tags: | 
+        tags: |
           ${{ steps.meta.outputs.tags }}
           ttl.sh/kuksa.val/kuksa-server-${{github.sha}}
         labels: ${{ steps.meta.outputs.labels }}
