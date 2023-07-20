@@ -11,11 +11,11 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
+use regex::Regex;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::pin::Pin;
-use regex::Regex;
 
 use databroker_proto::kuksa::val::v1 as proto;
 use databroker_proto::kuksa::val::v1::DataEntryError;
@@ -59,16 +59,18 @@ impl proto::val_server::Val for broker::DataBroker {
                     true => {
                         match broker.get_entry_by_path(&request.path).await {
                             Ok(entry) => {
-                                let view = proto::View::from_i32(request.view).ok_or_else(|| {
-                                    tonic::Status::invalid_argument(format!(
-                                        "Invalid View (id: {}",
-                                        request.view
-                                    ))
-                                })?;
-                                let fields =
-                                    HashSet::<proto::Field>::from_iter(request.fields.iter().filter_map(
+                                let view =
+                                    proto::View::from_i32(request.view).ok_or_else(|| {
+                                        tonic::Status::invalid_argument(format!(
+                                            "Invalid View (id: {}",
+                                            request.view
+                                        ))
+                                    })?;
+                                let fields = HashSet::<proto::Field>::from_iter(
+                                    request.fields.iter().filter_map(
                                         |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                    ));
+                                    ),
+                                );
                                 let fields = combine_view_and_fields(view, fields);
                                 debug!("Getting fields: {:?}", fields);
                                 let proto_entry = proto_entry_from_entry_and_fields(entry, fields);
@@ -82,21 +84,37 @@ impl proto::val_server::Val for broker::DataBroker {
                                     sub_path_new.pop();
                                     sub_path_new.pop();
 
-                                    match broker.get_entries_by_wildcards(sub_path_new.as_ref()).await {
+                                    match broker
+                                        .get_entries_by_wildcards(sub_path_new.as_ref())
+                                        .await
+                                    {
                                         Ok(entries_result) => {
                                             for data_entry in entries_result {
                                                 let count_path = data_entry.metadata.path.clone();
-                                                let remaining_path = count_path.replace(&sub_path_new, "");
-                                                
-                                                let dot_count = remaining_path.chars().filter(|&c| c == '.').count();
+                                                let remaining_path =
+                                                    count_path.replace(&sub_path_new, "");
+
+                                                let dot_count = remaining_path
+                                                    .chars()
+                                                    .filter(|&c| c == '.')
+                                                    .count();
 
                                                 if dot_count > 1 {
-                                                    
-                                                    let second_dot_index = remaining_path.find('.').and_then(|i| remaining_path[i + 1..].find('.').map(|j| i + j + 1)).unwrap();
+                                                    let second_dot_index = remaining_path
+                                                        .find('.')
+                                                        .and_then(|i| {
+                                                            remaining_path[i + 1..]
+                                                                .find('.')
+                                                                .map(|j| i + j + 1)
+                                                        })
+                                                        .unwrap();
 
-                                                    let result_branch = sub_path_new.clone() + &remaining_path[..second_dot_index];
+                                                    let result_branch = sub_path_new.clone()
+                                                        + &remaining_path[..second_dot_index];
 
-                                                    if !entries.iter().any(|obj| obj.path == result_branch)
+                                                    if !entries
+                                                        .iter()
+                                                        .any(|obj| obj.path == result_branch)
                                                     {
                                                         entries.push(proto::DataEntry {
                                                             path: result_branch,
@@ -114,7 +132,8 @@ impl proto::val_server::Val for broker::DataBroker {
                                                     error: Some(proto::Error {
                                                         code: 404,
                                                         reason: "not_found".to_owned(),
-                                                        message: "Path branch has no branches".to_owned(),
+                                                        message: "Path branch has no branches"
+                                                            .to_owned(),
                                                     }),
                                                 });
                                             }
@@ -129,35 +148,50 @@ impl proto::val_server::Val for broker::DataBroker {
                                                 }),
                                             });
                                         }
-                                        Err(ReadError::PermissionExpired)=>{}
-                                        Err(ReadError::PermissionDenied)=>{}
+                                        Err(ReadError::PermissionExpired) => {}
+                                        Err(ReadError::PermissionDenied) => {}
                                     }
                                 } else if request.path.ends_with('*') {
                                     let mut sub_path_new = request.path.clone();
                                     sub_path_new.pop();
                                     sub_path_new.pop();
-                                    match broker.get_entries_by_wildcards(sub_path_new.as_ref()).await {
+                                    match broker
+                                        .get_entries_by_wildcards(sub_path_new.as_ref())
+                                        .await
+                                    {
                                         Ok(entries_result) => {
                                             for data_entry in entries_result {
                                                 let count_path = data_entry.metadata.path.clone();
-                                                let remaining_path = count_path.replace(&sub_path_new, "");
-                                                
-                                                let dot_count = remaining_path.chars().filter(|&c| c == '.').count();
+                                                let remaining_path =
+                                                    count_path.replace(&sub_path_new, "");
+
+                                                let dot_count = remaining_path
+                                                    .chars()
+                                                    .filter(|&c| c == '.')
+                                                    .count();
 
                                                 if dot_count == 1 {
-                                                    let view = proto::View::from_i32(request.view).ok_or_else(|| {
-                                                        tonic::Status::invalid_argument(format!(
-                                                            "Invalid View (id: {}",
-                                                            request.view
-                                                        ))
-                                                    })?;
-                                                    let fields =
-                                                        HashSet::<proto::Field>::from_iter(request.fields.iter().filter_map(
+                                                    let view = proto::View::from_i32(request.view)
+                                                        .ok_or_else(|| {
+                                                            tonic::Status::invalid_argument(
+                                                                format!(
+                                                                    "Invalid View (id: {}",
+                                                                    request.view
+                                                                ),
+                                                            )
+                                                        })?;
+                                                    let fields = HashSet::<proto::Field>::from_iter(
+                                                        request.fields.iter().filter_map(
                                                             |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                                        ));
-                                                    let fields = combine_view_and_fields(view, fields);
+                                                        ),
+                                                    );
+                                                    let fields =
+                                                        combine_view_and_fields(view, fields);
                                                     debug!("Getting fields: {:?}", fields);
-                                                    let proto_entry = proto_entry_from_entry_and_fields(data_entry, fields);
+                                                    let proto_entry =
+                                                        proto_entry_from_entry_and_fields(
+                                                            data_entry, fields,
+                                                        );
                                                     debug!("Getting datapoint: {:?}", proto_entry);
                                                     entries.push(proto_entry);
                                                 }
@@ -173,10 +207,10 @@ impl proto::val_server::Val for broker::DataBroker {
                                                 }),
                                             });
                                         }
-                                        Err(ReadError::PermissionExpired)=>{}
-                                        Err(ReadError::PermissionDenied)=>{}
+                                        Err(ReadError::PermissionExpired) => {}
+                                        Err(ReadError::PermissionDenied) => {}
                                     }
-                                } else {  
+                                } else {
                                     errors.push(proto::DataEntryError {
                                         path: request.path,
                                         error: Some(proto::Error {
@@ -208,7 +242,7 @@ impl proto::val_server::Val for broker::DataBroker {
                                 });
                             }
                         }
-                    },
+                    }
                     false => {
                         errors.push(proto::DataEntryError {
                             path: request.path,
@@ -218,9 +252,8 @@ impl proto::val_server::Val for broker::DataBroker {
                                 message: "Bad Request".to_owned(),
                             }),
                         });
-                    },
+                    }
                 };
-
             }
 
             // Not sure how to handle the "global error".
@@ -741,7 +774,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_valid_request_path() {
-
         let inputs = vec![
             "String.*",
             "String.**",
@@ -754,7 +786,7 @@ mod tests {
             "String.*.String.String..",
             "*.String.String.String..",
         ];
-    
+
         assert!(matches_path_pattern(inputs[0]));
         assert!(matches_path_pattern(inputs[1]));
         assert!(matches_path_pattern(inputs[2]));

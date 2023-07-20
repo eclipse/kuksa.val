@@ -882,17 +882,24 @@ impl<'a, 'b> DatabaseReadAccess<'a, 'b> {
         }
     }
 
-    pub fn get_entries_by_wildcards(&self, sub_path: impl AsRef<str>) -> Result<Vec<Entry>, ReadError> {
+    pub fn get_entries_by_wildcards(
+        &self,
+        sub_path: impl AsRef<str>,
+    ) -> Result<Vec<Entry>, ReadError> {
         let mut entries: Vec<Entry> = Vec::new();
         for key in self.db.path_to_id.keys() {
             if key.contains(sub_path.as_ref()) {
-                entries.push(self.get_entry_by_id(self.db.path_to_id.get(key).unwrap().to_owned()).unwrap().to_owned());
+                entries.push(
+                    self.get_entry_by_id(self.db.path_to_id.get(key).unwrap().to_owned())
+                        .unwrap()
+                        .to_owned(),
+                );
             }
         }
         if entries.is_empty() {
             return Err(ReadError::NotFound);
         }
-        
+
         Ok(entries)
     }
 
