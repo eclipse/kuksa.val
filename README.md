@@ -20,13 +20,12 @@ KUKSA.val contains several components
 
 | Component      | Description |
 | -------------- | ----------- |
-| [kuksa-val-server](kuksa-val-server) | Feature rich in-vehicle data server written in C++ providing authorized access to VSS data using W3C VISS websocket protocol or GRPC       |
-| [kuksa-databroker](./kuksa_databroker) | Efficient in-vehicle signal broker written in RUST
-| [Python SDK](./kuksa-client)   | Python library for easy interaction with kuksa-val-server
-|  [GO SDK](./kuksa_go_client)   | GOlang libraryfor easy interaction with kuksa-val-server
-| [kuksa-client](./kuksa-client)   | Command line tool to interactively explore and modify the VSS data points and data structure        |
-| [Examples](./kuksa_apps) | Multiple example apps for different programming languages and frameworks
-| [Feeders](https://github.com/eclipse/kuksa.val.feeders/) | Multiple feeders to gathering vehicle data and transforming it to VSS suitable for kuksa-val-server
+| [KUKSA Databroker](./kuksa_databroker) | Efficient in-vehicle signal broker written in RUST providing authorized access to VSS data using gRPC
+| [KUKSA Server](kuksa-val-server) | Feature rich in-vehicle data server written in C++ providing authorized access to VSS data using W3C VISS websocket protocol
+| [KUKSA Python Client and SDK](./kuksa-client)   | Command line tool to interactively explore and modify the VSS data points and data structure. Python library for easy interaction with KUKSA Databroker and Server
+| [KUKSA GO Client](./kuksa_go_client)   | Example client written in the [GO](https://go.dev/) programming language for easy interaction with KUKSA Databroker and Server
+| [Example Applications](./kuksa_apps) | Some example apps for different programming languages and frameworks
+| [Feeders and Providers](https://github.com/eclipse/kuksa.val.feeders/) | Multiple feeders and providers for exchanging vehicle data with KUKSA databroker and Server
 
 ## More information
 
