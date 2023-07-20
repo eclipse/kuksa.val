@@ -121,21 +121,3 @@ The jwt tokens for testing can also be found under [kuksa_certificates/jwt](../k
 You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa-client` can be found [here](../kuksa-client).
 
 Additionally, you can use the [example apps](../kuksa_apps) and [feeders](https://github.com/eclipse/kuksa.val.feeders/tree/main) to handle vehicle data, interacting with `kuksa-val-server`.
-
-## Using kuksa.val with a gRPC Client
-Additionally theres exists an experimental gRPC server. The easiest way to test the server is the kuksa_grpc_client.
-To run the client follow these steps:
-
-```
-cd build/src
-./kuksa_grpc_client
-```
-
-If you do not know how to use the client:
-
-```
-./kuksa_grpc_client --help
-```
-
-
-
