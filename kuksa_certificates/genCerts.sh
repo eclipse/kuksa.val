@@ -65,4 +65,3 @@ do
     genCert $i
     echo ""
 done
-
