@@ -13,12 +13,12 @@ echo "Recreating kuksa.val key pair used for JWT verification"
 echo "-------------------------------------------------------"
 
 
-echo -e "\nCreating private key"
+printf "\nCreating private key\n"
 ssh-keygen -t rsa -b 4096 -m PEM -f jwt.key -q -N ""
 
-echo -e "\nCreating public key"
+printf "\nCreating public key\n"
 openssl rsa -in jwt.key -pubout -outform PEM -out jwt.key.pub
 
-echo -e '\nYou can use the PRIVATE key "jwt.key" to generate new tokens using https://jwt.io or the "createToken.py" script.'
+printf '\nYou can use the PRIVATE key "jwt.key" to generate new tokens using https://jwt.io or the "createToken.py" script.\n'
 echo 'You need to give the PUBLIC key "jwt.key.pub" to the kuksa.val server, so it can verify correctly signed JWT tokens.'
 

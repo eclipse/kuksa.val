@@ -23,9 +23,12 @@ genKey() {
 # as some TLS client integrations cannot handle name verification towards IP-addresses
 # (Only client for now in KUKSA.val that has problem with IP host validation is the kuksa-client gRPC integration)
 genCert() {
+    tmp="$(mktemp)"
+    printf "subjectAltName=DNS:%s, DNS:localhost, IP:127.0.0.1" "$1" > "$tmp"
     openssl req -new -key $1.key -out $1.csr -passin pass:"temp" -subj "/C=CA/ST=Ontario/L=Ottawa/O=Eclipse.org Foundation, Inc./CN=$1/emailAddress=kuksa-dev@eclipse.org"
-    openssl x509 -req -in $1.csr -extfile <(printf "subjectAltName=DNS:$1, DNS:localhost, IP:127.0.0.1") -CA CA.pem -CAkey CA.key -CAcreateserial -days 365 -out $1.pem
+    openssl x509 -req -in $1.csr -extfile "$tmp" -CA CA.pem -CAkey CA.key -CAcreateserial -days 365 -out $1.pem
     openssl verify -CAfile CA.pem $1.pem
+    rm "$tmp"
 }
 
 set -e
