@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Copyright Robert Bosch GmbH, 2020. Part of the Eclipse Kuksa Project.
 #
