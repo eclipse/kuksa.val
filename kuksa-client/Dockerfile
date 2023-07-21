@@ -10,11 +10,10 @@
 
 FROM python:3.10-alpine as build
 RUN apk update && apk add git alpine-sdk linux-headers
-COPY kuksa-client /kuksa.val/kuksa-client/
-COPY kuksa_certificates /kuksa.val/kuksa_certificates/
-COPY proto/kuksa/val/v1/*.proto /kuksa.val/kuksa-client/kuksa/val/v1/
-WORKDIR /kuksa.val/kuksa-client
 RUN pip install --upgrade pip build
+# We must copy the whole repository otherwise version lookup by tag would not work
+COPY . /kuksa.val/
+WORKDIR /kuksa.val/kuksa-client
 RUN rm -rf dist
 RUN python3 -m build
 RUN mkdir /kuksa-client
