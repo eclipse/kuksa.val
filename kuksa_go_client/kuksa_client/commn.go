@@ -61,6 +61,9 @@ const (
 
 func (cg *KuksaClientCommGrpc) startCommunication() error {
 	var opts []grpc.DialOption
+	if !cg.Config.Insecure {
+		return errors.New("TLS not supported for communication with KUKSA Databroker!")
+	}
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	serverUrl := cg.Config.ServerAddress + ":" + cg.Config.ServerPort
 	var err error

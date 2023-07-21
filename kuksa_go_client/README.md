@@ -65,7 +65,9 @@ The GO clients reads the configuration file `kuksa-client.json`. In this reposit
 KUKSA.val Databroker (`kuksa-client-grpc.json`) and KUKSA.val Server (`kuksa-client-ws.json`) exists.
 The file `kuksa-client.json` is by default linked to `kuksa-client-grpc.json`.
 
-For using the GO client with the kuksa.val server set protocol = ws and for a connection to kuksa.val databroker set protocol = grpc. On the command line it's available through -protocol ws/grpc.
+For using the GO client with the kuksa.val server set protocol = ws and for a connection to kuksa.val Databroker set protocol = grpc. On the command line it's available through -protocol ws/grpc.
+
+*Note: For communication with KUKSA Databroker only insecure mode is supported, TLS can not be used!*
 
 ### Dependency updates
 
