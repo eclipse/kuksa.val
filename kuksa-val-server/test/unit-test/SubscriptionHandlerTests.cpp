@@ -19,7 +19,7 @@
  *      Robert Bosch GmbH
  **********************************************************************/
 
-#include <boost/test/unit_test.hpp> 
+#include <boost/test/unit_test.hpp>
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <turtle/mock.hpp>
@@ -34,8 +34,9 @@
 #include <set>
 #include <list>
 #include <thread>
+#include <fstream>
 
-#include <boost/uuid/uuid.hpp>            
+#include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
@@ -136,7 +137,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_SubscribeRequestOnDifferentPaths_Sh
                           VSSPath::fromVSSGen1("Vehicle.Acceleration"),
                           VSSPath::fromVSSGen1("Vehicle.Media"),
                           VSSPath::fromVSSGen1("Vehicle.Acceleration.Lateral") };
-  
+
 
   // expectations
 
@@ -204,7 +205,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_SubscribeRequestOnSinglePath_Sha
   MOCK_EXPECT(dbMock->pathIsReadable)
     .exactly(clientNum)
     .with(vsspath)
-    .returns(true);  
+    .returns(true);
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
     .with(mock::any, vsspath)
@@ -321,7 +322,7 @@ BOOST_AUTO_TEST_CASE(Given_SingleClient_When_UnsubscribeRequestOnDifferentPaths_
     MOCK_EXPECT(dbMock->pathIsReadable)
       .once()
       .with(vsspath[index])
-      .returns(true);      
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .once()
       .with(mock::any, vsspath[index])
@@ -380,7 +381,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_Unsubscribe_Shall_UnsubscribeAll
   MOCK_EXPECT(dbMock->pathIsReadable)
     .exactly(clientNum)
     .with(vsspath)
-    .returns(true);  
+    .returns(true);
   MOCK_EXPECT(accCheckMock->checkReadAccess)
     .exactly(clientNum)
     .with(mock::any, vsspath)
@@ -529,7 +530,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     MOCK_EXPECT(dbMock->pathIsReadable)
       .exactly(channelCount)
       .with(vsspath[index])
-      .returns(true);      
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
       .with(mock::any, vsspath[index])
@@ -627,7 +628,7 @@ BOOST_AUTO_TEST_CASE(Given_MultipleClients_When_MultipleSignalsSubscribedAndUpda
     MOCK_EXPECT(dbMock->pathIsReadable)
       .exactly(channelCount)
       .with(vsspath[index])
-      .returns(true);      
+      .returns(true);
     MOCK_EXPECT(accCheckMock->checkReadAccess)
       .exactly(channelCount)
       .with(mock::any, vsspath[index])
