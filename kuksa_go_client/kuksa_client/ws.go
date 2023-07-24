@@ -116,6 +116,10 @@ func (cc *KuksaClientCommWs) SetValueFromKuksaVal(path string, value string, att
 	req.Set("action", "set")
 	req.Set("path", path)
 	req.Set("attribute", attr)
+	// Note: Line below currently gives problems if value is a string representation of a JSON object
+	// (array and theoretically also struct)
+	// The Set method handles it as a string, which the gives problems at the server side which expects for example
+	// a JSON array rather than a string containing an array
 	req.Set(attr, value)
 
 	_, err := cc.communicationHandler(req)
@@ -135,7 +139,7 @@ func (cc *KuksaClientCommWs) AuthorizeKuksaValConn(TokenOrTokenfile string) erro
 		}
 		tokenString = TokenOrTokenfile
 	}
-	
+
 	log.Printf("Using token: %s", tokenString)
 
 	info, err := os.Stat(tokenString)
