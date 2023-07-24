@@ -85,53 +85,57 @@ func main() {
 		}
 	}
 
-	err = backend.SetValueFromKuksaVal("Vehicle.OBD.DTCList", "[dtc1, dtc2, dtc3]", "value")
-	if err != nil {
-		log.Printf("Set Value Error: %v", err)
-	} else {
-		log.Printf("Vehicle.OBD.DTCList Set: [dtc1, dtc2, dtc3]")
-	}
+	// Go client does not support setting of array values for Websocket
+	// Reason is SetValueFromKuksaVal where we set the JSON array we get as onput as string,
+	// so it gets quoted and considered as a string on server side and cause error
+	if *protocol == "grpc" {
+		err = backend.SetValueFromKuksaVal("Vehicle.OBD.DTCList", "[dtc1, dtc2, dtc3]", "value")
+		if err != nil {
+			log.Printf("Set Value Error: %v", err)
+		} else {
+			log.Printf("Vehicle.OBD.DTCList Set: [dtc1, dtc2, dtc3]")
+		}
 
-	values, err = backend.GetValueFromKuksaVal("Vehicle.OBD.DTCList", "value")
-	if err != nil {
-		log.Printf("Get Value Error: %v", err)
-	} else {
-		for _, value := range values {
-			if *protocol == "grpc" {
-				log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())
-			} else {
-				log.Println("Vehicle.OBD.DTCList: " + value.(string))
+		values, err = backend.GetValueFromKuksaVal("Vehicle.OBD.DTCList", "value")
+		if err != nil {
+			log.Printf("Get Value Error: %v", err)
+		} else {
+			for _, value := range values {
+				if *protocol == "grpc" {
+					log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())
+				} else {
+					log.Println("Vehicle.OBD.DTCList: " + value.(string))
+				}
+			}
+		}
+
+		// set string with "" and \"
+		// Expected result is 4 items in the list
+		// dtc1, dtc2
+		// dtc2
+		// dtc3, dtc3
+		// dtc4
+		var valstr = "['dtc1, dtc2', dtc2, \"dtc3, dtc3\", dtc4]"
+		err = backend.SetValueFromKuksaVal("Vehicle.OBD.DTCList", valstr, "value")
+		if err != nil {
+			log.Printf("Set Value Error: %v", err)
+		} else {
+			log.Printf("Vehicle.OBD.DTCList Set: " + valstr)
+		}
+
+		values, err = backend.GetValueFromKuksaVal("Vehicle.OBD.DTCList", "value")
+		if err != nil {
+			log.Printf("Get Value Error: %v", err)
+		} else {
+			for _, value := range values {
+				if *protocol == "grpc" {
+					log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())
+				} else {
+					log.Println("Vehicle.OBD.DTCList: " + value.(string))
+				}
 			}
 		}
 	}
-
-	// set string with "" and \"
-	// Expected result is 4 items in the list
-	// dtc1, dtc2
-	// dtc2
-	// dtc3, dtc3
-	// dtc4
-	var valstr = "['dtc1, dtc2', dtc2, \"dtc3, dtc3\", dtc4]"
-	err = backend.SetValueFromKuksaVal("Vehicle.OBD.DTCList", valstr, "value")
-	if err != nil {
-		log.Printf("Set Value Error: %v", err)
-	} else {
-		log.Printf("Vehicle.OBD.DTCList Set: " + valstr)
-	}
-
-	values, err = backend.GetValueFromKuksaVal("Vehicle.OBD.DTCList", "value")
-	if err != nil {
-		log.Printf("Get Value Error: %v", err)
-	} else {
-		for _, value := range values {
-			if *protocol == "grpc" {
-				log.Println("Vehicle.OBD.DTCList: " + value.(*v1.DataEntry).String())
-			} else {
-				log.Println("Vehicle.OBD.DTCList: " + value.(string))
-			}
-		}
-	}
-
 	err = backend.SetValueFromKuksaVal("Vehicle.ADAS.ABS.IsEnabled", "true", "targetValue")
 	if err != nil {
 		log.Printf("Set Value Error: %v", err)
