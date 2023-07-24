@@ -23,16 +23,19 @@ import time
 import stressClient
 
 vissClient = stressClient.StressClient()
-count=0
+count = 0
 
-print("VSS Server       : {}".format(vissClient.commThread.serverIP+':'+str(vissClient.commThread.serverPort)))
-print("JWT token file   : {}".format(vissClient.commThread.tokenfile))
+print("VSS Server       : {}".format(vissClient.commThread.backend.serverIP + ':' +
+                                     str(vissClient.commThread.backend.serverPort)))
+print("JWT token file   : {}".format(vissClient.commThread.backend.token_or_tokenfile))
 print("Timeout [s]      : {}".format(vissClient.commThread.timeout))
 
 while True:
-    vissClient.commThread.setValue("Vehicle.OBD.EngineLoad", (count%110)+1,timeout=vissClient.commThread.timeout)
-    vissClient.commThread.setValue("Vehicle.Speed", count,timeout=vissClient.commThread.timeout)
-    vissClient.commThread.setValue("Vehicle.Cabin.Door.Row1.Right.Shade.Switch", "Open",timeout=vissClient.commThread.timeout)
-    vissClient.commThread.getValue("Vehicle.Speed",vissClient.commThread.timeout)
-    
+    vissClient.commThread.setValue("Vehicle.OBD.EngineLoad", str((count % 110)+1),
+                                   timeout=vissClient.commThread.timeout)
+    vissClient.commThread.setValue("Vehicle.Speed", str(count), timeout=vissClient.commThread.timeout)
+    vissClient.commThread.setValue("Vehicle.Cabin.Door.Row1.Right.Shade.Switch", "Open",
+                                   timeout=vissClient.commThread.timeout)
+    vissClient.commThread.getValue("Vehicle.Speed", vissClient.commThread.timeout)
+
     time.sleep(vissClient.commThread.timeout)
