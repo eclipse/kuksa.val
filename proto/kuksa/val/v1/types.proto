@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ********************************************************************************/
- 
+
 syntax = "proto3";
 
 // I added V1 as in databroker. Is this good practice?
