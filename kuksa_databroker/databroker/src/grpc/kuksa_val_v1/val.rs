@@ -194,6 +194,40 @@ impl proto::val_server::Val for broker::DataBroker {
                                                         );
                                                     debug!("Getting datapoint: {:?}", proto_entry);
                                                     entries.push(proto_entry);
+                                                } else if dot_count == 2 {
+
+                                                    let mut metadata_result = None;
+                                                    if request.view == 3 && request.fields[0] == 10 {
+                                                        let mut metadata = proto::Metadata::default();
+                                                        metadata.data_type = proto::DataType::Unspecified as i32;
+                                                        metadata.entry_type = proto::EntryType::Branch as i32;
+                                                        //metadata.entry_specific = Some(proto::metadata::EntrySpecific::Branch(proto::Branch::default()));
+                                                        metadata_result = Some(metadata);
+                                                    }
+                                                    
+                                                    let second_dot_index = remaining_path
+                                                        .find('.')
+                                                        .and_then(|i| {
+                                                            remaining_path[i + 1..]
+                                                                .find('.')
+                                                                .map(|j| i + j + 1)
+                                                        })
+                                                        .unwrap();
+
+                                                    let result_branch = sub_path_new.clone()
+                                                        + &remaining_path[..second_dot_index];
+
+                                                    if !entries
+                                                        .iter()
+                                                        .any(|obj| obj.path == result_branch)
+                                                    {
+                                                        entries.push(proto::DataEntry {
+                                                            path: result_branch,
+                                                            value: None,
+                                                            actuator_target: None,
+                                                            metadata: metadata_result,
+                                                        });
+                                                    }
                                                 }
                                             }
                                         }
@@ -216,7 +250,7 @@ impl proto::val_server::Val for broker::DataBroker {
                                         error: Some(proto::Error {
                                             code: 404,
                                             reason: "not_found".to_owned(),
-                                            message: "Path branch has no entries".to_owned(),
+                                            message: "Can't read branches".to_owned(),
                                         }),
                                     });
                                 }
@@ -588,7 +622,7 @@ fn proto_entry_from_entry_and_fields(
                     // ));
                     None
                 }
-                broker::EntryType::Sensor | broker::EntryType::Attribute => None,
+                broker::EntryType::Branch | broker::EntryType::Sensor | broker::EntryType::Attribute => None,
             };
         }
         if all || fields.contains(&proto::Field::MetadataSensor) {
@@ -601,7 +635,7 @@ fn proto_entry_from_entry_and_fields(
                     // ));
                     None
                 }
-                broker::EntryType::Attribute | broker::EntryType::Actuator => None,
+                broker::EntryType::Branch | broker::EntryType::Attribute | broker::EntryType::Actuator => None,
             };
         }
         if all || fields.contains(&proto::Field::MetadataAttribute) {
@@ -614,7 +648,20 @@ fn proto_entry_from_entry_and_fields(
                     // ));
                     None
                 }
-                broker::EntryType::Sensor | broker::EntryType::Actuator => None,
+                broker::EntryType::Branch | broker::EntryType::Sensor | broker::EntryType::Actuator => None,
+            };
+        }
+        if all || fields.contains(&proto::Field::MetadataBranch) {
+            metadata_is_set = true;
+            // TODO: Add to Metadata
+            metadata.entry_specific = match entry.metadata.entry_type {
+                broker::EntryType::Branch => {
+                    // Some(proto::metadata::EntrySpecific::Branch(
+                    //     proto::Branch::default(),
+                    // ));
+                    None
+                }
+                broker::EntryType::Attribute | broker::EntryType::Sensor | broker::EntryType::Actuator => None,
             };
         }
 

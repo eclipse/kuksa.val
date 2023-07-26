@@ -1,15 +1,15 @@
 /********************************************************************************
- * Copyright (c) 2022 Contributors to the Eclipse Foundation
- *
- * See the NOTICE file(s) distributed with this work for additional
- * information regarding copyright ownership.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License 2.0 which is available at
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * SPDX-License-Identifier: Apache-2.0
- ********************************************************************************/
+* Copyright (c) 2022 Contributors to the Eclipse Foundation
+*
+* See the NOTICE file(s) distributed with this work for additional
+* information regarding copyright ownership.
+*
+* This program and the accompanying materials are made available under the
+* terms of the Apache License 2.0 which is available at
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* SPDX-License-Identifier: Apache-2.0
+********************************************************************************/
 
 syntax = "proto3";
 
@@ -98,6 +98,7 @@ message Metadata {
     Actuator actuator   = 20;  // [field: FIELD_METADATA_ACTUATOR]
     Sensor sensor       = 30;  // [field: FIELD_METADATA_SENSOR]
     Attribute attribute = 40;  // [field: FIELD_METADATA_ATTRIBUTE]
+    Branch branch       = 50;  // [field: FIELD_METADATA_BRANCH]
   }
 }
 
@@ -116,6 +117,12 @@ message Sensor {
 ////////////////////////
 // Attribute specific
 message Attribute {
+  // Nothing for now.
+}
+
+////////////////////////
+// Branch specific
+message Branch {
   // Nothing for now.
 }
 
@@ -202,6 +209,7 @@ enum EntryType {
   ENTRY_TYPE_ATTRIBUTE   = 1;
   ENTRY_TYPE_SENSOR      = 2;
   ENTRY_TYPE_ACTUATOR    = 3;
+  ENTRY_TYPE_BRANCH      = 4;
 }
 
 // A `View` specifies a set of fields which should
@@ -239,6 +247,7 @@ enum Field {
   FIELD_METADATA_ACTUATOR          = 20;  // metadata.actuator.*
   FIELD_METADATA_SENSOR            = 30;  // metadata.sensor.*
   FIELD_METADATA_ATTRIBUTE         = 40;  // metadata.attribute.*
+  FIELD_METADATA_BRANCH            = 50;  // metadata.branch.*
 }
 
 // Error response shall be an HTTP-like code.

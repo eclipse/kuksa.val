@@ -279,6 +279,7 @@ impl From<&broker::EntryType> for proto::EntryType {
             broker::EntryType::Sensor => proto::EntryType::Sensor,
             broker::EntryType::Attribute => proto::EntryType::Attribute,
             broker::EntryType::Actuator => proto::EntryType::Actuator,
+            broker::EntryType::Branch => proto::EntryType::Branch,
         }
     }
 }

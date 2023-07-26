@@ -48,6 +48,7 @@ pub enum EntryType {
     Sensor,
     Attribute,
     Actuator,
+    Branch,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -64,6 +64,7 @@ enum EntryType {
   ENTRY_TYPE_SENSOR      = 1;
   ENTRY_TYPE_ACTUATOR    = 2;
   ENTRY_TYPE_ATTRIBUTE   = 3;
+  ENTRY_TYPE_BRANCH      = 4;
 }
 
 enum ChangeType {
