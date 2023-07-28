@@ -11,8 +11,8 @@ FROM ubuntu:20.04 as build
 RUN apt-get  update && DEBIAN_FRONTEND="noninteractive" apt-get -y install libssl-dev  \
                         pkg-config \
                         build-essential \
-                        gnupg2 \ 
-                        wget \ 
+                        gnupg2 \
+                        wget \
                         software-properties-common \
                         git \
                         cmake \
@@ -30,7 +30,7 @@ RUN ./b2 -j 6 install
 
 WORKDIR /
 # Build and install grpc
-ENV GRPC_VER=1.40.0
+ENV GRPC_VER=1.44.0
 RUN git clone --recurse-submodules -b v${GRPC_VER} https://github.com/grpc/grpc
 RUN mkdir -p /grpc/build
 WORKDIR /grpc/build

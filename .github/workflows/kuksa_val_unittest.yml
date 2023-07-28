@@ -2,24 +2,28 @@ name: kuksa_val_unittests
 
 on:
   push:
-    branches: [ disabled ]
-    tags:
-      - '0.*'
+    branches: [ master ]
   pull_request:
-    branches: [ disabled ]
-    
+    branches: [ master ]
+    paths:
+    - ".github/workflows/kuksa_val_unittest.yml"
+    - "kuksa-val-server/**"
+    - "kuksa_certificates/**"
+    - "proto/**"
+  workflow_dispatch:
+
 jobs:
   buildAndTest:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-      with: 
+    - uses: actions/checkout@v3
+      with:
         submodules: recursive
     - name: Unit test
       uses: ./.github/actions/unit-test
     - name: listing test results
-      run: ls out 
+      run: ls out
     - name: Upload unittests artifact
       uses: actions/upload-artifact@v2
       with:
