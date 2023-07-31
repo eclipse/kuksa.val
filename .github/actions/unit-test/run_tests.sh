@@ -15,7 +15,7 @@ while getopts ":b:a:h" opt; do
       ;;
     a ) artifactdir=$OPTARG
       ;;
-    h|\? ) printUsage 
+    h|\? ) printUsage
       ;;
   esac
 done
@@ -31,18 +31,18 @@ cd ${builddir}
 
 cmake -DBUILD_UNIT_TEST=ON -DCTEST_RESULT_CODE=no -DENABLE_COVERAGE=ON ..
 
-make -j8
+make -j 4
 
 rm -rf test/unit-test/results.xml
 rm -rf lcov/data/capture/all_targets.info
 
 ctest --output-on-failure
-make lcov 
+make lcov
 lcov --list lcov/data/capture/all_targets.info
 
 echo "archive artifacts under ${artifactdir}"
 cd ${basepath}
-if [ ! -d "${artifactdir}" ] 
+if [ ! -d "${artifactdir}" ]
 then
   mkdir -p ${artifactdir}
 fi
