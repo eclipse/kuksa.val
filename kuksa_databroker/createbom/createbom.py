@@ -117,7 +117,7 @@ def generate_bom(source_path, target_path, dashout):
     errors = []
     for crate in crates:
         try:
-            print(f"License for {crate['name']}: ", end="")
+            print(f"License for {crate['name']} {crate['version']}: ", end="")
             license_filenames = extract_license_filenames(crate)
             for license_filename in license_filenames:
                 license_files.add(license_filename)
@@ -178,7 +178,7 @@ def main(args=None):
         )
         return -2
 
-    if args.dash != None and os.path.exists(args.dash):
+    if args.dash is not None and os.path.exists(args.dash):
         print(
             f"Requested Dash output file {args.dash} exists. Remove it before running this script.")
         return -3
@@ -195,6 +195,5 @@ def main(args=None):
 
 
 if __name__ == "__main__":
-    import sys
 
     sys.exit(main(sys.argv[1:]))
