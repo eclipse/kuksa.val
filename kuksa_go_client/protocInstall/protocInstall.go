@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 const (
@@ -50,8 +51,11 @@ func UnzipSource(source, destination string) error {
 	}
 
 	for _, f := range reader.File {
+		if strings.Contains(f.Name, "..") {
+			fmt.Println("Ignoring path traversal elements (CWE-22): ", f.Name)
+			continue
+		}
 		filePath := filepath.Join(destination, f.Name)
-
 		if f.FileInfo().IsDir() {
 			err := os.MkdirAll(filePath, os.ModePerm)
 			if err != nil {
