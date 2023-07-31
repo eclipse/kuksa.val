@@ -13,12 +13,12 @@ We suggest not creating overlay JSON files directly, but instead writing YAML fi
 
 Lets make an example
 
-Consider you want to add a signal and change an existing VSS entry. 
+Consider you want to add a signal and change an existing VSS entry.
 
 Consider this VSS-compliant YAML file. We call it `roadster-elon.vspec`
 
 ```yaml
-# Extend kuksa-val model   
+# Extend kuksa-val model
 - Vehicle:
   type: branch
 
@@ -34,7 +34,7 @@ Consider this VSS-compliant YAML file. We call it `roadster-elon.vspec`
   type: sensor
 ```
 
-What happened here? 
+What happened here?
  - We changed the allowed max value for `Vehicle.Speed`. This value is already in the standard COVESA VSS data points, however in our use example we need to increase the allowed max value
  - We added a completely new signal `ThrustersActive` in the `Vehicle.Private` branch
 
@@ -49,14 +49,14 @@ python3 vspec2json.py -i :my.id -I ../spec/ roadster-elon.vspec  roadster-elon.j
 Now let's try on a running KUKSA.val instance with a vanilla VSS structure.
 Using the test client, you can update the VSS tree like this:
 ```
-updateVSSTree roadster-elon.json 
+updateVSSTree roadster-elon.json
 ```
 
 Then you can check, that the new signal is available and the max speed limit has increased:
 
 ![Alt text](../pictures/testclient_updateVSSTree.gif "test client update vss tree")
 
-**Note:** You may need the [super-admin.json.token](../../kuksa_certificates/jwt/super-admin.json.token) for authorization. 
+**Note:** You may need the [super-admin.json.token](../../kuksa_certificates/jwt/super-admin.json.token) for authorization.
 
 ## Hot-patching with updateMetaData
 if you just want to add or change a single metadata item in a signal or sensor, going through the whole VSS tooling may be a little cumbersome. Instead, you can use the testclient to update metadata of a single path directly, if you have the permission to modify metadata:
@@ -72,5 +72,5 @@ updateMetaData updateMetaData Vehicle.Speed '{"max":9999}'
 ## Limitations
 As the Input data to `updateVSSTree` as well as `updateMetaData`is merged with the existing data structure, there is no way to _remove_ previously added elements.
 
-**This feature schould be considered Beta quality.**
-Similar to the initial JSON, there is not much input verification going on. We _check_ that you provide syntactically valid JSON, we _trust_ that it is a valid VSS structure. Therefore, as a system design suggestion, we recommend you perform any neccesary, potentially dangerous, data structure modifcations during system initialization phase, preferably using the `--overlays` parameter of `kuksa-val-server`.
+**This feature should be considered Beta quality.**
+Similar to the initial JSON, there is not much input verification going on. We _check_ that you provide syntactically valid JSON, we _trust_ that it is a valid VSS structure. Therefore, as a system design suggestion, we recommend you perform any necessary, potentially dangerous, data structure modifications during system initialization phase, preferably using the `--overlays` parameter of `kuksa-val-server`.

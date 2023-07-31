@@ -23,6 +23,6 @@ ADD . /kuksa.val
 RUN  rm -rf /kuksa.val/kuksa-val-server/build  && mkdir  /kuksa.val/kuksa-val-server/build
 WORKDIR /kuksa.val/kuksa-val-server/build
 RUN cmake .. -DBUILD_UNIT_TEST=ON -DCMAKE_BUILD_TYPE=Coverage
-RUN make -j8
+RUN make -j 4
 
 CMD ./src/kuksa-val-server -c src/config.ini
