@@ -80,6 +80,7 @@ class EntryType(enum.IntEnum):
     ACTUATOR = types_pb2.ENTRY_TYPE_ACTUATOR
     BRANCH = types_pb2.ENTRY_TYPE_BRANCH
 
+
 class View(enum.IntEnum):
     UNSPECIFIED = types_pb2.VIEW_UNSPECIFIED
     CURRENT_VALUE = types_pb2.VIEW_CURRENT_VALUE
