@@ -17,11 +17,11 @@ docker buildx build --platform=linux/arm64 -f ./kuksa-val-server/docker/Dockerfi
 
 
 ## Development Docker
-Not optimized at all, just gets  Ubuntu installed and does a first compile. Will drop you to a shell
+Not optimized at all, just gets  Ubuntu installed and does compile KUKSA Server.
+When run it will start KUKSA Server with default configuration.
 
-To build go to kuksa.val server main dir and do
+To build go to `kuksa.val` directory and do
 
 ```
-docker build -f ./kuksa-val-server/docker/Dockerfile.dev -t kuksavaltest . 
+docker build -f ./kuksa-val-server/docker/Dockerfile.dev -t kuksavaltest .
 ```
-

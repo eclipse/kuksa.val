@@ -33,4 +33,8 @@ MAP = {
     "ISC": "ISC.txt.gz",
     "ring": "ring.LICENSE.txt.gz",
     "rustls-webpki": "webpki.LICENSE.txt.gz",
+    # License text taken from https://spdx.org/licenses/0BSD.html
+    "0BSD": "0BSD.txt.gz",
+    # License test taken from https://spdx.org/licenses/BSD-3-Clause.html
+    "BSD-3-Clause": "BSD-3-Clause.txt.gz"
 }

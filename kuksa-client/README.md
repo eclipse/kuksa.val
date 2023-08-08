@@ -183,7 +183,7 @@ This is an example showing how some of the commands can be used:
 
 ### Syntax for specifying data in the command line interface
 
-Values used as argument to for example `setValue` shall match the type given. Quotes (single and double) are 
+Values used as argument to for example `setValue` shall match the type given. Quotes (single and double) are
 generally not needed, except in a few special cases. A few valid examples on setting float is shown below:
 
 ```
@@ -194,6 +194,10 @@ setValue Vehicle.Speed '45.2'
 
 For strings escaped quotes are needed if you want quotes to be sent to Server/Databroker, like if you want to store
 `Almost "red"` as value. Alternatively you can use outer single quotes and inner double quotes.
+
+*NOTE: KUKSA Server and Databroker currently handle (escaped) quotes in strings differently!*
+*The behavior described below is in general correct for KUKSA Databroker, but result may be different if interacting with KUKSA Server!*
+*For consistent behavior it is recommended not to include (escaped) quotes in strings, except when needed to separate values*
 
 The two examples below are equal:
 
@@ -221,37 +225,28 @@ setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect "Almost green"
 setValue Vehicle.Cabin.Light.InteractiveLightBar.Effect 'Almost green         '
 ```
 
+It is possible to set array values. In general the value should be a valid JSON representation of the array.
+For maximum compatibility for both KUKSA Server and KUKSA Databroker the following recommendations applies:
 
-It is possible to set array values. Setting a string array with simple identifiers is not a problem. Also not if they
-contain blanks
+* Always use single quotes around the array value. For some cases, like if there is no blanks or comma in the value, it is not needed, but it is good practice.
+* Always use double quotes around string values.
+* Never use single quotes inside string values
+* Double quotes inside string values are allowed but must be escaped (`\"`)
+
+Some examples supported by both KUKSA databroker and KUKSA Server are shown below
+
+Setting a string array in KUKSA Databroker with simple identifiers is not a problem.
+Also not if they contain blanks
 
 ```
-// Array with two elements
-setValue Vehicle.OBD.DTCList [abc,def]
+// Array with two string elements
+setValue Vehicle.OBD.DTCList '["abc","def"]'
+// Array with two int elements (Note no quotes)
+setValue Vehicle.SomeInt '[123,456]'
 // Array with two elements, "hello there" and "def"
-setValue Vehicle.OBD.DTCList [hello there,def]
-```
-
-Setting values that includes comma or quotation marks is more tricky, as the shell argument parser handling affects
-how they are interpreted. The recommended approach is to have outer quotes of one type and user inner quotes of the
-other type.
-
-Example 1: First item should be `hello, there`
-
-```
-setValue Vehicle.OBD.DTCList '[ "hello, there",def]'
-```
-
-Example 2: First item should be `hello, "there"`
-
-```
-setValue Vehicle.OBD.DTCList '["hello, \"there\"",def]'
-```
-
-Example 3: First item should be `hello, 'there'`
-
-```
-setValue Vehicle.OBD.DTCList "['hello, \'there\'',def]"
+setValue Vehicle.OBD.DTCList '["hello there","def"]'
+// Array with doubl quotes in string value; hello "there"
+setValue Vehicle.OBD.DTCList '["hello, \"there\"","def"]'
 ```
 
 ### Updating VSS Structure

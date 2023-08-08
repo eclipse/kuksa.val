@@ -65,9 +65,6 @@ First install the required packages. On Ubuntu 20.04 this can be achieved by
 sudo apt install cmake build-essential libssl-dev libmosquitto-dev
 ```
 
-**Note**: If you use `cmake >= 3.14`, you do not need to install boost on your system. `cmake` will download the required boost for building. Otherwise you need install the [`boost==1.82`](https://www.boost.org/users/history/version_1_82_0.html) on the system.
-
-
 
 ### Compiling
 Create a build folder inside the kuksa-val-server folder and execute cmake
@@ -121,21 +118,3 @@ The jwt tokens for testing can also be found under [kuksa_certificates/jwt](../k
 You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa-client` can be found [here](../kuksa-client).
 
 Additionally, you can use the [example apps](../kuksa_apps) and [feeders](https://github.com/eclipse/kuksa.val.feeders/tree/main) to handle vehicle data, interacting with `kuksa-val-server`.
-
-## Using kuksa.val with a gRPC Client
-Additionally theres exists an experimental gRPC server. The easiest way to test the server is the kuksa_grpc_client.
-To run the client follow these steps:
-
-```
-cd build/src
-./kuksa_grpc_client
-```
-
-If you do not know how to use the client:
-
-```
-./kuksa_grpc_client --help
-```
-
-
-
