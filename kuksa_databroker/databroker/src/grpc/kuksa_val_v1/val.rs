@@ -195,16 +195,19 @@ impl proto::val_server::Val for broker::DataBroker {
                                                     debug!("Getting datapoint: {:?}", proto_entry);
                                                     entries.push(proto_entry);
                                                 } else if dot_count == 2 {
-
                                                     let mut metadata_result = None;
-                                                    if request.view == 3 && request.fields[0] == 10 {
-                                                        let mut metadata = proto::Metadata::default();
-                                                        metadata.data_type = proto::DataType::Unspecified as i32;
-                                                        metadata.entry_type = proto::EntryType::Branch as i32;
+                                                    if request.view == 3 && request.fields[0] == 10
+                                                    {
+                                                        let mut metadata =
+                                                            proto::Metadata::default();
+                                                        metadata.data_type =
+                                                            proto::DataType::Unspecified as i32;
+                                                        metadata.entry_type =
+                                                            proto::EntryType::Branch as i32;
                                                         //metadata.entry_specific = Some(proto::metadata::EntrySpecific::Branch(proto::Branch::default()));
                                                         metadata_result = Some(metadata);
                                                     }
-                                                    
+
                                                     let second_dot_index = remaining_path
                                                         .find('.')
                                                         .and_then(|i| {
@@ -622,7 +625,9 @@ fn proto_entry_from_entry_and_fields(
                     // ));
                     None
                 }
-                broker::EntryType::Branch | broker::EntryType::Sensor | broker::EntryType::Attribute => None,
+                broker::EntryType::Branch
+                | broker::EntryType::Sensor
+                | broker::EntryType::Attribute => None,
             };
         }
         if all || fields.contains(&proto::Field::MetadataSensor) {
@@ -635,7 +640,9 @@ fn proto_entry_from_entry_and_fields(
                     // ));
                     None
                 }
-                broker::EntryType::Branch | broker::EntryType::Attribute | broker::EntryType::Actuator => None,
+                broker::EntryType::Branch
+                | broker::EntryType::Attribute
+                | broker::EntryType::Actuator => None,
             };
         }
         if all || fields.contains(&proto::Field::MetadataAttribute) {
@@ -648,7 +655,9 @@ fn proto_entry_from_entry_and_fields(
                     // ));
                     None
                 }
-                broker::EntryType::Branch | broker::EntryType::Sensor | broker::EntryType::Actuator => None,
+                broker::EntryType::Branch
+                | broker::EntryType::Sensor
+                | broker::EntryType::Actuator => None,
             };
         }
         if all || fields.contains(&proto::Field::MetadataBranch) {
@@ -661,7 +670,9 @@ fn proto_entry_from_entry_and_fields(
                     // ));
                     None
                 }
-                broker::EntryType::Attribute | broker::EntryType::Sensor | broker::EntryType::Actuator => None,
+                broker::EntryType::Attribute
+                | broker::EntryType::Sensor
+                | broker::EntryType::Actuator => None,
             };
         }
 

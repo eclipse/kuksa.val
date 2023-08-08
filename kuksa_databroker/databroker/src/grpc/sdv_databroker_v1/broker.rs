@@ -110,7 +110,9 @@ impl proto::broker_server::Broker for broker::DataBroker {
                 match broker.get_metadata_by_path(&path).await {
                     Some(metadata) => {
                         match metadata.entry_type {
-                            broker::EntryType::Branch | broker::EntryType::Sensor | broker::EntryType::Attribute => {
+                            broker::EntryType::Branch
+                            | broker::EntryType::Sensor
+                            | broker::EntryType::Attribute => {
                                 // Cannot set sensor / attribute through the `Broker` API.
                                 debug!("Cannot set sensor / attribute through the `Broker` API.");
                                 errors.insert(
