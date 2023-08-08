@@ -198,13 +198,7 @@ impl proto::val_server::Val for broker::DataBroker {
                                                     let mut metadata_result = None;
                                                     if request.view == 3 && request.fields[0] == 10
                                                     {
-                                                        let mut metadata =
-                                                            proto::Metadata::default();
-                                                        metadata.data_type =
-                                                            proto::DataType::Unspecified as i32;
-                                                        metadata.entry_type =
-                                                            proto::EntryType::Branch as i32;
-                                                        //metadata.entry_specific = Some(proto::metadata::EntrySpecific::Branch(proto::Branch::default()));
+                                                        let metadata = databroker_proto::kuksa::val::v1::Metadata { data_type: proto::DataType::Unspecified as i32, entry_type: proto::EntryType::Branch as i32, ..Default::default() };
                                                         metadata_result = Some(metadata);
                                                     }
 
