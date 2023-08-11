@@ -99,29 +99,102 @@ impl proto::val_server::Val for broker::DataBroker {
                                                     .filter(|&c| c == '.')
                                                     .count();
 
-                                                if dot_count > 1 {
-                                                    let second_dot_index = remaining_path
-                                                        .find('.')
-                                                        .and_then(|i| {
-                                                            remaining_path[i + 1..]
+                                                if request.view == 3 {
+                                                    if dot_count >= 1 {
+                                                        let view =
+                                                            proto::View::from_i32(request.view)
+                                                                .ok_or_else(|| {
+                                                                    tonic::Status::invalid_argument(
+                                                                        format!(
+                                                                            "Invalid View (id: {}",
+                                                                            request.view
+                                                                        ),
+                                                                    )
+                                                                })?;
+                                                        let fields =
+                                                            HashSet::<proto::Field>::from_iter(
+                                                                request.fields.iter().filter_map(
+                                                                    |id| {
+                                                                        proto::Field::from_i32(*id)
+                                                                    }, // Ignore unknown fields for now
+                                                                ),
+                                                            );
+                                                        let fields =
+                                                            combine_view_and_fields(view, fields);
+                                                        debug!("Getting fields: {:?}", fields);
+                                                        let proto_entry =
+                                                            proto_entry_from_entry_and_fields(
+                                                                data_entry, fields,
+                                                            );
+                                                        debug!(
+                                                            "Getting datapoint: {:?}",
+                                                            proto_entry
+                                                        );
+                                                        entries.push(proto_entry);
+
+                                                        if dot_count >= 2 {
+                                                            let second_dot_index = remaining_path
                                                                 .find('.')
-                                                                .map(|j| i + j + 1)
-                                                        })
-                                                        .unwrap();
+                                                                .and_then(|i| {
+                                                                    remaining_path[i + 1..]
+                                                                        .find('.')
+                                                                        .map(|j| i + j + 1)
+                                                                })
+                                                                .unwrap();
 
-                                                    let result_branch = sub_path_new.clone()
-                                                        + &remaining_path[..second_dot_index];
+                                                            let result_branch = sub_path_new
+                                                                .clone()
+                                                                + &remaining_path
+                                                                    [..second_dot_index];
 
-                                                    if !entries
-                                                        .iter()
-                                                        .any(|obj| obj.path == result_branch)
-                                                    {
-                                                        entries.push(proto::DataEntry {
-                                                            path: result_branch,
-                                                            value: None,
-                                                            actuator_target: None,
-                                                            metadata: None,
-                                                        });
+                                                            if !entries.iter().any(|obj| {
+                                                                obj.path == result_branch
+                                                            }) {
+                                                                let metadata = databroker_proto::kuksa::val::v1::Metadata { data_type: proto::DataType::Unspecified as i32, entry_type: proto::EntryType::Branch as i32, ..Default::default() };
+                                                                let metadata_result =
+                                                                    Some(metadata);
+
+                                                                entries.push(proto::DataEntry {
+                                                                    path: result_branch,
+                                                                    value: None,
+                                                                    actuator_target: None,
+                                                                    metadata: metadata_result,
+                                                                });
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    if dot_count >= 1 {
+                                                        let view =
+                                                            proto::View::from_i32(request.view)
+                                                                .ok_or_else(|| {
+                                                                    tonic::Status::invalid_argument(
+                                                                        format!(
+                                                                            "Invalid View (id: {}",
+                                                                            request.view
+                                                                        ),
+                                                                    )
+                                                                })?;
+                                                        let fields =
+                                                            HashSet::<proto::Field>::from_iter(
+                                                                request.fields.iter().filter_map(
+                                                                    |id| {
+                                                                        proto::Field::from_i32(*id)
+                                                                    }, // Ignore unknown fields for now
+                                                                ),
+                                                            );
+                                                        let fields =
+                                                            combine_view_and_fields(view, fields);
+                                                        debug!("Getting fields: {:?}", fields);
+                                                        let proto_entry =
+                                                            proto_entry_from_entry_and_fields(
+                                                                data_entry, fields,
+                                                            );
+                                                        debug!(
+                                                            "Getting datapoint: {:?}",
+                                                            proto_entry
+                                                        );
+                                                        entries.push(proto_entry);
                                                     }
                                                 }
                                             }
@@ -194,14 +267,10 @@ impl proto::val_server::Val for broker::DataBroker {
                                                         );
                                                     debug!("Getting datapoint: {:?}", proto_entry);
                                                     entries.push(proto_entry);
-                                                } else if dot_count == 2 {
-                                                    let mut metadata_result = None;
-                                                    if request.view == 3 && request.fields[0] == 10
-                                                    {
-                                                        let metadata = databroker_proto::kuksa::val::v1::Metadata { data_type: proto::DataType::Unspecified as i32, entry_type: proto::EntryType::Branch as i32, ..Default::default() };
-                                                        metadata_result = Some(metadata);
-                                                    }
-
+                                                } else if dot_count == 2
+                                                    && request.view == 3
+                                                    && request.fields[0] == 10
+                                                {
                                                     let second_dot_index = remaining_path
                                                         .find('.')
                                                         .and_then(|i| {
@@ -218,6 +287,9 @@ impl proto::val_server::Val for broker::DataBroker {
                                                         .iter()
                                                         .any(|obj| obj.path == result_branch)
                                                     {
+                                                        let metadata = databroker_proto::kuksa::val::v1::Metadata { data_type: proto::DataType::Unspecified as i32, entry_type: proto::EntryType::Branch as i32, ..Default::default() };
+                                                        let metadata_result = Some(metadata);
+
                                                         entries.push(proto::DataEntry {
                                                             path: result_branch,
                                                             value: None,
