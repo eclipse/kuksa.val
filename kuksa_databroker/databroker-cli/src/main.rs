@@ -111,6 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         client.set_access_token(token)?;
     }
 
+    #[cfg(feature = "tls")]
     if let Some(ca_cert_filename) = cli.ca_cert {
         let pem = std::fs::read(ca_cert_filename)?;
         let ca_cert = tonic::transport::Certificate::from_pem(pem);

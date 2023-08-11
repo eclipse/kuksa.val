@@ -14,7 +14,9 @@
 use std::{convert::TryFrom, future::Future, time::Duration};
 
 use tokio_stream::wrappers::TcpListenerStream;
-use tonic::transport::{Server, ServerTlsConfig};
+use tonic::transport::Server;
+#[cfg(feature = "tls")]
+use tonic::transport::ServerTlsConfig;
 use tracing::{debug, info, warn};
 
 use databroker_proto::{kuksa, sdv};
@@ -33,6 +35,7 @@ pub enum Authorization {
 
 pub enum ServerTLS {
     Disabled,
+    #[cfg(feature = "tls")]
     Enabled { tls_config: ServerTlsConfig },
 }
 
@@ -110,6 +113,7 @@ where
         .http2_keepalive_timeout(Some(Duration::from_secs(20)));
 
     match server_tls {
+        #[cfg(feature = "tls")]
         ServerTLS::Enabled { tls_config } => {
             info!("Using TLS");
             builder = builder.tls_config(tls_config)?;

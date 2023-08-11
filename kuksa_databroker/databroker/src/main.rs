@@ -355,37 +355,48 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tls_config = if args.get_flag("insecure") {
         ServerTLS::Disabled
-    } else {
-        let cert_file = args.get_one::<String>("tls-cert");
-        let key_file = args.get_one::<String>("tls-private-key");
-        match (cert_file, key_file) {
-            (Some(cert_file), Some(key_file)) => {
-                let cert = std::fs::read(cert_file)?;
-                let key = std::fs::read(key_file)?;
-                let identity = tonic::transport::Identity::from_pem(cert, key);
-                ServerTLS::Enabled {
-                    tls_config: tonic::transport::ServerTlsConfig::new().identity(identity),
+    } else if cfg!(feature = "tls") {
+        #[cfg(not(feature = "no-tls"))]
+        {
+            let cert_file = args.get_one::<String>("tls-cert");
+            let key_file = args.get_one::<String>("tls-private-key");
+            match (cert_file, key_file) {
+                (Some(cert_file), Some(key_file)) => {
+                    let cert = std::fs::read(cert_file)?;
+                    let key = std::fs::read(key_file)?;
+                    let identity = tonic::transport::Identity::from_pem(cert, key);
+                    ServerTLS::Enabled {
+                        tls_config: tonic::transport::ServerTlsConfig::new().identity(identity),
+                    }
+                }
+                (Some(_), None) => {
+                    return Err(
+                        "TLS private key (--tls-private-key) must be set if --tls-cert is.".into(),
+                    );
+                }
+                (None, Some(_)) => {
+                    return Err(
+                        "TLS certificate (--tls-cert) must be set if --tls-private-key is.".into(),
+                    );
+                }
+                (None, None) => {
+                    warn!(
+                        "Default behavior of accepting insecure connections \
+                        when TLS is not configured may change in the future! \
+                        Please use --insecure to explicitly enable this behavior."
+                    );
+                    ServerTLS::Disabled
                 }
             }
-            (Some(_), None) => {
-                return Err(
-                    "TLS private key (--tls-private-key) must be set if --tls-cert is.".into(),
-                );
-            }
-            (None, Some(_)) => {
-                return Err(
-                    "TLS certificate (--tls-cert) must be set if --tls-private-key is.".into(),
-                );
-            }
-            (None, None) => {
-                warn!(
-                    "Default behavior of accepting insecure connections \
-                    when TLS is not configured may change in the future! \
-                    Please use --insecure to explicitly enable this behavior."
-                );
-                ServerTLS::Disabled
-            }
         }
+        #[cfg(feature = "no-tls")]
+        {
+            warn!("TLS feature not enabled, built with tls flag or default features. Falling back to insecure mode");
+            ServerTLS::Disabled
+        }
+    }else{
+        warn!("TLS feature not enabled falling back to insecure mode");
+        ServerTLS::Disabled
     };
 
     let jwt_public_key = match args.get_one::<String>("jwt-public-key") {
