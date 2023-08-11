@@ -1,7 +1,7 @@
 # KUKSA.VAL
 ![kuksa.val Logo](./doc/pictures/logo.png)
 
-This is KUKSA.val, the KUKSA **V**ehicle **A**bstration **L**ayer.
+This is KUKSA.val, the KUKSA **V**ehicle **A**bstraction **L**ayer.
 
 
 KUKSA.val provides in-vehicle software components for working with in-vehicle signals modelled using the [COVESA VSS data model](https://github.com/COVESA/vehicle_signal_specification).
