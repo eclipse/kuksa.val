@@ -24,12 +24,7 @@ path = "src/lib.rs"
 
 [dependencies]
 databroker-proto = { workspace = true }
-tonic = { workspace = true, features = [
-    "transport",
-    "channel",
-    "prost",
-    "tls",
-] }
+tonic = { workspace = true, features = ["transport", "channel", "prost"] }
 prost = { workspace = true }
 prost-types = { workspace = true }
 tokio = { workspace = true, features = [
@@ -60,6 +55,8 @@ jemallocator = { version = "0.5.0", optional = true }
 lazy_static = "1.4.0"
 
 [features]
+default = ["tls"]
+tls = ["tonic/tls"]
 # to enable jemalloc use --features jemalloc
 jemalloc = ["dep:jemallocator"]
 libtest = []

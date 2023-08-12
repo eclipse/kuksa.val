@@ -16,11 +16,15 @@
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use databroker::broker::RegistrationError;
-use databroker::grpc::server::{Authorization, ServerTLS};
-use tracing::{debug, error, info, warn};
+use databroker::grpc::server::Authorization;
+#[cfg(feature = "tls")]
+use databroker::grpc::server::ServerTLS;
 
 use tokio::select;
 use tokio::signal::unix::{signal, SignalKind};
+#[cfg(feature = "tls")]
+use tracing::warn;
+use tracing::{debug, error, info};
 
 use clap::{Arg, ArgAction, Command};
 
@@ -203,7 +207,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         option_env!("VERGEN_CARGO_DEBUG").unwrap_or(""),
     );
 
-    let parser = Command::new("Kuksa Data Broker")
+    let mut parser = Command::new("Kuksa Data Broker");
+    parser = parser
         .version(version)
         .about(about)
         .arg(
@@ -253,31 +258,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .required(false),
         )
         .arg(
-            Arg::new("insecure")
-                .display_order(6)
-                .long("insecure")
-                .help("Allow insecure connections")
-                .action(ArgAction::SetTrue),
-        )
-        .arg(
-            Arg::new("tls-cert")
-                .display_order(5)
-                .long("tls-cert")
-                .help("TLS certificate file (.pem)")
-                .action(ArgAction::Set)
-                .value_name("FILE")
-                .conflicts_with("insecure"),
-        )
-        .arg(
-            Arg::new("tls-private-key")
-                .display_order(5)
-                .long("tls-private-key")
-                .help("TLS private key file (.key)")
-                .action(ArgAction::Set)
-                .value_name("FILE")
-                .conflicts_with("insecure"),
-        )
-        .arg(
             Arg::new("dummy-metadata")
                 .display_order(10)
                 .long("dummy-metadata")
@@ -285,6 +265,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .help("Populate data broker with dummy metadata")
                 .required(false),
         );
+
+    #[cfg(feature = "tls")]
+    {
+        parser = parser
+            .arg(
+                Arg::new("insecure")
+                    .display_order(6)
+                    .long("insecure")
+                    .help("Allow insecure connections")
+                    .action(ArgAction::SetTrue),
+            )
+            .arg(
+                Arg::new("tls-cert")
+                    .display_order(5)
+                    .long("tls-cert")
+                    .help("TLS certificate file (.pem)")
+                    .action(ArgAction::Set)
+                    .value_name("FILE")
+                    .conflicts_with("insecure"),
+            )
+            .arg(
+                Arg::new("tls-private-key")
+                    .display_order(5)
+                    .long("tls-private-key")
+                    .help("TLS private key file (.key)")
+                    .action(ArgAction::Set)
+                    .value_name("FILE")
+                    .conflicts_with("insecure"),
+            );
+    }
+
     let args = parser.get_matches();
 
     // install global collector configured based on RUST_LOG env var.
@@ -353,6 +364,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    #[cfg(feature = "tls")]
     let tls_config = if args.get_flag("insecure") {
         ServerTLS::Disabled
     } else {
@@ -380,8 +392,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             (None, None) => {
                 warn!(
                     "Default behavior of accepting insecure connections \
-                    when TLS is not configured may change in the future! \
-                    Please use --insecure to explicitly enable this behavior."
+                        when TLS is not configured may change in the future! \
+                        Please use --insecure to explicitly enable this behavior."
                 );
                 ServerTLS::Disabled
             }
@@ -410,7 +422,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => Authorization::Disabled,
     };
 
-    grpc::server::serve(addr, broker, tls_config, authorization, shutdown_handler()).await?;
+    grpc::server::serve(
+        addr,
+        broker,
+        #[cfg(feature = "tls")]
+        tls_config,
+        authorization,
+        shutdown_handler(),
+    )
+    .await?;
 
     Ok(())
 }

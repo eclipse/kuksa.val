@@ -21,6 +21,7 @@ use tonic::transport::Channel;
 pub struct Client {
     uri: Uri,
     token: Option<tonic::metadata::AsciiMetadataValue>,
+    #[cfg(feature = "tls")]
     tls_config: Option<tonic::transport::ClientTlsConfig>,
     channel: Option<tonic::transport::Channel>,
     connection_state_subs: Option<tokio::sync::broadcast::Sender<ConnectionState>>,
@@ -67,6 +68,7 @@ impl Client {
         Client {
             uri,
             token: None,
+            #[cfg(feature = "tls")]
             tls_config: None,
             channel: None,
             connection_state_subs: None,
@@ -77,6 +79,7 @@ impl Client {
         self.uri.to_string()
     }
 
+    #[cfg(feature = "tls")]
     pub fn set_tls_config(&mut self, tls_config: tonic::transport::ClientTlsConfig) {
         self.tls_config = Some(tls_config);
     }
@@ -107,8 +110,12 @@ impl Client {
     }
 
     async fn try_create_channel(&mut self) -> Result<&Channel, ClientError> {
+        #[cfg(feature = "tls")]
         let mut builder = tonic::transport::Channel::builder(self.uri.clone());
+        #[cfg(not(feature = "tls"))]
+        let builder = tonic::transport::Channel::builder(self.uri.clone());
 
+        #[cfg(feature = "tls")]
         if let Some(tls_config) = &self.tls_config {
             match builder.tls_config(tls_config.clone()) {
                 Ok(new_builder) => {

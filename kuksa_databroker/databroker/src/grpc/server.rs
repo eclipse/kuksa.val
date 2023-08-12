@@ -14,7 +14,9 @@
 use std::{convert::TryFrom, future::Future, time::Duration};
 
 use tokio_stream::wrappers::TcpListenerStream;
-use tonic::transport::{Server, ServerTlsConfig};
+use tonic::transport::Server;
+#[cfg(feature = "tls")]
+use tonic::transport::ServerTlsConfig;
 use tracing::{debug, info, warn};
 
 use databroker_proto::{kuksa, sdv};
@@ -31,6 +33,7 @@ pub enum Authorization {
     Enabled { token_decoder: jwt::Decoder },
 }
 
+#[cfg(feature = "tls")]
 pub enum ServerTLS {
     Disabled,
     Enabled { tls_config: ServerTlsConfig },
@@ -94,7 +97,7 @@ where
 pub async fn serve<F>(
     addr: impl Into<std::net::SocketAddr>,
     broker: broker::DataBroker,
-    server_tls: ServerTLS,
+    #[cfg(feature = "tls")] server_tls: ServerTLS,
     authorization: Authorization,
     signal: F,
 ) -> Result<(), Box<dyn std::error::Error>>
@@ -109,6 +112,7 @@ where
         .http2_keepalive_interval(Some(Duration::from_secs(10)))
         .http2_keepalive_timeout(Some(Duration::from_secs(20)));
 
+    #[cfg(feature = "tls")]
     match server_tls {
         ServerTLS::Enabled { tls_config } => {
             info!("Using TLS");
