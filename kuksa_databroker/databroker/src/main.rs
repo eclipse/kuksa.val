@@ -355,8 +355,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tls_config = if args.get_flag("insecure") {
         ServerTLS::Disabled
-    } else if cfg!(feature = "tls") {
-        #[cfg(not(feature = "no-tls"))]
+    } else {
+        #[cfg(feature = "tls")]
         {
             let cert_file = args.get_one::<String>("tls-cert");
             let key_file = args.get_one::<String>("tls-private-key");
@@ -389,14 +389,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        #[cfg(feature = "no-tls")]
+        #[cfg(not(feature = "tls"))]
         {
-            warn!("TLS feature not enabled, built with tls flag or default features. Falling back to insecure mode");
+
+            warn!("TLS feature not enabled falling back to insecure mode");
             ServerTLS::Disabled
         }
-    }else{
-        warn!("TLS feature not enabled falling back to insecure mode");
-        ServerTLS::Disabled
     };
 
     let jwt_public_key = match args.get_one::<String>("jwt-public-key") {

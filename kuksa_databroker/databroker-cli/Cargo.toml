@@ -20,7 +20,7 @@ license = "Apache-2.0"
 
 [dependencies]
 databroker-proto = { workspace = true }
-tonic = { workspace = true, optional = true }
+tonic = { workspace = true, features = ["transport", "channel", "prost"] }
 prost = { workspace = true }
 prost-types = { workspace = true }
 tokio = { workspace = true, features = [
@@ -42,5 +42,4 @@ http = "0.2.8"
 
 [features]
 default = ["tls"]
-tls = ["tonic/transport", "tonic/channel", "tonic/prost", "tonic/tls"]
-no-tls = ["tonic/transport", "tonic/channel", "tonic/prost"]
+tls = ["tonic/tls"]
