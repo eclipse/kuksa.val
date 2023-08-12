@@ -33,9 +33,9 @@ pub enum Authorization {
     Enabled { token_decoder: jwt::Decoder },
 }
 
+#[cfg(feature = "tls")]
 pub enum ServerTLS {
     Disabled,
-    #[cfg(feature = "tls")]
     Enabled { tls_config: ServerTlsConfig },
 }
 
@@ -97,7 +97,7 @@ where
 pub async fn serve<F>(
     addr: impl Into<std::net::SocketAddr>,
     broker: broker::DataBroker,
-    server_tls: ServerTLS,
+    #[cfg(feature = "tls")] server_tls: ServerTLS,
     authorization: Authorization,
     signal: F,
 ) -> Result<(), Box<dyn std::error::Error>>
@@ -112,8 +112,8 @@ where
         .http2_keepalive_interval(Some(Duration::from_secs(10)))
         .http2_keepalive_timeout(Some(Duration::from_secs(20)));
 
+    #[cfg(feature = "tls")]
     match server_tls {
-        #[cfg(feature = "tls")]
         ServerTLS::Enabled { tls_config } => {
             info!("Using TLS");
             builder = builder.tls_config(tls_config)?;

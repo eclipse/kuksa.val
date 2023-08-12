@@ -70,6 +70,7 @@ struct Cli {
     token_file: Option<String>,
 
     /// CA certificate used to verify server certificate
+    #[cfg(feature = "tls")]
     #[clap(long, value_name = "CERT", display_order = 3)]
     ca_cert: Option<String>,
 
