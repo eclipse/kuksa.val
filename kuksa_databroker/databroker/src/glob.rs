@@ -57,7 +57,7 @@ pub fn matches_path_pattern(input: &str) -> bool {
     if !input.starts_with('*') {
         let pattern = r"^(?:\w+(?:\.\w+)*)(?:\.\*+)?$";
         let regex = Regex::new(pattern).unwrap();
-    
+
         let pattern2 = r"^[^.]+(\.[^.]+)*\.(\*{2}|\*|[A-Za-z]+)(\.[^.]+)*\.[^.]+$";
         let regex2 = Regex::new(pattern2).unwrap();
 

@@ -98,7 +98,6 @@ message Metadata {
     Actuator actuator   = 20;  // [field: FIELD_METADATA_ACTUATOR]
     Sensor sensor       = 30;  // [field: FIELD_METADATA_SENSOR]
     Attribute attribute = 40;  // [field: FIELD_METADATA_ATTRIBUTE]
-    Branch branch       = 50;  // [field: FIELD_METADATA_BRANCH]
   }
 }
 

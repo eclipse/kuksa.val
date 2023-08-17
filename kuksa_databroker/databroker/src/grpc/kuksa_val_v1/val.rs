@@ -25,8 +25,8 @@ use tracing::debug;
 use crate::broker;
 use crate::broker::ReadError;
 use crate::broker::SubscriptionError;
-use crate::permissions::Permissions;
 use crate::glob;
+use crate::permissions::Permissions;
 
 #[tonic::async_trait]
 impl proto::val_server::Val for broker::DataBroker {
@@ -643,9 +643,7 @@ fn proto_entry_from_entry_and_fields(
                     // ));
                     None
                 }
-                broker::EntryType::Branch
-                | broker::EntryType::Sensor
-                | broker::EntryType::Attribute => None,
+                broker::EntryType::Sensor | broker::EntryType::Attribute => None,
             };
         }
         if all || fields.contains(&proto::Field::MetadataSensor) {
@@ -658,9 +656,7 @@ fn proto_entry_from_entry_and_fields(
                     // ));
                     None
                 }
-                broker::EntryType::Branch
-                | broker::EntryType::Attribute
-                | broker::EntryType::Actuator => None,
+                broker::EntryType::Attribute | broker::EntryType::Actuator => None,
             };
         }
         if all || fields.contains(&proto::Field::MetadataAttribute) {
@@ -673,24 +669,7 @@ fn proto_entry_from_entry_and_fields(
                     // ));
                     None
                 }
-                broker::EntryType::Branch
-                | broker::EntryType::Sensor
-                | broker::EntryType::Actuator => None,
-            };
-        }
-        if all || fields.contains(&proto::Field::MetadataBranch) {
-            metadata_is_set = true;
-            // TODO: Add to Metadata
-            metadata.entry_specific = match entry.metadata.entry_type {
-                broker::EntryType::Branch => {
-                    // Some(proto::metadata::EntrySpecific::Branch(
-                    //     proto::Branch::default(),
-                    // ));
-                    None
-                }
-                broker::EntryType::Attribute
-                | broker::EntryType::Sensor
-                | broker::EntryType::Actuator => None,
+                broker::EntryType::Sensor | broker::EntryType::Actuator => None,
             };
         }
 
