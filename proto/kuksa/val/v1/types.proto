@@ -120,12 +120,6 @@ message Attribute {
   // Nothing for now.
 }
 
-////////////////////////
-// Branch specific
-message Branch {
-  // Nothing for now.
-}
-
 // Value restriction
 //
 // One ValueRestriction{type} for each type, since
@@ -209,7 +203,6 @@ enum EntryType {
   ENTRY_TYPE_ATTRIBUTE   = 1;
   ENTRY_TYPE_SENSOR      = 2;
   ENTRY_TYPE_ACTUATOR    = 3;
-  ENTRY_TYPE_BRANCH      = 4;
 }
 
 // A `View` specifies a set of fields which should
@@ -247,7 +240,6 @@ enum Field {
   FIELD_METADATA_ACTUATOR          = 20;  // metadata.actuator.*
   FIELD_METADATA_SENSOR            = 30;  // metadata.sensor.*
   FIELD_METADATA_ATTRIBUTE         = 40;  // metadata.attribute.*
-  FIELD_METADATA_BRANCH            = 50;  // metadata.branch.*
 }
 
 // Error response shall be an HTTP-like code.

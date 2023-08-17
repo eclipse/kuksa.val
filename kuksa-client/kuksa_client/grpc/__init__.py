@@ -78,7 +78,6 @@ class EntryType(enum.IntEnum):
     ATTRIBUTE = types_pb2.ENTRY_TYPE_ATTRIBUTE
     SENSOR = types_pb2.ENTRY_TYPE_SENSOR
     ACTUATOR = types_pb2.ENTRY_TYPE_ACTUATOR
-    BRANCH = types_pb2.ENTRY_TYPE_BRANCH
 
 
 class View(enum.IntEnum):
