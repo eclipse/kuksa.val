@@ -11,7 +11,6 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-use regex::Regex;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::FromIterator;
@@ -27,6 +26,7 @@ use crate::broker;
 use crate::broker::ReadError;
 use crate::broker::SubscriptionError;
 use crate::permissions::Permissions;
+use crate::glob;
 
 #[tonic::async_trait]
 impl proto::val_server::Val for broker::DataBroker {
@@ -55,7 +55,7 @@ impl proto::val_server::Val for broker::DataBroker {
             let mut errors = Vec::new();
 
             for request in requested {
-                match matches_path_pattern(&request.path) {
+                match glob::matches_path_pattern(&request.path) {
                     true => {
                         match broker.get_entry_by_path(&request.path).await {
                             Ok(entry) => {
@@ -749,12 +749,6 @@ fn combine_view_and_fields(
     combined
 }
 
-fn matches_path_pattern(input: &str) -> bool {
-    let pattern = r"^(?:\w+(?:\.\w+)*)(?:\.\*+)?$";
-    let regex = Regex::new(pattern).unwrap();
-    regex.is_match(input)
-}
-
 impl broker::EntryUpdate {
     fn from_proto_entry_and_fields(
         entry: &proto::DataEntry,
@@ -845,32 +839,5 @@ mod tests {
             }
             Err(_status) => panic!("failed to execute set request"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_valid_request_path() {
-        let inputs = vec![
-            "String.*",
-            "String.**",
-            "String.String.String.String.*",
-            "String.String.String.String.**",
-            "String.String.String.String",
-            "String.String.String.String.String.**",
-            "String.String.String.",
-            "String.String.String.String..",
-            "String.*.String.String..",
-            "*.String.String.String..",
-        ];
-
-        assert!(matches_path_pattern(inputs[0]));
-        assert!(matches_path_pattern(inputs[1]));
-        assert!(matches_path_pattern(inputs[2]));
-        assert!(matches_path_pattern(inputs[3]));
-        assert!(matches_path_pattern(inputs[4]));
-        assert!(matches_path_pattern(inputs[5]));
-        assert!(!matches_path_pattern(inputs[6]));
-        assert!(!matches_path_pattern(inputs[7]));
-        assert!(!matches_path_pattern(inputs[8]));
-        assert!(!matches_path_pattern(inputs[9]));
     }
 }
