@@ -79,29 +79,17 @@ impl proto::val_server::Val for broker::DataBroker {
                             }
                             Err(ReadError::NotFound) => {
                                 if request.path.ends_with("**") {
-                                    let mut sub_path_new = request.path.clone();
-                                    sub_path_new.pop();
-                                    sub_path_new.pop();
-                                    sub_path_new.pop();
-
+                                    let sub_path_new = request.path.clone();
+                                    let regex = glob::to_regex_new(sub_path_new.as_ref());
                                     match broker
-                                        .get_entries_by_wildcards(sub_path_new.as_ref())
+                                        .get_entries_by_wildcards_with_regex(&regex.unwrap())
                                         .await
                                     {
                                         Ok(entries_result) => {
                                             for data_entry in entries_result {
-                                                let count_path = data_entry.metadata.path.clone();
-                                                let remaining_path =
-                                                    count_path.replace(&sub_path_new, "");
-
-                                                let dot_count = remaining_path
-                                                    .chars()
-                                                    .filter(|&c| c == '.')
-                                                    .count();
                                                 if request.view == 2
                                                     && data_entry.metadata.entry_type
                                                         == broker::EntryType::Actuator
-                                                    && dot_count >= 1
                                                 {
                                                     let view = proto::View::from_i32(request.view)
                                                         .ok_or_else(|| {
@@ -126,7 +114,7 @@ impl proto::val_server::Val for broker::DataBroker {
                                                         );
                                                     debug!("Getting datapoint: {:?}", proto_entry);
                                                     entries.push(proto_entry);
-                                                } else if request.view != 2 && dot_count >= 1 {
+                                                } else if request.view != 2 {
                                                     let view = proto::View::from_i32(request.view)
                                                         .ok_or_else(|| {
                                                             tonic::Status::invalid_argument(
@@ -178,27 +166,15 @@ impl proto::val_server::Val for broker::DataBroker {
                                         Err(ReadError::PermissionDenied) => {}
                                     }
                                 } else if request.path.ends_with('*') {
-                                    let mut sub_path_new = request.path.clone();
-                                    sub_path_new.pop();
-                                    sub_path_new.pop();
-
+                                    let sub_path_new = request.path.clone();
+                                    let regex = glob::to_regex_new(sub_path_new.as_ref());
                                     match broker
-                                        .get_entries_by_wildcards(sub_path_new.as_ref())
+                                        .get_entries_by_wildcards_with_regex(&regex.unwrap())
                                         .await
                                     {
                                         Ok(entries_result) => {
                                             for data_entry in entries_result {
-                                                let count_path = data_entry.metadata.path.clone();
-                                                let remaining_path =
-                                                    count_path.replace(&sub_path_new, "");
-
-                                                let dot_count = remaining_path
-                                                    .chars()
-                                                    .filter(|&c| c == '.')
-                                                    .count();
-
-                                                if dot_count == 1
-                                                    && request.view == 2
+                                                if request.view == 2
                                                     && data_entry.metadata.entry_type
                                                         == broker::EntryType::Actuator
                                                 {
@@ -225,7 +201,7 @@ impl proto::val_server::Val for broker::DataBroker {
                                                         );
                                                     debug!("Getting datapoint: {:?}", proto_entry);
                                                     entries.push(proto_entry);
-                                                } else if request.view != 2 && dot_count == 1 {
+                                                } else if request.view != 2 {
                                                     let view = proto::View::from_i32(request.view)
                                                         .ok_or_else(|| {
                                                             tonic::Status::invalid_argument(
