@@ -78,178 +78,91 @@ impl proto::val_server::Val for broker::DataBroker {
                                 entries.push(proto_entry);
                             }
                             Err(ReadError::NotFound) => {
-                                if request.path.ends_with("**") {
-                                    let sub_path_new = request.path.clone();
-                                    let regex = glob::to_regex_new(sub_path_new.as_ref());
-                                    match broker
-                                        .get_entries_by_wildcards_with_regex(&regex.unwrap())
-                                        .await
-                                    {
-                                        Ok(entries_result) => {
-                                            for data_entry in entries_result {
-                                                if request.view == 2
-                                                    && data_entry.metadata.entry_type
-                                                        == broker::EntryType::Actuator
-                                                {
-                                                    let view = proto::View::from_i32(request.view)
-                                                        .ok_or_else(|| {
-                                                            tonic::Status::invalid_argument(
-                                                                format!(
-                                                                    "Invalid View (id: {}",
-                                                                    request.view
-                                                                ),
-                                                            )
-                                                        })?;
-                                                    let fields = HashSet::<proto::Field>::from_iter(
-                                                        request.fields.iter().filter_map(
-                                                            |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                                        ),
+                                let sub_path_new = request.path.clone();
+                                let regex = glob::to_regex_new(sub_path_new.as_ref());
+                                match broker
+                                    .get_entries_by_wildcards_with_regex(&regex.unwrap())
+                                    .await
+                                {
+                                    Ok(entries_result) => {
+                                        for data_entry in entries_result {
+                                            if request.view == 2
+                                                && data_entry.metadata.entry_type
+                                                    == broker::EntryType::Actuator
+                                            {
+                                                let view = proto::View::from_i32(request.view)
+                                                    .ok_or_else(|| {
+                                                        tonic::Status::invalid_argument(
+                                                            format!(
+                                                                "Invalid View (id: {}",
+                                                                request.view
+                                                            ),
+                                                        )
+                                                    })?;
+                                                let fields = HashSet::<proto::Field>::from_iter(
+                                                    request.fields.iter().filter_map(
+                                                        |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
+                                                    ),
+                                                );
+                                                let fields =
+                                                    combine_view_and_fields(view, fields);
+                                                debug!("Getting fields: {:?}", fields);
+                                                let proto_entry =
+                                                    proto_entry_from_entry_and_fields(
+                                                        data_entry, fields,
                                                     );
-                                                    let fields =
-                                                        combine_view_and_fields(view, fields);
-                                                    debug!("Getting fields: {:?}", fields);
-                                                    let proto_entry =
-                                                        proto_entry_from_entry_and_fields(
-                                                            data_entry, fields,
-                                                        );
-                                                    debug!("Getting datapoint: {:?}", proto_entry);
-                                                    entries.push(proto_entry);
-                                                } else if request.view != 2 {
-                                                    let view = proto::View::from_i32(request.view)
-                                                        .ok_or_else(|| {
-                                                            tonic::Status::invalid_argument(
-                                                                format!(
-                                                                    "Invalid View (id: {}",
-                                                                    request.view
-                                                                ),
-                                                            )
-                                                        })?;
-                                                    let fields = HashSet::<proto::Field>::from_iter(
-                                                        request.fields.iter().filter_map(
-                                                            |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                                        ),
+                                                debug!("Getting datapoint: {:?}", proto_entry);
+                                                entries.push(proto_entry);
+                                            } else if request.view != 2 {
+                                                let view = proto::View::from_i32(request.view)
+                                                    .ok_or_else(|| {
+                                                        tonic::Status::invalid_argument(
+                                                            format!(
+                                                                "Invalid View (id: {}",
+                                                                request.view
+                                                            ),
+                                                        )
+                                                    })?;
+                                                let fields = HashSet::<proto::Field>::from_iter(
+                                                    request.fields.iter().filter_map(
+                                                        |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
+                                                    ),
+                                                );
+                                                let fields =
+                                                    combine_view_and_fields(view, fields);
+                                                debug!("Getting fields: {:?}", fields);
+                                                let proto_entry =
+                                                    proto_entry_from_entry_and_fields(
+                                                        data_entry, fields,
                                                     );
-                                                    let fields =
-                                                        combine_view_and_fields(view, fields);
-                                                    debug!("Getting fields: {:?}", fields);
-                                                    let proto_entry =
-                                                        proto_entry_from_entry_and_fields(
-                                                            data_entry, fields,
-                                                        );
-                                                    debug!("Getting datapoint: {:?}", proto_entry);
-                                                    entries.push(proto_entry);
-                                                }
-                                            }
-                                            if entries.is_empty() {
-                                                errors.push(proto::DataEntryError {
-                                                    path: request.path,
-                                                    error: Some(proto::Error {
-                                                        code: 404,
-                                                        reason: "not_found".to_owned(),
-                                                        message: "Path branch has no branches"
-                                                            .to_owned(),
-                                                    }),
-                                                });
+                                                debug!("Getting datapoint: {:?}", proto_entry);
+                                                entries.push(proto_entry);
                                             }
                                         }
-                                        Err(ReadError::NotFound) => {
+                                        if entries.is_empty() {
                                             errors.push(proto::DataEntryError {
                                                 path: request.path,
                                                 error: Some(proto::Error {
                                                     code: 404,
                                                     reason: "not_found".to_owned(),
-                                                    message: "Path not found".to_owned(),
+                                                    message: "Path branch has no branches"
+                                                        .to_owned(),
                                                 }),
                                             });
                                         }
-                                        Err(ReadError::PermissionExpired) => {}
-                                        Err(ReadError::PermissionDenied) => {}
                                     }
-                                } else if request.path.ends_with('*') {
-                                    let sub_path_new = request.path.clone();
-                                    let regex = glob::to_regex_new(sub_path_new.as_ref());
-                                    match broker
-                                        .get_entries_by_wildcards_with_regex(&regex.unwrap())
-                                        .await
-                                    {
-                                        Ok(entries_result) => {
-                                            for data_entry in entries_result {
-                                                if request.view == 2
-                                                    && data_entry.metadata.entry_type
-                                                        == broker::EntryType::Actuator
-                                                {
-                                                    let view = proto::View::from_i32(request.view)
-                                                        .ok_or_else(|| {
-                                                            tonic::Status::invalid_argument(
-                                                                format!(
-                                                                    "Invalid View (id: {}",
-                                                                    request.view
-                                                                ),
-                                                            )
-                                                        })?;
-                                                    let fields = HashSet::<proto::Field>::from_iter(
-                                                        request.fields.iter().filter_map(
-                                                            |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                                        ),
-                                                    );
-                                                    let fields =
-                                                        combine_view_and_fields(view, fields);
-                                                    debug!("Getting fields: {:?}", fields);
-                                                    let proto_entry =
-                                                        proto_entry_from_entry_and_fields(
-                                                            data_entry, fields,
-                                                        );
-                                                    debug!("Getting datapoint: {:?}", proto_entry);
-                                                    entries.push(proto_entry);
-                                                } else if request.view != 2 {
-                                                    let view = proto::View::from_i32(request.view)
-                                                        .ok_or_else(|| {
-                                                            tonic::Status::invalid_argument(
-                                                                format!(
-                                                                    "Invalid View (id: {}",
-                                                                    request.view
-                                                                ),
-                                                            )
-                                                        })?;
-                                                    let fields = HashSet::<proto::Field>::from_iter(
-                                                        request.fields.iter().filter_map(
-                                                            |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                                        ),
-                                                    );
-                                                    let fields =
-                                                        combine_view_and_fields(view, fields);
-                                                    debug!("Getting fields: {:?}", fields);
-                                                    let proto_entry =
-                                                        proto_entry_from_entry_and_fields(
-                                                            data_entry, fields,
-                                                        );
-                                                    debug!("Getting datapoint: {:?}", proto_entry);
-                                                    entries.push(proto_entry);
-                                                }
-                                            }
-                                        }
-                                        Err(ReadError::NotFound) => {
-                                            errors.push(proto::DataEntryError {
-                                                path: request.path,
-                                                error: Some(proto::Error {
-                                                    code: 404,
-                                                    reason: "not_found".to_owned(),
-                                                    message: "Path not found".to_owned(),
-                                                }),
-                                            });
-                                        }
-                                        Err(ReadError::PermissionExpired) => {}
-                                        Err(ReadError::PermissionDenied) => {}
+                                    Err(ReadError::NotFound) => {
+                                        errors.push(proto::DataEntryError {
+                                            path: request.path,
+                                            error: Some(proto::Error {
+                                                code: 404,
+                                                reason: "not_found".to_owned(),
+                                                message: "Path not found".to_owned(),
+                                            }),
+                                        });
                                     }
-                                } else {
-                                    errors.push(proto::DataEntryError {
-                                        path: request.path,
-                                        error: Some(proto::Error {
-                                            code: 404,
-                                            reason: "not_found".to_owned(),
-                                            message: "Can't read branches".to_owned(),
-                                        }),
-                                    });
+                                    Err(ReadError::PermissionExpired) => {}
+                                    Err(ReadError::PermissionDenied) => {}
                                 }
                             }
                             Err(ReadError::PermissionExpired) => {
