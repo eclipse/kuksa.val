@@ -84,10 +84,13 @@ pub fn to_regex_new(glob: &str) -> Result<Regex, Error> {
 }
 
 pub fn matches_path_pattern(input: &str) -> bool {
+    if input.starts_with("*.") {
+        return false
+    }
     let pattern = r"^(?:\w+(?:\.\w+)*)(?:\.\*+)?$";
     let regex = Regex::new(pattern).unwrap();
 
-    let pattern2 = r"^(\*{2}|\*\.)?[^.]+(\.[^.]+)*\.(\*{2}|\*|[A-Za-z]+)(\.[^.]+)*\.[^.]+$";
+    let pattern2 = r"^(?:[^.]+\.)*(?:\*{1,2})\.(?:[^.]+\.)*(?:[^.]+)*$";
     let regex2 = Regex::new(pattern2).unwrap();
 
     regex.is_match(input) || regex2.is_match(input)
@@ -108,14 +111,13 @@ async fn test_valid_request_path() {
     assert_eq!(matches_path_pattern("String.*.String.String"), true);
     assert_eq!(matches_path_pattern("String.String.**.String.String"), true);
     assert_eq!(matches_path_pattern("String.**.String.String"), true);
+    assert_eq!(matches_path_pattern("**.String.String.String.**"), true);
+    assert_eq!(matches_path_pattern("**.String.String.String.*"), true);
+    assert_eq!(matches_path_pattern("**.String"), true);
+    assert_eq!(matches_path_pattern("*.String.String.String"), false);
+    assert_eq!(matches_path_pattern("*.String"), false);
     assert_eq!(matches_path_pattern("String.String.String."), false);
     assert_eq!(matches_path_pattern("String.String.String.String.."), false);
     assert_eq!(matches_path_pattern("String.*.String.String.."), false);
     assert_eq!(matches_path_pattern("*.String.String.String.."), false);
-    assert_eq!(matches_path_pattern("*.String.String.String"), true);
-    assert_eq!(matches_path_pattern("**.String.String.String.**"), true);
-    assert_eq!(matches_path_pattern("**.String.String.String.*"), true);
-    assert_eq!(matches_path_pattern("**.String"), true);
-    //assert_eq!(matches_path_pattern("*.String"), true);
-
 }
