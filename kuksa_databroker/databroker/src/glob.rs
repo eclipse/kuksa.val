@@ -11,6 +11,8 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
+use std::f32::consts::E;
+
 use regex::Regex;
 
 #[derive(Debug)]
@@ -53,31 +55,63 @@ pub fn to_regex(glob: &str) -> Result<Regex, Error> {
     Regex::new(&re).map_err(|_err| Error::RegexError)
 }
 
+fn has_asterisk_in_middle(input: &str) -> bool {
+    let input = input.trim(); // Remove leading and trailing whitespace
+    if input.starts_with('*') || input.ends_with('*') {
+        return false;
+    }
+
+    let asterisk_position = input.find('*');
+    if let Some(pos) = asterisk_position {
+        if input[pos - 1..].contains(".*.") {
+            return true;
+        }
+    }
+
+    false
+}
+
 pub fn to_regex_string_new(glob: &str) -> String {
+
+    let mut input = String::new();
+
+    //check if asterisk in middle
+    if has_asterisk_in_middle(glob.clone()) {
+        input = glob.replace(".*.", ".");
+    } else {
+        input = String::from(glob);
+    }
+
     // Construct regular expression
 
     // Make sure we match the whole thing
     // Start from the beginning
     let mut re = String::from("^");
 
-    // Replace all "standalone" wildcards with ".*"
-    re.push_str(
-        &glob
-            .split('.')
-            .map(|part| match part {
-                "*" => "[^.]+",
-                "**" => ".*",
-                other => other,
-            })
-            .collect::<Vec<&str>>()
-            .join(r"\."),
-    );
-
-    // If it doesn't already end with a wildcard, add it
-    if !re.ends_with(".*") {
-        re.push_str(".*");
+    if input.ends_with(".*") {
+        re.push_str(input.replace(".*", ".[^.]+").as_str());
+    } else if input.ends_with(".**") {
+        re.push_str(input.replace(".**", ".*").as_str());
+    } else {
+        // Replace all "standalone" wildcards with ".*"
+        re.push_str(
+            &input
+                .split('.')
+                .map(|part| match part {
+                    "*" => "[^.]+",
+                    "**" => ".*",
+                    other => other,
+                })
+                .collect::<Vec<&str>>()
+                .join(r"\."),
+        );
     }
 
+    // If it doesn't already end with a wildcard, add it
+    if !re.ends_with(".*") && !input.contains('*') {
+        re.push_str(".*");
+    }
+    
     // And finally, make sure we match until EOL
     re.push('$');
 
