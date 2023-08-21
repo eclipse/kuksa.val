@@ -92,49 +92,41 @@ impl proto::val_server::Val for broker::DataBroker {
                                             {
                                                 let view = proto::View::from_i32(request.view)
                                                     .ok_or_else(|| {
-                                                        tonic::Status::invalid_argument(
-                                                            format!(
-                                                                "Invalid View (id: {}",
-                                                                request.view
-                                                            ),
-                                                        )
+                                                        tonic::Status::invalid_argument(format!(
+                                                            "Invalid View (id: {}",
+                                                            request.view
+                                                        ))
                                                     })?;
                                                 let fields = HashSet::<proto::Field>::from_iter(
                                                     request.fields.iter().filter_map(
                                                         |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
                                                     ),
                                                 );
-                                                let fields =
-                                                    combine_view_and_fields(view, fields);
+                                                let fields = combine_view_and_fields(view, fields);
                                                 debug!("Getting fields: {:?}", fields);
-                                                let proto_entry =
-                                                    proto_entry_from_entry_and_fields(
-                                                        data_entry, fields,
-                                                    );
+                                                let proto_entry = proto_entry_from_entry_and_fields(
+                                                    data_entry, fields,
+                                                );
                                                 debug!("Getting datapoint: {:?}", proto_entry);
                                                 entries.push(proto_entry);
                                             } else if request.view != 2 {
                                                 let view = proto::View::from_i32(request.view)
                                                     .ok_or_else(|| {
-                                                        tonic::Status::invalid_argument(
-                                                            format!(
-                                                                "Invalid View (id: {}",
-                                                                request.view
-                                                            ),
-                                                        )
+                                                        tonic::Status::invalid_argument(format!(
+                                                            "Invalid View (id: {}",
+                                                            request.view
+                                                        ))
                                                     })?;
                                                 let fields = HashSet::<proto::Field>::from_iter(
                                                     request.fields.iter().filter_map(
                                                         |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
                                                     ),
                                                 );
-                                                let fields =
-                                                    combine_view_and_fields(view, fields);
+                                                let fields = combine_view_and_fields(view, fields);
                                                 debug!("Getting fields: {:?}", fields);
-                                                let proto_entry =
-                                                    proto_entry_from_entry_and_fields(
-                                                        data_entry, fields,
-                                                    );
+                                                let proto_entry = proto_entry_from_entry_and_fields(
+                                                    data_entry, fields,
+                                                );
                                                 debug!("Getting datapoint: {:?}", proto_entry);
                                                 entries.push(proto_entry);
                                             }

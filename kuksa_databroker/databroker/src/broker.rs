@@ -884,7 +884,7 @@ impl<'a, 'b> DatabaseReadAccess<'a, 'b> {
 
     pub fn get_entries_by_wildcards_with_regex(
         &self,
-        regex: regex::Regex
+        regex: regex::Regex,
     ) -> Result<Vec<Entry>, ReadError> {
         let mut entries: Vec<Entry> = Vec::new();
         for key in self.db.path_to_id.keys() {
@@ -1209,8 +1209,11 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
             .authorized_read_access(self.permissions)
             .get_entries_by_wildcards(sub_path)
     }
-    
-    pub async fn get_entries_by_wildcards_with_regex(&self, regex: &regex::Regex) -> Result<Vec<Entry>, ReadError> {
+
+    pub async fn get_entries_by_wildcards_with_regex(
+        &self,
+        regex: &regex::Regex,
+    ) -> Result<Vec<Entry>, ReadError> {
         self.broker
             .database
             .read()
