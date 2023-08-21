@@ -11,8 +11,6 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-use std::f32::consts::E;
-
 use regex::Regex;
 
 #[derive(Debug)]
@@ -72,16 +70,12 @@ fn has_asterisk_in_middle(input: &str) -> bool {
 }
 
 pub fn to_regex_string_new(glob: &str) -> String {
-
-    let mut input = String::new();
+    let mut input = String::from(glob);
 
     //check if asterisk in middle
-    if has_asterisk_in_middle(glob.clone()) {
+    if has_asterisk_in_middle(glob) {
         input = glob.replace(".*.", ".");
-    } else {
-        input = String::from(glob);
     }
-
     // Construct regular expression
 
     // Make sure we match the whole thing
@@ -111,7 +105,7 @@ pub fn to_regex_string_new(glob: &str) -> String {
     if !re.ends_with(".*") && !input.contains('*') {
         re.push_str(".*");
     }
-    
+
     // And finally, make sure we match until EOL
     re.push('$');
 
@@ -138,35 +132,33 @@ pub fn matches_path_pattern(input: &str) -> bool {
 
 #[tokio::test]
 async fn test_valid_request_path() {
-    assert_eq!(matches_path_pattern("String.*"), true);
-    assert_eq!(matches_path_pattern("String.**"), true);
-    assert_eq!(matches_path_pattern("String.String.String.String.*"), true);
-    assert_eq!(matches_path_pattern("String.String.String.String.**"), true);
-    assert_eq!(matches_path_pattern("String.String.String.String"), true);
-    assert_eq!(
-        matches_path_pattern("String.String.String.String.String.**"),
-        true
-    );
-    assert_eq!(matches_path_pattern("String.String.String.*.String"), true);
-    assert_eq!(matches_path_pattern("String.String.String.**.String"), true);
-    assert_eq!(
-        matches_path_pattern("String.String.String.String.String.**.String"),
-        true
-    );
-    assert_eq!(
-        matches_path_pattern("String.String.String.String.*.String.String"),
-        true
-    );
-    assert_eq!(matches_path_pattern("String.*.String.String"), true);
-    assert_eq!(matches_path_pattern("String.String.**.String.String"), true);
-    assert_eq!(matches_path_pattern("String.**.String.String"), true);
-    assert_eq!(matches_path_pattern("**.String.String.String.**"), true);
-    assert_eq!(matches_path_pattern("**.String.String.String.*"), true);
-    assert_eq!(matches_path_pattern("**.String"), true);
-    assert_eq!(matches_path_pattern("*.String.String.String"), false);
-    assert_eq!(matches_path_pattern("*.String"), false);
-    assert_eq!(matches_path_pattern("String.String.String."), false);
-    assert_eq!(matches_path_pattern("String.String.String.String.."), false);
-    assert_eq!(matches_path_pattern("String.*.String.String.."), false);
-    assert_eq!(matches_path_pattern("*.String.String.String.."), false);
+    assert!(matches_path_pattern("String.*"));
+    assert!(matches_path_pattern("String.**"));
+    assert!(matches_path_pattern("String.String.String.String.*"));
+    assert!(matches_path_pattern("String.String.String.String.**"));
+    assert!(matches_path_pattern("String.String.String.String"));
+    assert!(matches_path_pattern(
+        "String.String.String.String.String.**"
+    ));
+    assert!(matches_path_pattern("String.String.String.*.String"));
+    assert!(matches_path_pattern("String.String.String.**.String"));
+    assert!(matches_path_pattern(
+        "String.String.String.String.String.**.String"
+    ));
+    assert!(matches_path_pattern(
+        "String.String.String.String.*.String.String"
+    ));
+
+    assert!(matches_path_pattern("String.*.String.String"));
+    assert!(matches_path_pattern("String.String.**.String.String"));
+    assert!(matches_path_pattern("String.**.String.String"));
+    assert!(matches_path_pattern("**.String.String.String.**"));
+    assert!(matches_path_pattern("**.String.String.String.*"));
+    assert!(matches_path_pattern("**.String"));
+    assert!(!matches_path_pattern("*.String.String.String"));
+    assert!(!matches_path_pattern("*.String"));
+    assert!(!matches_path_pattern("String.String.String."));
+    assert!(!matches_path_pattern("String.String.String.String.."));
+    assert!(!matches_path_pattern("String.*.String.String.."));
+    assert!(!matches_path_pattern("*.String.String.String.."));
 }
