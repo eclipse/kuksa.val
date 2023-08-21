@@ -72,6 +72,12 @@ pub fn to_regex_string_new(glob: &str) -> String {
             .collect::<Vec<&str>>()
             .join(r"\."),
     );
+
+    // If it doesn't already end with a wildcard, add it
+    if !re.ends_with(".*") {
+        re.push_str(".*");
+    }
+
     // And finally, make sure we match until EOL
     re.push('$');
 
