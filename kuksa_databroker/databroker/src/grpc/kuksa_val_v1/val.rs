@@ -55,7 +55,7 @@ impl proto::val_server::Val for broker::DataBroker {
             let mut errors = Vec::new();
 
             for request in requested {
-                match glob::matches_path_pattern(&request.path) {
+                match glob::is_valid_pattern(&request.path) {
                     true => {
                         match broker.get_entry_by_path(&request.path).await {
                             Ok(entry) => {
@@ -79,7 +79,7 @@ impl proto::val_server::Val for broker::DataBroker {
                             }
                             Err(ReadError::NotFound) => {
                                 let sub_path_new = request.path.clone();
-                                let regex = glob::to_regex_new(sub_path_new.as_ref());
+                                let regex = glob::to_regex(sub_path_new.as_ref());
                                 match broker
                                     .get_entries_by_wildcards_with_regex(&regex.unwrap())
                                     .await
