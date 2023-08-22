@@ -81,7 +81,7 @@ impl proto::val_server::Val for broker::DataBroker {
                                 let sub_path_new = request.path.clone();
                                 let regex = glob::to_regex(sub_path_new.as_ref());
                                 match broker
-                                    .get_entries_by_wildcards_with_regex(&regex.unwrap())
+                                    .get_entries_by_regex(&regex.unwrap())
                                     .await
                                 {
                                     Ok(entries_result) => {
