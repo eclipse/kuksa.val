@@ -80,54 +80,37 @@ impl proto::val_server::Val for broker::DataBroker {
                             Err(ReadError::NotFound) => {
                                 let sub_path_new = request.path.clone();
                                 let regex = glob::to_regex(sub_path_new.as_ref());
-                                match broker
-                                    .get_entries_by_regex(&regex.unwrap())
-                                    .await
-                                {
+                                match broker.get_entries_by_regex(regex.unwrap()).await {
                                     Ok(entries_result) => {
                                         for data_entry in entries_result {
-                                            if request.view == 2
-                                                && data_entry.metadata.entry_type
-                                                    == broker::EntryType::Actuator
-                                            {
-                                                let view = proto::View::from_i32(request.view)
-                                                    .ok_or_else(|| {
-                                                        tonic::Status::invalid_argument(format!(
-                                                            "Invalid View (id: {}",
-                                                            request.view
-                                                        ))
-                                                    })?;
-                                                let fields = HashSet::<proto::Field>::from_iter(
-                                                    request.fields.iter().filter_map(
-                                                        |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                                    ),
-                                                );
-                                                let fields = combine_view_and_fields(view, fields);
-                                                debug!("Getting fields: {:?}", fields);
-                                                let proto_entry = proto_entry_from_entry_and_fields(
-                                                    data_entry, fields,
-                                                );
-                                                debug!("Getting datapoint: {:?}", proto_entry);
-                                                entries.push(proto_entry);
-                                            } else if request.view != 2 {
-                                                let view = proto::View::from_i32(request.view)
-                                                    .ok_or_else(|| {
-                                                        tonic::Status::invalid_argument(format!(
-                                                            "Invalid View (id: {}",
-                                                            request.view
-                                                        ))
-                                                    })?;
-                                                let fields = HashSet::<proto::Field>::from_iter(
-                                                    request.fields.iter().filter_map(
-                                                        |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                                    ),
-                                                );
-                                                let fields = combine_view_and_fields(view, fields);
-                                                debug!("Getting fields: {:?}", fields);
-                                                let proto_entry = proto_entry_from_entry_and_fields(
-                                                    data_entry, fields,
-                                                );
-                                                debug!("Getting datapoint: {:?}", proto_entry);
+                                            let view = proto::View::from_i32(request.view)
+                                                .ok_or_else(|| {
+                                                    tonic::Status::invalid_argument(format!(
+                                                        "Invalid View (id: {}",
+                                                        request.view
+                                                    ))
+                                                })?;
+
+                                            let fields = HashSet::<proto::Field>::from_iter(
+                                                request.fields.iter().filter_map(
+                                                    |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
+                                                ),
+                                            );
+                                            let fields = combine_view_and_fields(view, fields);
+                                            debug!("Getting fields: {:?}", fields);
+
+                                            let entry_type = data_entry.metadata.entry_type.clone();
+
+                                            let proto_entry = proto_entry_from_entry_and_fields(
+                                                data_entry, fields,
+                                            );
+                                            debug!("Getting datapoint: {:?}", proto_entry);
+
+                                            if view == proto::View::TargetValue {
+                                                if entry_type == broker::EntryType::Actuator {
+                                                    entries.push(proto_entry);
+                                                }
+                                            } else {
                                                 entries.push(proto_entry);
                                             }
                                         }
@@ -137,7 +120,7 @@ impl proto::val_server::Val for broker::DataBroker {
                                                 error: Some(proto::Error {
                                                     code: 404,
                                                     reason: "not_found".to_owned(),
-                                                    message: "Path branch has no branches"
+                                                    message: "No entries found for the provided call parameters"
                                                         .to_owned(),
                                                 }),
                                             });
@@ -149,7 +132,8 @@ impl proto::val_server::Val for broker::DataBroker {
                                             error: Some(proto::Error {
                                                 code: 404,
                                                 reason: "not_found".to_owned(),
-                                                message: "Path not found".to_owned(),
+                                                message: "No entries found for the provided path"
+                                                    .to_owned(),
                                             }),
                                         });
                                     }
@@ -185,7 +169,7 @@ impl proto::val_server::Val for broker::DataBroker {
                             error: Some(proto::Error {
                                 code: 400,
                                 reason: "bad_request".to_owned(),
-                                message: "Bad Request".to_owned(),
+                                message: "Bad Path Request".to_owned(),
                             }),
                         });
                     }

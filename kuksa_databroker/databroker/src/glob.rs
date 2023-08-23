@@ -44,7 +44,11 @@ pub fn to_regex_string(glob: &str) -> String {
     }
 
     // If it doesn't already end with a wildcard, add it
-    if !re.ends_with(".*") && !glob.contains('*') {
+    if !re.starts_with("^*")
+        && !re.starts_with("^.*")
+        && !re.ends_with(".*")
+        && !re.ends_with("[^.]+")
+    {
         re.push_str(".*");
     }
 
@@ -66,7 +70,7 @@ pub fn is_valid_pattern(input: &str) -> bool {
         
         # At least one subpath (consisting of either of three):
         (?:
-            [A-Z][a-zA-Z0-1]*  # An alphanumeric name (first letter capitalized)
+            [A-Z][a-zA-Z0-9]*  # An alphanumeric name (first letter capitalized)
             |
             \*                 # An asterisk
             |
@@ -78,7 +82,7 @@ pub fn is_valid_pattern(input: &str) -> bool {
         (?:
             \. # Separator, literal dot
             (?:
-                [A-Z][a-zA-Z0-1]*  # Alphanumeric name (first letter capitalized)
+                [A-Z][a-zA-Z0-9]*  # Alphanumeric name (first letter capitalized)
                 |
                 \*                 # An asterisk
                 |
@@ -97,6 +101,7 @@ pub fn is_valid_pattern(input: &str) -> bool {
 async fn test_valid_request_path() {
     assert!(is_valid_pattern("String.*"));
     assert!(is_valid_pattern("String.**"));
+    assert!(is_valid_pattern("Vehicle.Chassis.Axle.Row2.Wheel.*"));
     assert!(is_valid_pattern("String.String.String.String.*"));
     assert!(is_valid_pattern("String.String.String.String.**"));
     assert!(is_valid_pattern("String.String.String.String"));
@@ -146,31 +151,31 @@ async fn test_valid_regex_path() {
     );
     assert_eq!(
         to_regex_string("String.String.String.*.String"),
-        "^String\\.String\\.String\\.*\\.String$"
+        "^String\\.String\\.String\\.*\\.String.*$"
     );
     assert_eq!(
         to_regex_string("String.String.String.**.String"),
-        "^String\\.String\\.String\\..*\\.String$"
+        "^String\\.String\\.String\\..*\\.String.*$"
     );
     assert_eq!(
         to_regex_string("String.String.String.String.String.**.String"),
-        "^String\\.String\\.String\\.String\\.String\\..*\\.String$"
+        "^String\\.String\\.String\\.String\\.String\\..*\\.String.*$"
     );
     assert_eq!(
         to_regex_string("String.String.String.String.*.String.String"),
-        "^String\\.String\\.String\\.String\\.*\\.String\\.String$"
+        "^String\\.String\\.String\\.String\\.*\\.String\\.String.*$"
     );
     assert_eq!(
         to_regex_string("String.*.String.String"),
-        "^String\\.*\\.String\\.String$"
+        "^String\\.*\\.String\\.String.*$"
     );
     assert_eq!(
         to_regex_string("String.String.**.String.String"),
-        "^String\\.String\\..*\\.String\\.String$"
+        "^String\\.String\\..*\\.String\\.String.*$"
     );
     assert_eq!(
         to_regex_string("String.**.String.String"),
-        "^String\\..*\\.String\\.String$"
+        "^String\\..*\\.String\\.String.*$"
     );
     assert_eq!(
         to_regex_string("**.String.String.String.**"),
