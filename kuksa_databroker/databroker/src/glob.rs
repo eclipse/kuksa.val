@@ -25,32 +25,33 @@ pub fn to_regex_string(glob: &str) -> String {
     // Start from the beginning
     let mut re = String::from("^");
 
-    if glob.ends_with(".*") {
-        re.push_str(glob.replace(".*", ".[^.]+").as_str());
-    } else if glob.ends_with(".**") {
-        re.push_str(glob.replace(".**", ".*").as_str());
-    } else {
-        // Replace all "standalone" wildcards with ".*"
-        re.push_str(
-            &glob
-                .split('.')
-                .map(|part| match part {
-                    "**" => ".*",
-                    other => other,
-                })
-                .collect::<Vec<&str>>()
-                .join(r"\."),
-        );
+    let mut regex_string = glob.replace('.', "\\.");
+
+    if glob.starts_with("**.") {
+        regex_string = regex_string.replace("**\\.", ".*\\.");
+    } else if glob.starts_with("*.") {
+        regex_string = regex_string.replace("*\\.", "[A-Z][a-zA-Z0-9]*\\.");
     }
 
-    // If it doesn't already end with a wildcard, add it
-    if !re.starts_with("^*")
-        && !re.starts_with("^.*")
-        && !re.ends_with(".*")
-        && !re.ends_with("[^.]+")
-    {
-        re.push_str(".*");
+    if glob.ends_with(".*") {
+        regex_string = regex_string.replace("\\.*", "\\.[A-Z][a-zA-Z0-9]*");
+    } else if glob.ends_with(".**") {
+        regex_string = regex_string.replace("\\.**", "\\..*");
     }
+
+    if glob.contains(".**.") {
+        regex_string = regex_string.replace("\\.**", "[\\.[A-Z][a-zA-Z0-9]*]*");
+    }
+
+    if glob.contains(".*.") {
+        regex_string = regex_string.replace("\\.*", "\\.[A-Z][a-zA-Z0-9]*");
+    }
+
+    if !glob.contains('*') {
+        regex_string += "\\..*";
+    }
+
+    re.push_str(regex_string.as_str());
 
     // And finally, make sure we match until EOL
     re.push('$');
@@ -129,64 +130,64 @@ async fn test_valid_request_path() {
 
 #[tokio::test]
 async fn test_valid_regex_path() {
-    assert_eq!(to_regex_string("String.*"), "^String.[^.]+$");
-    assert_eq!(to_regex_string("String.**"), "^String.*$");
+    assert_eq!(to_regex_string("String.*"), "^String\\.[A-Z][a-zA-Z0-9]*$");
+    assert_eq!(to_regex_string("String.**"), "^String\\..*$");
     assert_eq!(
         to_regex_string("String.String.String.String.*"),
-        "^String.String.String.String.[^.]+$"
+        "^String\\.String\\.String\\.String\\.[A-Z][a-zA-Z0-9]*$"
     );
     assert_eq!(
         to_regex_string("String.String.String.String.**"),
-        "^String.String.String.String.*$"
+        "^String\\.String\\.String\\.String\\..*$"
     );
     assert_eq!(
         to_regex_string("String.String.String.String"),
-        "^String\\.String\\.String\\.String.*$"
+        "^String\\.String\\.String\\.String\\..*$"
     );
     assert_eq!(
         to_regex_string("String.String.String.String.String.**"),
-        "^String.String.String.String.String.*$"
+        "^String\\.String\\.String\\.String\\.String\\..*$"
     );
     assert_eq!(
         to_regex_string("String.String.String.*.String"),
-        "^String\\.String\\.String\\.*\\.String.*$"
+        "^String\\.String\\.String\\.[A-Z][a-zA-Z0-9]*\\.String$"
     );
     assert_eq!(
         to_regex_string("String.String.String.**.String"),
-        "^String\\.String\\.String\\..*\\.String.*$"
+        "^String\\.String\\.String[\\.[A-Z][a-zA-Z0-9]*]*\\.String$"
     );
     assert_eq!(
         to_regex_string("String.String.String.String.String.**.String"),
-        "^String\\.String\\.String\\.String\\.String\\..*\\.String.*$"
+        "^String\\.String\\.String\\.String\\.String[\\.[A-Z][a-zA-Z0-9]*]*\\.String$"
     );
     assert_eq!(
         to_regex_string("String.String.String.String.*.String.String"),
-        "^String\\.String\\.String\\.String\\.*\\.String\\.String.*$"
+        "^String\\.String\\.String\\.String\\.[A-Z][a-zA-Z0-9]*\\.String\\.String$"
     );
     assert_eq!(
         to_regex_string("String.*.String.String"),
-        "^String\\.*\\.String\\.String.*$"
+        "^String\\.[A-Z][a-zA-Z0-9]*\\.String\\.String$"
     );
     assert_eq!(
         to_regex_string("String.String.**.String.String"),
-        "^String\\.String\\..*\\.String\\.String.*$"
+        "^String\\.String[\\.[A-Z][a-zA-Z0-9]*]*\\.String\\.String$"
     );
     assert_eq!(
         to_regex_string("String.**.String.String"),
-        "^String\\..*\\.String\\.String.*$"
+        "^String[\\.[A-Z][a-zA-Z0-9]*]*\\.String\\.String$"
     );
     assert_eq!(
         to_regex_string("**.String.String.String.**"),
-        "^**.String.String.String.*$"
+        "^.*\\.String\\.String\\.String\\..*$"
     );
     assert_eq!(
         to_regex_string("**.String.String.String.*"),
-        "^**.String.String.String.[^.]+$"
+        "^.*\\.String\\.String\\.String\\.[A-Z][a-zA-Z0-9]*$"
     );
     assert_eq!(to_regex_string("**.String"), "^.*\\.String$");
-    assert_eq!(to_regex_string("*.String"), "^*\\.String$");
+    assert_eq!(to_regex_string("*.String"), "^[A-Z][a-zA-Z0-9]*\\.String$");
     assert_eq!(
         to_regex_string("*.String.String.String"),
-        "^*\\.String\\.String\\.String$"
+        "^[A-Z][a-zA-Z0-9]*\\.String\\.String\\.String$"
     );
 }
