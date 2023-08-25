@@ -11,6 +11,7 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
+use lazy_static::lazy_static;
 use regex::Regex;
 
 #[derive(Debug)]
@@ -64,8 +65,8 @@ pub fn to_regex(glob: &str) -> Result<Regex, Error> {
     Regex::new(&re).map_err(|_err| Error::RegexError)
 }
 
-pub fn is_valid_pattern(input: &str) -> bool {
-    let re = regex::Regex::new(
+lazy_static! {
+    static ref REGEX_VALID_PATTERN: regex::Regex = regex::Regex::new(
         r"(?x)
         ^  # anchor at start (only match full paths)
         # At least one subpath (consisting of either of three):
@@ -91,9 +92,11 @@ pub fn is_valid_pattern(input: &str) -> bool {
         $  # anchor at end (to match only full paths)
         ",
     )
-    .unwrap();
+    .expect("regex compilation (of static pattern) should always succeed");
+}
 
-    re.is_match(input)
+pub fn is_valid_pattern(input: &str) -> bool {
+    REGEX_VALID_PATTERN.is_match(input)
 }
 
 #[tokio::test]

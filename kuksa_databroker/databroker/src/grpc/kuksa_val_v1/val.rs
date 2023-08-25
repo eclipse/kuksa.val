@@ -78,67 +78,98 @@ impl proto::val_server::Val for broker::DataBroker {
                                 entries.push(proto_entry);
                             }
                             Err(ReadError::NotFound) => {
-                                let sub_path_new = request.path.clone();
-                                let regex = glob::to_regex(sub_path_new.as_ref());
-                                match broker.get_entries_by_regex(regex.unwrap()).await {
-                                    Ok(entries_result) => {
-                                        for data_entry in entries_result {
-                                            let view = proto::View::from_i32(request.view)
-                                                .ok_or_else(|| {
-                                                    tonic::Status::invalid_argument(format!(
-                                                        "Invalid View (id: {}",
-                                                        request.view
-                                                    ))
-                                                })?;
+                                let regex = glob::to_regex(&request.path);
+                                match regex {
+                                    Ok(value_regex) => {
+                                        match broker.get_entries_by_regex(value_regex).await {
+                                            Ok(entries_result) => {
+                                                for data_entry in entries_result {
+                                                    let view = proto::View::from_i32(request.view)
+                                                        .ok_or_else(|| {
+                                                            tonic::Status::invalid_argument(
+                                                                format!(
+                                                                    "Invalid View (id: {}",
+                                                                    request.view
+                                                                ),
+                                                            )
+                                                        })?;
 
-                                            let fields = HashSet::<proto::Field>::from_iter(
-                                                request.fields.iter().filter_map(
-                                                    |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
-                                                ),
-                                            );
-                                            let fields = combine_view_and_fields(view, fields);
-                                            debug!("Getting fields: {:?}", fields);
+                                                    let fields = HashSet::<proto::Field>::from_iter(
+                                                        request.fields.iter().filter_map(
+                                                            |id| proto::Field::from_i32(*id), // Ignore unknown fields for now
+                                                        ),
+                                                    );
+                                                    let fields =
+                                                        combine_view_and_fields(view, fields);
+                                                    debug!("Getting fields: {:?}", fields);
 
-                                            let entry_type = data_entry.metadata.entry_type.clone();
+                                                    let entry_type =
+                                                        data_entry.metadata.entry_type.clone();
 
-                                            let proto_entry = proto_entry_from_entry_and_fields(
-                                                data_entry, fields,
-                                            );
-                                            debug!("Getting datapoint: {:?}", proto_entry);
+                                                    let proto_entry =
+                                                        proto_entry_from_entry_and_fields(
+                                                            data_entry, fields,
+                                                        );
+                                                    debug!("Getting datapoint: {:?}", proto_entry);
 
-                                            if view == proto::View::TargetValue {
-                                                if entry_type == broker::EntryType::Actuator {
-                                                    entries.push(proto_entry);
+                                                    if view == proto::View::TargetValue {
+                                                        if entry_type == broker::EntryType::Actuator
+                                                        {
+                                                            entries.push(proto_entry);
+                                                        }
+                                                    } else {
+                                                        entries.push(proto_entry);
+                                                    }
                                                 }
-                                            } else {
-                                                entries.push(proto_entry);
+                                                if entries.is_empty() {
+                                                    errors.push(proto::DataEntryError {
+                                                        path: request.path,
+                                                        error: Some(proto::Error {
+                                                            code: 404,
+                                                            reason: "not_found".to_owned(),
+                                                            message: "No entries found for the provided call parameters"
+                                                                .to_owned(),
+                                                        }),
+                                                    });
+                                                }
+                                            }
+                                            Err(ReadError::NotFound) => {
+                                                errors.push(proto::DataEntryError {
+                                                    path: request.path,
+                                                    error: Some(proto::Error {
+                                                        code: 404,
+                                                        reason: "not_found".to_owned(),
+                                                        message:
+                                                            "No entries found for the provided path"
+                                                                .to_owned(),
+                                                    }),
+                                                });
+                                            }
+                                            Err(ReadError::PermissionExpired) => {
+                                                errors.push(proto::DataEntryError {
+                                                    path: request.path,
+                                                    error: Some(proto::Error {
+                                                        code: 401,
+                                                        reason: "unauthorized".to_owned(),
+                                                        message: "Authorization expired".to_owned(),
+                                                    }),
+                                                });
+                                            }
+                                            Err(ReadError::PermissionDenied) => {
+                                                errors.push(proto::DataEntryError {
+                                                    path: request.path,
+                                                    error: Some(proto::Error {
+                                                        code: 403,
+                                                        reason: "forbidden".to_owned(),
+                                                        message: "Permission denied".to_owned(),
+                                                    }),
+                                                });
                                             }
                                         }
-                                        if entries.is_empty() {
-                                            errors.push(proto::DataEntryError {
-                                                path: request.path,
-                                                error: Some(proto::Error {
-                                                    code: 404,
-                                                    reason: "not_found".to_owned(),
-                                                    message: "No entries found for the provided call parameters"
-                                                        .to_owned(),
-                                                }),
-                                            });
-                                        }
                                     }
-                                    Err(ReadError::NotFound) => {
-                                        errors.push(proto::DataEntryError {
-                                            path: request.path,
-                                            error: Some(proto::Error {
-                                                code: 404,
-                                                reason: "not_found".to_owned(),
-                                                message: "No entries found for the provided path"
-                                                    .to_owned(),
-                                            }),
-                                        });
+                                    Err(_error) => {
+                                        println!("Error: Invalid Regex");
                                     }
-                                    Err(ReadError::PermissionExpired) => {}
-                                    Err(ReadError::PermissionDenied) => {}
                                 }
                             }
                             Err(ReadError::PermissionExpired) => {
