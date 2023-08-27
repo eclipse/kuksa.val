@@ -29,6 +29,8 @@ use tracing::{debug, error, info};
 
 use clap::{Arg, ArgAction, Command};
 
+#[cfg(feature = "viss")]
+use databroker::viss;
 use databroker::{broker, grpc, permissions, vss};
 
 async fn shutdown_handler() {
@@ -245,14 +247,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         parser = parser
             .arg(
                 Arg::new("insecure")
-                    .display_order(6)
+                    .display_order(20)
                     .long("insecure")
                     .help("Allow insecure connections")
                     .action(ArgAction::SetTrue),
             )
             .arg(
                 Arg::new("tls-cert")
-                    .display_order(5)
+                    .display_order(21)
                     .long("tls-cert")
                     .help("TLS certificate file (.pem)")
                     .action(ArgAction::Set)
@@ -261,12 +263,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
             .arg(
                 Arg::new("tls-private-key")
-                    .display_order(5)
+                    .display_order(22)
                     .long("tls-private-key")
                     .help("TLS private key file (.key)")
                     .action(ArgAction::Set)
                     .value_name("FILE")
                     .conflicts_with("insecure"),
+            );
+    }
+
+    #[cfg(feature = "viss")]
+    {
+        parser = parser
+            .arg(
+                Arg::new("enable-viss")
+                    .display_order(30)
+                    .long("enable-viss")
+                    .help("Enable VISSv2 (websocket) service")
+                    .action(ArgAction::SetTrue),
+            )
+            .arg(
+                Arg::new("viss-address")
+                    .display_order(31)
+                    .long("viss-address")
+                    .help("VISS address")
+                    .action(ArgAction::Set)
+                    .value_name("IP")
+                    .required(false)
+                    .env("KUKSA_DATABROKER_VISS_ADDR")
+                    .default_value("127.0.0.1"),
+            )
+            .arg(
+                Arg::new("viss-port")
+                    .display_order(32)
+                    .long("viss-port")
+                    .help("VISS port")
+                    .action(ArgAction::Set)
+                    .value_name("PORT")
+                    .required(false)
+                    .env("KUKSA_DATABROKER_VISS_PORT")
+                    .value_parser(clap::value_parser!(u16))
+                    .default_value("8090"),
             );
     }
 
@@ -377,6 +414,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         (false, _) => Authorization::Disabled,
     };
+
+    #[cfg(feature = "viss")]
+    {
+        let viss_port = args
+            .get_one::<u16>("viss-port")
+            .expect("port should be a number");
+        let viss_addr = std::net::SocketAddr::new(ip_addr, *viss_port);
+
+        if args.get_flag("enable-viss") {
+            let broker = broker.clone();
+            let authorization = authorization.clone();
+            tokio::spawn(async move {
+                if let Err(err) = viss::server::serve(viss_addr, broker, authorization).await {
+                    error!("{err}");
+                }
+            });
+        }
+    }
 
     grpc::server::serve(
         addr,

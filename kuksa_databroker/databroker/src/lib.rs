@@ -20,6 +20,9 @@ pub mod query;
 pub mod types;
 pub mod vss;
 
+#[cfg(feature = "viss")]
+pub mod viss;
+
 use std::fmt::Write;
 
 use tracing::info;
