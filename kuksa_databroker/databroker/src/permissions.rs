@@ -26,6 +26,13 @@ lazy_static! {
         provide: PathMatcher::Everything,
         create: PathMatcher::Everything,
     };
+    pub static ref ALLOW_NONE: Permissions = Permissions {
+        expires_at: None,
+        read: PathMatcher::Nothing,
+        actuate: PathMatcher::Nothing,
+        provide: PathMatcher::Nothing,
+        create: PathMatcher::Nothing,
+    };
 }
 
 #[derive(Debug, Clone)]
