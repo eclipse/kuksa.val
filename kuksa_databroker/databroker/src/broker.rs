@@ -371,6 +371,11 @@ impl Entry {
     }
 
     fn validate_value(&self, value: &DataValue) -> Result<(), UpdateError> {
+        // Not available is always valid
+        if value == &DataValue::NotAvailable {
+            return Ok(());
+        }
+
         // Validate value
         match self.metadata.data_type {
             DataType::Bool => match value {
