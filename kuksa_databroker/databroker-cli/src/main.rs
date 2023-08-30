@@ -1308,6 +1308,12 @@ fn try_into_data_value(
     input: &str,
     data_type: proto::v1::DataType,
 ) -> Result<proto::v1::datapoint::Value, ParseError> {
+    if input == "NotAvailable" {
+        return Ok(proto::v1::datapoint::Value::FailureValue(
+            proto::v1::datapoint::Failure::NotAvailable as i32,
+        ));
+    }
+
     match data_type {
         proto::v1::DataType::String => {
             Ok(proto::v1::datapoint::Value::StringValue(input.to_owned()))
