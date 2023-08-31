@@ -26,7 +26,6 @@ import os
 import pathlib
 import sys
 import threading
-import time
 
 from pygments import highlight
 from pygments import lexers
@@ -128,9 +127,9 @@ class TestClient(Cmd):
 
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
-    def subscribeCallback(self, logPath, resp):
-        with logPath.open('a', encoding='utf-8') as logFile:
-            logFile.write(resp + "\n")
+    def subscribeCallback(self, resp):
+        self.async_alert(highlight(json.dumps(json.loads(resp), indent=2), lexers.JsonLexer(),
+                  formatters.TerminalFormatter()))
 
     def subscriptionIdCompleter(self, text, line, begidx, endidx):
         self.pathCompletionItems = []
@@ -400,19 +399,11 @@ class TestClient(Cmd):
     def do_subscribe(self, args):
         """Subscribe the value of a path"""
         if self.checkConnection():
-
-            logPath = pathlib.Path.cwd() / \
-                f"log_{args.Path.replace('/', '.')}_{args.attribute}_{str(time.time())}"
-            callback = functools.partial(self.subscribeCallback, logPath)
             resp = self.commThread.subscribe(
-                args.Path, callback, args.attribute)
+                args.Path, self.subscribeCallback, args.attribute)
             resJson = json.loads(resp)
             if "subscriptionId" in resJson:
                 self.subscribeIds.add(resJson["subscriptionId"])
-                logPath.touch()
-                print(f"Subscription log available at {logPath}")
-                print(
-                    f"Execute tail -f {logPath} on another Terminal instance")
             print(highlight(resp, lexers.JsonLexer(),
                   formatters.TerminalFormatter()))
         self.pathCompletionItems = []
@@ -422,18 +413,11 @@ class TestClient(Cmd):
     def do_subscribeMultiple(self, args):
         """Subscribe to updates of given paths"""
         if self.checkConnection():
-            logPath = pathlib.Path.cwd() / \
-                f"subscribeMultiple_{args.attribute}_{str(time.time())}.log"
-            callback = functools.partial(self.subscribeCallback, logPath)
             resp = self.commThread.subscribeMultiple(
-                args.Path, callback, args.attribute)
+                args.Path, self.subscribeCallback, args.attribute)
             resJson = json.loads(resp)
             if "subscriptionId" in resJson:
                 self.subscribeIds.add(resJson["subscriptionId"])
-                logPath.touch()
-                print(f"Subscription log available at {logPath}")
-                print(
-                    f"Execute tail -f {logPath} on another Terminal instance")
             print(highlight(resp, lexers.JsonLexer(),
                   formatters.TerminalFormatter()))
         self.pathCompletionItems = []
