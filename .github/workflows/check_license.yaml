@@ -7,7 +7,7 @@ jobs:
   check-spdx-headers:
     runs-on: ubuntu-latest
     steps:
-    
+
     - name: Checkout code
       uses: actions/checkout@v3
       with:
@@ -21,8 +21,8 @@ jobs:
     - name: Set license
       run: |
         echo "licenses=Apache-2.0" >> $GITHUB_ENV
-        
-    - uses: ./.github/actions/spdx
+
+    - uses: eclipse-kuksa/kuksa-actions/spdx@2
       with:
         files: "${{ env.files }}"
         licenses: "${{ env.licenses }}"
