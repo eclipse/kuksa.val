@@ -26,30 +26,36 @@ pub fn to_regex_string(glob: &str) -> String {
     // Start from the beginning
     let mut re = String::from("^");
 
+    if glob.eq("*") {
+        return re.replace('^', "\x00");
+    } else if glob.is_empty() {
+        return re;
+    }
+
     let mut regex_string = glob.replace('.', "\\.");
 
-    if glob.starts_with("**.") {
-        regex_string = regex_string.replace("**\\.", ".*\\.");
-    } else if glob.starts_with("*.") {
-        regex_string = regex_string.replace("*\\.", "[A-Z][a-zA-Z0-9]*\\.");
-    }
-
-    if glob.ends_with(".*") {
-        regex_string = regex_string.replace("\\.*", "\\.[A-Z][a-zA-Z0-9]*");
-    } else if glob.ends_with(".**") {
-        regex_string = regex_string.replace("\\.**", "\\..*");
-    }
-
-    if glob.contains(".**.") {
-        regex_string = regex_string.replace("\\.**", "[\\.[A-Z][a-zA-Z0-9]*]*");
-    }
-
-    if glob.contains(".*.") {
-        regex_string = regex_string.replace("\\.*", "\\.[A-Z][a-zA-Z0-9]*");
-    }
-
     if !glob.contains('*') {
-        regex_string += "\\..*";
+        regex_string += "(?:\\..+)?";
+    } else {
+        if glob.starts_with("**.") {
+            regex_string = regex_string.replace("**\\.", ".+\\.");
+        } else if glob.starts_with("*.") {
+            regex_string = regex_string.replace("*\\.", "[^.]+\\.");
+        }
+
+        if glob.ends_with(".*") {
+            regex_string = regex_string.replace("\\.*", "\\.[^.]+");
+        } else if glob.ends_with(".**") {
+            regex_string = regex_string.replace("\\.**", "\\..*");
+        }
+
+        if glob.contains(".**.") {
+            regex_string = regex_string.replace("\\.**", "[\\.[A-Z][a-zA-Z0-9]*]*");
+        }
+
+        if glob.contains(".*.") {
+            regex_string = regex_string.replace("\\.*", "\\.[^.]+");
+        }
     }
 
     re.push_str(regex_string.as_str());
@@ -1285,7 +1291,25 @@ mod tests {
     fn test_matches_combination_of_multiple_wildcard_and_single_wildcard() {
         assert!(using_glob("**.*.*.Position")
             .with_signals(ALL_SIGNALS)
-            .should_match_signals(&["Vehicle.Cabin.Sunroof.Shade.Position"]));
+            .should_match_signals(&[
+                "Vehicle.Cabin.Door.Row2.PassengerSide.Shade.Position",
+                "Vehicle.Cabin.Seat.Row2.PassengerSide.Position",
+                "Vehicle.Cabin.Sunroof.Position",
+                "Vehicle.Cabin.Seat.Row1.Middle.Position",
+                "Vehicle.Cabin.Door.Row2.DriverSide.Shade.Position",
+                "Vehicle.Cabin.Seat.Row1.PassengerSide.Position",
+                "Vehicle.Cabin.Door.Row1.DriverSide.Window.Position",
+                "Vehicle.Cabin.Door.Row1.DriverSide.Shade.Position",
+                "Vehicle.Cabin.Door.Row1.PassengerSide.Window.Position",
+                "Vehicle.Cabin.Door.Row2.DriverSide.Window.Position",
+                "Vehicle.Cabin.Door.Row2.PassengerSide.Window.Position",
+                "Vehicle.Cabin.Seat.Row2.Middle.Position",
+                "Vehicle.Cabin.RearShade.Position",
+                "Vehicle.Cabin.Seat.Row1.DriverSide.Position",
+                "Vehicle.Cabin.Door.Row1.PassengerSide.Shade.Position",
+                "Vehicle.Cabin.Seat.Row2.DriverSide.Position",
+                "Vehicle.Cabin.Sunroof.Shade.Position",
+            ]));
     }
 
     #[test]
@@ -1387,11 +1411,11 @@ mod tests {
 
     #[test]
     fn test_valid_regex_path() {
-        assert_eq!(to_regex_string("String.*"), "^String\\.[A-Z][a-zA-Z0-9]*$");
+        assert_eq!(to_regex_string("String.*"), "^String\\.[^.]+$");
         assert_eq!(to_regex_string("String.**"), "^String\\..*$");
         assert_eq!(
             to_regex_string("String.String.String.String.*"),
-            "^String\\.String\\.String\\.String\\.[A-Z][a-zA-Z0-9]*$"
+            "^String\\.String\\.String\\.String\\.[^.]+$"
         );
         assert_eq!(
             to_regex_string("String.String.String.String.**"),
@@ -1399,7 +1423,7 @@ mod tests {
         );
         assert_eq!(
             to_regex_string("String.String.String.String"),
-            "^String\\.String\\.String\\.String\\..*$"
+            "^String\\.String\\.String\\.String(?:\\..+)?$"
         );
         assert_eq!(
             to_regex_string("String.String.String.String.String.**"),
@@ -1407,7 +1431,7 @@ mod tests {
         );
         assert_eq!(
             to_regex_string("String.String.String.*.String"),
-            "^String\\.String\\.String\\.[A-Z][a-zA-Z0-9]*\\.String$"
+            "^String\\.String\\.String\\.[^.]+\\.String$"
         );
         assert_eq!(
             to_regex_string("String.String.String.**.String"),
@@ -1419,11 +1443,11 @@ mod tests {
         );
         assert_eq!(
             to_regex_string("String.String.String.String.*.String.String"),
-            "^String\\.String\\.String\\.String\\.[A-Z][a-zA-Z0-9]*\\.String\\.String$"
+            "^String\\.String\\.String\\.String\\.[^.]+\\.String\\.String$"
         );
         assert_eq!(
             to_regex_string("String.*.String.String"),
-            "^String\\.[A-Z][a-zA-Z0-9]*\\.String\\.String$"
+            "^String\\.[^.]+\\.String\\.String$"
         );
         assert_eq!(
             to_regex_string("String.String.**.String.String"),
@@ -1435,17 +1459,17 @@ mod tests {
         );
         assert_eq!(
             to_regex_string("**.String.String.String.**"),
-            "^.*\\.String\\.String\\.String\\..*$"
+            "^.+\\.String\\.String\\.String\\..*$"
         );
         assert_eq!(
             to_regex_string("**.String.String.String.*"),
-            "^.*\\.String\\.String\\.String\\.[A-Z][a-zA-Z0-9]*$"
+            "^.+\\.String\\.String\\.String\\.[^.]+$"
         );
-        assert_eq!(to_regex_string("**.String"), "^.*\\.String$");
-        assert_eq!(to_regex_string("*.String"), "^[A-Z][a-zA-Z0-9]*\\.String$");
+        assert_eq!(to_regex_string("**.String"), "^.+\\.String$");
+        assert_eq!(to_regex_string("*.String"), "^[^.]+\\.String$");
         assert_eq!(
             to_regex_string("*.String.String.String"),
-            "^[A-Z][a-zA-Z0-9]*\\.String\\.String\\.String$"
+            "^[^.]+\\.String\\.String\\.String$"
         );
     }
 }
