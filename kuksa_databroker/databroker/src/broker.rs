@@ -23,6 +23,7 @@ use tokio_stream::Stream;
 
 use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
+use std::ops::Deref;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -592,7 +593,7 @@ impl Subscriptions {
     pub async fn notify(
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
-        db: &Database,
+        db: &ReadGuard<'_>,
     ) -> Result<(), NotificationError> {
         let mut error = None;
         for sub in &self.query_subscriptions {
@@ -644,9 +645,10 @@ impl ChangeSubscription {
     async fn notify(
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
-        db: &Database,
+        db: &ReadGuard<'_>,
     ) -> Result<(), NotificationError> {
-        let db_read = db.authorized_read_access(&self.permissions);
+        // Authorize with the permissions of the subscription
+        let db = db.authorize(&self.permissions);
         match changed {
             Some(changed) => {
                 let mut matches = false;
@@ -666,7 +668,7 @@ impl ChangeSubscription {
                         for (id, changed_fields) in changed {
                             if let Some(fields) = self.entries.get(id) {
                                 if !fields.is_disjoint(changed_fields) {
-                                    match db_read.get_entry_by_id(*id) {
+                                    match db.get_entry_by_id(*id) {
                                         Ok(entry) => {
                                             let mut update = EntryUpdate::default();
                                             let mut notify_fields = HashSet::new();
@@ -712,7 +714,7 @@ impl ChangeSubscription {
                     let mut notifications = EntryUpdates::default();
 
                     for (id, fields) in &self.entries {
-                        match db_read.get_entry_by_id(*id) {
+                        match db.get_entry_by_id(*id) {
                             Ok(entry) => {
                                 let mut update = EntryUpdate::default();
                                 let mut notify_fields = HashSet::new();
@@ -751,7 +753,7 @@ impl QuerySubscription {
     fn generate_input(
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
-        db: &DatabaseReadAccess,
+        db: &AuthorizedReadGuard,
     ) -> Option<impl query::ExecutionInput> {
         let id_used_in_query = {
             let mut query_uses_id = false;
@@ -793,13 +795,14 @@ impl QuerySubscription {
         }
     }
 
-    async fn notify(
+    async fn notify<'a>(
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
-        db: &Database,
+        db: &ReadGuard<'_>,
     ) -> Result<(), NotificationError> {
-        let db_read = db.authorized_read_access(&self.permissions);
-        match self.generate_input(changed, &db_read) {
+        // Authorize with the permissions of the subscription
+        let db = db.authorize(&self.permissions);
+        match self.generate_input(changed, &db) {
             Some(input) =>
             // Execute query (if anything queued)
             {
@@ -835,13 +838,13 @@ impl QuerySubscription {
     }
 }
 
-pub struct DatabaseReadAccess<'a, 'b> {
-    db: &'a Database,
+pub struct AuthorizedReadGuard<'a, 'b> {
+    db: ReadGuard<'a>,
     permissions: &'b Permissions,
 }
 
-pub struct DatabaseWriteAccess<'a, 'b> {
-    db: &'a mut Database,
+pub struct AuthorizedWriteGuard<'a, 'b> {
+    db: tokio::sync::RwLockWriteGuard<'a, Database>,
     permissions: &'b Permissions,
 }
 
@@ -863,7 +866,45 @@ impl<'a> Iterator for MetadataIterator<'a> {
     }
 }
 
-impl<'a, 'b> DatabaseReadAccess<'a, 'b> {
+pub enum ReadGuard<'a> {
+    Owned(tokio::sync::RwLockReadGuard<'a, Database>),
+    Borrowed(&'a tokio::sync::RwLockReadGuard<'a, Database>),
+}
+
+impl<'a, 'b> ReadGuard<'a> {
+    fn authorize(&'a self, permissions: &'b Permissions) -> AuthorizedReadGuard<'a, 'b> {
+        AuthorizedReadGuard {
+            db: ReadGuard::Borrowed(self.as_ref()),
+            permissions,
+        }
+    }
+}
+
+impl<'a> AsRef<tokio::sync::RwLockReadGuard<'a, Database>> for ReadGuard<'a> {
+    fn as_ref(&self) -> &tokio::sync::RwLockReadGuard<'a, Database> {
+        match self {
+            Self::Borrowed(t) => t,
+            Self::Owned(t) => t,
+        }
+    }
+}
+
+impl<'a> Deref for ReadGuard<'a> {
+    type Target = tokio::sync::RwLockReadGuard<'a, Database>;
+
+    fn deref(&self) -> &tokio::sync::RwLockReadGuard<'a, Database> {
+        match self {
+            Self::Borrowed(t) => t,
+            Self::Owned(t) => t,
+        }
+    }
+}
+
+impl<'a, 'b> AuthorizedReadGuard<'a, 'b> {
+    pub fn deauthorize(self) -> ReadGuard<'a> {
+        self.db
+    }
+
     pub fn get_entry_by_id(&self, id: i32) -> Result<&Entry, ReadError> {
         match self.db.entries.get(&id) {
             Some(entry) => match self.permissions.can_read(&entry.metadata.path) {
@@ -898,7 +939,14 @@ impl<'a, 'b> DatabaseReadAccess<'a, 'b> {
     }
 }
 
-impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
+impl<'a, 'b> AuthorizedWriteGuard<'a, 'b> {
+    pub fn downgrade_to_reader(self) -> AuthorizedReadGuard<'a, 'b> {
+        AuthorizedReadGuard {
+            db: ReadGuard::Owned(self.db.downgrade()),
+            permissions: self.permissions,
+        }
+    }
+
     pub fn update_by_path(
         &mut self,
         path: &str,
@@ -1037,29 +1085,9 @@ impl Database {
             entries: Default::default(),
         }
     }
-
-    pub fn authorized_read_access<'a, 'b>(
-        &'a self,
-        permissions: &'b Permissions,
-    ) -> DatabaseReadAccess<'a, 'b> {
-        DatabaseReadAccess {
-            db: self,
-            permissions,
-        }
-    }
-
-    pub fn authorized_write_access<'a, 'b>(
-        &'a mut self,
-        permissions: &'b Permissions,
-    ) -> DatabaseWriteAccess<'a, 'b> {
-        DatabaseWriteAccess {
-            db: self,
-            permissions,
-        }
-    }
 }
 
-impl<'a, 'b> query::CompilationInput for DatabaseReadAccess<'a, 'b> {
+impl<'a, 'b> query::CompilationInput for AuthorizedReadGuard<'a, 'b> {
     fn get_datapoint_type(&self, path: &str) -> Result<DataType, query::CompilationError> {
         match self.get_metadata_by_path(path) {
             Some(metadata) => Ok(metadata.data_type.to_owned()),
@@ -1083,111 +1111,76 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
         description: String,
         allowed: Option<types::DataValue>,
     ) -> Result<i32, RegistrationError> {
-        self.broker
-            .database
-            .write()
-            .await
-            .authorized_write_access(self.permissions)
-            .add(
-                name,
-                data_type,
-                change_type,
-                entry_type,
-                description,
-                allowed,
-                None,
-            )
+        self.write().await.add(
+            name,
+            data_type,
+            change_type,
+            entry_type,
+            description,
+            allowed,
+            None,
+        )
+    }
+
+    pub async fn read(&'a self) -> AuthorizedReadGuard<'a, 'b> {
+        let db = self.broker.database.read().await;
+        AuthorizedReadGuard {
+            db: ReadGuard::Owned(db),
+            permissions: self.permissions,
+        }
+    }
+
+    async fn write(&'a self) -> AuthorizedWriteGuard<'a, 'b> {
+        let db = self.broker.database.write().await;
+        AuthorizedWriteGuard {
+            db,
+            permissions: self.permissions,
+        }
     }
 
     pub async fn get_id_by_path(&self, name: &str) -> Option<i32> {
-        self.broker
-            .database
-            .read()
+        self.read()
             .await
-            .authorized_read_access(self.permissions)
             .get_metadata_by_path(name)
             .map(|metadata| metadata.id)
     }
 
     pub async fn get_datapoint(&self, id: i32) -> Result<Datapoint, ReadError> {
-        self.broker
-            .database
-            .read()
+        self.read()
             .await
-            .authorized_read_access(self.permissions)
             .get_entry_by_id(id)
             .map(|entry| entry.datapoint.clone())
     }
 
     pub async fn get_datapoint_by_path(&self, name: &str) -> Result<Datapoint, ReadError> {
-        self.broker
-            .database
-            .read()
+        self.read()
             .await
-            .authorized_read_access(self.permissions)
             .get_entry_by_path(name)
             .map(|entry| entry.datapoint.clone())
     }
 
     pub async fn get_metadata(&self, id: i32) -> Option<Metadata> {
-        self.broker
-            .database
-            .read()
-            .await
-            .authorized_read_access(self.permissions)
-            .get_metadata_by_id(id)
-            .cloned()
+        self.read().await.get_metadata_by_id(id).cloned()
     }
 
     pub async fn get_metadata_by_path(&self, path: &str) -> Option<Metadata> {
-        self.broker
-            .database
-            .read()
-            .await
-            .authorized_read_access(self.permissions)
-            .get_metadata_by_path(path)
-            .cloned()
+        self.read().await.get_metadata_by_path(path).cloned()
     }
 
     pub async fn get_entry_by_path(&self, path: &str) -> Result<Entry, ReadError> {
-        self.broker
-            .database
-            .read()
-            .await
-            .authorized_read_access(self.permissions)
-            .get_entry_by_path(path)
-            .cloned()
+        self.read().await.get_entry_by_path(path).cloned()
     }
 
     pub async fn get_entry_by_id(&self, id: i32) -> Result<Entry, ReadError> {
-        self.broker
-            .database
-            .read()
-            .await
-            .authorized_read_access(self.permissions)
-            .get_entry_by_id(id)
-            .cloned()
+        self.read().await.get_entry_by_id(id).cloned()
     }
 
     pub async fn for_each_metadata(&self, f: impl FnMut(&Metadata)) {
-        self.broker
-            .database
-            .read()
-            .await
-            .authorized_read_access(self.permissions)
-            .iter_metadata()
-            .for_each(f)
+        self.read().await.iter_metadata().for_each(f)
     }
 
     pub async fn map_metadata<T>(&self, f: impl FnMut(&Metadata) -> T) -> Vec<T> {
-        self.broker
-            .database
-            .read()
-            .await
-            .authorized_read_access(self.permissions)
-            .iter_metadata()
-            .map(f)
-            .collect()
+        self.read().await.iter_metadata().map(f).collect()
     }
 
     pub async fn update_entries(
@@ -1195,15 +1188,14 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
         updates: impl IntoIterator<Item = (i32, EntryUpdate)>,
     ) -> Result<(), Vec<(i32, UpdateError)>> {
         let mut errors = Vec::new();
-        let mut db = self.broker.database.write().await;
-        let mut db_write = db.authorized_write_access(self.permissions);
+        let mut db = self.write().await;
 
         let cleanup_needed = {
             let changed = {
                 let mut changed = HashMap::<i32, HashSet<Field>>::new();
                 for (id, update) in updates {
                     debug!("setting id {} to {:?}", id, update);
-                    match db_write.update(id, update) {
+                    match db.update(id, update) {
                         Ok(changed_fields) => {
                             if !changed_fields.is_empty() {
                                 changed.insert(id, changed_fields);
@@ -1218,8 +1210,13 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
             };
             // Downgrade to reader (to allow other readers) while holding on
             // to a read lock in order to ensure a consistent state while
-            // notifying subscribers (no writes in between)
-            let db = db.downgrade();
+            // notifying subscribers (as no writes can happen while a read lock
+            // is held).
+            let db = db.downgrade_to_reader();
+
+            // Deauthorize as `notify` takes a raw read lock (on purpose, since
+            // it's using the authorization of the originating subscriber.
+            let db = db.deauthorize();
 
             // Notify
             match self
@@ -1278,7 +1275,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
 
         {
             // Send everything subscribed to in an initial notification
-            let db = self.broker.database.read().await;
+            let db = self.read().await.deauthorize();
             if subscription.notify(None, &db).await.is_err() {
                 warn!("Failed to create initial notification");
             }
@@ -1298,9 +1295,8 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
         &self,
         query: &str,
     ) -> Result<impl Stream<Item = QueryResponse>, QueryError> {
-        let db_read = self.broker.database.read().await;
-        let db_read_access = db_read.authorized_read_access(self.permissions);
-        let compiled_query = query::compile(query, &db_read_access);
+        let db = self.read().await;
+        let compiled_query = query::compile(query, &db);
 
         match compiled_query {
             Ok(compiled_query) => {
@@ -1313,7 +1309,8 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
                 };
 
                 // Send the initial execution of query
-                match subscription.notify(None, &db_read).await {
+                let db = db.deauthorize();
+                match subscription.notify(None, &db).await {
                     Ok(_) => self
                         .broker
                         .subscriptions
@@ -1351,6 +1348,25 @@ impl DataBroker {
             broker: self,
             permissions,
         }
+    }
+
+    pub async fn authorized_read<'a, 'b>(
+        &'a self,
+        permissions: &'b Permissions,
+    ) -> AuthorizedReadGuard<'a, 'b> {
+        let db = self.database.read().await;
+        AuthorizedReadGuard {
+            db: ReadGuard::Owned(db),
+            permissions,
+        }
+    }
+
+    pub async fn authorized_write<'a, 'b>(
+        &'a self,
+        permissions: &'b Permissions,
+    ) -> AuthorizedWriteGuard<'a, 'b> {
+        let db = self.database.write().await;
+        AuthorizedWriteGuard { db, permissions }
     }
 
     pub fn start_housekeeping_task(&self) {
