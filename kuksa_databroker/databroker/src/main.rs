@@ -15,8 +15,9 @@
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
+use databroker::authorization::Authorization;
 use databroker::broker::RegistrationError;
-use databroker::grpc::server::Authorization;
+
 #[cfg(feature = "tls")]
 use databroker::grpc::server::ServerTLS;
 
@@ -28,7 +29,7 @@ use tracing::{debug, error, info};
 
 use clap::{Arg, ArgAction, Command};
 
-use databroker::{broker, grpc, jwt, permissions, vss};
+use databroker::{broker, grpc, permissions, vss};
 
 // Hardcoded datapoints
 const DATAPOINTS: &[(
@@ -258,6 +259,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .required(false),
         )
         .arg(
+            Arg::new("disable-authorization")
+                .display_order(6)
+                .long("disable-authorization")
+                .help("Disable authorization")
+                .action(ArgAction::SetTrue),
+        )
+        .arg(
             Arg::new("dummy-metadata")
                 .display_order(10)
                 .long("dummy-metadata")
@@ -391,35 +399,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             (None, None) => {
                 warn!(
-                    "Default behavior of accepting insecure connections \
-                        when TLS is not configured may change in the future! \
-                        Please use --insecure to explicitly enable this behavior."
+                    "TLS is not enabled. Default behavior of accepting insecure connections \
+                     when TLS is not configured may change in the future! \
+                     Please use --insecure to explicitly enable this behavior."
                 );
                 ServerTLS::Disabled
             }
         }
     };
 
+    let enable_authorization = !args.get_flag("disable-authorization");
     let jwt_public_key = match args.get_one::<String>("jwt-public-key") {
         Some(pub_key_filename) => match std::fs::read_to_string(pub_key_filename) {
             Ok(pub_key) => {
                 info!("Using '{pub_key_filename}' to authenticate access tokens");
-                Some(pub_key)
+                Ok(Some(pub_key))
             }
             Err(err) => {
                 error!("Failed to open file {:?}: {}", pub_key_filename, err);
-                None
+                Err(err)
             }
         },
-        None => None,
-    };
+        None => Ok(None),
+    }?;
 
-    let authorization = match jwt_public_key {
-        Some(pub_key) => {
-            let token_decoder = jwt::Decoder::new(pub_key)?;
-            Authorization::Enabled { token_decoder }
+    let authorization = match (enable_authorization, jwt_public_key) {
+        (true, Some(pub_key)) => Authorization::new(pub_key)?,
+        (true, None) => {
+            warn!("Authorization is not enabled.");
+            Authorization::Disabled
         }
-        None => Authorization::Disabled,
+        (false, _) => Authorization::Disabled,
     };
 
     grpc::server::serve(

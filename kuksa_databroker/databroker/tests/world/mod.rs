@@ -195,7 +195,7 @@ impl DataBrokerWorld {
             grpc::server::serve_with_incoming_shutdown(
                 tokio_stream::wrappers::TcpListenerStream::new(listener),
                 data_broker,
-                grpc::server::Authorization::Disabled,
+                databroker::authorization::Authorization::Disabled,
                 poll_fn(|cx| {
                     let mut state = owned_state
                         .lock()

@@ -17,21 +17,15 @@ use tokio_stream::wrappers::TcpListenerStream;
 use tonic::transport::Server;
 #[cfg(feature = "tls")]
 use tonic::transport::ServerTlsConfig;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use databroker_proto::{kuksa, sdv};
 
 use crate::{
-    broker, jwt,
+    authorization::Authorization,
+    broker,
     permissions::{self, Permissions},
 };
-
-#[derive(Clone)]
-#[allow(clippy::large_enum_variant)]
-pub enum Authorization {
-    Disabled,
-    Enabled { token_decoder: jwt::Decoder },
-}
 
 #[cfg(feature = "tls")]
 pub enum ServerTLS {
@@ -119,12 +113,12 @@ where
             builder = builder.tls_config(tls_config)?;
         }
         ServerTLS::Disabled => {
-            warn!("TLS is not enabled")
+            info!("TLS is not enabled")
         }
     }
 
     if let Authorization::Disabled = &authorization {
-        warn!("Authorization is not enabled");
+        info!("Authorization is not enabled.");
     }
 
     let router = builder
