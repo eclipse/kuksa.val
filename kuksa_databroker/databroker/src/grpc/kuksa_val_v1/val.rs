@@ -55,6 +55,18 @@ impl proto::val_server::Val for broker::DataBroker {
             let mut errors = Vec::new();
 
             for request in requested {
+                if !glob::is_valid_pattern(&request.path) {
+                    errors.push(proto::DataEntryError {
+                        path: request.path,
+                        error: Some(proto::Error {
+                            code: 400,
+                            reason: "bad_request".to_owned(),
+                            message: "Bad Path Request".to_owned(),
+                        }),
+                    });
+                    continue;
+                }
+
                 let view = proto::View::from_i32(request.view).ok_or_else(|| {
                     tonic::Status::invalid_argument(format!("Invalid View (id: {}", request.view))
                 })?;
@@ -64,76 +76,64 @@ impl proto::val_server::Val for broker::DataBroker {
                 let view_fields = combine_view_and_fields(view, fields);
                 debug!("Getting fields: {:?}", view_fields);
 
-                if glob::is_valid_pattern(&request.path) {
-                    match broker.get_entry_by_path(&request.path).await {
-                        Ok(entry) => {
-                            let proto_entry = proto_entry_from_entry_and_fields(entry, view_fields);
-                            debug!("Getting datapoint: {:?}", proto_entry);
-                            entries.push(proto_entry);
-                        }
-                        Err(ReadError::NotFound) => {
-                            let regex = glob::to_regex(&request.path);
-                            match regex {
-                                Ok(value_regex) => {
-                                    match broker.get_entries_by_regex(value_regex).await {
-                                        Ok(entries_result) => {
-                                            for data_entry in entries_result {
-                                                let entry_type =
-                                                    data_entry.metadata.entry_type.clone();
+                match broker.get_entry_by_path(&request.path).await {
+                    Ok(entry) => {
+                        let proto_entry = proto_entry_from_entry_and_fields(entry, view_fields);
+                        debug!("Getting datapoint: {:?}", proto_entry);
+                        entries.push(proto_entry);
+                    }
+                    Err(ReadError::NotFound) => {
+                        let regex = glob::to_regex(&request.path);
+                        match regex {
+                            Ok(value_regex) => {
+                                match broker.get_entries_by_regex(value_regex).await {
+                                    Ok(entries_result) => {
+                                        for data_entry in entries_result {
+                                            let entry_type = data_entry.metadata.entry_type.clone();
 
-                                                let proto_entry = proto_entry_from_entry_and_fields(
-                                                    data_entry,
-                                                    view_fields.clone(),
-                                                );
-                                                debug!("Getting datapoint: {:?}", proto_entry);
+                                            let proto_entry = proto_entry_from_entry_and_fields(
+                                                data_entry,
+                                                view_fields.clone(),
+                                            );
+                                            debug!("Getting datapoint: {:?}", proto_entry);
 
-                                                if view == proto::View::TargetValue {
-                                                    if entry_type == broker::EntryType::Actuator {
-                                                        entries.push(proto_entry);
-                                                    }
-                                                } else {
+                                            if view == proto::View::TargetValue {
+                                                if entry_type == broker::EntryType::Actuator {
                                                     entries.push(proto_entry);
                                                 }
-                                            }
-                                            if entries.is_empty() {
-                                                errors.push(proto::DataEntryError {
-                                                        path: request.path,
-                                                        error: Some(proto::Error {
-                                                            code: 404,
-                                                            reason: "not_found".to_owned(),
-                                                            message: "No entries found for the provided call parameters"
-                                                                .to_owned(),
-                                                        }),
-                                                    });
+                                            } else {
+                                                entries.push(proto_entry);
                                             }
                                         }
-                                        Err(read_error) => {
-                                            let data_entry_error = create_data_entry_error(
-                                                request.path.clone(),
-                                                read_error,
-                                            );
-                                            errors.push(data_entry_error);
+                                        if entries.is_empty() {
+                                            errors.push(proto::DataEntryError {
+                                                    path: request.path,
+                                                    error: Some(proto::Error {
+                                                        code: 404,
+                                                        reason: "not_found".to_owned(),
+                                                        message: "No entries found for the provided call parameters"
+                                                            .to_owned(),
+                                                    }),
+                                                });
                                         }
                                     }
+                                    Err(read_error) => {
+                                        let data_entry_error = create_data_entry_error(
+                                            request.path.clone(),
+                                            read_error,
+                                        );
+                                        errors.push(data_entry_error);
+                                    }
                                 }
-                                Err(_) => todo!(),
                             }
-                        }
-                        Err(read_error) => {
-                            let data_entry_error =
-                                create_data_entry_error(request.path.clone(), read_error);
-                            errors.push(data_entry_error);
+                            Err(_) => todo!(),
                         }
                     }
-                } else {
-                    errors.push(proto::DataEntryError {
-                        path: request.path,
-                        error: Some(proto::Error {
-                            code: 400,
-                            reason: "bad_request".to_owned(),
-                            message: "Bad Path Request".to_owned(),
-                        }),
-                    });
+                    Err(read_error) => {
+                        let data_entry_error =
+                            create_data_entry_error(request.path.clone(), read_error);
+                        errors.push(data_entry_error);
+                    }
                 }
             }
 
