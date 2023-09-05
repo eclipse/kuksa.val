@@ -129,7 +129,7 @@ class TestClient(Cmd):
 
     def subscribeCallback(self, resp):
         self.async_alert(highlight(json.dumps(json.loads(resp), indent=2), lexers.JsonLexer(),
-                  formatters.TerminalFormatter()))
+                         formatters.TerminalFormatter()))
 
     def subscriptionIdCompleter(self, text, line, begidx, endidx):
         self.pathCompletionItems = []
@@ -147,8 +147,10 @@ class TestClient(Cmd):
         '-i', "--insecure", default=False, action="store_true", help='Connect in insecure mode')
     ap_disconnect = argparse.ArgumentParser()
     ap_authorize = argparse.ArgumentParser()
-    tokenfile_completer_method = functools.partial(Cmd.path_complete,
-                                                   path_filter=lambda path: (os.path.isdir(path) or path.endswith(".token")))
+    tokenfile_completer_method = functools.partial(
+        Cmd.path_complete,
+        path_filter=lambda path: (os.path.isdir(path) or path.endswith(".token"))
+    )
     ap_authorize.add_argument(
         'token_or_tokenfile',
         help='JWT(or the file storing the token) for authorizing the client.',
@@ -245,13 +247,16 @@ class TestClient(Cmd):
     )
 
     ap_updateVSSTree = argparse.ArgumentParser()
-    jsonfile_completer_method = functools.partial(Cmd.path_complete,
-                                                  path_filter=lambda path: (os.path.isdir(path) or path.endswith(".json")))
+    jsonfile_completer_method = functools.partial(
+        Cmd.path_complete,
+        path_filter=lambda path: (os.path.isdir(path) or path.endswith(".json"))
+    )
     ap_updateVSSTree.add_argument(
         "Json", help="Json tree to update VSS", completer_method=jsonfile_completer_method)
 
     # Constructor, request names after protocol to avoid errors
-    def __init__(self, server_ip=None, server_port=None, server_protocol=None, *, insecure=False, token_or_tokenfile=None,
+    def __init__(self, server_ip=None, server_port=None, server_protocol=None, *,
+                 insecure=False, token_or_tokenfile=None,
                  certificate=None, keyfile=None,
                  cacertificate=None, tls_server_name=None):
         super().__init__(
@@ -293,7 +298,7 @@ class TestClient(Cmd):
         if self.checkConnection():
             resp = self.commThread.authorize(self.token_or_tokenfile)
             print(highlight(resp, lexers.JsonLexer(),
-                    formatters.TerminalFormatter()))
+                  formatters.TerminalFormatter()))
 
     @with_category(VSS_COMMANDS)
     @with_argparser(ap_setValue)
@@ -495,7 +500,7 @@ class TestClient(Cmd):
                   'insecure': self.insecure,
                   'protocol': self.serverProtocol
                   }
-                  
+
         # Configs should only be added if they actually have a value
         if self.token_or_tokenfile:
             config['token_or_tokenfile'] = self.token_or_tokenfile
@@ -507,7 +512,7 @@ class TestClient(Cmd):
             config['cacertificate'] = self.cacertificate
         if self.tls_server_name:
             config['tls_server_name'] = self.tls_server_name
-            
+
         self.commThread = KuksaClientThread(config)
         self.commThread.start()
 
@@ -609,7 +614,7 @@ def main():
     parser.add_argument(
         '--token_or_tokenfile', default=None, help="JWT token or path to a JWT token file (.token)",
     )
-    
+
     # Add TLS arguments
     # Note: Databroker does not yet support mutual authentication, so no need to use two first arguments
     parser.add_argument(
@@ -626,17 +631,18 @@ def main():
     # Connecting to "127.0.0.1" does not work unless server-name specified
     # For KUKSA.val example certs default name is "Server"
     parser.add_argument(
-        '--tls-server-name', default=None, help="CA name of server, needed in some cases where subjectAltName does not suffice",
+        '--tls-server-name', default=None,
+        help="CA name of server, needed in some cases where subjectAltName does not suffice",
     )
-    
+
     args = parser.parse_args()
 
     logging.config.fileConfig(args.logging_config)
-    
+
     clientApp = TestClient(args.ip, args.port, args.protocol,
-                           insecure = args.insecure, token_or_tokenfile = args.token_or_tokenfile,
-                           certificate = args.certificate, keyfile = args.keyfile,
-                           cacertificate = args.cacertificate, tls_server_name = args.tls_server_name)
+                           insecure=args.insecure, token_or_tokenfile=args.token_or_tokenfile,
+                           certificate=args.certificate, keyfile=args.keyfile,
+                           cacertificate=args.cacertificate, tls_server_name=args.tls_server_name)
     try:
         # We exit the loop when the user types "quit" or hits Ctrl-D.
         clientApp.cmdloop()
