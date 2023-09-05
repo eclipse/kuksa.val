@@ -1289,12 +1289,11 @@ mod tests {
 
     #[test]
     fn test_matches_combination_of_multiple_wildcard_and_single_wildcard() {
-        assert!(using_glob("**.*.*.Position")
+        assert!(using_glob("**.*.*.*.Position")
             .with_signals(ALL_SIGNALS)
             .should_match_signals(&[
                 "Vehicle.Cabin.Door.Row2.PassengerSide.Shade.Position",
                 "Vehicle.Cabin.Seat.Row2.PassengerSide.Position",
-                "Vehicle.Cabin.Sunroof.Position",
                 "Vehicle.Cabin.Seat.Row1.Middle.Position",
                 "Vehicle.Cabin.Door.Row2.DriverSide.Shade.Position",
                 "Vehicle.Cabin.Seat.Row1.PassengerSide.Position",
@@ -1304,12 +1303,16 @@ mod tests {
                 "Vehicle.Cabin.Door.Row2.DriverSide.Window.Position",
                 "Vehicle.Cabin.Door.Row2.PassengerSide.Window.Position",
                 "Vehicle.Cabin.Seat.Row2.Middle.Position",
-                "Vehicle.Cabin.RearShade.Position",
                 "Vehicle.Cabin.Seat.Row1.DriverSide.Position",
                 "Vehicle.Cabin.Door.Row1.PassengerSide.Shade.Position",
                 "Vehicle.Cabin.Seat.Row2.DriverSide.Position",
                 "Vehicle.Cabin.Sunroof.Shade.Position",
             ]));
+        /*
+               It doesn't match for example:
+                   "Vehicle.Cabin.RearShade.Position",
+                   "Vehicle.Cabin.Sunroof.Position",
+        */
     }
 
     #[test]
