@@ -1467,10 +1467,7 @@ mod test {
             try_into_data_value("false", proto::v1::DataType::Bool),
             Ok(proto::v1::datapoint::Value::BoolValue(value)) if !value
         ));
-        assert!(matches!(
-            try_into_data_value("truefalse", proto::v1::DataType::Bool),
-            Err(_)
-        ));
+        assert!(try_into_data_value("truefalse", proto::v1::DataType::Bool).is_err());
         // BoolArray
         assert!(matches!(
             try_into_data_value("[true, false, true]", proto::v1::DataType::BoolArray),
@@ -1486,18 +1483,9 @@ mod test {
             try_into_data_value("-100", proto::v1::DataType::Int8),
             Ok(proto::v1::datapoint::Value::Int32Value(value)) if value == -100
         ));
-        assert!(matches!(
-            try_into_data_value("300", proto::v1::DataType::Int8),
-            Err(_)
-        ));
-        assert!(matches!(
-            try_into_data_value("-300", proto::v1::DataType::Int8),
-            Err(_)
-        ));
-        assert!(matches!(
-            try_into_data_value("-100.1", proto::v1::DataType::Int8),
-            Err(_)
-        ));
+        assert!(try_into_data_value("300", proto::v1::DataType::Int8).is_err());
+        assert!(try_into_data_value("-300", proto::v1::DataType::Int8).is_err());
+        assert!(try_into_data_value("-100.1", proto::v1::DataType::Int8).is_err());
 
         // Int16
         assert!(matches!(
@@ -1516,18 +1504,9 @@ mod test {
             try_into_data_value("-32000", proto::v1::DataType::Int16),
             Ok(proto::v1::datapoint::Value::Int32Value(value)) if value == -32000
         ));
-        assert!(matches!(
-            try_into_data_value("33000", proto::v1::DataType::Int16),
-            Err(_)
-        ));
-        assert!(matches!(
-            try_into_data_value("-33000", proto::v1::DataType::Int16),
-            Err(_)
-        ));
-        assert!(matches!(
-            try_into_data_value("-32000.1", proto::v1::DataType::Int16),
-            Err(_)
-        ));
+        assert!(try_into_data_value("33000", proto::v1::DataType::Int16).is_err());
+        assert!(try_into_data_value("-33000", proto::v1::DataType::Int16).is_err());
+        assert!(try_into_data_value("-32000.1", proto::v1::DataType::Int16).is_err());
     }
 
     #[test]
