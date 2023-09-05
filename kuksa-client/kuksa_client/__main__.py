@@ -26,6 +26,7 @@ import os
 import pathlib
 import sys
 import threading
+import time
 
 from pygments import highlight
 from pygments import lexers
@@ -127,9 +128,13 @@ class TestClient(Cmd):
 
         return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
 
-    def subscribeCallback(self, resp):
-        self.async_alert(highlight(json.dumps(json.loads(resp), indent=2), lexers.JsonLexer(),
-                         formatters.TerminalFormatter()))
+    def subscribeCallback(self, logPath, resp):
+        if logPath is None:
+            self.async_alert(highlight(json.dumps(json.loads(resp), indent=2),
+                             lexers.JsonLexer(), formatters.TerminalFormatter()))
+        else:
+            with logPath.open('a', encoding='utf-8') as logFile:
+                logFile.write(resp + "\n")
 
     def subscriptionIdCompleter(self, text, line, begidx, endidx):
         self.pathCompletionItems = []
@@ -223,11 +228,16 @@ class TestClient(Cmd):
     ap_subscribe.add_argument(
         "-a", "--attribute", help="Attribute to subscribe to", default="value")
 
+    ap_subscribe.add_argument(
+        "-f", "--output-to-file", help="Redirect the subscription output to file", action="store_true")
+
     ap_subscribeMultiple = argparse.ArgumentParser()
     ap_subscribeMultiple.add_argument(
         "Path", help="Path to subscribe to", nargs='+', completer_method=path_completer)
     ap_subscribeMultiple.add_argument(
         "-a", "--attribute", help="Attribute to subscribe to", default="value")
+    ap_subscribeMultiple.add_argument(
+        "-f", "--output-to-file", help="Redirect the subscription output to file", action="store_true")
 
     ap_unsubscribe = argparse.ArgumentParser()
     ap_unsubscribe.add_argument(
@@ -404,11 +414,21 @@ class TestClient(Cmd):
     def do_subscribe(self, args):
         """Subscribe the value of a path"""
         if self.checkConnection():
+            if args.output_to_file:
+                logPath = pathlib.Path.cwd() / \
+                    f"log_{args.Path.replace('/', '.')}_{args.attribute}_{str(time.time())}"
+                callback = functools.partial(self.subscribeCallback, logPath)
+            else:
+                callback = functools.partial(self.subscribeCallback, None)
+
             resp = self.commThread.subscribe(
-                args.Path, self.subscribeCallback, args.attribute)
+                args.Path, callback, args.attribute)
             resJson = json.loads(resp)
             if "subscriptionId" in resJson:
                 self.subscribeIds.add(resJson["subscriptionId"])
+                if args.output_to_file:
+                    logPath.touch()
+                    print(f"Subscription log available at {logPath}")
             print(highlight(resp, lexers.JsonLexer(),
                   formatters.TerminalFormatter()))
         self.pathCompletionItems = []
@@ -418,11 +438,20 @@ class TestClient(Cmd):
     def do_subscribeMultiple(self, args):
         """Subscribe to updates of given paths"""
         if self.checkConnection():
+            if args.output_to_file:
+                logPath = pathlib.Path.cwd() / \
+                    f"subscribeMultiple_{args.attribute}_{str(time.time())}.log"
+                callback = functools.partial(self.subscribeCallback, logPath)
+            else:
+                callback = functools.partial(self.subscribeCallback, None)
             resp = self.commThread.subscribeMultiple(
-                args.Path, self.subscribeCallback, args.attribute)
+                args.Path, callback, args.attribute)
             resJson = json.loads(resp)
             if "subscriptionId" in resJson:
                 self.subscribeIds.add(resJson["subscriptionId"])
+                if args.output_to_file:
+                    logPath.touch()
+                    print(f"Subscription log available at {logPath}")
             print(highlight(resp, lexers.JsonLexer(),
                   formatters.TerminalFormatter()))
         self.pathCompletionItems = []
