@@ -884,15 +884,9 @@ impl<'a, 'b> DatabaseReadAccess<'a, 'b> {
 
     pub fn get_entries_by_regex(&self, regex: regex::Regex) -> Result<Vec<Entry>, ReadError> {
         let mut entries: Vec<Entry> = Vec::new();
-        for (key, value) in self.db.path_to_id.iter() {
-            if regex.is_match(key) {
-                let result = self.get_entry_by_id(*value);
-                match result {
-                    Ok(value) => {
-                        entries.push(value.clone());
-                    }
-                    Err(_error) => {}
-                }
+        for (_, value) in self.db.entries.iter() {
+            if regex.is_match(&value.metadata.path) {
+                entries.push(value.clone());
             }
         }
         if entries.is_empty() {
