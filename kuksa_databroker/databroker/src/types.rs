@@ -562,141 +562,110 @@ impl DataValue {
 
 #[test]
 fn test_string_greater_than() {
-    assert!(matches!(
-        DataValue::String("string".to_owned()).greater_than(&DataValue::NotAvailable),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::String("string".to_owned()).greater_than(&DataValue::Bool(false)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::String("string".to_owned())
-            .greater_than(&DataValue::String("string2".to_owned())),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::String("string".to_owned()).greater_than(&DataValue::Int32(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::String("string".to_owned()).greater_than(&DataValue::Int64(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::String("string".to_owned()).greater_than(&DataValue::Uint32(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::String("string".to_owned()).greater_than(&DataValue::Uint64(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::String("string".to_owned()).greater_than(&DataValue::Float(100.0)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::String("string".to_owned()).greater_than(&DataValue::Double(100.0)),
-        Err(_)
-    ));
+    assert!(DataValue::String("string".to_owned())
+        .greater_than(&DataValue::NotAvailable)
+        .is_err());
+    assert!(DataValue::String("string".to_owned())
+        .greater_than(&DataValue::Bool(false))
+        .is_err());
+    assert!(DataValue::String("string".to_owned())
+        .greater_than(&DataValue::String("string2".to_owned()))
+        .is_err());
+    assert!(DataValue::String("string".to_owned())
+        .greater_than(&DataValue::Int32(100))
+        .is_err());
+    assert!(DataValue::String("string".to_owned())
+        .greater_than(&DataValue::Int64(100))
+        .is_err());
+    assert!(DataValue::String("string".to_owned())
+        .greater_than(&DataValue::Uint32(100))
+        .is_err());
+    assert!(DataValue::String("string".to_owned())
+        .greater_than(&DataValue::Uint64(100))
+        .is_err());
+    assert!(DataValue::String("string".to_owned())
+        .greater_than(&DataValue::Float(100.0))
+        .is_err());
+    assert!(DataValue::String("string".to_owned())
+        .greater_than(&DataValue::Double(100.0))
+        .is_err());
 }
 
 #[test]
 fn test_not_available_greater_than() {
-    assert!(matches!(
-        DataValue::NotAvailable.greater_than(&DataValue::NotAvailable),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::NotAvailable.greater_than(&DataValue::Bool(false)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::NotAvailable.greater_than(&DataValue::String("string".to_owned())),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::NotAvailable.greater_than(&DataValue::Int32(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::NotAvailable.greater_than(&DataValue::Int64(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::NotAvailable.greater_than(&DataValue::Uint32(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::NotAvailable.greater_than(&DataValue::Uint64(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::NotAvailable.greater_than(&DataValue::Float(100.0)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::NotAvailable.greater_than(&DataValue::Double(100.0)),
-        Err(_)
-    ));
+    assert!(DataValue::NotAvailable
+        .greater_than(&DataValue::NotAvailable)
+        .is_err());
+    assert!(DataValue::NotAvailable
+        .greater_than(&DataValue::Bool(false))
+        .is_err());
+    assert!(DataValue::NotAvailable
+        .greater_than(&DataValue::String("string".to_owned()))
+        .is_err());
+    assert!(DataValue::NotAvailable
+        .greater_than(&DataValue::Int32(100))
+        .is_err());
+    assert!(DataValue::NotAvailable
+        .greater_than(&DataValue::Int64(100))
+        .is_err());
+    assert!(DataValue::NotAvailable
+        .greater_than(&DataValue::Uint32(100))
+        .is_err());
+    assert!(DataValue::NotAvailable
+        .greater_than(&DataValue::Uint64(100))
+        .is_err());
+    assert!(DataValue::NotAvailable
+        .greater_than(&DataValue::Float(100.0))
+        .is_err());
+    assert!(DataValue::NotAvailable
+        .greater_than(&DataValue::Double(100.0))
+        .is_err());
 }
 
 #[test]
 fn test_bool_greater_than() {
-    assert!(matches!(
-        DataValue::Bool(false).greater_than(&DataValue::NotAvailable),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Bool(false).greater_than(&DataValue::Bool(false)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Bool(false).greater_than(&DataValue::String("string".to_owned())),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Bool(false).greater_than(&DataValue::Int32(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Bool(false).greater_than(&DataValue::Int64(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Bool(false).greater_than(&DataValue::Uint32(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Bool(false).greater_than(&DataValue::Uint64(100)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Bool(false).greater_than(&DataValue::Float(100.0)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Bool(false).greater_than(&DataValue::Double(100.0)),
-        Err(_)
-    ));
+    assert!(DataValue::Bool(false)
+        .greater_than(&DataValue::NotAvailable)
+        .is_err());
+    assert!(DataValue::Bool(false)
+        .greater_than(&DataValue::Bool(false))
+        .is_err());
+    assert!(DataValue::Bool(false)
+        .greater_than(&DataValue::String("string".to_owned()))
+        .is_err());
+    assert!(DataValue::Bool(false)
+        .greater_than(&DataValue::Int32(100))
+        .is_err());
+    assert!(DataValue::Bool(false)
+        .greater_than(&DataValue::Int64(100))
+        .is_err());
+    assert!(DataValue::Bool(false)
+        .greater_than(&DataValue::Uint32(100))
+        .is_err());
+    assert!(DataValue::Bool(false)
+        .greater_than(&DataValue::Uint64(100))
+        .is_err());
+    assert!(DataValue::Bool(false)
+        .greater_than(&DataValue::Float(100.0))
+        .is_err());
+    assert!(DataValue::Bool(false)
+        .greater_than(&DataValue::Double(100.0))
+        .is_err());
 }
 
 #[test]
 fn test_int32_greater_than() {
     // Comparison not possible
     //
-    assert!(matches!(
-        DataValue::Int32(5000).greater_than(&DataValue::NotAvailable),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Int32(5000).greater_than(&DataValue::Bool(true)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Int32(5000).greater_than(&DataValue::String("string".to_owned())),
-        Err(_)
-    ));
+    assert!(DataValue::Int32(5000)
+        .greater_than(&DataValue::NotAvailable)
+        .is_err());
+    assert!(DataValue::Int32(5000)
+        .greater_than(&DataValue::Bool(true))
+        .is_err());
+    assert!(DataValue::Int32(5000)
+        .greater_than(&DataValue::String("string".to_owned()))
+        .is_err());
 
     // Should be greater than
     //
@@ -772,18 +741,15 @@ fn test_int64_greater_than() {
     // Comparison not possible
     //
 
-    assert!(matches!(
-        DataValue::Int64(5000).greater_than(&DataValue::NotAvailable),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Int64(5000).greater_than(&DataValue::Bool(true)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Int64(5000).greater_than(&DataValue::String("string".to_owned())),
-        Err(_)
-    ));
+    assert!(DataValue::Int64(5000)
+        .greater_than(&DataValue::NotAvailable)
+        .is_err());
+    assert!(DataValue::Int64(5000)
+        .greater_than(&DataValue::Bool(true))
+        .is_err());
+    assert!(DataValue::Int64(5000)
+        .greater_than(&DataValue::String("string".to_owned()))
+        .is_err());
 
     // Should be greater than
     //
@@ -860,18 +826,15 @@ fn test_uint32_greater_than() {
     // Comparison not possible
     //
 
-    assert!(matches!(
-        DataValue::Uint32(5000).greater_than(&DataValue::NotAvailable),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Uint32(5000).greater_than(&DataValue::Bool(true)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Uint32(5000).greater_than(&DataValue::String("string".to_owned())),
-        Err(_)
-    ));
+    assert!(DataValue::Uint32(5000)
+        .greater_than(&DataValue::NotAvailable)
+        .is_err());
+    assert!(DataValue::Uint32(5000)
+        .greater_than(&DataValue::Bool(true))
+        .is_err());
+    assert!(DataValue::Uint32(5000)
+        .greater_than(&DataValue::String("string".to_owned()))
+        .is_err());
 
     // Should be greater than
     //
@@ -951,18 +914,15 @@ fn test_uint64_greater_than() {
     // Comparison not possible
     //
 
-    assert!(matches!(
-        DataValue::Uint64(5000).greater_than(&DataValue::NotAvailable),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Uint64(5000).greater_than(&DataValue::Bool(true)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Uint64(5000).greater_than(&DataValue::String("string".to_owned())),
-        Err(_)
-    ));
+    assert!(DataValue::Uint64(5000)
+        .greater_than(&DataValue::NotAvailable)
+        .is_err());
+    assert!(DataValue::Uint64(5000)
+        .greater_than(&DataValue::Bool(true))
+        .is_err());
+    assert!(DataValue::Uint64(5000)
+        .greater_than(&DataValue::String("string".to_owned()))
+        .is_err());
 
     // Should be greater than
     //
@@ -1054,18 +1014,15 @@ fn test_double_less_than() {}
 
 #[test]
 fn test_float_equals() {
-    assert!(matches!(
-        DataValue::Float(5000.0).greater_than(&DataValue::NotAvailable),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Float(5000.0).greater_than(&DataValue::Bool(true)),
-        Err(_)
-    ));
-    assert!(matches!(
-        DataValue::Float(5000.0).greater_than(&DataValue::String("string".to_owned())),
-        Err(_)
-    ));
+    assert!(DataValue::Float(5000.0)
+        .greater_than(&DataValue::NotAvailable)
+        .is_err());
+    assert!(DataValue::Float(5000.0)
+        .greater_than(&DataValue::Bool(true))
+        .is_err());
+    assert!(DataValue::Float(5000.0)
+        .greater_than(&DataValue::String("string".to_owned()))
+        .is_err());
 
     assert!(matches!(
         DataValue::Float(32.0).equals(&DataValue::Int32(32)),
