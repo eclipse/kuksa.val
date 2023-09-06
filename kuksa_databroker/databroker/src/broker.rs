@@ -850,16 +850,16 @@ pub struct DatabaseWriteAccess<'a, 'b> {
     permissions: &'b Permissions,
 }
 
-pub struct MetadataIterator<'a> {
-    inner: std::collections::hash_map::Iter<'a, i32, Entry>,
+pub struct EntryIterator<'a> {
+    inner: std::collections::hash_map::Values<'a, i32, Entry>,
 }
 
-impl<'a> Iterator for MetadataIterator<'a> {
-    type Item = &'a Metadata;
+impl<'a> Iterator for EntryIterator<'a> {
+    type Item = &'a Entry;
 
     #[inline]
-    fn next(&mut self) -> Option<&'a Metadata> {
-        self.inner.next().map(|(_, entry)| &entry.metadata)
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
     }
 
     #[inline]
@@ -910,9 +910,9 @@ impl<'a, 'b> DatabaseReadAccess<'a, 'b> {
         self.get_metadata_by_id(*id)
     }
 
-    pub fn iter_metadata(&self) -> MetadataIterator {
-        MetadataIterator {
-            inner: self.db.entries.iter(),
+    pub fn iter_entries(&self) -> EntryIterator {
+        EntryIterator {
+            inner: self.db.entries.values(),
         }
     }
 }
@@ -1118,6 +1118,15 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
             )
     }
 
+    pub async fn with_read_lock<T>(&self, f: impl FnOnce(&DatabaseReadAccess) -> T) -> T {
+        f(&self
+            .broker
+            .database
+            .read()
+            .await
+            .authorized_read_access(self.permissions))
+    }
+
     pub async fn get_id_by_path(&self, name: &str) -> Option<i32> {
         self.broker
             .database
@@ -1197,24 +1206,35 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
             .cloned()
     }
 
-    pub async fn for_each_metadata(&self, f: impl FnMut(&Metadata)) {
+    pub async fn for_each_entry(&self, f: impl FnMut(&Entry)) {
         self.broker
             .database
             .read()
             .await
             .authorized_read_access(self.permissions)
-            .iter_metadata()
+            .iter_entries()
             .for_each(f)
     }
 
-    pub async fn map_metadata<T>(&self, f: impl FnMut(&Metadata) -> T) -> Vec<T> {
+    pub async fn map_entries<T>(&self, f: impl FnMut(&Entry) -> T) -> Vec<T> {
         self.broker
             .database
             .read()
             .await
             .authorized_read_access(self.permissions)
-            .iter_metadata()
+            .iter_entries()
             .map(f)
+            .collect()
+    }
+
+    pub async fn filter_map_entries<T>(&self, f: impl FnMut(&Entry) -> Option<T>) -> Vec<T> {
+        self.broker
+            .database
+            .read()
+            .await
+            .authorized_read_access(self.permissions)
+            .iter_entries()
+            .filter_map(f)
             .collect()
     }
 
@@ -2860,7 +2880,7 @@ mod tests {
         // No permissions
         let permissions = Permissions::builder().build().unwrap();
         let broker = db.authorized_access(&permissions);
-        let metadata = broker.map_metadata(|metadata| metadata.clone()).await;
+        let metadata = broker.map_entries(|entry| entry.metadata.clone()).await;
         for entry in metadata {
             match entry.path.as_str() {
                 "Vehicle.Test1" => assert_eq!(entry.id, id1),

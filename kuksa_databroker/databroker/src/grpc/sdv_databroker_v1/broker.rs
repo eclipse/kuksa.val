@@ -208,17 +208,19 @@ impl proto::broker_server::Broker for broker::DataBroker {
 
         let list = if request.names.is_empty() {
             broker
-                .map_metadata(|metadata| proto::Metadata::from(metadata))
+                .map_entries(|entry| proto::Metadata::from(&entry.metadata))
                 .await
         } else {
-            let mut list = Vec::new();
-
-            for name in request.names {
-                if let Some(metadata) = broker.get_metadata_by_path(&name).await {
-                    list.push(proto::Metadata::from(&metadata));
-                }
-            }
-            list
+            broker
+                .with_read_lock(|db| {
+                    request
+                        .names
+                        .iter()
+                        .filter_map(|name| db.get_metadata_by_path(name))
+                        .map(proto::Metadata::from)
+                        .collect::<Vec<proto::Metadata>>()
+                })
+                .await
         };
         let reply = proto::GetMetadataReply { list };
         Ok(Response::new(reply))
