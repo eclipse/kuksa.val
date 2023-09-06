@@ -35,7 +35,7 @@ pub fn parse_whitespace_separated(scope: &str) -> Result<Vec<Scope>, Error> {
         r"(?x)
         ^
         (?P<action>([^:]*)) # match action
-        
+
         (?::
             (?P<path>
                 (
@@ -49,7 +49,7 @@ pub fn parse_whitespace_separated(scope: &str) -> Result<Vec<Scope>, Error> {
                         (
                             [A-Z][a-zA-Z0-1]*
                             |
-                            \*    
+                            \*
                         )
                     )*
                 )
