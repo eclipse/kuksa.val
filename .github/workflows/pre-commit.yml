@@ -2,9 +2,14 @@ name: pre-commit
 
 on: [pull_request]
 
+concurrency:
+      group: ${{ github.ref }}-${{ github.workflow }}
+      cancel-in-progress: true
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
         with:

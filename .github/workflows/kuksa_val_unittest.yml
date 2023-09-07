@@ -11,6 +11,10 @@ on:
     - "kuksa_certificates/**"
   workflow_dispatch:
 
+concurrency:
+      group: ${{ github.ref }}-${{ github.workflow }}
+      cancel-in-progress: true
+
 jobs:
   buildAndTest:
     runs-on: ubuntu-latest
