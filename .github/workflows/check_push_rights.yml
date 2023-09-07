@@ -5,10 +5,14 @@ on:
         description: "In possession of ghcr.io tokens?"
         value: ${{ jobs.check_push_rights.outputs.have_secrets }}
 
+# No concurrency group or cancel-in-progress here as this workflow is called from other workflows
+# so if you have a concurrency definition here it will be considered as a deadlock and job dismissed
+# The job below is also very fast, so no real need for cancel-in-progress
 
 jobs:
   check_push_rights:
     runs-on: ubuntu-latest
+
     outputs:
       have_secrets: ${{ steps.check-secrets.outputs.have_secrets }}
 

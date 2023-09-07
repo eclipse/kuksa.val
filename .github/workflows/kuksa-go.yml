@@ -24,10 +24,15 @@ on:
     - "proto/**"
   workflow_dispatch:
 
+concurrency:
+      group: ${{ github.ref }}-${{ github.workflow }}
+      cancel-in-progress: true
+
 jobs:
 
   kuksa-go-client-test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout kuksa.val
         uses: actions/checkout@v3

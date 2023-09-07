@@ -3,9 +3,14 @@ name: spdx
 on:
   pull_request
 
+concurrency:
+      group: ${{ github.ref }}-${{ github.workflow }}
+      cancel-in-progress: true
+
 jobs:
   check-spdx-headers:
     runs-on: ubuntu-latest
+
     steps:
 
     - name: Checkout code
