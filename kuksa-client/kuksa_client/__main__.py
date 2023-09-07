@@ -57,6 +57,53 @@ def assignment_statement(arg):
     return (path, value)
 
 
+class TreeNode:
+    def __init__(self, name, description=None, type=None):
+        self.name = name
+        self.description = description
+        self.type = type
+        self.children = []
+
+
+def add_object_to_tree(root, path, metadata):
+    parts = path.split('.')
+    current_node = root
+
+    for part in parts:
+        child = None
+        for node in current_node.children:
+            if node.name == part:
+                child = node
+                break
+
+        if child is None:
+            child = TreeNode(part)
+            current_node.children.append(child)
+
+        current_node = child
+
+    if 'description' in metadata:
+        current_node.description = metadata['description']
+
+    if 'entry_type' in metadata:
+        current_node.type = metadata['entry_type']
+
+
+def tree_to_json(node):
+    if len(node.children) != 0:
+        result = {
+            'description': '',
+            'type': 'Branch',
+            'children': {child.name: tree_to_json(child) for child in node.children}
+        }
+    else:
+        result = {
+            'description': node.description,
+            'type': node.type
+        }
+    return result
+
+
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-public-methods
 class TestClient(Cmd):
@@ -85,14 +132,30 @@ class TestClient(Cmd):
             childVssTree = childVssTree['children']
         return childVssTree
 
+    def create_tree_from_list(self, entries_list):
+        # Create the root node
+        root = TreeNode('')
+
+        # Build the tree
+        for obj in entries_list:
+            add_object_to_tree(root, obj['path'], obj['metadata'])
+
+        return tree_to_json(root)
+
     def path_completer(self, text, line, begidx, endidx):
         if not self.checkConnection():
             return None
         if len(self.pathCompletionItems) == 0:
-            tree = json.loads(self.getMetaData("*"))
-
-            if 'metadata' in tree:
-                self.vssTree = tree['metadata']
+            if self.serverProtocol == "grpc":
+                entries_list = json.loads(self.getMetaData("**"))
+                if 'error' in entries_list:
+                    raise Exception("Wrong databroker version, please use an newer version")
+                self.vssTree = self.create_tree_from_list(entries_list)
+                self.vssTree = self.vssTree['children']
+            else:
+                tree = json.loads(self.getMetaData("*"))
+                if 'metadata' in tree:
+                    self.vssTree = tree['metadata']
 
         self.pathCompletionItems = []
         childTree = self.get_childtree(text)
