@@ -930,20 +930,6 @@ impl<'a, 'b> DatabaseReadAccess<'a, 'b> {
         }
     }
 
-    pub fn get_entries_by_regex(&self, regex: regex::Regex) -> Result<Vec<Entry>, ReadError> {
-        let mut entries: Vec<Entry> = Vec::new();
-        for (_, value) in self.db.entries.iter() {
-            if regex.is_match(&value.metadata.path) {
-                entries.push(value.clone());
-            }
-        }
-        if entries.is_empty() {
-            return Err(ReadError::NotFound);
-        }
-
-        Ok(entries)
-    }
-
     pub fn get_metadata_by_id(&self, id: i32) -> Option<&Metadata> {
         self.db.entries.get(&id).map(|entry| &entry.metadata)
     }
@@ -1229,15 +1215,6 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
             .authorized_read_access(self.permissions)
             .get_entry_by_path(path)
             .cloned()
-    }
-
-    pub async fn get_entries_by_regex(&self, regex: regex::Regex) -> Result<Vec<Entry>, ReadError> {
-        self.broker
-            .database
-            .read()
-            .await
-            .authorized_read_access(self.permissions)
-            .get_entries_by_regex(regex)
     }
 
     pub async fn get_entry_by_id(&self, id: i32) -> Result<Entry, ReadError> {

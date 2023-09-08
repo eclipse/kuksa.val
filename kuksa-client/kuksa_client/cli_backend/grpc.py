@@ -28,7 +28,6 @@ from typing import Iterable
 from typing import Optional
 import uuid
 import os
-import re
 
 from kuksa_client import cli_backend
 import kuksa_client.grpc
@@ -36,14 +35,17 @@ import kuksa_client.grpc.aio
 from kuksa_client.grpc import EntryUpdate
 from kuksa.val.v1 import types_pb2
 
+
 def callback_wrapper(callback: Callable[[str], None]) -> Callable[[Iterable[EntryUpdate]], None]:
     def wrapper(updates: Iterable[EntryUpdate]) -> None:
         callback(json.dumps([update.to_dict() for update in updates]))
     return wrapper
 
+
 class DatabrokerEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, (types_pb2.StringArray, types_pb2.BoolArray, types_pb2.Uint32Array, types_pb2.Uint64Array, types_pb2.FloatArray, types_pb2.Int32Array, types_pb2.Int64Array, types_pb2.DoubleArray)):
+        if isinstance(obj, (types_pb2.StringArray, types_pb2.BoolArray, types_pb2.Uint32Array, types_pb2.Uint64Array,
+                            types_pb2.FloatArray, types_pb2.Int32Array, types_pb2.Int64Array, types_pb2.DoubleArray)):
             string_values = []
             for value in obj.values:
                 value = str(value)
@@ -145,7 +147,7 @@ class Backend(cli_backend.Backend):
         return json.dumps({"error": "Invalid Attribute"})
 
     # Function for authorization
-    def authorize(self, token_or_tokenfile:Optional[str] =None, timeout=5):
+    def authorize(self, token_or_tokenfile: Optional[str] = None, timeout=5):
         if token_or_tokenfile is None:
             token_or_tokenfile = self.token_or_tokenfile
         if os.path.isfile(token_or_tokenfile):
@@ -251,7 +253,7 @@ class Backend(cli_backend.Backend):
                 responseQueue.put((resp, None))
             except kuksa_client.grpc.VSSClientError as exc:
                 responseQueue.put((None, exc.to_dict()))
-            except ValueError as exc:
+            except ValueError:
                 responseQueue.put(
                     (None, {"error": "ValueError in casting the value."}))
 
