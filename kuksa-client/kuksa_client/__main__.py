@@ -57,139 +57,79 @@ def assignment_statement(arg):
     return (path, value)
 
 
-class TreeNode:
-    def __init__(self, name, description=None, type=None):
-        self.name = name
-        self.description = description
-        self.type = type
-        self.children = []
+def display_completions(completions, delimiter):
+    # Index of what prefix to remove from displayed items
+    # I.e. "Vehicle." should be removed if the common prefix is "Vehicle.Ve".
+    prefix_idx = os.path.commonprefix(completions).rfind(delimiter) + 1
+    matches = []
+    for path in completions:
+        path = path[prefix_idx:]
+        # Only display completions up to (and including) the next delimiter.
+        next_dot = path.find(delimiter)
+        if next_dot != -1:
+            path = path[:next_dot+1]
+        matches.append(path)
+    return matches
 
 
-def add_object_to_tree(root, path, metadata):
-    parts = path.split('.')
-    current_node = root
+def metadata_tree_to_dict(tree):
+    def add_children(flattened_tree, path, value):
+        if "children" in value:
+            for child_path, value in value["children"].items():
+                add_children(flattened_tree, f"{path}.{child_path}", value)
+        else:
+            flattened_tree[path] = value
+    flattened_tree = {}
 
-    for part in parts:
-        child = None
-        for node in current_node.children:
-            if node.name == part:
-                child = node
-                break
+    for key, value in tree.items():
+        add_children(flattened_tree, key, value)
 
-        if child is None:
-            child = TreeNode(part)
-            current_node.children.append(child)
-
-        current_node = child
-
-    if 'description' in metadata:
-        current_node.description = metadata['description']
-
-    if 'entry_type' in metadata:
-        current_node.type = metadata['entry_type']
-
-
-def tree_to_json(node):
-    if len(node.children) != 0:
-        result = {
-            'description': '',
-            'type': 'Branch',
-            'children': {child.name: tree_to_json(child) for child in node.children}
-        }
-    else:
-        result = {
-            'description': node.description,
-            'type': node.type
-        }
-    return result
+    return flattened_tree
 
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-public-methods
 class TestClient(Cmd):
-    def get_childtree(self, pathText):
-        childVssTree = self.vssTree
-
-        paths = [pathText]
-        if "/" in pathText:
-            paths = pathText.split("/")
-        elif "." in pathText:
-            paths = pathText.split(".")
-
-        for path in paths[:-1]:
-            if path in childVssTree:
-                childVssTree = childVssTree[path]
-            elif 'children' in childVssTree and path in childVssTree['children']:
-                childVssTree = childVssTree['children'][path]
-            else:
-                # This else-branch is reached when one of the path components is invalid
-                # In that case stop parsing further and return an empty tree
-                # Autocompletion can't help here.
-                childVssTree = {}
-                break
-
-        if 'children' in childVssTree:
-            childVssTree = childVssTree['children']
-        return childVssTree
-
-    def create_tree_from_list(self, entries_list):
-        # Create the root node
-        root = TreeNode('')
-
-        # Build the tree
-        for obj in entries_list:
-            add_object_to_tree(root, obj['path'], obj['metadata'])
-
-        return tree_to_json(root)
+    def refresh_metadata(self):
+        if self.serverProtocol == "grpc":
+            entries = json.loads(self.getMetaData("**"))
+            if 'error' in entries:
+                raise Exception("Wrong databroker version, please use a newer version")
+            # Convert to dict with paths as key
+            self.metadata = {entry["path"]: entry for entry in entries}
+        else:
+            entries = json.loads(self.getMetaData("*"))
+            if 'metadata' in entries:
+                # Convert to dict with paths as key
+                self.metadata = metadata_tree_to_dict(entries['metadata'])
 
     def path_completer(self, text, line, begidx, endidx):
         if not self.checkConnection():
             return None
+
         if len(self.pathCompletionItems) == 0:
-            if self.serverProtocol == "grpc":
-                entries_list = json.loads(self.getMetaData("**"))
-                if 'error' in entries_list:
-                    raise Exception("Wrong databroker version, please use an newer version")
-                self.vssTree = self.create_tree_from_list(entries_list)
-                self.vssTree = self.vssTree['children']
-            else:
-                tree = json.loads(self.getMetaData("*"))
-                if 'metadata' in tree:
-                    self.vssTree = tree['metadata']
+            self.refresh_metadata()
 
-        self.pathCompletionItems = []
-        childTree = self.get_childtree(text)
-        prefix = ""
-        seperator = "/"
-
+        # Normalize the delimiter used
+        delimiter = "."
         if "/" in text:
-            prefix = text[:text.rfind("/")]+"/"
-        elif "." in text:
-            prefix = text[:text.rfind(".")]+"."
-            seperator = "."
+            delimiter = "/"
+            text = text.replace(delimiter, ".")
 
-        for key in childTree:
-            child = childTree[key]
-            if isinstance(child, dict):
-                description = ""
-                nodetype = "unknown"
+        # Generate the list of all possible completions
+        self.pathCompletionItems = []
+        for path in self.metadata.keys():
+            # Compare case insensitive
+            if path.lower().startswith(text.lower()):
+                if delimiter != ".":
+                    path = path.replace(".", delimiter)
+                self.pathCompletionItems.append(path)
 
-                if 'description' in child:
-                    description = child['description']
+        # Generate the list of completions to display
+        self.display_matches = display_completions(self.pathCompletionItems, delimiter)
 
-                if 'type' in child:
-                    nodetype = child['type'].capitalize()
-
-                self.pathCompletionItems.append(CompletionItem(
-                    prefix + key, nodetype+": " + description))
-
-                if 'children' in child:
-                    self.pathCompletionItems.append(
-                        CompletionItem(prefix + key+seperator,
-                                       "Children of branch "+prefix+key),
-                    )
-
-        return basic_complete(text, line, begidx, endidx, self.pathCompletionItems)
+        # Return all completions
+        return self.pathCompletionItems
 
     def subscribeCallback(self, logPath, resp):
         if logPath is None:
@@ -342,7 +282,7 @@ class TestClient(Cmd):
         self.serverPort = server_port or DEFAULT_SERVER_PORT
         self.serverProtocol = server_protocol or DEFAULT_SERVER_PROTOCOL
         self.supportedProtocols = SUPPORTED_SERVER_PROTOCOLS
-        self.vssTree = {}
+        self.metadata = {}
         self.pathCompletionItems = []
         self.subscribeIds = set()
         self.commThread = None
