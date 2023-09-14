@@ -208,7 +208,7 @@ impl proto::broker_server::Broker for broker::DataBroker {
 
         let list = if request.names.is_empty() {
             broker
-                .map_entries(|entry| proto::Metadata::from(&entry.metadata))
+                .map_entries(|entry| proto::Metadata::from(entry.metadata()))
                 .await
         } else {
             broker

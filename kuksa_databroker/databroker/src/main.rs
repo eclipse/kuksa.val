@@ -269,7 +269,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Arg::new("dummy-metadata")
                 .display_order(10)
                 .long("dummy-metadata")
-                .action(ArgAction::Set)
+                .action(ArgAction::SetTrue)
                 .help("Populate data broker with dummy metadata")
                 .required(false),
         );
