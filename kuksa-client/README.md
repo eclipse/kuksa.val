@@ -16,7 +16,7 @@ KUKSA Python Client and SDK provides both a command-line interface (CLI) and a s
 The fastest way to start using KUKSA Python Client is to install a pre-built version from pypi.org:
 
 ```console
-$ pip install kuksa-client
+pip install kuksa-client
 ```
 
 If you want to install from sources instead see [Building and running a local version](#building-and-running-a-local-version).
@@ -24,15 +24,15 @@ If you want to install from sources instead see [Building and running a local ve
 After you have installed the kuksa-client package via pip you can run the test client CLI directly by executing:
 
 ```console
-$ kuksa-client
+kuksa-client
 ```
 
-With default CLI arguments, the client will try to connect to a local VISS server e.g. `kuksa-val-server`.
-If you wish to connect to a gRPC server e.g. `kuksa-databroker`, you should instead run:
+With default CLI arguments, the client will try to connect to a local Databroker, e.g. a server supporting the `kuksa.val.v1` protocol without using TLS. This is equivalent to executing
 
 ```console
-$ kuksa-client --ip 127.0.0.1 --port 55555 --protocol grpc
+kuksa-client grpc://127.0.0.1:55555
 ```
+
 
 If everything works as expected and the server can be contacted you will get an output similar to below.
 
@@ -55,36 +55,42 @@ Welcome to Kuksa Client version <some_version>
 
 Default tokens directory: /some/path/kuksa_certificates/jwt
 
-connectj to wss://127.0.0.1:8090
-Websocket connected securely.
+Connecting to VSS server at 127.0.0.1 port 55555 using KUKSA GRPC protocol.
+TLS will not be used.
+INFO 2023-09-15 18:48:13,415 kuksa_client.grpc No Root CA present, it will not be posible to use a secure connection!
+INFO 2023-09-15 18:48:13,415 kuksa_client.grpc.aio Establishing insecure channel
+gRPC channel connected.
 Test Client>
 ```
 
-If the connected KUKSA Server or KUKSA Databroker require authorization the next step is to authorize.
-KUKSA Server and KUKSA Databroker use different token formats.
+If you wish to connect to a VISS server e.g. `kuksa-val-server` (not using TLS), you should instead run:
 
-### Connecting to KUKSA Databroker
+```console
+kuksa-client ws://127.0.0.1:8090
+```
 
-A gRPC connection to KUKSA Databroker is started by specifying address and port for the Databroker and giving
-`--protocol grpc` as argument.
-KUKSA Client use TLS by default, it only run in insecure mode if `--insecure` is given as argument.
-By default the KUKSA example Root CA and Client keys are used, but client keys have no effect as mutual authentication is not supported by KUKSA Databroker or KUKSA Server.
+### TLS with databroker
+
+KUKSA Client uses TLS to connect to databroker when the schema part of the server URI is `grpcs`, i.e. a valid command to connect to a TLS enabled local databroker is
 
 ```
-~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc
+kuksa-client grpcs://localhost:55555
 ```
+
+By default the KUKSA example Root CA and Client keys are used, but client keys have no effect currently as mutual authentication is not supported by KUKSA Databroker or KUKSA Server.
+
 
 This call with all parameters specified give same effect:
 
 ```
-~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc --certificate ../kuksa_certificates/Client.pem --keyfile ../kuksa_certificates/Client.key --cacertificate ./kuksa_certificates/CA.pem
+kuksa-client --certificate ../kuksa_certificates/Client.pem --keyfile ../kuksa_certificates/Client.key --cacertificate ./kuksa_certificates/CA.pem grpcs://localhost:55555
 ```
 
 There is actually no reason to specify client key and certificate, as mutual authentication is not supported in KUKSA Databroker,
 so the command can be simplified like this:
 
 ```
-~/kuksa.val/kuksa-client$ kuksa-client --ip localhost --port 55555 --protocol grpc --cacertificate ./kuksa_certificates/CA.pem
+kuksa-client  --cacertificate ./kuksa_certificates/CA.pem grpcs://localhost:55555
 ```
 
 The example server protocol list 127.0.0.1 as an alternative name, but the TLS-client currently used does not accept it,
@@ -92,26 +98,24 @@ instead a valid server name must be given as argument.
 Currently `Server` and `localhost` are valid names from the example certificates.
 
 ```
-~/kuksa.val/kuksa-client$ kuksa-client --ip 127.0.0.1 --port 55555 --protocol grpc  --cacertificate ../kuksa_certificates/CA.pem --tls-server-name Server
+kuksa-client  --cacertificate ../kuksa_certificates/CA.pem --tls-server-name Server grpcs://127.0.0.1:55555
 ```
 
-### Connecting to KUKSA Server
-
-Connecting to KUKSA Server is default, and TLS is used by default by KUKSA Server.
-`--tls-server-name` does not need to be used when connecting to KUKSA Server,
-that is the only difference compared to connecting to KUKSA Databroker.
+### TLS with val-server
+Val-server also supports TLS. KUKSA Client uses TLS to connect to val-server when the schema part of the server URI is `wss`.  A valid command to connect to a local TLS enabled val-server is
 
 ```
-~/kuksa.val/kuksa-client$ kuksa-client
+kuksa-client wss://localhost:8090
 ```
 
 This corresponds to this call:
 
 ```
-kuksa-client --ip 127.0.0.1 --port 8090 --protocol ws --cacertificate ./kuksa_certificates/CA.pem
+kuksa-client --cacertificate ../kuksa_certificates/CA.pem wss://localhost:8090
 ```
 
 ### Authorizing against KUKSA Server
+If the connected KUKSA Server or KUKSA Databroker require authorization the first step after a connection is made is to authorize. KUKSA Server and KUKSA Databroker use different token formats.
 
 The jwt tokens for testing can either be found under [../kuksa_certificates/jwt](../kuksa_certificates/jwt)
 or you can also use following command inside `kuksa-client` to find the via `pip` installed certificate directory.
@@ -147,15 +151,14 @@ Documented commands (use 'help -v' for verbose/'help <topic>' for details):
 Communication Set-up Commands
 ================================================================================
 authorize           Authorize the client to interact with the server
-connect
+connect             Connect to a VSS server
 disconnect          Disconnect from the VISS/gRPC Server
 getServerAddress    Gets the IP Address for the VISS/gRPC Server
-setServerAddress    Sets the IP Address for the VISS/gRPC Server
 
 Info Commands
 ================================================================================
 info                Show summary info of the client
-printTokenDir       Show token directory
+printTokenDir       Show default token directory
 version             Show version of the client
 
 Kuksa Interaction Commands
@@ -282,33 +285,42 @@ For development purposes it may be necessary to customize the code for the clien
 First we suggest you create a dedicated [python virtual environment](https://docs.python.org/3/library/venv.html) for kuksa-client:
 
 ```console
-$ mkdir --parents ~/.venv
-$ python3 -m venv ~/.venv/kuksa-client
-$ source ~/.venv/kuksa-client/bin/activate  # Run this every time you want to activate kuksa-client's virtual environment
-(kuksa-client) $ pip install --upgrade pip
+mkdir --parents ~/.venv
+python3 -m venv ~/.venv/kuksa-client
+source ~/.venv/kuksa-client/bin/activate  # Run this every time you want to activate kuksa-client's virtual environment
+```
+
+Your prompt should change to somehting indicating you are in the virutal environment now, e.g.
+
+```console
+(kuksa-client) $
+```
+Inside the virtual environment install the dependencies
+```console
+pip install --upgrade pip
 ```
 
 Now in order to ensure local `*.py` files will be used when running the client, we need to install kuksa-client in editable mode:
+
 ```console
-(kuksa-client) $ pip install -r requirements.txt -e .
+pip install -r requirements.txt -e .
 ```
 
 If you wish to also install test dependencies, run instead:
 ```console
-(kuksa-client) $ pip install -r test-requirements.txt -e ".[test]"
+pip install -r test-requirements.txt -e ".[test]"
 ```
 
 If you ever wish to upgrade provided requirements, see [Requirements](docs/requirements.md).
 
 Now you should be able to start using `kuksa-client`:
 ```console
-(kuksa-client) $ kuksa-client --help
+kuksa-client --help
 ```
 
 Whenever you want to exit kuksa-client's virtual environment, simply run:
 ```console
-(kuksa-client) $ deactivate
-$
+deactivate
 ```
 
 ## Using Docker
@@ -318,14 +330,14 @@ The Dockerfile needs to be executed on the parent directory (so it include the n
 
 
 ```console
-$ cd /some/dir/kuksa.val
-$ docker build -f kuksa-client/Dockerfile -t kuksa-client:latest .
+cd /some/dir/kuksa.val
+docker build -f kuksa-client/Dockerfile -t kuksa-client:latest .
 ```
 
 To run the newly built image:
 
 ```console
-$ docker run --rm -it --net=host kuksa-client:latest --help
+docker run --rm -it --net=host kuksa-client:latest --help
 ```
 
 Notes:
@@ -338,12 +350,12 @@ This project uses pytest as its test framework and pylint as its linter.
 To run the test suite:
 
 ```console
-$ pytest
+pytest
 ```
 
 To run the linter:
 ```console
-$ pylint kuksa_client
+pylint kuksa_client
 ```
 
 ## Python library
