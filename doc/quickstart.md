@@ -24,11 +24,11 @@ docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/databroker-cli:master
 Here is how you can use it:
 
 ```
-client> get Vehicle.Speed 
+client> get Vehicle.Speed
 -> Vehicle.Speed: ( NotAvailable )
 client> feed Vehicle.Speed 200
 -> Ok
-client> get Vehicle.Speed 
+client> get Vehicle.Speed
 -> Vehicle.Speed: 200.00
 client> quit
 Bye bye!
@@ -40,7 +40,7 @@ An alternative is the kuksa-client CLI (based on our Python client library).
 Here is how you start it:
 
 ```
-docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/kuksa-client:master --port 55555 --protocol grpc --insecure 
+docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/kuksa-client:master
 ```
 
 Here is how you can use it:
@@ -105,7 +105,7 @@ Create a file `speed_subscriber.py` with the following content
 from kuksa_client.grpc import VSSClient
 
 with VSSClient('127.0.0.1', 55555) as client:
-    
+
     for updates in client.subscribe_current_values([
         'Vehicle.Speed',
     ]):
@@ -138,11 +138,11 @@ docker run -it --rm --net=host -e KUKSA_DATA_BROKER_PORT=55556 ghcr.io/eclipse/k
 Using kuksa-client CLI
 
 ```
-docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/kuksa-client:master --port 55556 --protocol grpc --insecure 
+docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/kuksa-client:master grpc://127.0.0.1:55556
 ```
 
 ### Docker desktop: Host networking not supported
-The examples above all used docker's `--net=host` option. That is quite convenient for development, as basically your containers "share" your hosts networking and there is no need for any port publishing. 
+The examples above all used docker's `--net=host` option. That is quite convenient for development, as basically your containers "share" your hosts networking and there is no need for any port publishing.
 
 However when using Docker Desktop on Mac OS or Windows, [host networking is not supported](https://docs.docker.com/network/host/).
 
@@ -157,7 +157,7 @@ docker run -it --rm  --publish 55556:55556 ghcr.io/eclipse/kuksa.val/databroker:
 From your host computer you can now reach databroker at `127.0.0.1:55556`. To connect from another container, you need to use your computers IP address (**not** 127.0.0.1), i.e. to use the client
 
 ```
-docker run -it --rm  -e KUKSA_DATA_BROKER_PORT=55556 -e KUKSA_DATA_BROKER_ADDR=<YOUR_IP> ghcr.io/eclipse/kuksa.val/databroker-cli:master 
+docker run -it --rm  -e KUKSA_DATA_BROKER_PORT=55556 -e KUKSA_DATA_BROKER_ADDR=<YOUR_IP> ghcr.io/eclipse/kuksa.val/databroker-cli:master
 ```
 
 Recent versions of the databroker-cli also support command line arguments, so you can also write
