@@ -36,15 +36,13 @@ from cmd2 import CompletionItem
 from cmd2 import with_argparser
 from cmd2 import with_category
 from cmd2.utils import basic_complete
+from urllib.parse import urlparse
 
 import kuksa_certificates
 from kuksa_client import KuksaClientThread
 from kuksa_client import _metadata
 
-DEFAULT_SERVER_ADDR = "127.0.0.1"
-DEFAULT_SERVER_PORT = 8090
-DEFAULT_SERVER_PROTOCOL = "ws"
-SUPPORTED_SERVER_PROTOCOLS = ("ws", "grpc")
+DEFAULT_SERVER_ADDR = "grpc://127.0.0.1:55555"
 
 scriptDir = os.path.dirname(os.path.realpath(__file__))
 
@@ -91,7 +89,7 @@ def metadata_tree_to_dict(tree):
 # pylint: disable=too-many-public-methods
 class TestClient(Cmd):
     def refresh_metadata(self):
-        if self.serverProtocol == "grpc":
+        if self.server.startswith("grpc"):
             entries = json.loads(self.getMetaData("**"))
             if 'error' in entries:
                 raise Exception("Wrong databroker version, please use a newer version")
@@ -149,10 +147,11 @@ class TestClient(Cmd):
     VSS_COMMANDS = "Kuksa Interaction Commands"
     INFO_COMMANDS = "Info Commands"
 
-    ap_getServerAddr = argparse.ArgumentParser()
     ap_connect = argparse.ArgumentParser()
     ap_connect.add_argument(
-        '-i', "--insecure", default=False, action="store_true", help='Connect in insecure mode')
+        'server', help=f"VSS server to connect to. Format: protocol://host[:port]. \
+        Supported protocols: [grpc, grpcs, ws, wss]. Example: {DEFAULT_SERVER_ADDR}",)
+
     ap_disconnect = argparse.ArgumentParser()
     ap_authorize = argparse.ArgumentParser()
     tokenfile_completer_method = functools.partial(
@@ -163,17 +162,6 @@ class TestClient(Cmd):
         'token_or_tokenfile',
         help='JWT(or the file storing the token) for authorizing the client.',
         completer_method=tokenfile_completer_method,)
-    ap_setServerAddr = argparse.ArgumentParser()
-    ap_setServerAddr.add_argument(
-        'IP', help='VISS/gRPC Server IP Address', default=DEFAULT_SERVER_ADDR)
-    ap_setServerAddr.add_argument(
-        'Port', type=int, help='VISS/gRPC Server Port', default=DEFAULT_SERVER_PORT)
-    ap_setServerAddr.add_argument(
-        '-p',
-        "--protocol",
-        help='VISS/gRPC Server Communication Protocol (ws or grpc)',
-        default=DEFAULT_SERVER_PROTOCOL,
-    )
 
     ap_setValue = argparse.ArgumentParser()
     ap_setValue.add_argument(
@@ -268,8 +256,7 @@ class TestClient(Cmd):
         "Json", help="Json tree to update VSS", completer_method=jsonfile_completer_method)
 
     # Constructor, request names after protocol to avoid errors
-    def __init__(self, server_ip=None, server_port=None, server_protocol=None, *,
-                 insecure=False, token_or_tokenfile=None,
+    def __init__(self, server=None, token_or_tokenfile=None,
                  certificate=None, keyfile=None,
                  cacertificate=None, tls_server_name=None):
         super().__init__(
@@ -278,16 +265,13 @@ class TestClient(Cmd):
 
         self.prompt = "Test Client> "
         self.max_completion_items = 20
-        self.serverIP = server_ip or DEFAULT_SERVER_ADDR
-        self.serverPort = server_port or DEFAULT_SERVER_PORT
-        self.serverProtocol = server_protocol or DEFAULT_SERVER_PROTOCOL
-        self.supportedProtocols = SUPPORTED_SERVER_PROTOCOLS
+        self.server = server or DEFAULT_SERVER_ADDR
+
         self.metadata = {}
         self.pathCompletionItems = []
         self.subscribeIds = set()
         self.commThread = None
         self.token_or_tokenfile = token_or_tokenfile
-        self.insecure = insecure
         self.certificate = certificate
         self.keyfile = keyfile
         self.cacertificate = cacertificate
@@ -527,11 +511,36 @@ class TestClient(Cmd):
             if self.commThread is not None:
                 self.commThread.stop()
                 self.commThread = None
-        config = {'ip': self.serverIP,
-                  'port': self.serverPort,
-                  'insecure': self.insecure,
-                  'protocol': self.serverProtocol
-                  }
+
+        # Check we have a valid server URI
+        srv = urlparse(self.server)
+        config = {"port": 55555, "insecure": True}
+
+        if srv.scheme in ["grpc", "grpcs"]:
+            config["protocol"] = "grpc"
+        elif srv.scheme in ["ws", "wss"]:
+            config["protocol"] = "ws"
+            config["port"] = 8090
+        else:
+            print(f"Invalid server URI. Unsupported protocol: {srv.scheme} ")
+            return
+
+        if srv.port is not None:
+            config["port"] = srv.port
+
+        if srv.scheme in ["grpcs", "wss"]:
+            config["insecure"] = False
+
+        if srv.hostname is None:
+            print("No hostname or IP given")
+            return
+
+        config["ip"] = srv.hostname
+
+        # Explain were we are connecting to:
+        print(f"Connecting to VSS server at {config['ip']} port {config['port']} \
+using {'KUKSA GRPC' if config['protocol'] == 'grpc' else 'VISS' } protocol.")
+        print(f"TLS will {'not be' if config['insecure'] else 'be'} used.")
 
         # Configs should only be added if they actually have a value
         if self.token_or_tokenfile:
@@ -564,33 +573,9 @@ class TestClient(Cmd):
     @with_category(COMM_SETUP_COMMANDS)
     @with_argparser(ap_connect)
     def do_connect(self, args):
-        self.insecure = args.insecure
+        """Connect to a VSS server"""
+        self.server = args.server
         self.connect()
-
-    @with_category(COMM_SETUP_COMMANDS)
-    @with_argparser(ap_setServerAddr)
-    def do_setServerAddress(self, args):
-        """Sets the IP Address for the VISS/gRPC Server"""
-        try:
-            self.serverIP = args.IP
-            self.serverPort = args.Port
-            if args.protocol not in self.supportedProtocols:
-                raise ValueError
-            self.serverProtocol = args.protocol
-            print("Setting Server Address to " + args.IP + ":" +
-                  str(args.Port) + " with protocol " + args.protocol)
-        except ValueError:
-            print(
-                "Error: Please give a valid server Address/Protocol. Only ws and grpc are supported.")
-
-    @with_category(COMM_SETUP_COMMANDS)
-    @with_argparser(ap_getServerAddr)
-    def do_getServerAddress(self, _args):
-        """Gets the IP Address for the VISS/gRPC Server"""
-        if hasattr(self, "serverIP") and hasattr(self, "serverPort"):
-            print(self.serverIP + ":" + str(self.serverPort))
-        else:
-            print("Server IP not set!!")
 
     def getDefaultTokenDir(self):
         try:
@@ -629,17 +614,8 @@ class TestClient(Cmd):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--ip', help="VISS/gRPC Server IP Address", default=DEFAULT_SERVER_ADDR)
-    parser.add_argument(
-        '--port', type=int, help="VISS/gRPC Server Port", default=DEFAULT_SERVER_PORT)
-    parser.add_argument(
-        '--protocol',
-        help="VISS/gRPC Server Communication Protocol",
-        choices=SUPPORTED_SERVER_PROTOCOLS,
-        default=DEFAULT_SERVER_PROTOCOL,
-    )
-    parser.add_argument('--insecure', default=False,
-                        action='store_true', help='Connect in insecure mode')
+        'server', nargs='?', help=f"VSS server to connect to. Format: protocol://host[:port]. \
+        Supported protocols: [grpc, grpcs, ws, wss]. Example: {DEFAULT_SERVER_ADDR}", default=DEFAULT_SERVER_ADDR)
     parser.add_argument(
         '--logging-config', default=os.path.join(scriptDir, 'logging.ini'), help="Path to logging configuration file",
     )
@@ -656,7 +632,8 @@ def main():
         '--keyfile', default=None, help="Client private key file (.key), only needed for mutual authentication",
     )
     parser.add_argument(
-        '--cacertificate', default=None, help="Client root cert file (.pem), needed unless insecure mode used",
+        '--cacertificate', default=None, help="Client root cert file (.pem). \
+        Needed for TLS enabled transports (grpcs, wss)",
     )
     # Observations for Python
     # Connecting to "localhost" works well, subjectAltName seems to suffice
@@ -671,8 +648,7 @@ def main():
 
     logging.config.fileConfig(args.logging_config)
 
-    clientApp = TestClient(args.ip, args.port, args.protocol,
-                           insecure=args.insecure, token_or_tokenfile=args.token_or_tokenfile,
+    clientApp = TestClient(args.server, token_or_tokenfile=args.token_or_tokenfile,
                            certificate=args.certificate, keyfile=args.keyfile,
                            cacertificate=args.cacertificate, tls_server_name=args.tls_server_name)
     try:
