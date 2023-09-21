@@ -10,7 +10,7 @@ This directory contain a set of example certificates, used by the KUKSA-project 
 They may or may not be useful for your test environment.
 If needed you can customize `genCerts.sh` and generate keys and certificates that fits your environment.
 
-See the [KUKSA.val TLS documentation](../tls.md) for general information on the KUKSA.val TLS concept.
+See the [KUKSA.val TLS documentation](../doc/tls.md) for general information on the KUKSA.val TLS concept.
 
 This directory contains the following files with cryptographical information.
 
@@ -20,7 +20,7 @@ This directory contains the following files with cryptographical information.
 | `CA.pem` | Root certificate, valid for 3650 days ( 10 years). |
 | `Server.key` | Server key, needed by KUKSA.val Databroker/Server for TLS. |
 | `Server.pem` | Server certificate chain, valid for 365 days, needed by KUKSA.val Databroker/Server for TLS. |
-| `CLient.key` | Client key, currently not needed as mutual authentication is not supported. |
+| `Client.key` | Client key, currently not needed as mutual authentication is not supported. |
 | `Server.pem` | Client certificate chain, valid for 365 days, currently not needed as mutual authentication is not supported. |
 
 If the certificates have expired or you by any other reason need to regenerate keys or certificates you can use

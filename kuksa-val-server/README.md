@@ -22,8 +22,8 @@ See [Supported Protocol](../doc/protocol/README.md) for a detailled overview of 
 
 ## Quick start
 
-### Using  Docker Image
-If you prefer to build kuksa.val yourself skip to [Building KUKSA.val](#Building-kuksaval).
+### Using Docker Image
+If you prefer to build kuksa.val yourself skip to [Building KUKSA.val](#building-kuksaval).
 
 Download a current KUKSA.val server docker image from one of our container registry:
 
@@ -48,11 +48,11 @@ More information on using the docker images can be found [here](../doc/KUKSA.val
 
 To learn, how to build your own docker image see [doc/build-docker.md](../doc/KUKSA.val_server/build-docker.md).
 
-If this is succesful you can skip to [using kuksa.val](#using-kuksaval).
+If this is successful you can skip to [using kuksa.val](#using-kuksaval).
 
 ## Building kuksa.val
 
-First you need to fetch the source. ;ake sure you also get the needed submodules, e.g. by using the `--recursive` flag
+First you need to fetch the source. Make sure you also get the needed submodules, e.g. by using the `--recursive` flag
 
 ```
 git clone --recursive https://github.com/eclipse/kuksa.val.git
@@ -75,7 +75,7 @@ mkdir build
 cd build
 cmake ..
 ```
-If there are any missing dependencies, cmake will tell you. If everythig works fine, execute make
+If there are any missing dependencies, cmake will tell you. If everything works fine, execute make
 
 ```
 make
@@ -83,9 +83,7 @@ make
 
 (if you have more cores, you can speed up compilation with something like  `make -j8`
 
-Additional information about our cmake setup (in case you need adavanced options or intend to extend it) can be [found here](../doc/cmake.md).
-
-
+Additional information about our cmake setup (in case you need advanced options or intend to extend it) can be [found here](../doc/KUKSA.val_server/cmake.md).
 
 ### Running kuksa.val
 After you successfully built the kuksa.val server you can run it like this

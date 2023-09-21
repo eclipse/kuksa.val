@@ -17,7 +17,7 @@ source code repository logs.
 ## Declared Project Licenses
 
 This program and the accompanying materials are made available under the terms
-of the  Apache License, Version 2.0 
+of the  Apache License, Version 2.0
 
 You may obtain a copy of the License at
 http://www.apache.org/licenses/LICENSE-2.0
@@ -47,7 +47,7 @@ archaius-core (0.6.6)
 autobahn-python (18.9.2)
 
 * License: MIT
-* Project: https://crossbar.io/autobahn/
+* Project: https://github.com/crossbario/autobahn-python
 * Source: https://github.com/crossbario/autobahn-python/releases/tag/v18.9.2
 
 bcpkix-jdk15on (1.60)
@@ -747,7 +747,7 @@ springfox-spring-web (2.7.0)
 springfox-swagger-ui (2.6.1)
 
 * License: MIT AND Apache-2.0 AND BSD-3-Clause AND CC-BY-SA-2.5 AND (MIT OR
-   GPL-2.0) 
+   GPL-2.0)
 
 springfox-swagger-ui (2.7.0)
 

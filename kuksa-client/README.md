@@ -90,7 +90,7 @@ There is actually no reason to specify client key and certificate, as mutual aut
 so the command can be simplified like this:
 
 ```
-kuksa-client  --cacertificate ./kuksa_certificates/CA.pem grpcs://localhost:55555
+kuksa-client --cacertificate ./kuksa_certificates/CA.pem grpcs://localhost:55555
 ```
 
 The example server protocol list 127.0.0.1 as an alternative name, but the TLS-client currently used does not accept it,
@@ -98,7 +98,7 @@ instead a valid server name must be given as argument.
 Currently `Server` and `localhost` are valid names from the example certificates.
 
 ```
-kuksa-client  --cacertificate ../kuksa_certificates/CA.pem --tls-server-name Server grpcs://127.0.0.1:55555
+kuksa-client --cacertificate ../kuksa_certificates/CA.pem --tls-server-name Server grpcs://127.0.0.1:55555
 ```
 
 ### TLS with val-server
@@ -113,6 +113,9 @@ This corresponds to this call:
 ```
 kuksa-client --cacertificate ../kuksa_certificates/CA.pem wss://localhost:8090
 ```
+
+In some environments the `--tls-server-name` argument must be used to specify alternative server name
+if connecting to the server by numerical IP address like `wss://127.0.0.1:8090`.
 
 ### Authorizing against KUKSA Server
 If the connected KUKSA Server or KUKSA Databroker require authorization the first step after a connection is made is to authorize. KUKSA Server and KUKSA Databroker use different token formats.

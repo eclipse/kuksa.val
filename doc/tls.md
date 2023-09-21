@@ -12,14 +12,14 @@ General design concept in short:
 * You can use configuration settings to control whether Server or databroker shall require secure connections.
 * Default connection type may vary between tools, and may be changed in future releases.
 * Mutual authentication is not supported, i.e. KUKSA.val Server and KUKSA.val Databroker does not authenticate clients
-* A set of example certificates and keys exist in the [kuksa_certificates](kuksa_certificates) repository
+* A set of example certificates and keys exist in the [kuksa_certificates](../kuksa_certificates) repository
 * The example certificates are used as default by some applications
 * The example certificates shall only be used during development and re not suitable for production use
 * KUKSA.val does not put any additional requirements on what certificates that are accepted, default settings as defined by OpenSSL and gRPC are typically used
 
 ## Example certificates
 
-For more information see the [README.md](kuksa_certificates/README.md).
+For more information see the [README.md](../kuksa_certificates/README.md).
 
 **NOTE: The example keys and certificates shall not be used in your production environment!**
 
@@ -61,8 +61,6 @@ so if running KUKSA.val Databroker from a default container you need to mount th
 ## KUKSA.val databroker-cli
 
 Can be run in TLS mode like below.
-Note that [databroker-cli](kuksa_databroker/databroker-cli/src/main.rs) currently expects the certificate
-to have "Server" as subjectAltName.
 
 ```
 ~/kuksa.val/kuksa_databroker$ cargo run --bin databroker-cli -- --ca-cert ../kuksa_certificates/CA.pem

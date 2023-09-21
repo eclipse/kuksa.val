@@ -39,7 +39,7 @@ This is the process for introducing support for a new VSS version:
 * If needed, adapt or extend test cases to use the new version instead of previous version
 * Remember to also integrate new version in [KUKSA Feeder](https://github.com/eclipse/kuksa.val.feeders) repository
     * Needed for [dbc2val](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/mapping/mapping.md)
-    * Needed for [dds2val](https://github.com/eclipse/kuksa.val.feeders/blob/main/dds2val/ddsproviderlib/idls/generate_py_dataclass.sh) 
+    * Needed for [dds2val](https://github.com/eclipse/kuksa.val.feeders/blob/main/dds2val/ddsproviderlib/idls/generate_py_dataclass.sh)
 
 ### Release Candidate Handling
 
@@ -108,12 +108,12 @@ Test Client> getValue Vehicle.CurrentLocation.Longitude
 
 ### Kuksa-val-server and dbc2val smoke test
 
-Run dbc2val as described in [documentation](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/Readme.md) using example [dump file](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/candump.log). Verify that no errors appear in kuksa-val-server log. Not all signals in the [mapping files](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/mapping/) are used by the example dump file, but it can be verified using Kuksa Client that e.g. `Vehicle.Speed` has been given a value.
+Run dbc2val as described in [documentation](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/README.md) using example [dump file](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/candump.log). Verify that no errors appear in kuksa-val-server log. Not all signals in the [mapping files](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/mapping/) are used by the example dump file, but it can be verified using Kuksa Client that e.g. `Vehicle.Speed` has been given a value.
 
 
 ### Kuksa-val-server and gps2val smoke test
 
-Run gps2val as described in [documentation](https://github.com/eclipse/kuksa.val.feeders/blob/main/gps2val/readme.md) using example log. If gpsd already is running at port 2947 a different port like 2949 may be used. Then [gps2val config file](https://github.com/eclipse/kuksa.val.feeders/blob/main/gps2val/config/gpsd_feeder.ini) must also be updated to use that port. If device handling does not work on test platform `-t` can be used to uss TCP instead.
+Run gps2val as described in [documentation](https://github.com/eclipse/kuksa.val.feeders/blob/main/gps2val/README.md) using example log. If gpsd already is running at port 2947 a different port like 2949 may be used. Then [gps2val config file](https://github.com/eclipse/kuksa.val.feeders/blob/main/gps2val/config/gpsd_feeder.ini) must also be updated to use that port. If device handling does not work on test platform `-t` can be used to uss TCP instead.
 
 ```
 gpsfake -t -P 2949 simplelog_example.nmea
@@ -164,4 +164,3 @@ Run dbc2val as described in [documentation](https://github.com/eclipse/kuksa.val
 ./dbcfeeder.py --usecase databroker --address=127.0.0.1:55555
 ```
 Verify that no errors appear in kuksa-val-server log. Not all signals in the [mapping files](https://github.com/eclipse/kuksa.val.feeders/blob/main/dbc2val/mapping) are used by the example dump file, but it can be verified using Kuksa Client that e.g. `Vehicle.Speed` has been given a value.
-
