@@ -35,6 +35,7 @@ from cmd2 import Cmd
 from cmd2 import CompletionItem
 from cmd2 import with_argparser
 from cmd2 import with_category
+from cmd2 import constants
 from cmd2.utils import basic_complete
 from urllib.parse import urlparse
 
@@ -259,8 +260,11 @@ class TestClient(Cmd):
     def __init__(self, server=None, token_or_tokenfile=None,
                  certificate=None, keyfile=None,
                  cacertificate=None, tls_server_name=None):
+        shortcuts = constants.DEFAULT_SHORTCUTS
+        shortcuts.update({'exit': 'quit'})
         super().__init__(
-            persistent_history_file=".vssclient_history", persistent_history_length=100, allow_cli_args=False,
+            persistent_history_file=".vssclient_history", persistent_history_length=100,
+            shortcuts=shortcuts, allow_cli_args=False,
         )
 
         self.prompt = "Test Client> "
