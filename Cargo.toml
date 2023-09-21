@@ -16,7 +16,7 @@
 members = [
     "kuksa_databroker/databroker",
     "kuksa_databroker/databroker-proto",
-    "kuksa_databroker/databroker-cli",
+    "kuksa_databroker/kuksa-rust-sdk",
     "kuksa_databroker/databroker-examples",
 ]
 
