@@ -281,10 +281,9 @@ class TestClient(Cmd):
         self.cacertificate = cacertificate
         self.tls_server_name = tls_server_name
 
-        print("Welcome to Kuksa Client version " + str(_metadata.__version__))
-        print()
         with (pathlib.Path(scriptDir) / 'logo').open('r', encoding='utf-8') as f:
-            print(f.read())
+            logo = f.read()
+            print(logo.replace("%ver%", str(_metadata.__version__)))
         print("Default tokens directory: " + self.getDefaultTokenDir())
 
         print()
