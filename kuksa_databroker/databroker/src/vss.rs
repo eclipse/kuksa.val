@@ -54,6 +54,8 @@ pub struct Entry {
     min: Option<serde_json::Value>,
     max: Option<serde_json::Value>,
     allowed: Option<Vec<serde_json::Value>>,
+    #[serde(rename = "x-kuksa-changetype")]
+    change_type: Option<ChangeType>,
 
     // attribute entry type only
     default: Option<serde_json::Value>,
@@ -62,6 +64,7 @@ pub struct Entry {
 pub struct DataEntry {
     pub data_type: types::DataType,
     pub entry_type: types::EntryType,
+    pub change_type: types::ChangeType,
     pub description: String,
     pub comment: Option<String>,
     pub unit: Option<String>,
@@ -84,6 +87,16 @@ pub enum EntryType {
 
     #[serde(rename = "sensor")]
     Sensor,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum ChangeType {
+    #[serde(rename = "static")]
+    Static,
+    #[serde(rename = "onchange")]
+    OnChange,
+    #[serde(rename = "continuous")]
+    Continuous,
 }
 
 #[derive(Debug, Deserialize)]
@@ -376,6 +389,10 @@ fn add_entry(
                 path,
                 DataEntry {
                     entry_type: types::EntryType::Actuator,
+                    change_type: determine_change_type(
+                        entry.change_type,
+                        types::EntryType::Actuator,
+                    ),
                     description: entry.description,
                     comment: entry.comment,
                     unit: entry.unit,
@@ -408,6 +425,10 @@ fn add_entry(
                     max: try_from_json_value(entry.max, &data_type)?,
                     allowed: try_from_json_array(entry.allowed, &data_type)?,
                     default: try_from_json_value(entry.default, &data_type)?,
+                    change_type: determine_change_type(
+                        entry.change_type,
+                        types::EntryType::Attribute,
+                    ),
                     data_type,
                 },
             );
@@ -432,11 +453,32 @@ fn add_entry(
                     min: try_from_json_value(entry.min, &data_type)?,
                     max: try_from_json_value(entry.max, &data_type)?,
                     allowed: try_from_json_array(entry.allowed, &data_type)?,
+                    change_type: determine_change_type(entry.change_type, types::EntryType::Sensor),
                     default: None, // isn't used by sensors
                     data_type,
                 },
             );
             Ok(())
+        }
+    }
+}
+
+fn determine_change_type(
+    change_type: Option<ChangeType>,
+    entry_type: types::EntryType,
+) -> types::ChangeType {
+    match change_type {
+        Some(ct) => match ct {
+            ChangeType::Continuous => types::ChangeType::Continuous,
+            ChangeType::OnChange => types::ChangeType::OnChange,
+            ChangeType::Static => types::ChangeType::Static,
+        },
+        None => {
+            //As a default return Continous Change type for sensors and actuators and static for attributes
+            match entry_type {
+                types::EntryType::Attribute => types::ChangeType::Static,
+                _ => types::ChangeType::Continuous,
+            }
         }
     }
 }

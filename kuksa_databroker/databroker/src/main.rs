@@ -117,7 +117,7 @@ async fn read_metadata_file<'a, 'b>(
             .add_entry(
                 path.clone(),
                 entry.data_type,
-                databroker::broker::ChangeType::OnChange,
+                entry.change_type,
                 entry.entry_type,
                 entry.description,
                 entry.allowed,
