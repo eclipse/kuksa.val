@@ -559,7 +559,7 @@ class BaseVSSClient:
             else:
                 logger.info("No client certificates provided, mutual TLS not supported!")
                 return grpc.ssl_channel_credentials(root_certificates)
-        logger.info("No Root CA present, it will not be posible to use a secure connection!")
+        logger.info("No Root CA present, it will not be possible to use a secure connection!")
         return None
 
     def _prepare_get_request(self, entries: Iterable[EntryRequest]) -> val_pb2.GetRequest:
@@ -675,8 +675,9 @@ class VSSClient(BaseVSSClient):
             if self.connected:
                 return func(self, *args, **kwargs)
             else:
-                logger.info(
-                    "Disconnected from server! Try connect.")
+                # This shall normally not happen if you use the client as context manager
+                # as then a connect will happen automatically when you enter the context
+                raise Exception("Server not connected! Call connect() before using this command!")
         return wrapper
 
     def connect(self, target_host=None):
@@ -709,6 +710,7 @@ class VSSClient(BaseVSSClient):
         self.channel = None
         self.connected = False
 
+    @check_connected
     def get_current_values(self, paths: Iterable[str], **rpc_kwargs) -> Dict[str, Datapoint]:
         """
         Parameters:
@@ -726,6 +728,7 @@ class VSSClient(BaseVSSClient):
         )
         return {entry.path: entry.value for entry in entries}
 
+    @check_connected
     def get_target_values(self, paths: Iterable[str], **rpc_kwargs) -> Dict[str, Datapoint]:
         """
         Parameters:
@@ -742,6 +745,7 @@ class VSSClient(BaseVSSClient):
                          ) for path in paths), **rpc_kwargs)
         return {entry.path: entry.actuator_target for entry in entries}
 
+    @check_connected
     def get_metadata(
         self, paths: Iterable[str], field: MetadataField = MetadataField.ALL, **rpc_kwargs,
     ) -> Dict[str, Metadata]:
@@ -761,6 +765,7 @@ class VSSClient(BaseVSSClient):
         )
         return {entry.path: entry.metadata for entry in entries}
 
+    @check_connected
     def set_current_values(self, updates: Dict[str, Datapoint], **rpc_kwargs) -> None:
         """
         Parameters:
@@ -778,6 +783,7 @@ class VSSClient(BaseVSSClient):
             **rpc_kwargs,
         )
 
+    @check_connected
     def set_target_values(self, updates: Dict[str, Datapoint], **rpc_kwargs) -> None:
         """
         Parameters:
@@ -791,6 +797,7 @@ class VSSClient(BaseVSSClient):
             DataEntry(path, actuator_target=dp), (Field.ACTUATOR_TARGET,),
         ) for path, dp in updates.items()], **rpc_kwargs)
 
+    @check_connected
     def set_metadata(
         self, updates: Dict[str, Metadata], field: MetadataField = MetadataField.ALL, **rpc_kwargs,
     ) -> None:
@@ -807,6 +814,7 @@ class VSSClient(BaseVSSClient):
             DataEntry(path, metadata=md), (Field(field.value),),
         ) for path, md in updates.items()], **rpc_kwargs)
 
+    @check_connected
     def subscribe_current_values(self, paths: Iterable[str], **rpc_kwargs) -> Iterator[Dict[str, Datapoint]]:
         """
         Parameters:
@@ -826,6 +834,7 @@ class VSSClient(BaseVSSClient):
         ):
             yield {update.entry.path: update.entry.value for update in updates}
 
+    @check_connected
     def subscribe_target_values(self, paths: Iterable[str], **rpc_kwargs) -> Iterator[Dict[str, Datapoint]]:
         """
         Parameters:
@@ -845,6 +854,7 @@ class VSSClient(BaseVSSClient):
         ):
             yield {update.entry.path: update.entry.actuator_target for update in updates}
 
+    @check_connected
     def subscribe_metadata(
         self, paths: Iterable[str],
         field: MetadataField = MetadataField.ALL,
@@ -907,7 +917,7 @@ class VSSClient(BaseVSSClient):
             raise VSSClientError.from_grpc_error(exc) from exc
         self._process_set_response(resp)
 
-    # needs to be handled differently
+    @check_connected
     def subscribe(self, entries: Iterable[SubscribeEntry], **rpc_kwargs) -> Iterator[List[EntryUpdate]]:
         """
         Parameters:
@@ -915,19 +925,16 @@ class VSSClient(BaseVSSClient):
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         """
 
-        if self.connected:
-            rpc_kwargs["metadata"] = self.generate_metadata_header(
-                rpc_kwargs.get("metadata"))
-            req = self._prepare_subscribe_request(entries)
-            resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
-            try:
-                for resp in resp_stream:
-                    logger.debug("%s: %s", type(resp).__name__, resp)
-                    yield [EntryUpdate.from_message(update) for update in resp.updates]
-            except RpcError as exc:
-                raise VSSClientError.from_grpc_error(exc) from exc
-        else:
-            logger.info("Disconnected from server! Try connect.")
+        rpc_kwargs["metadata"] = self.generate_metadata_header(
+            rpc_kwargs.get("metadata"))
+        req = self._prepare_subscribe_request(entries)
+        resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
+        try:
+            for resp in resp_stream:
+                logger.debug("%s: %s", type(resp).__name__, resp)
+                yield [EntryUpdate.from_message(update) for update in resp.updates]
+        except RpcError as exc:
+            raise VSSClientError.from_grpc_error(exc) from exc
 
     @check_connected
     def authorize(self, token: str, **rpc_kwargs) -> str:
@@ -971,6 +978,7 @@ class VSSClient(BaseVSSClient):
                 raise VSSClientError.from_grpc_error(exc) from exc
         return None
 
+    @check_connected
     def get_value_types(self, paths: Collection[str], **rpc_kwargs) -> Dict[str, DataType]:
         """
         Parameters:
