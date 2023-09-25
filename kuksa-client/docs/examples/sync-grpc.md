@@ -33,7 +33,9 @@ with VSSClient('127.0.0.1', 55555) as client:
         print(current_values['Vehicle.Speed'].value)
 ```
 
-Besides this there is a solution where you are not using the client as context-manager
+Besides this there is a solution where you are not using the client as context-manager.
+Then you must explicitly call `connect()`.
+
 ```python
 from kuksa_client.grpc import VSSClient
 

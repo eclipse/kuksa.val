@@ -37,7 +37,9 @@ async def main():
 asyncio.run(main())
 ```
 
-Besides this there is a solution where you are not using the client as context-manager
+Besides this there is a solution where you are not using the client as context-manager.
+Then you must explicitly call `connect()`.
+
 ```python
 import asyncio
 
@@ -85,7 +87,7 @@ async def main():
         async for updates in client.subscribe_current_values([
             'Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition',
         ]):
-             if current_values['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'] is not None:
+             if updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'] is not None:
                 current_position = updates['Vehicle.Body.Windshield.Front.Wiping.System.TargetPosition'].value
                 print(f"Current wiper position is: {current_position}")
 
@@ -108,7 +110,7 @@ async def main():
         current_values = await client.get_current_values([
             'Vehicle.Speed',
         ])
-        
+
         if current_values['Vehicle.Speed'] is not None:
             print(current_values['Vehicle.Speed'].value)
 

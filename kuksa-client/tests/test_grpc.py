@@ -354,6 +354,8 @@ class TestVSSClient:
 
     async def test_get_current_values(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
+        client.connected = True  # To bypass connection test
+
         mocker.patch.object(client, 'get', return_value=[
             DataEntry('Vehicle.Speed', value=Datapoint(
                 42.0, datetime.datetime(
@@ -382,6 +384,7 @@ class TestVSSClient:
 
     async def test_get_target_values(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
+        client.connected = True  # To bypass connection check
         mocker.patch.object(client, 'get', return_value=[
             DataEntry('Vehicle.ADAS.ABS.IsActive', actuator_target=Datapoint(
                 True, datetime.datetime(
@@ -405,6 +408,7 @@ class TestVSSClient:
 
     async def test_get_metadata(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
+        client.connected = True  # To bypass connection check
         mocker.patch.object(client, 'get', return_value=[
             DataEntry('Vehicle.Speed', metadata=Metadata(
                 entry_type=EntryType.SENSOR)),
@@ -433,6 +437,7 @@ class TestVSSClient:
 
     async def test_set_current_values(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
+        client.connected = True  # To bypass connection check
         mocker.patch.object(client, 'set')
         await client.set_current_values({
             'Vehicle.Speed': Datapoint(42.0,
@@ -454,6 +459,7 @@ class TestVSSClient:
 
     async def test_set_target_values(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
+        client.connected = True  # To bypass connection check
         mocker.patch.object(client, 'set')
         await client.set_target_values({
             'Vehicle.ADAS.ABS.IsActive': Datapoint(True, datetime.datetime(2022, 11, 7, tzinfo=datetime.timezone.utc)),
@@ -470,6 +476,7 @@ class TestVSSClient:
 
     async def test_set_metadata(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
+        client.connected = True  # To bypass connection check
         mocker.patch.object(client, 'set')
         await client.set_metadata({
             'Vehicle.Speed': Metadata(entry_type=EntryType.SENSOR),
@@ -490,6 +497,7 @@ class TestVSSClient:
 
     async def test_subscribe_current_values(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
+        client.connected = True  # To bypass connection check
 
         async def subscribe_response_stream(**kwargs):
             yield [
@@ -529,6 +537,7 @@ class TestVSSClient:
 
     async def test_subscribe_target_values(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
+        client.connected = True  # To bypass connection check
 
         async def subscribe_response_stream(**kwargs):
             yield [
@@ -561,6 +570,7 @@ class TestVSSClient:
 
     async def test_subscribe_metadata(self, mocker, unused_tcp_port):
         client = VSSClient('127.0.0.1', unused_tcp_port)
+        client.connected = True  # To bypass connection check
 
         async def subscribe_response_stream(**kwargs):
             yield [

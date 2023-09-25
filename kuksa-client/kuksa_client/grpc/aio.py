@@ -93,14 +93,34 @@ class VSSClient(BaseVSSClient):
         self.connected = False
 
     def check_connected_async(func):
+        """
+        Decorator to verify that there is a connection before calling underlying method
+        For generator methods use check_connected_async_iter
+        """
         async def wrapper(self, *args, **kwargs):
             if self.connected:
                 return await func(self, *args, **kwargs)
             else:
-                logger.info(
-                    "Disconnected from server! Try cli command connect.")
+                # This shall normally not happen if you use the client as context manager
+                # as then a connect will happen automatically when you enter the context
+                raise Exception("Server not connected! Call connect() before using this command!")
         return wrapper
 
+    def check_connected_async_iter(func):
+        """
+        Decorator for generator methods to verify that there is a connection before calling underlying method
+        """
+        async def wrapper(self, *args, **kwargs):
+            if self.connected:
+                async for v in func(self, *args, **kwargs):
+                    yield v
+            else:
+                # This shall normally not happen if you use the client as context manager
+                # as then a connect will happen automatically when you enter the context
+                raise Exception("Server not connected! Call connect() before using this command!")
+        return wrapper
+
+    @check_connected_async
     async def get_current_values(self, paths: Iterable[str], **rpc_kwargs) -> Dict[str, Datapoint]:
         """
         Parameters:
@@ -120,6 +140,7 @@ class VSSClient(BaseVSSClient):
         )
         return {entry.path: entry.value for entry in entries}
 
+    @check_connected_async
     async def get_target_values(self, paths: Iterable[str], **rpc_kwargs) -> Dict[str, Datapoint]:
         """
         Parameters:
@@ -137,6 +158,7 @@ class VSSClient(BaseVSSClient):
                          ) for path in paths))
         return {entry.path: entry.actuator_target for entry in entries}
 
+    @check_connected_async
     async def get_metadata(
         self, paths: Iterable[str], field: MetadataField = MetadataField.ALL, **rpc_kwargs,
     ) -> Dict[str, Metadata]:
@@ -158,6 +180,7 @@ class VSSClient(BaseVSSClient):
         )
         return {entry.path: entry.metadata for entry in entries}
 
+    @check_connected_async
     async def set_current_values(self, updates: Dict[str, Datapoint], **rpc_kwargs) -> None:
         """
         Parameters:
@@ -175,6 +198,7 @@ class VSSClient(BaseVSSClient):
             **rpc_kwargs,
         )
 
+    @check_connected_async
     async def set_target_values(self, updates: Dict[str, Datapoint], **rpc_kwargs) -> None:
         """
         Parameters:
@@ -187,6 +211,7 @@ class VSSClient(BaseVSSClient):
             DataEntry(path, actuator_target=dp), (Field.ACTUATOR_TARGET,),
         ) for path, dp in updates.items()], **rpc_kwargs)
 
+    @check_connected_async
     async def set_metadata(
         self, updates: Dict[str, Metadata], field: MetadataField = MetadataField.ALL, **rpc_kwargs,
     ) -> None:
@@ -203,6 +228,7 @@ class VSSClient(BaseVSSClient):
             DataEntry(path, metadata=md), (Field(field.value),),
         ) for path, md in updates.items()], **rpc_kwargs)
 
+    @check_connected_async_iter
     async def subscribe_current_values(self, paths: Iterable[str], **rpc_kwargs) -> AsyncIterator[Dict[str, Datapoint]]:
         """
         Parameters:
@@ -222,6 +248,7 @@ class VSSClient(BaseVSSClient):
         ):
             yield {update.entry.path: update.entry.value for update in updates}
 
+    @check_connected_async_iter
     async def subscribe_target_values(self, paths: Iterable[str], **rpc_kwargs) -> AsyncIterator[Dict[str, Datapoint]]:
         """
         Parameters:
@@ -241,6 +268,7 @@ class VSSClient(BaseVSSClient):
         ):
             yield {update.entry.path: update.entry.actuator_target for update in updates}
 
+    @check_connected_async_iter
     async def subscribe_metadata(
         self, paths: Iterable[str],
         field: MetadataField = MetadataField.ALL,
@@ -302,6 +330,7 @@ class VSSClient(BaseVSSClient):
             raise VSSClientError.from_grpc_error(exc) from exc
         self._process_set_response(resp)
 
+    @check_connected_async_iter
     async def subscribe(self,
                         entries: Iterable[SubscribeEntry],
                         **rpc_kwargs,
@@ -311,19 +340,16 @@ class VSSClient(BaseVSSClient):
             rpc_kwargs
                 grpc.*MultiCallable kwargs e.g. timeout, metadata, credentials.
         """
-        if self.connected:
-            rpc_kwargs["metadata"] = self.generate_metadata_header(
-                rpc_kwargs.get("metadata"))
-            req = self._prepare_subscribe_request(entries)
-            resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
-            try:
-                async for resp in resp_stream:
-                    logger.debug("%s: %s", type(resp).__name__, resp)
-                    yield [EntryUpdate.from_message(update) for update in resp.updates]
-            except AioRpcError as exc:
-                raise VSSClientError.from_grpc_error(exc) from exc
-        else:
-            logger.info("Disconnected from server! Try connect.")
+        rpc_kwargs["metadata"] = self.generate_metadata_header(
+            rpc_kwargs.get("metadata"))
+        req = self._prepare_subscribe_request(entries)
+        resp_stream = self.client_stub.Subscribe(req, **rpc_kwargs)
+        try:
+            async for resp in resp_stream:
+                logger.debug("%s: %s", type(resp).__name__, resp)
+                yield [EntryUpdate.from_message(update) for update in resp.updates]
+        except AioRpcError as exc:
+            raise VSSClientError.from_grpc_error(exc) from exc
 
     @check_connected_async
     async def authorize(self, token: str, **rpc_kwargs) -> str:
@@ -367,6 +393,7 @@ class VSSClient(BaseVSSClient):
                 raise VSSClientError.from_grpc_error(exc) from exc
         return None
 
+    @check_connected_async
     async def get_value_types(self, paths: Collection[str], **rpc_kwargs) -> Dict[str, DataType]:
         """
         Parameters:
