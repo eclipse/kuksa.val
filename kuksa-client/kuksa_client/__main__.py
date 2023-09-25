@@ -43,9 +43,15 @@ import kuksa_certificates
 from kuksa_client import KuksaClientThread
 from kuksa_client import _metadata
 
-DEFAULT_SERVER_ADDR = "grpc://127.0.0.1:55555"
-
 scriptDir = os.path.dirname(os.path.realpath(__file__))
+
+DEFAULT_SERVER_ADDR = os.environ.get("SERVER_ADDR", "grpc://127.0.0.1:55555")
+DEFAULT_LOGGING_CONFIG = os.environ.get("LOGGING_CONFIG", os.path.join(scriptDir, 'logging.ini'))
+DEFAULT_TOKEN_OR_TOKENFILE = os.environ.get("TOKEN_OR_TOKENFILE", None)
+DEFAULT_CERTIFICATE = os.environ.get("CERTIFICATE", None)
+DEFAULT_KEYFILE = os.environ.get("KEYFILE", None)
+DEFAULT_CACERTIFICATE = os.environ.get("CACERTIFICATE", None)
+DEFAULT_TLS_SERVER_NAME = os.environ.get("TLS_SERVER_NAME", None)
 
 
 logger = logging.getLogger(__name__)
@@ -546,15 +552,15 @@ using {'KUKSA GRPC' if config['protocol'] == 'grpc' else 'VISS' } protocol.")
         print(f"TLS will {'not be' if config['insecure'] else 'be'} used.")
 
         # Configs should only be added if they actually have a value
-        if self.token_or_tokenfile:
+        if self.token_or_tokenfile  is not None:
             config['token_or_tokenfile'] = self.token_or_tokenfile
-        if self.certificate:
+        if self.certificate  is not None:
             config['certificate'] = self.certificate
-        if self.keyfile:
+        if self.keyfile  is not None:
             config['keyfile'] = self.keyfile
-        if self.cacertificate:
+        if self.cacertificate  is not None:
             config['cacertificate'] = self.cacertificate
-        if self.tls_server_name:
+        if self.tls_server_name  is not None:
             config['tls_server_name'] = self.tls_server_name
 
         self.commThread = KuksaClientThread(config)
@@ -620,22 +626,22 @@ def main():
         'server', nargs='?', help=f"VSS server to connect to. Format: protocol://host[:port]. \
         Supported protocols: [grpc, grpcs, ws, wss]. Example: {DEFAULT_SERVER_ADDR}", default=DEFAULT_SERVER_ADDR)
     parser.add_argument(
-        '--logging-config', default=os.path.join(scriptDir, 'logging.ini'), help="Path to logging configuration file",
+        '--logging-config', default=DEFAULT_LOGGING_CONFIG, help="Path to logging configuration file",
     )
     parser.add_argument(
-        '--token_or_tokenfile', default=None, help="JWT token or path to a JWT token file (.token)",
+        '--token_or_tokenfile', default=DEFAULT_TOKEN_OR_TOKENFILE, help="JWT token or path to a JWT token file (.token)",
     )
 
     # Add TLS arguments
     # Note: Databroker does not yet support mutual authentication, so no need to use two first arguments
     parser.add_argument(
-        '--certificate', default=None, help="Client cert file(.pem), only needed for mutual authentication",
+        '--certificate', default=DEFAULT_CERTIFICATE, help="Client cert file(.pem), only needed for mutual authentication",
     )
     parser.add_argument(
-        '--keyfile', default=None, help="Client private key file (.key), only needed for mutual authentication",
+        '--keyfile', default=DEFAULT_KEYFILE, help="Client private key file (.key), only needed for mutual authentication",
     )
     parser.add_argument(
-        '--cacertificate', default=None, help="Client root cert file (.pem). \
+        '--cacertificate', default=DEFAULT_CACERTIFICATE, help="Client root cert file (.pem). \
         Needed for TLS enabled transports (grpcs, wss)",
     )
     # Observations for Python
@@ -643,7 +649,7 @@ def main():
     # Connecting to "127.0.0.1" does not work unless server-name specified
     # For KUKSA.val example certs default name is "Server"
     parser.add_argument(
-        '--tls-server-name', default=None,
+        '--tls-server-name', default=DEFAULT_TLS_SERVER_NAME,
         help="CA name of server, needed in some cases where subjectAltName does not suffice",
     )
 
