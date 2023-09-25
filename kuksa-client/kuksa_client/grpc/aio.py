@@ -75,7 +75,7 @@ class VSSClient(BaseVSSClient):
                 options = [('grpc.ssl_target_name_override', self.tls_server_name)]
                 channel = grpc.aio.secure_channel(target_host, creds, options)
             else:
-                logger.debug(f"Not providing explicit TLS server name")
+                logger.debug("Not providing explicit TLS server name")
                 channel = grpc.aio.secure_channel(target_host, creds)
         else:
             logger.info("Establishing insecure channel")
@@ -363,7 +363,7 @@ class VSSClient(BaseVSSClient):
         except AioRpcError as exc:
             if exc.code() == grpc.StatusCode.UNAUTHENTICATED:
                 logger.info("Unauthenticated channel started")
-            else: 
+            else:
                 raise VSSClientError.from_grpc_error(exc) from exc
         return None
 

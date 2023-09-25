@@ -315,7 +315,6 @@ class Datapoint:
             ) if message.HasField('timestamp') else None,
         )
 
-
     def cast_array_values(cast, array):
         """
         Parses array input and cast individual values to wanted type.
@@ -339,7 +338,7 @@ class Datapoint:
             # My Way
             # ... without quotes
             if item.strip() == '':
-                #skip
+                # skip
                 pass
             else:
                 yield cast(item)
@@ -365,7 +364,7 @@ class Datapoint:
         new_val = new_val.replace('\\\"', '\"')
         new_val = new_val.replace("\\\'", "\'")
         return new_val
-            
+
     def to_message(self, value_type: DataType) -> types_pb2.Datapoint:
         message = types_pb2.Datapoint()
 
@@ -373,7 +372,6 @@ class Datapoint:
             array = getattr(obj, attr)
             array.Clear()
             array.values.extend(values)
-
 
         field, set_field, cast_field = {
             DataType.INT8: ('int32', setattr, int),
@@ -388,29 +386,29 @@ class Datapoint:
             DataType.DOUBLE: ('double', setattr, float),
             DataType.BOOLEAN: ('bool', setattr, Datapoint.cast_bool),
             DataType.STRING: ('string', setattr, Datapoint.cast_str),
-            DataType.INT8_ARRAY: ('int32_array', set_array_attr, 
+            DataType.INT8_ARRAY: ('int32_array', set_array_attr,
                                   lambda array: Datapoint.cast_array_values(int, array)),
-            DataType.INT16_ARRAY: ('int32_array', set_array_attr, 
+            DataType.INT16_ARRAY: ('int32_array', set_array_attr,
                                    lambda array: Datapoint.cast_array_values(int, array)),
-            DataType.INT32_ARRAY: ('int32_array', set_array_attr, 
+            DataType.INT32_ARRAY: ('int32_array', set_array_attr,
                                    lambda array: Datapoint.cast_array_values(int, array)),
-            DataType.UINT8_ARRAY: ('uint32_array', set_array_attr, 
+            DataType.UINT8_ARRAY: ('uint32_array', set_array_attr,
                                    lambda array: Datapoint.cast_array_values(int, array)),
-            DataType.UINT16_ARRAY: ('uint32_array', set_array_attr, 
+            DataType.UINT16_ARRAY: ('uint32_array', set_array_attr,
                                     lambda array: Datapoint.cast_array_values(int, array)),
-            DataType.UINT32_ARRAY: ('uint32_array', set_array_attr, 
+            DataType.UINT32_ARRAY: ('uint32_array', set_array_attr,
                                     lambda array: Datapoint.cast_array_values(int, array)),
-            DataType.UINT64_ARRAY: ('uint64_array', set_array_attr, 
+            DataType.UINT64_ARRAY: ('uint64_array', set_array_attr,
                                     lambda array: Datapoint.cast_array_values(int, array)),
-            DataType.INT64_ARRAY: ('int64_array', set_array_attr, 
+            DataType.INT64_ARRAY: ('int64_array', set_array_attr,
                                    lambda array: Datapoint.cast_array_values(int, array)),
-            DataType.FLOAT_ARRAY: ('float_array', set_array_attr, 
+            DataType.FLOAT_ARRAY: ('float_array', set_array_attr,
                                    lambda array: Datapoint.cast_array_values(float, array)),
-            DataType.DOUBLE_ARRAY: ('double_array', set_array_attr, 
+            DataType.DOUBLE_ARRAY: ('double_array', set_array_attr,
                                     lambda array: Datapoint.cast_array_values(float, array)),
-            DataType.BOOLEAN_ARRAY: ('bool_array', set_array_attr, 
+            DataType.BOOLEAN_ARRAY: ('bool_array', set_array_attr,
                                      lambda array: Datapoint.cast_array_values(Datapoint.cast_bool, array)),
-            DataType.STRING_ARRAY: ('string_array', set_array_attr, 
+            DataType.STRING_ARRAY: ('string_array', set_array_attr,
                                     lambda array: Datapoint.cast_array_values(Datapoint.cast_str, array)),
         }.get(value_type, (None, None, None))
         if self.value is not None:
@@ -523,6 +521,7 @@ class ServerInfo:
     def from_message(cls, message: val_pb2.GetServerInfoResponse):
         return cls(name=message.name, version=message.version)
 
+
 class BaseVSSClient:
     def __init__(
         self,
@@ -536,7 +535,6 @@ class BaseVSSClient:
         connected: bool = False,
         tls_server_name: Optional[str] = None
     ):
-    
 
         self.authorization_header = self.get_authorization_header(token)
         self.target_host = f'{host}:{port}'
@@ -559,11 +557,10 @@ class BaseVSSClient:
                 logger.info("Using client private key and certificates, mutual TLS supported if supported by server")
                 return grpc.ssl_channel_credentials(root_certificates, private_key, certificate_chain)
             else:
-                logger.info(f"No client certificates provided, mutual TLS not supported!")
+                logger.info("No client certificates provided, mutual TLS not supported!")
                 return grpc.ssl_channel_credentials(root_certificates)
-        logger.info(f"No Root CA present, it will not be posible to use a secure connection!")
+        logger.info("No Root CA present, it will not be posible to use a secure connection!")
         return None
-        
 
     def _prepare_get_request(self, entries: Iterable[EntryRequest]) -> val_pb2.GetRequest:
         req = val_pb2.GetRequest(entries=[])
@@ -649,7 +646,7 @@ class BaseVSSClient:
         return "Bearer " + token
 
     def generate_metadata_header(self, metadata: list, header=None) -> list:
-        if header == None:
+        if header is None:
             header = self.authorization_header
         if metadata:
             metadata = dict(metadata)
@@ -686,7 +683,7 @@ class VSSClient(BaseVSSClient):
         creds = self._load_creds()
         if target_host is None:
             target_host = self.target_host
-            
+
         if creds is not None:
             logger.info("Establishing secure channel")
             if self.tls_server_name:
@@ -694,12 +691,12 @@ class VSSClient(BaseVSSClient):
                 options = [('grpc.ssl_target_name_override', self.tls_server_name)]
                 channel = grpc.secure_channel(target_host, creds, options)
             else:
-                logger.debug(f"Not providing explicit TLS server name")
+                logger.debug("Not providing explicit TLS server name")
                 channel = grpc.secure_channel(target_host, creds)
         else:
             logger.info("Establishing insecure channel")
             channel = grpc.insecure_channel(target_host)
-            
+
         self.channel = self.exit_stack.enter_context(channel)
         self.client_stub = val_pb2_grpc.VALStub(self.channel)
         self.connected = True
@@ -973,7 +970,6 @@ class VSSClient(BaseVSSClient):
             else:
                 raise VSSClientError.from_grpc_error(exc) from exc
         return None
-        
 
     def get_value_types(self, paths: Collection[str], **rpc_kwargs) -> Dict[str, DataType]:
         """

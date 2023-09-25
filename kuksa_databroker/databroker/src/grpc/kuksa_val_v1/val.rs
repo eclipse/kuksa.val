@@ -23,6 +23,7 @@ use tokio_stream::StreamExt;
 use tracing::debug;
 
 use crate::broker;
+use crate::broker::EntryReadAccess;
 use crate::broker::ReadError;
 use crate::broker::SubscriptionError;
 use crate::glob;
@@ -53,7 +54,23 @@ impl proto::val_server::Val for broker::DataBroker {
         } else {
             let mut entries = Vec::new();
             let mut errors = Vec::new();
+            /*
+             * valid_requests: A collection of valid requests, each represented as a tuple with five fields:
+             * - Regex: The regular expression created from the string path request.
+             * - Fields: A HashSet of proto::Field objects extracted from the request.
+             * - RequestPath: The original request path, used for error reporting when no entries match.
+             * - IsMatch: A boolean flag indicating whether the current request matches any entry.
+             * - Error: An optional ReadError representing a permission error that may occur when querying a valid path entry.
+             */
+            let mut valid_requests: Vec<(
+                regex::Regex,
+                HashSet<proto::Field>,
+                String,
+                bool,
+                Option<ReadError>,
+            )> = Vec::new();
 
+            // Fill valid_requests structure.
             for request in requested {
                 if !glob::is_valid_pattern(&request.path) {
                     errors.push(proto::DataEntryError {
@@ -66,7 +83,6 @@ impl proto::val_server::Val for broker::DataBroker {
                     });
                     continue;
                 }
-
                 let view = proto::View::from_i32(request.view).ok_or_else(|| {
                     tonic::Status::invalid_argument(format!("Invalid View (id: {}", request.view))
                 })?;
@@ -76,64 +92,95 @@ impl proto::val_server::Val for broker::DataBroker {
                 let view_fields = combine_view_and_fields(view, fields);
                 debug!("Getting fields: {:?}", view_fields);
 
-                match broker.get_entry_by_path(&request.path).await {
-                    Ok(entry) => {
-                        let proto_entry = proto_entry_from_entry_and_fields(entry, view_fields);
-                        debug!("Getting datapoint: {:?}", proto_entry);
-                        entries.push(proto_entry);
+                let regex_exp = glob::to_regex(&request.path);
+                match regex_exp {
+                    Ok(value) => {
+                        valid_requests.push((value, view_fields, request.path, false, None));
                     }
-                    Err(ReadError::NotFound) => {
-                        let regex = glob::to_regex(&request.path);
-                        match regex {
-                            Ok(value_regex) => {
-                                match broker.get_entries_by_regex(value_regex).await {
-                                    Ok(entries_result) => {
-                                        for data_entry in entries_result {
-                                            let entry_type = data_entry.metadata.entry_type.clone();
-
-                                            let proto_entry = proto_entry_from_entry_and_fields(
-                                                data_entry,
-                                                view_fields.clone(),
-                                            );
-                                            debug!("Getting datapoint: {:?}", proto_entry);
-
-                                            if view == proto::View::TargetValue {
-                                                if entry_type == broker::EntryType::Actuator {
-                                                    entries.push(proto_entry);
-                                                }
-                                            } else {
-                                                entries.push(proto_entry);
-                                            }
+                    Err(_) => {
+                        errors.push(proto::DataEntryError {
+                            path: request.path,
+                            error: Some(proto::Error {
+                                code: 400,
+                                reason: "bad regex".to_owned(),
+                                message: "Regex can't be created for provided path".to_owned(),
+                            }),
+                        });
+                    }
+                }
+            }
+            if !valid_requests.is_empty() {
+                broker
+                    .for_each_entry(|entry| {
+                        let mut result_fields: HashSet<proto::Field> = HashSet::new();
+                        for (regex, view_fields, _, is_match, op_error) in &mut valid_requests {
+                            let path = &entry.metadata().path;
+                            if regex.is_match(path) {
+                                // Update the `is_match` to indicate a valid and used request path.
+                                *is_match = true;
+                                if view_fields.contains(&proto::Field::Metadata) {
+                                    result_fields.extend(view_fields.clone());
+                                }
+                                if view_fields.contains(&proto::Field::ActuatorTarget)
+                                    || view_fields.contains(&proto::Field::Value)
+                                {
+                                    match entry.datapoint() {
+                                        Ok(_) => {
+                                            // If the entry's path matches the regex and there is access permission,
+                                            // add the result fields to the current entry.
+                                            result_fields.extend(view_fields.clone());
                                         }
-                                        if entries.is_empty() {
-                                            errors.push(proto::DataEntryError {
-                                                    path: request.path,
-                                                    error: Some(proto::Error {
-                                                        code: 404,
-                                                        reason: "not_found".to_owned(),
-                                                        message: "No entries found for the provided call parameters"
-                                                            .to_owned(),
-                                                    }),
-                                                });
+                                        Err(error) => {
+                                            //Propagate the error
+                                            *op_error = Some(error);
                                         }
-                                    }
-                                    Err(read_error) => {
-                                        let data_entry_error = create_data_entry_error(
-                                            request.path.clone(),
-                                            read_error,
-                                        );
-                                        errors.push(data_entry_error);
                                     }
                                 }
                             }
-                            Err(_) => todo!(),
                         }
-                    }
-                    Err(read_error) => {
-                        let data_entry_error =
-                            create_data_entry_error(request.path.clone(), read_error);
-                        errors.push(data_entry_error);
-                    }
+
+                        // If there are result fields, add them to the entries list.
+                        if !result_fields.is_empty() {
+                            let proto_entry =
+                                proto_entry_from_entry_and_fields(entry, result_fields);
+                            debug!("Getting datapoint: {:?}", proto_entry);
+                            entries.push(proto_entry);
+                        }
+                    })
+                    .await;
+            }
+
+            /*
+             * Handle Unmatched or Permission Errors
+             *
+             * After processing valid requests, this section iterates over the `valid_requests` vector
+             * to check if any requests didn't have matching entries or encountered permission errors.
+             *
+             * For each unmatched request, a "not_found" error message is added to the `errors` list.
+             * For requests with permission errors, a "forbidden" error message is added.
+             */
+            for (_, _, path, is_match, error) in valid_requests {
+                if !is_match {
+                    errors.push(proto::DataEntryError {
+                        path: path.to_owned(),
+                        error: Some(proto::Error {
+                            code: 404,
+                            reason: "not_found".to_owned(),
+                            message: "No entries found for the provided path".to_owned(),
+                        }),
+                    });
+                } else if let Some(_error) = error {
+                    // clear the entries vector since we only want to return rerrors
+                    // and not partial success
+                    entries.clear();
+                    errors.push(proto::DataEntryError {
+                        path: path.to_owned(),
+                        error: Some(proto::Error {
+                            code: 403,
+                            reason: "forbidden".to_owned(),
+                            message: "Permission denied for some entries".to_owned(),
+                        }),
+                    });
                 }
             }
 
@@ -405,19 +452,25 @@ fn convert_to_proto_stream(
 }
 
 fn proto_entry_from_entry_and_fields(
-    entry: broker::Entry,
+    entry: EntryReadAccess,
     fields: HashSet<proto::Field>,
 ) -> proto::DataEntry {
-    let path = entry.metadata.path;
+    let path = entry.metadata().path.to_string();
     let value = if fields.contains(&proto::Field::Value) {
-        Option::<proto::Datapoint>::from(entry.datapoint)
+        match entry.datapoint() {
+            Ok(value) => Option::<proto::Datapoint>::from(value.clone()),
+            Err(_) => None,
+        }
     } else {
         None
     };
     let actuator_target = if fields.contains(&proto::Field::ActuatorTarget) {
-        match entry.actuator_target {
-            Some(actuator_target) => Option::<proto::Datapoint>::from(actuator_target),
-            None => None,
+        match entry.actuator_target() {
+            Ok(value) => match value {
+                Some(value) => Option::<proto::Datapoint>::from(value.clone()),
+                None => None,
+            },
+            Err(_) => None,
         }
     } else {
         None
@@ -430,15 +483,15 @@ fn proto_entry_from_entry_and_fields(
 
         if all || fields.contains(&proto::Field::MetadataDataType) {
             metadata_is_set = true;
-            metadata.data_type = proto::DataType::from(entry.metadata.data_type) as i32;
+            metadata.data_type = proto::DataType::from(entry.metadata().data_type.clone()) as i32;
         }
         if all || fields.contains(&proto::Field::MetadataDescription) {
             metadata_is_set = true;
-            metadata.description = Some(entry.metadata.description);
+            metadata.description = Some(entry.metadata().description.clone());
         }
         if all || fields.contains(&proto::Field::MetadataEntryType) {
             metadata_is_set = true;
-            metadata.entry_type = proto::EntryType::from(&entry.metadata.entry_type) as i32;
+            metadata.entry_type = proto::EntryType::from(&entry.metadata().entry_type) as i32;
         }
         if all || fields.contains(&proto::Field::MetadataComment) {
             metadata_is_set = true;
@@ -462,7 +515,7 @@ fn proto_entry_from_entry_and_fields(
         if all || fields.contains(&proto::Field::MetadataActuator) {
             metadata_is_set = true;
             // TODO: Add to Metadata
-            metadata.entry_specific = match entry.metadata.entry_type {
+            metadata.entry_specific = match entry.metadata().entry_type {
                 broker::EntryType::Actuator => {
                     // Some(proto::metadata::EntrySpecific::Actuator(
                     //     proto::Actuator::default(),
@@ -475,7 +528,7 @@ fn proto_entry_from_entry_and_fields(
         if all || fields.contains(&proto::Field::MetadataSensor) {
             metadata_is_set = true;
             // TODO: Add to Metadata
-            metadata.entry_specific = match entry.metadata.entry_type {
+            metadata.entry_specific = match entry.metadata().entry_type {
                 broker::EntryType::Sensor => {
                     // Some(proto::metadata::EntrySpecific::Sensor(
                     //     proto::Sensor::default(),
@@ -488,7 +541,7 @@ fn proto_entry_from_entry_and_fields(
         if all || fields.contains(&proto::Field::MetadataAttribute) {
             metadata_is_set = true;
             // TODO: Add to Metadata
-            metadata.entry_specific = match entry.metadata.entry_type {
+            metadata.entry_specific = match entry.metadata().entry_type {
                 broker::EntryType::Attribute => {
                     // Some(proto::metadata::EntrySpecific::Attribute(
                     //     proto::Attribute::default(),
@@ -510,34 +563,6 @@ fn proto_entry_from_entry_and_fields(
         value,
         actuator_target,
         metadata,
-    }
-}
-
-fn create_data_entry_error(
-    request_path: String,
-    read_error: broker::ReadError,
-) -> proto::DataEntryError {
-    let error = match read_error {
-        broker::ReadError::NotFound => proto::Error {
-            code: 404,
-            reason: "not_found".to_owned(),
-            message: "No entries found for the provided path".to_owned(),
-        },
-        broker::ReadError::PermissionExpired => proto::Error {
-            code: 401,
-            reason: "unauthorized".to_owned(),
-            message: "Authorization expired".to_owned(),
-        },
-        broker::ReadError::PermissionDenied => proto::Error {
-            code: 403,
-            reason: "forbidden".to_owned(),
-            message: "Permission denied".to_owned(),
-        },
-    };
-
-    proto::DataEntryError {
-        path: request_path,
-        error: Some(error),
     }
 }
 
