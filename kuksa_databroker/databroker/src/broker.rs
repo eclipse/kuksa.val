@@ -79,7 +79,7 @@ pub struct Entry {
     pub metadata: Metadata,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Field {
     Datapoint,
     ActuatorTarget,
@@ -1328,21 +1328,8 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
 
     pub async fn subscribe(
         &self,
-        entries: HashMap<String, HashSet<Field>>,
+        valid_entries: HashMap<i32, HashSet<Field>>,
     ) -> Result<impl Stream<Item = EntryUpdates>, SubscriptionError> {
-        let valid_entries = {
-            let mut valid_entries = HashMap::new();
-            for (path, fields) in entries {
-                match self.get_id_by_path(path.as_ref()).await {
-                    Some(id) => {
-                        valid_entries.insert(id, fields);
-                    }
-                    None => return Err(SubscriptionError::NotFound),
-                }
-            }
-            valid_entries
-        };
-
         if valid_entries.is_empty() {
             return Err(SubscriptionError::InvalidInput);
         }
@@ -2803,10 +2790,7 @@ mod tests {
             .expect("Register datapoint should succeed");
 
         let mut stream = broker
-            .subscribe(HashMap::from([(
-                "test.datapoint1".into(),
-                HashSet::from([Field::Datapoint]),
-            )]))
+            .subscribe(HashMap::from([(id1, HashSet::from([Field::Datapoint]))]))
             .await
             .expect("subscription should succeed");
 
