@@ -375,31 +375,61 @@ impl proto::val_server::Val for broker::DataBroker {
             ));
         }
 
-        let mut entries = HashMap::new();
+        let mut valid_requests: HashMap<String, (regex::Regex, HashSet<broker::Field>)> =
+            HashMap::new();
 
-        for entry in request.entries {
-            let mut fields = HashSet::new();
-            for id in entry.fields {
-                match proto::Field::from_i32(id) {
-                    Some(field) => match field {
-                        proto::Field::Value => {
-                            fields.insert(broker::Field::Datapoint);
-                        }
-                        proto::Field::ActuatorTarget => {
-                            fields.insert(broker::Field::ActuatorTarget);
-                        }
-                        _ => {
-                            // Just ignore other fields for now
-                        }
-                    },
-                    None => {
-                        return Err(tonic::Status::invalid_argument(format!(
-                            "Invalid Field (id: {id})"
-                        )))
-                    }
-                };
+        for entry in &request.entries {
+            if entry.path.contains('*') && !glob::is_valid_pattern(&entry.path) {
+                tonic::Status::new(tonic::Code::InvalidArgument, "Invalid Pattern Argument");
+                continue;
             }
-            entries.insert(entry.path.clone(), fields);
+
+            let regex_exp = glob::to_regex(&entry.path);
+            if let Ok(regex) = regex_exp {
+                let mut fields = HashSet::new();
+                for id in &entry.fields {
+                    if let Some(field) = proto::Field::from_i32(*id) {
+                        match field {
+                            proto::Field::Value => {
+                                fields.insert(broker::Field::Datapoint);
+                            }
+                            proto::Field::ActuatorTarget => {
+                                fields.insert(broker::Field::ActuatorTarget);
+                            }
+                            _ => {
+                                // Just ignore other fields for now
+                            }
+                        }
+                    };
+                }
+                valid_requests.insert(entry.path.clone(), (regex, fields));
+            }
+        }
+
+        let mut entries: HashMap<i32, HashSet<broker::Field>> = HashMap::new();
+
+        if !valid_requests.is_empty() {
+            for (path, (regex, fields)) in valid_requests {
+                let mut requested_path_found = false;
+                broker
+                    .for_each_entry(|entry| {
+                        let entry_path = &entry.metadata().path;
+                        if regex.is_match(entry_path) {
+                            requested_path_found = true;
+                            entries
+                                .entry(entry.metadata().id)
+                                .and_modify(|existing_fields| {
+                                    existing_fields.extend(fields.clone());
+                                })
+                                .or_insert(fields.clone());
+                        }
+                    })
+                    .await;
+                if !requested_path_found {
+                    let message = format!("No entries found for the provided path: {}", path);
+                    return Err(tonic::Status::new(tonic::Code::NotFound, message));
+                }
+            }
         }
 
         match broker.subscribe(entries).await {
