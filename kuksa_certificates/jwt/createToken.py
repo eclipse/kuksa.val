@@ -16,22 +16,30 @@
 # SPDX-License-Identifier: Apache-2.0
 ########################################################################
 
+
 import argparse
+import sys
+from os import path
+
 import json
 import jwt
 
-from os import path
+
+def error_exit(msg):
+    print(msg, file=sys.stderr)
+    sys.exit(1)
 
 
-def createJWTToken(input_filename, priv_key):
+def createJWTToken(input_filename, priv_key, output_filename=None):
     print("Reading JWT payload from {}".format(input_filename))
     with open(input_filename, "r") as file:
         payload = json.load(file)
 
     encoded = jwt.encode(payload, priv_key, algorithm="RS256")
 
-    output_filename = input_filename[:-5] if input_filename.endswith(".json") else input_filename
-    output_filename += ".token"
+    if output_filename is None:
+        output_filename = input_filename[:-5] if input_filename.endswith(".json") else input_filename
+        output_filename += ".token"
 
     print("Writing signed access token to {}".format(output_filename))
     with open(output_filename, "w") as output:
@@ -41,17 +49,25 @@ def createJWTToken(input_filename, priv_key):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("files", help="Read JWT payload from these files", nargs="+")
+    script_dir = path.abspath(path.dirname(__file__))
+    default_key_filename = path.join(script_dir, "jwt.key")
+
+    parser.add_argument("--key", help="Private key location", dest="priv_key_filename", default=default_key_filename)
+    parser.add_argument("--output", help="Name of the output file to store token to", dest="output")
     args = parser.parse_args()
 
-    script_dir = path.abspath(path.dirname(__file__))
-    priv_key_filename = path.join(script_dir, "jwt.key")
+    if args.output is not None and len(args.files) > 1:
+        error_exit("""
+        Both --output option and multiple files have been specified.
+        Output filename can be specified for single input file only!
+        """)
 
     print("Reading private key from {}".format("jwt.key"))
-    with open(priv_key_filename, "r") as file:
+    with open(args.priv_key_filename, "r") as file:
         priv_key = file.read()
 
-    for input in args.files:
-        createJWTToken(input, priv_key)
+    for input_file in args.files:
+        createJWTToken(input_file, priv_key, args.output)
 
 
 if __name__ == "__main__":
