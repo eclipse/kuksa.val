@@ -19,6 +19,9 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
+common = { path = "../lib"}
+kuksa = { path = "../lib/kuksa", optional = true}
+sdv = { path = "../lib/sdv", optional = true}
 databroker-proto = { workspace = true }
 tonic = { workspace = true, features = ["transport", "channel", "prost"] }
 prost = { workspace = true }
@@ -41,5 +44,7 @@ regex = "1.6.0"
 http = "0.2.8"
 
 [features]
-default = ["tls"]
+default = ["tls", "feature_sdv"]
+feature_kuksa = ["kuksa"]
+feature_sdv = ["sdv"]
 tls = ["tonic/tls"]

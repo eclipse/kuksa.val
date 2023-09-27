@@ -11,8 +11,6 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-use client::{ClientError, ConnectionState};
-use databroker_proto::sdv::databroker as proto;
 use http::uri::Uri;
 use prost_types::Timestamp;
 use tokio_stream::StreamExt;
@@ -31,15 +29,13 @@ use linefeed::complete::{Completer, Completion, Suffix};
 use linefeed::terminal::Terminal;
 use linefeed::{Command, DefaultTerminal, Function, Interface, Prompter, ReadResult};
 
-mod client;
-
 const TIMEOUT: Duration = Duration::from_millis(500);
 
 const CLI_COMMANDS: &[(&str, &str, &str)] = &[
     ("connect", "[URI]", "Connect to server"),
     ("get", "<PATH> [[PATH] ...]", "Get signal value(s)"),
     ("set", "<PATH> <VALUE>", "Set actuator signal"),
-    ("subscribe", "<QUERY>", "Subscribe to signals with QUERY"),
+    ("subscribe", "<QUERY>", "Subscribe to signals with QUERY, if you use kuksa feature comma separated list"),
     ("feed", "<PATH> <VALUE>", "Publish signal value"),
     (
         "metadata",
@@ -55,6 +51,18 @@ const CLI_COMMANDS: &[(&str, &str, &str)] = &[
     ("help", "", "You're looking at it."),
     ("quit", "", "Quit"),
 ];
+
+#[cfg(feature = "feature_kuksa")]
+mod root {
+    pub use databroker_proto::kuksa::val as proto;
+    pub use kuksa::*;
+}
+
+#[cfg(feature = "feature_sdv")]
+mod root {
+    pub use databroker_proto::sdv::databroker as proto;
+    pub use sdv::*;
+}
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -91,7 +99,18 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut properties = Vec::<proto::v1::Metadata>::new();
+    let mut properties = Vec::new();
+    #[cfg(feature = "feature_sdv")]
+    {
+        println!("Using sdv");
+        properties = Vec::<root::proto::v1::Metadata>::new();
+    }
+    #[cfg(feature = "feature_kuksa")]
+    {
+        println!("Using kuksa");
+        properties = Vec::<root::proto::v1::DataEntry>::new();
+    }
+    
     let mut subscription_nbr = 1;
 
     let completer = CliCompleter::new();
@@ -106,10 +125,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cli = Cli::parse();
 
-    let mut client = client::Client::new(to_uri(cli.server)?);
+    let mut basic_client = common::Client::new(to_uri(cli.server)?);
+    let mut client;
+    #[cfg(feature = "feature_sdv")]{
+        client = root::SDVClient::new(basic_client);
+    }
+
+    #[cfg(feature = "feature_kuksa")]{
+        client = root::KuksaClient::new(basic_client);
+    }
+
     if let Some(token_filename) = cli.token_file {
         let token = std::fs::read_to_string(token_filename)?;
-        client.set_access_token(token)?;
+        client.basic_client.set_access_token(token)?;
     }
 
     #[cfg(feature = "tls")]
@@ -119,20 +147,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let tls_config = tonic::transport::ClientTlsConfig::new().ca_certificate(ca_cert);
 
-        client.set_tls_config(tls_config);
+        client.basic_client.set_tls_config(tls_config);
     }
 
-    let mut connection_state_subscription = client.subscribe_to_connection_state();
+    let mut connection_state_subscription = client.basic_client.subscribe_to_connection_state();
     let interface_ref = interface.clone();
 
     tokio::spawn(async move {
         while let Some(state) = connection_state_subscription.next().await {
             match state {
                 Ok(state) => match state {
-                    ConnectionState::Connected => {
+                    common::ConnectionState::Connected => {
                         set_connected_prompt(&interface_ref);
                     }
-                    ConnectionState::Disconnected => {
+                    common::ConnectionState::Disconnected => {
                         set_disconnected_prompt(&interface_ref);
                     }
                 },
@@ -149,14 +177,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         Some(Commands::Get { paths }) => {
-            match client.get_datapoints(paths).await {
-                Ok(datapoints) => {
-                    for (name, datapoint) in datapoints {
-                        println!("{}: {}", name, DisplayDatapoint(datapoint),);
+            #[cfg(feature = "feature_sdv")]{
+                match client.get_datapoints(paths).await {
+                    Ok(datapoints) => {
+                        for (name, datapoint) in datapoints {
+                            println!("{}: {}", name, DisplayDatapoint(datapoint),);
+                        }
+                    }
+                    Err(err) => {
+                        eprintln!("{err}");
                     }
                 }
-                Err(err) => {
-                    eprintln!("{err}");
+            }
+            #[cfg(feature = "feature_kuksa")]{
+                match client.get_current_values(paths).await {
+                    Ok(data_entries) => {
+                        for entry in data_entries {
+                            if let Some(val) = entry.value {
+                                println!("{}: {}", entry.path, DisplayDatapoint(val),);
+                            }
+                            else{
+                                println!("{}: NotAvailable", entry.path);
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        eprintln!("{err}");
+                    }
                 }
             }
             return Ok(());
@@ -169,19 +216,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
             print_logo(version);
 
-            match client.try_connect().await {
+            match client.basic_client.try_connect().await {
                 Ok(()) => {
-                    print_info(format!("Successfully connected to {}", client.get_uri()))?;
-                    match client.get_metadata(vec![]).await {
+                    print_info(format!("Successfully connected to {}", client.basic_client.get_uri()))?;
+                    let mut pattern = vec![];
+                    #[cfg(feature = "feature_kuksa")]{
+                        pattern = vec!["**"];
+                    }
+                    match client.get_metadata(pattern).await {
                         Ok(metadata) => {
                             interface
                                 .set_completer(Arc::new(CliCompleter::from_metadata(&metadata)));
                             properties = metadata;
                         }
-                        Err(ClientError::Status(status)) => {
+                        Err(common::ClientError::Status(status)) => {
                             print_resp_err("metadata", &status)?;
                         }
-                        Err(ClientError::Connection(msg)) => {
+                        Err(common::ClientError::Connection(msg)) => {
                             print_error("metadata", msg)?;
                         }
                     }
@@ -209,26 +260,49 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         "get" => {
                             interface.add_history_unique(line.clone());
 
-                            if args.is_empty() {
-                                print_usage(cmd);
-                                continue;
-                            }
-                            let paths = args
-                                .split_whitespace()
-                                .map(|path| path.to_owned())
-                                .collect();
-                            match client.get_datapoints(paths).await {
-                                Ok(datapoints) => {
-                                    print_resp_ok(cmd)?;
-                                    for (name, datapoint) in datapoints {
-                                        println!("{}: {}", name, DisplayDatapoint(datapoint),);
+                                if args.is_empty() {
+                                    print_usage(cmd);
+                                    continue;
+                                }
+                                let paths = args
+                                    .split_whitespace()
+                                    .map(|path| path.to_owned())
+                                    .collect();
+                            #[cfg(feature = "feature_sdv")]{
+                                match client.get_datapoints(paths).await {
+                                    Ok(datapoints) => {
+                                        print_resp_ok(cmd)?;
+                                        for (name, datapoint) in datapoints {
+                                            println!("{}: {}", name, DisplayDatapoint(datapoint),);
+                                        }
+                                    }
+                                    Err(common::ClientError::Status(err)) => {
+                                        print_resp_err(cmd, &err)?;
+                                    }
+                                    Err(common::ClientError::Connection(msg)) => {
+                                        print_error(cmd, msg)?;
                                     }
                                 }
-                                Err(ClientError::Status(err)) => {
-                                    print_resp_err(cmd, &err)?;
-                                }
-                                Err(ClientError::Connection(msg)) => {
-                                    print_error(cmd, msg)?;
+                            }
+                            #[cfg(feature = "feature_kuksa")]{
+                                match client.get_current_values(paths).await {
+                                    Ok(data_entries) => {
+                                        print_resp_ok(cmd)?;
+                                        for entry in data_entries {
+                                            if let Some(val) = entry.value{
+                                                println!("{}: {}", entry.path, DisplayDatapoint(val),);
+                                            }
+                                            else{
+                                                println!("{}: NotAvailable", entry.path);
+                                            }
+                                        }
+                                    }
+                                    Err(common::ClientError::Status(err)) => {
+                                        print_resp_err(cmd, &err)?;
+                                    }
+                                    Err(common::ClientError::Connection(msg)) => {
+                                        print_error(cmd, msg)?;
+                                    }
                                 }
                             }
                         }
@@ -240,7 +314,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 continue;
                             }
 
-                            match client.set_access_token(args) {
+                            match client.basic_client.set_access_token(args) {
                                 Ok(()) => {
                                     print_info("Access token set.")?;
                                     match client.get_metadata(vec![]).await {
@@ -250,10 +324,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             ));
                                             properties = metadata;
                                         }
-                                        Err(ClientError::Status(status)) => {
+                                        Err(common::ClientError::Status(status)) => {
                                             print_resp_err("metadata", &status)?;
                                         }
-                                        Err(ClientError::Connection(msg)) => {
+                                        Err(common::ClientError::Connection(msg)) => {
                                             print_error("metadata", msg)?;
                                         }
                                     }
@@ -271,7 +345,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                             let token_filename = args.trim();
                             match std::fs::read_to_string(token_filename) {
-                                Ok(token) => match client.set_access_token(token) {
+                                Ok(token) => match client.basic_client.set_access_token(token) {
                                     Ok(()) => {
                                         print_info("Access token set.")?;
                                         match client.get_metadata(vec![]).await {
@@ -281,10 +355,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                 ));
                                                 properties = metadata;
                                             }
-                                            Err(ClientError::Status(status)) => {
+                                            Err(common::ClientError::Status(status)) => {
                                                 print_resp_err("metadata", &status)?;
                                             }
-                                            Err(ClientError::Connection(msg)) => {
+                                            Err(common::ClientError::Connection(msg)) => {
                                                 print_error("metadata", msg)?;
                                             }
                                         }
@@ -310,34 +384,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 print_usage(cmd);
                                 continue;
                             }
-
-                            let datapoint_metadata = {
-                                let mut datapoint_metadata = None;
-                                for metadata in properties.iter() {
-                                    if metadata.name == path {
-                                        datapoint_metadata = Some(metadata)
+                            
+                            #[cfg(feature = "feature_sdv")]{
+                                let datapoint_metadata = {
+                                    let mut datapoint_metadata = None;
+                                    for metadata in properties.iter() {
+                                        if metadata.name == path {
+                                            datapoint_metadata = Some(metadata)
+                                        }
                                     }
-                                }
-                                datapoint_metadata
-                            };
+                                    datapoint_metadata
+                                };
 
-                            if datapoint_metadata.is_none() {
-                                print_info(format!(
-                                    "No metadata available for {path}. Needed to determine data type for serialization."
-                                ))?;
-                                continue;
-                            }
-
-                            if let Some(metadata) = datapoint_metadata {
-                                let data_value = try_into_data_value(
-                                    value,
-                                    proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
-                                );
-                                if data_value.is_err() {
-                                    println!(
-                                        "Could not parse \"{value}\" as {:?}",
-                                        proto::v1::DataType::from_i32(metadata.data_type).unwrap()
-                                    );
+                                if datapoint_metadata.is_none() {
+                                    print_info(format!(
+                                        "No metadata available for {path}. Needed to determine data type for serialization."
+                                    ))?;
                                     continue;
                                 }
 
@@ -352,44 +414,138 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     continue;
                                 }
 
-                                let ts = Timestamp::from(SystemTime::now());
-                                let datapoints = HashMap::from([(
-                                    metadata.name.clone(),
-                                    proto::v1::Datapoint {
-                                        timestamp: Some(ts),
-                                        value: Some(data_value.unwrap()),
-                                    },
-                                )]);
+                                    if metadata.entry_type != root::proto::v1::EntryType::Actuator.into() {
+                                        print_error(
+                                            cmd,
+                                            format!("{} is not an actuator.", metadata.name),
+                                        )?;
+                                        print_info(
+                                            "If you want to provide the signal value, use `feed`.",
+                                        )?;
+                                        continue;
+                                    }
 
-                                match client.set_datapoints(datapoints).await {
-                                    Ok(message) => {
-                                        if message.errors.is_empty() {
-                                            print_resp_ok(cmd)?;
-                                        } else {
-                                            for (id, error) in message.errors {
-                                                match proto::v1::DatapointError::from_i32(error) {
-                                                    Some(error) => {
-                                                        print_resp_ok(cmd)?;
-                                                        println!(
-                                                            "Error setting {}: {}",
-                                                            id,
-                                                            Color::Red.paint(format!("{error:?}")),
-                                                        );
+                                    let ts = Timestamp::from(SystemTime::now());
+                                    let datapoints = HashMap::from([(
+                                        metadata.name.clone(),
+                                        root::proto::v1::Datapoint {
+                                            timestamp: Some(ts),
+                                            value: Some(data_value.unwrap()),
+                                        },
+                                    )]);
+                                    
+                                    match client.set_datapoints(datapoints).await {
+                                        Ok(message) => {
+                                            if message.errors.is_empty() {
+                                                print_resp_ok(cmd)?;
+                                            } else {
+                                                for (id, error) in message.errors {
+                                                    match root::proto::v1::DatapointError::from_i32(error) {
+                                                        Some(error) => {
+                                                            print_resp_ok(cmd)?;
+                                                            println!(
+                                                                "Error setting {}: {}",
+                                                                id,
+                                                                Color::Red.paint(format!("{error:?}")),
+                                                            );
+                                                        }
+                                                        None => print_resp_ok_fmt(
+                                                            cmd,
+                                                            format_args!("Error setting id {id}"),
+                                                        )?,
                                                     }
-                                                    None => print_resp_ok_fmt(
-                                                        cmd,
-                                                        format_args!("Error setting id {id}"),
-                                                    )?,
                                                 }
                                             }
                                         }
+                                        Err(common::ClientError::Status(status)) => {
+                                            print_resp_err(cmd, &status)?
+                                        }
+                                        Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
                                     }
-                                    Err(ClientError::Status(status)) => {
-                                        print_resp_err(cmd, &status)?
-                                    }
-                                    Err(ClientError::Connection(msg)) => print_error(cmd, msg)?,
                                 }
                             }
+                            #[cfg(feature = "feature_kuksa")]{
+                                let datapoint_entries = match client.get_metadata(vec![path]).await {
+                                    Ok(data_entries) => Some(data_entries),
+                                    Err(common::ClientError::Status(status)) => {
+                                        print_resp_err("metadata", &status)?;
+                                        None
+                                    }
+                                    Err(common::ClientError::Connection(msg)) => {
+                                        print_error("metadata", msg)?;
+                                        None
+                                    }
+                                };
+    
+                                if let Some(entries) = datapoint_entries {
+                                    for entry in entries{
+                                        if let Some(metadata) = entry.metadata {
+                                            let data_value = try_into_data_value(
+                                                value,
+                                                root::proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
+                                            );
+                                            if data_value.is_err() {
+                                                println!(
+                                                    "Could not parse \"{value}\" as {:?}",
+                                                    root::proto::v1::DataType::from_i32(metadata.data_type).unwrap()
+                                                );
+                                                continue;
+                                            }
+            
+                                            if metadata.entry_type != root::proto::v1::EntryType::Actuator.into() {
+                                                print_error(
+                                                    cmd,
+                                                    format!("{} is not an actuator.", path),
+                                                )?;
+                                                print_info(
+                                                    "If you want to provide the signal value, use `feed`.",
+                                                )?;
+                                                continue;
+                                            }
+            
+                                            let ts = Timestamp::from(SystemTime::now());
+                                            let datapoints = HashMap::from([(
+                                                path.to_string().clone(),
+                                                root::proto::v1::Datapoint {
+                                                    timestamp: Some(ts),
+                                                    value: Some(data_value.unwrap()),
+                                                },
+                                            )]);
+
+                                            match client.set_current_values(datapoints).await {
+                                                Ok(res) => {
+                                                    for message in res {
+                                                        if message.errors.is_empty() {
+                                                            print_resp_ok(cmd)?;
+                                                        } else {
+                                                            for error in message.errors {
+                                                                print_resp_ok(cmd)?;
+                                                                let error_mes = error.error;
+                                                                println!(
+                                                                    "Error setting {}: {}",
+                                                                    error.path,
+                                                                    Color::Red.paint(format!("{error_mes:?}")),
+                                                                );
+                                                            }
+                                                        }
+                                                        match message.error{
+                                                            Some(error) => {print_resp_ok_fmt(
+                                                                cmd,
+                                                                format_args!("Error {error:?}"),
+                                                            )?},
+                                                            None => ()
+                                                        };
+                                                    }
+                                                }
+                                                Err(common::ClientError::Status(status)) => {
+                                                    print_resp_err(cmd, &status)?
+                                                }
+                                                Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
+                                            }
+                                        }
+                                    }
+                                }
+                            }                                
                         }
                         "feed" => {
                             interface.add_history_unique(line.clone());
@@ -401,74 +557,149 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 continue;
                             }
 
-                            let datapoint_metadata = {
-                                let mut datapoint_metadata = None;
-                                for metadata in properties.iter() {
-                                    if metadata.name == path {
-                                        datapoint_metadata = Some(metadata)
+                            #[cfg(feature = "feature_sdv")]{
+                                let datapoint_metadata = {
+                                    let mut datapoint_metadata = None;
+                                    for metadata in properties.iter() {
+                                        if metadata.name == path {
+                                            datapoint_metadata = Some(metadata)
+                                        }
                                     }
-                                }
-                                datapoint_metadata
-                            };
+                                    datapoint_metadata
+                                };
 
-                            if datapoint_metadata.is_none() {
-                                print_info(
-                                    format!("No metadata available for {path}. Needed to determine data type for serialization."),
-                                )?;
-                                continue;
-                            }
-
-                            if let Some(metadata) = datapoint_metadata {
-                                let data_value = try_into_data_value(
-                                    value,
-                                    proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
-                                );
-                                if data_value.is_err() {
-                                    println!(
-                                        "Could not parse \"{}\" as {:?}",
-                                        value,
-                                        proto::v1::DataType::from_i32(metadata.data_type).unwrap()
-                                    );
+                                if datapoint_metadata.is_none() {
+                                    print_info(
+                                        format!("No metadata available for {path}. Needed to determine data type for serialization."),
+                                    )?;
                                     continue;
                                 }
-                                let ts = Timestamp::from(SystemTime::now());
-                                let datapoints = HashMap::from([(
-                                    metadata.id,
-                                    proto::v1::Datapoint {
-                                        timestamp: Some(ts),
-                                        value: Some(data_value.unwrap()),
-                                    },
-                                )]);
-                                match client.update_datapoints(datapoints).await {
-                                    Ok(message) => {
-                                        if message.errors.is_empty() {
-                                            print_resp_ok(cmd)?
-                                        } else {
-                                            for (id, error) in message.errors {
-                                                let identifier = if id == metadata.id {
-                                                    metadata.name.to_string()
-                                                } else {
-                                                    format!("id {id}")
-                                                };
-                                                match proto::v1::DatapointError::from_i32(error) {
-                                                    Some(error) => print_resp_ok_fmt(
-                                                        cmd,
-                                                        format_args!(
-                                                            "Error providing {identifier}: {error:?}",
-                                                        ),
-                                                    )?,
-                                                    None => print_resp_ok_fmt(
-                                                        cmd,
-                                                        format_args!("Error providing {identifier}",),
-                                                    )?,
+
+                                if let Some(metadata) = datapoint_metadata {
+                                    let data_value = try_into_data_value(
+                                        value,
+                                        root::proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
+                                    );
+                                    if data_value.is_err() {
+                                        println!(
+                                            "Could not parse \"{}\" as {:?}",
+                                            value,
+                                            root::proto::v1::DataType::from_i32(metadata.data_type).unwrap()
+                                        );
+                                        continue;
+                                    }
+                                    let ts = Timestamp::from(SystemTime::now());
+                                    let datapoints = HashMap::from([(
+                                        metadata.id,
+                                        root::proto::v1::Datapoint {
+                                            timestamp: Some(ts),
+                                            value: Some(data_value.unwrap()),
+                                        },
+                                    )]);
+
+                                
+                                    match client.update_datapoints(datapoints).await {
+                                        Ok(message) => {
+                                            if message.errors.is_empty() {
+                                                print_resp_ok(cmd)?
+                                            } else {
+                                                for (id, error) in message.errors {
+                                                    let identifier = if id == metadata.id {
+                                                        metadata.name.to_string()
+                                                    } else {
+                                                        format!("id {id}")
+                                                    };
+                                                    match root::proto::v1::DatapointError::from_i32(error) {
+                                                        Some(error) => print_resp_ok_fmt(
+                                                            cmd,
+                                                            format_args!(
+                                                                "Error providing {identifier}: {error:?}",
+                                                            ),
+                                                        )?,
+                                                        None => print_resp_ok_fmt(
+                                                            cmd,
+                                                            format_args!("Error providing {identifier}",),
+                                                        )?,
+                                                    }
                                                 }
                                             }
                                         }
+                                        Err(common::ClientError::Status(status)) => {
+                                            print_resp_err(cmd, &status)?
+                                        }
+                                        Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
                                     }
-                                    Err(ClientError::Status(status)) => {
-                                        print_resp_err(cmd, &status)?
+                                }
+                            }
+                            #[cfg(feature = "feature_kuksa")]{
+                                let datapoint_entries = match client.get_metadata(vec![path]).await {
+                                    Ok(data_entries) => Some(data_entries),
+                                    Err(common::ClientError::Status(status)) => {
+                                        print_resp_err("metadata", &status)?;
+                                        None
                                     }
-                                    Err(ClientError::Connection(msg)) => print_error(cmd, msg)?,
+                                    Err(common::ClientError::Connection(msg)) => {
+                                        print_error("metadata", msg)?;
+                                        None
+                                    }
+                                };
+    
+                                if let Some(entries) = datapoint_entries {
+                                    for entry in entries{
+                                        if let Some(metadata) = entry.metadata {
+                                            let data_value = try_into_data_value(
+                                                value,
+                                                root::proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
+                                            );
+                                            if data_value.is_err() {
+                                                println!(
+                                                    "Could not parse \"{}\" as {:?}",
+                                                    value,
+                                                    root::proto::v1::DataType::from_i32(metadata.data_type).unwrap()
+                                                );
+                                                continue;
+                                            }
+                                            let ts = Timestamp::from(SystemTime::now());
+                                            let datapoints = HashMap::from([(
+                                                path.to_string().clone(),
+                                                root::proto::v1::Datapoint {
+                                                    timestamp: Some(ts),
+                                                    value: Some(data_value.unwrap()),
+                                                },
+                                            )]);
+
+                                            match client.set_current_values(datapoints).await {
+                                                Ok(res) => {
+                                                    for message in res {
+                                                        if message.errors.is_empty() {
+                                                            print_resp_ok(cmd)?;
+                                                        } else {
+                                                            for error in message.errors {
+                                                                print_resp_ok(cmd)?;
+                                                                let error_mes = error.error;
+                                                                println!(
+                                                                    "Error setting {}: {}",
+                                                                    error.path,
+                                                                    Color::Red.paint(format!("{error_mes:?}")),
+                                                                );
+                                                            }
+                                                        }
+                                                        match message.error{
+                                                            Some(error) => {print_resp_ok_fmt(
+                                                                cmd,
+                                                                format_args!("Error {error:?}"),
+                                                            )?},
+                                                            None => ()
+                                                        };
+                                                    }
+                                                }
+                                                Err(common::ClientError::Status(status)) => {
+                                                    print_resp_err(cmd, &status)?
+                                                }
+                                                Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -479,10 +710,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 print_usage(cmd);
                                 continue;
                             }
+                            
+                            let mut input;
 
-                            let query = args.to_owned();
+                            #[cfg(feature = "feature_sdv")]{
+                                input = args.to_owned();
+                            }
+                            #[cfg(feature = "feature_kuksa")]{
+                                input = args.split_whitespace().collect::<Vec<_>>();
+                            }
 
-                            match client.subscribe(query).await {
+                            match client.subscribe(input).await {
                                 Ok(mut subscription) => {
                                     let iface = interface.clone();
                                     tokio::spawn(async move {
@@ -500,32 +738,66 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                         use std::fmt::Write;
                                                         let mut output = String::new();
                                                         let mut first_line = true;
-                                                        for (name, value) in resp.fields {
-                                                            if first_line {
-                                                                first_line = false;
-                                                                write!(
+                                                        #[cfg(feature = "feature_sdv")]{
+                                                            for (name, value) in resp.fields {
+                                                                if first_line {
+                                                                    first_line = false;
+                                                                    write!(
+                                                                        output,
+                                                                        "{} ",
+                                                                        &sub_disp_color,
+                                                                    )
+                                                                    .unwrap();
+                                                                } else {
+                                                                    write!(
+                                                                        output,
+                                                                        "{} ",
+                                                                        &sub_disp_pad,
+                                                                    )
+                                                                    .unwrap();
+                                                                }
+                                                                writeln!(
                                                                     output,
-                                                                    "{} ",
-                                                                    &sub_disp_color,
-                                                                )
-                                                                .unwrap();
-                                                            } else {
-                                                                write!(
-                                                                    output,
-                                                                    "{} ",
-                                                                    &sub_disp_pad,
+                                                                    "{}: {}",
+                                                                    name,
+                                                                    DisplayDatapoint(value)
                                                                 )
                                                                 .unwrap();
                                                             }
-                                                            writeln!(
-                                                                output,
-                                                                "{}: {}",
-                                                                name,
-                                                                DisplayDatapoint(value)
-                                                            )
-                                                            .unwrap();
+                                                            write!(iface, "{output}").unwrap();
                                                         }
-                                                        write!(iface, "{output}").unwrap();
+                                                        #[cfg(feature = "feature_kuksa")]{
+                                                            for update in resp.updates {
+                                                                if first_line {
+                                                                    first_line = false;
+                                                                    write!(
+                                                                        output,
+                                                                        "{} ",
+                                                                        &sub_disp_color,
+                                                                    )
+                                                                    .unwrap();
+                                                                } else {
+                                                                    write!(
+                                                                        output,
+                                                                        "{} ",
+                                                                        &sub_disp_pad,
+                                                                    )
+                                                                    .unwrap();
+                                                                }
+                                                                if let Some(entry) = update.entry{
+                                                                    if let Some(value) = entry.value{
+                                                                        writeln!(
+                                                                            output,
+                                                                            "{}: {}",
+                                                                            entry.path,
+                                                                            DisplayDatapoint(value)
+                                                                        )
+                                                                        .unwrap();
+                                                                    }
+                                                                }
+                                                            }
+                                                            write!(iface, "{output}").unwrap();
+                                                        }
                                                     } else {
                                                         writeln!(
                                                             iface,
@@ -562,19 +834,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             )?;
                                     subscription_nbr += 1;
                                 }
-                                Err(ClientError::Status(status)) => print_resp_err(cmd, &status)?,
-                                Err(ClientError::Connection(msg)) => print_error(cmd, msg)?,
+                                Err(common::ClientError::Status(status)) => print_resp_err(cmd, &status)?,
+                                Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
                             }
                         }
                         "connect" => {
                             interface.add_history_unique(line.clone());
-                            if !client.is_connected() || !args.is_empty() {
+                            if !client.basic_client.is_connected() || !args.is_empty() {
                                 if args.is_empty() {
-                                    match client.try_connect().await {
+                                    match client.basic_client.try_connect().await {
                                         Ok(()) => {
                                             print_info(format!(
                                                 "[{cmd}] Successfully connected to {}",
-                                                client.get_uri()
+                                                client.basic_client.get_uri()
                                             ))?;
                                         }
                                         Err(err) => {
@@ -584,11 +856,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 } else {
                                     match to_uri(args) {
                                         Ok(valid_uri) => {
-                                            match client.try_connect_to(valid_uri).await {
+                                            match client.basic_client.try_connect_to(valid_uri).await {
                                                 Ok(()) => {
                                                     print_info(format!(
                                                         "[{cmd}] Successfully connected to {}",
-                                                        client.get_uri()
+                                                        client.basic_client.get_uri()
                                                     ))?;
                                                 }
                                                 Err(err) => {
@@ -604,7 +876,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         }
                                     }
                                 };
-                                if client.is_connected() {
+                                if client.basic_client.is_connected() {
                                     match client.get_metadata(vec![]).await {
                                         Ok(metadata) => {
                                             interface.set_completer(Arc::new(
@@ -612,10 +884,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             ));
                                             properties = metadata;
                                         }
-                                        Err(ClientError::Status(status)) => {
+                                        Err(common::ClientError::Status(status)) => {
                                             print_resp_err("metadata", &status)?;
                                         }
-                                        Err(ClientError::Connection(msg)) => {
+                                        Err(common::ClientError::Connection(msg)) => {
                                             print_error("metadata", msg)?;
                                         }
                                     }
@@ -626,70 +898,127 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             interface.add_history_unique(line.clone());
 
                             let paths = args.split_whitespace().collect::<Vec<_>>();
-                            match client.get_metadata(vec![]).await {
-                                Ok(mut metadata) => {
-                                    metadata.sort_by(|a, b| a.name.cmp(&b.name));
-                                    properties = metadata;
-                                    interface.set_completer(Arc::new(CliCompleter::from_metadata(
-                                        &properties,
-                                    )));
-                                    print_resp_ok(cmd)?;
+                            
+                            #[cfg(feature = "feature_sdv")]{
+                                match client.get_metadata(vec![]).await {
+                                    Ok(mut metadata) => {
+                                        metadata.sort_by(|a, b| a.name.cmp(&b.name));
+                                        properties = metadata;
+                                        interface.set_completer(Arc::new(CliCompleter::from_metadata(
+                                            &properties,
+                                        )));
+                                        print_resp_ok(cmd)?;
+                                    }
+                                    Err(common::ClientError::Status(status)) => {
+                                        print_resp_err(cmd, &status)?;
+                                        continue;
+                                    }
+                                    Err(common::ClientError::Connection(msg)) => {
+                                        print_error(cmd, msg)?;
+                                        continue;
+                                    }
                                 }
-                                Err(ClientError::Status(status)) => {
-                                    print_resp_err(cmd, &status)?;
-                                    continue;
+                                let mut filtered_metadata = Vec::new();
+                                if paths.is_empty() {
+                                    print_info("If you want to list metadata of signals, use `metadata PATTERN`")?;
+                                    // filtered_metadata.extend(&properties);
+                                } else {
+                                    for path in &paths {
+                                        let path_re = path_to_regex(path);
+                                        let filtered =
+                                            properties.iter().filter(|item| match &path_re {
+                                                Ok(re) => re.is_match(&item.name),
+                                                Err(err) => {
+                                                    print_info(format!("Invalid path: {err}"))
+                                                        .unwrap_or_default();
+                                                    false
+                                                }
+                                            });
+                                        filtered_metadata.extend(filtered);
+                                    }
                                 }
-                                Err(ClientError::Connection(msg)) => {
-                                    print_error(cmd, msg)?;
-                                    continue;
-                                }
-                            }
-                            let mut filtered_metadata = Vec::new();
-                            if paths.is_empty() {
-                                print_info("If you want to list metadata of signals, use `metadata PATTERN`")?;
-                                // filtered_metadata.extend(&properties);
-                            } else {
-                                for path in &paths {
-                                    let path_re = path_to_regex(path);
-                                    let filtered =
-                                        properties.iter().filter(|item| match &path_re {
-                                            Ok(re) => re.is_match(&item.name),
-                                            Err(err) => {
-                                                print_info(format!("Invalid path: {err}"))
-                                                    .unwrap_or_default();
-                                                false
+
+                                if !filtered_metadata.is_empty() {
+                                    let max_len_path =
+                                        filtered_metadata.iter().fold(0, |mut max_len, item| {
+                                            if item.name.len() > max_len {
+                                                max_len = item.name.len();
                                             }
+                                            max_len
                                         });
-                                    filtered_metadata.extend(filtered);
+
+                                    print_info(format!(
+                                        "{:<max_len_path$} {:<10} {:<9}",
+                                        "Path", "Entry type", "Data type"
+                                    ))?;
+
+                                    for entry in &filtered_metadata {
+                                        println!(
+                                            "{:<max_len_path$} {:<10} {:<9}",
+                                            entry.name,
+                                            DisplayEntryType::from(root::proto::v1::EntryType::from_i32(
+                                                entry.entry_type
+                                            )),
+                                            DisplayDataType::from(root::proto::v1::DataType::from_i32(
+                                                entry.data_type
+                                            )),
+                                        );
+                                    }
                                 }
                             }
+                            #[cfg(feature = "feature_kuksa")]{
+                                if paths.is_empty() {
+                                    print_info("If you want to list metadata of signals, use `metadata PATTERN`")?;
+                                } else {
+                                    match client.get_metadata(paths).await {
+                                        Ok(metadata) => {
+                                            print_resp_ok(cmd)?;
+                                            if !metadata.is_empty() {
+                                                let max_len_path =
+                                                    metadata.iter().fold(0, |mut max_len, item| {
+                                                        if item.path.len() > max_len {
+                                                            max_len = item.path.len();
+                                                        }
+                                                        max_len
+                                                    });
 
-                            if !filtered_metadata.is_empty() {
-                                let max_len_path =
-                                    filtered_metadata.iter().fold(0, |mut max_len, item| {
-                                        if item.name.len() > max_len {
-                                            max_len = item.name.len();
+                                                print_info(format!(
+                                                    "{:<max_len_path$} {:<10} {:<9}",
+                                                    "Path", "Entry type", "Data type"
+                                                ))?;
+
+                                                for entry in &metadata {
+                                                    if let Some(entry_metadata) = &entry.metadata {
+                                                        println!(
+                                                            "{:<max_len_path$} {:<10} {:<9}",
+                                                            entry.path,
+                                                            DisplayEntryType::from(root::proto::v1::EntryType::from_i32(
+                                                                entry_metadata.entry_type
+                                                            )),
+                                                            DisplayDataType::from(root::proto::v1::DataType::from_i32(
+                                                                entry_metadata.data_type
+                                                            )),
+                                                        );
+                                                    } else {
+                                                        let name = entry.path.clone();
+                                                        println!(
+                                                            "No entry metadata for {name}"
+                                                        );
+                                                    }
+                                                }
+                                            }
                                         }
-                                        max_len
-                                    });
+                                        Err(common::ClientError::Status(status)) => {
+                                            print_resp_err(cmd, &status)?;
+                                            continue;
+                                        }
+                                        Err(common::ClientError::Connection(msg)) => {
+                                            print_error(cmd, msg)?;
+                                            continue;
+                                        }
 
-                                print_info(format!(
-                                    "{:<max_len_path$} {:<10} {:<9}",
-                                    "Path", "Entry type", "Data type"
-                                ))?;
-
-                                for entry in &filtered_metadata {
-                                    println!(
-                                        "{:<max_len_path$} {:<10} {:<9}",
-                                        entry.name,
-                                        DisplayEntryType::from(proto::v1::EntryType::from_i32(
-                                            entry.entry_type
-                                        )),
-                                        DisplayDataType::from(proto::v1::DataType::from_i32(
-                                            entry.data_type
-                                        )),
-                                    );
-                                }
+                                    }
+                                }  
                             }
                         }
                         "quit" | "exit" => {
@@ -873,30 +1202,56 @@ impl CliCompleter {
         }
     }
 
-    fn from_metadata(metadata: &[proto::v1::Metadata]) -> CliCompleter {
-        let mut root = PathPart::new();
-        for entry in metadata {
-            let mut parent = &mut root;
-            let parts = entry.name.split('.');
-            for part in parts {
-                let full_path = match parent.full_path.as_str() {
-                    "" => part.to_owned(),
-                    _ => format!("{}.{}", parent.full_path, part),
-                };
-                let entry = parent
-                    .children
-                    .entry(part.to_lowercase())
-                    .or_insert(PathPart {
-                        rel_path: part.to_owned(),
-                        full_path,
-                        children: HashMap::new(),
-                    });
+    #[cfg(feature = "feature_sdv")]
+        fn from_metadata(metadata: &[root::proto::v1::Metadata]) -> CliCompleter {
+            let mut root = PathPart::new();
+            for entry in metadata {
+                let mut parent = &mut root;
+                let parts = entry.name.split('.');
+                for part in parts {
+                    let full_path = match parent.full_path.as_str() {
+                        "" => part.to_owned(),
+                        _ => format!("{}.{}", parent.full_path, part),
+                    };
+                    let entry = parent
+                        .children
+                        .entry(part.to_lowercase())
+                        .or_insert(PathPart {
+                            rel_path: part.to_owned(),
+                            full_path,
+                            children: HashMap::new(),
+                        });
 
-                parent = entry;
+                    parent = entry;
+                }
             }
+            CliCompleter { paths: root }
         }
-        CliCompleter { paths: root }
-    }
+    #[cfg(feature = "feature_kuksa")]
+        fn from_metadata(entries: &Vec<root::proto::v1::DataEntry>) -> CliCompleter {
+            let mut root = PathPart::new();
+            for entry in entries {
+                let mut parent = &mut root;
+                let parts = entry.path.split('.');
+                for part in parts {
+                    let full_path = match parent.full_path.as_str() {
+                        "" => part.to_owned(),
+                        _ => format!("{}.{}", parent.full_path, part),
+                    };
+                    let entry = parent
+                        .children
+                        .entry(part.to_lowercase())
+                        .or_insert(PathPart {
+                            rel_path: part.to_owned(),
+                            full_path,
+                            children: HashMap::new(),
+                        });
+    
+                    parent = entry;
+                }
+            }
+            CliCompleter { paths: root }
+        }
 
     fn complete_entry_path(&self, word: &str) -> Option<Vec<Completion>> {
         if !self.paths.children.is_empty() {
@@ -1173,10 +1528,11 @@ impl<Term: Terminal> Function<Term> for EnterFunction {
     }
 }
 
-struct DisplayDataType(Option<proto::v1::DataType>);
-struct DisplayEntryType(Option<proto::v1::EntryType>);
-struct DisplayChangeType(Option<proto::v1::ChangeType>);
-struct DisplayDatapoint(proto::v1::Datapoint);
+struct DisplayDataType(Option<root::proto::v1::DataType>);
+struct DisplayEntryType(Option<root::proto::v1::EntryType>);
+// !!! ChangeType currently just exists in old API needs to be removed or added later !!!
+struct DisplayChangeType(Option<databroker_proto::sdv::databroker::v1::ChangeType>);
+struct DisplayDatapoint(root::proto::v1::Datapoint);
 
 fn display_array<T>(f: &mut fmt::Formatter<'_>, array: &[T]) -> fmt::Result
 where
@@ -1195,36 +1551,61 @@ where
 
 impl fmt::Display for DisplayDatapoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.0.value {
-            Some(value) => match value {
-                proto::v1::datapoint::Value::BoolValue(value) => f.pad(&format!("{value}")),
-                proto::v1::datapoint::Value::FailureValue(failure) => f.pad(&format!(
-                    "( {:?} )",
-                    proto::v1::datapoint::Failure::from_i32(*failure).unwrap()
-                )),
-                proto::v1::datapoint::Value::Int32Value(value) => f.pad(&format!("{value}")),
-                proto::v1::datapoint::Value::Int64Value(value) => f.pad(&format!("{value}")),
-                proto::v1::datapoint::Value::Uint32Value(value) => f.pad(&format!("{value}")),
-                proto::v1::datapoint::Value::Uint64Value(value) => f.pad(&format!("{value}")),
-                proto::v1::datapoint::Value::FloatValue(value) => f.pad(&format!("{value:.2}")),
-                proto::v1::datapoint::Value::DoubleValue(value) => f.pad(&format!("{value}")),
-                proto::v1::datapoint::Value::StringValue(value) => f.pad(&format!("'{value}'")),
-                proto::v1::datapoint::Value::StringArray(array) => display_array(f, &array.values),
-                proto::v1::datapoint::Value::BoolArray(array) => display_array(f, &array.values),
-                proto::v1::datapoint::Value::Int32Array(array) => display_array(f, &array.values),
-                proto::v1::datapoint::Value::Int64Array(array) => display_array(f, &array.values),
-                proto::v1::datapoint::Value::Uint32Array(array) => display_array(f, &array.values),
-                proto::v1::datapoint::Value::Uint64Array(array) => display_array(f, &array.values),
-                proto::v1::datapoint::Value::FloatArray(array) => display_array(f, &array.values),
-                proto::v1::datapoint::Value::DoubleArray(array) => display_array(f, &array.values),
-            },
-            None => f.pad("None"),
+        #[cfg(feature = "feature_sdv")]{
+            match &self.0.value {
+                Some(value) => match value {
+                    root::proto::v1::datapoint::Value::BoolValue(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::FailureValue(failure) => f.pad(&format!(
+                        "( {:?} )",
+                        root::proto::v1::datapoint::Failure::from_i32(*failure).unwrap()
+                    )),
+                    root::proto::v1::datapoint::Value::Int32Value(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::Int64Value(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::Uint32Value(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::Uint64Value(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::FloatValue(value) => f.pad(&format!("{value:.2}")),
+                    root::proto::v1::datapoint::Value::DoubleValue(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::StringValue(value) => f.pad(&format!("'{value}'")),
+                    root::proto::v1::datapoint::Value::StringArray(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::BoolArray(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::Int32Array(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::Int64Array(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::Uint32Array(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::Uint64Array(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::FloatArray(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::DoubleArray(array) => display_array(f, &array.values),
+                },
+                None => f.pad("None"),
+            }
+        }
+        #[cfg(feature = "feature_kuksa")]{
+            match &self.0.value {
+                Some(value) => match value {
+                    root::proto::v1::datapoint::Value::Bool(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::Int32(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::Int64(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::Uint32(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::Uint64(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::Float(value) => f.pad(&format!("{value:.2}")),
+                    root::proto::v1::datapoint::Value::Double(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::String(value) => f.pad(&format!("'{value}'")),
+                    root::proto::v1::datapoint::Value::StringArray(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::BoolArray(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::Int32Array(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::Int64Array(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::Uint32Array(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::Uint64Array(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::FloatArray(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::DoubleArray(array) => display_array(f, &array.values),
+                },
+                None => f.pad("None"),
+            }
         }
     }
 }
 
-impl From<Option<proto::v1::EntryType>> for DisplayEntryType {
-    fn from(input: Option<proto::v1::EntryType>) -> Self {
+impl From<Option<root::proto::v1::EntryType>> for DisplayEntryType {
+    fn from(input: Option<root::proto::v1::EntryType>) -> Self {
         DisplayEntryType(input)
     }
 }
@@ -1238,8 +1619,8 @@ impl fmt::Display for DisplayEntryType {
     }
 }
 
-impl From<Option<proto::v1::DataType>> for DisplayDataType {
-    fn from(input: Option<proto::v1::DataType>) -> Self {
+impl From<Option<root::proto::v1::DataType>> for DisplayDataType {
+    fn from(input: Option<root::proto::v1::DataType>) -> Self {
         DisplayDataType(input)
     }
 }
@@ -1253,8 +1634,8 @@ impl fmt::Display for DisplayDataType {
     }
 }
 
-impl From<Option<proto::v1::ChangeType>> for DisplayChangeType {
-    fn from(input: Option<proto::v1::ChangeType>) -> Self {
+impl From<Option<databroker_proto::sdv::databroker::v1::ChangeType>> for DisplayChangeType {
+    fn from(input: Option<databroker_proto::sdv::databroker::v1::ChangeType>) -> Self {
         DisplayChangeType(input)
     }
 }
@@ -1306,17 +1687,143 @@ fn get_array_from_input<T: std::str::FromStr>(values: String) -> Result<Vec<T>, 
 
 fn try_into_data_value(
     input: &str,
-    data_type: proto::v1::DataType,
-) -> Result<proto::v1::datapoint::Value, ParseError> {
+    data_type: root::proto::v1::DataType,
+) -> Result<root::proto::v1::datapoint::Value, ParseError> {
     if input == "NotAvailable" {
-        return Ok(proto::v1::datapoint::Value::FailureValue(
-            proto::v1::datapoint::Failure::NotAvailable as i32,
-        ));
+        #[cfg(feature = "feature_sdv")]{
+            return Ok(root::proto::v1::datapoint::Value::FailureValue(
+                root::proto::v1::datapoint::Failure::NotAvailable as i32,
+            ));
+        }
+        #[cfg(feature = "feature_kuksa")]{
+            return Ok(root::proto::v1::datapoint::Value::String(
+                input.to_string(),
+            ));
+        }
     }
 
-    match data_type {
-        proto::v1::DataType::String => {
-            Ok(proto::v1::datapoint::Value::StringValue(input.to_owned()))
+    #[cfg(feature = "feature_sdv")]{
+        match data_type {
+            root::proto::v1::DataType::String => {
+                Ok(root::proto::v1::datapoint::Value::StringValue(input.to_owned()))
+            }
+            root::proto::v1::DataType::StringArray => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::StringArray(
+                    root::proto::v1::StringArray { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Bool => match input.parse::<bool>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::BoolValue(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::BoolArray => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::BoolArray(
+                    root::proto::v1::BoolArray { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Int8 => match input.parse::<i8>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32Value(value as i32)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Int8Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32Array(
+                    root::proto::v1::Int32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Int16 => match input.parse::<i16>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32Value(value as i32)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Int16Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32Array(
+                    root::proto::v1::Int32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Int32 => match input.parse::<i32>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32Value(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Int32Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32Array(
+                    root::proto::v1::Int32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Int64 => match input.parse::<i64>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int64Value(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Int64Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int64Array(
+                    root::proto::v1::Int64Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Uint8 => match input.parse::<u8>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Value(value as u32)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Uint8Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
+                    root::proto::v1::Uint32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Uint16 => match input.parse::<u16>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Value(value as u32)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Uint16Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
+                    root::proto::v1::Uint32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Uint32 => match input.parse::<u32>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Value(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Uint32Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
+                    root::proto::v1::Uint32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Uint64 => match input.parse::<u64>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint64Value(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Uint64Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint64Array(
+                    root::proto::v1::Uint64Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Float => match input.parse::<f32>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::FloatValue(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::FloatArray => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::FloatArray(
+                    root::proto::v1::FloatArray { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Double => match input.parse::<f64>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::DoubleValue(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::DoubleArray => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::DoubleArray(
+                    root::proto::v1::DoubleArray { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            _ => Err(ParseError {}),
         }
         proto::v1::DataType::StringArray => match get_array_from_input(input.to_owned()) {
             Ok(value) => Ok(proto::v1::datapoint::Value::StringArray(
@@ -1435,6 +1942,131 @@ fn try_into_data_value(
             Err(err) => Err(err),
         },
     }
+    #[cfg(feature = "feature_kuksa")]{
+        match data_type {
+            root::proto::v1::DataType::String => {
+                Ok(root::proto::v1::datapoint::Value::String(input.to_owned()))
+            }
+            root::proto::v1::DataType::StringArray => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::StringArray(
+                    root::proto::v1::StringArray { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Boolean => match input.parse::<bool>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Bool(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::BooleanArray => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::BoolArray(
+                    root::proto::v1::BoolArray { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Int8 => match input.parse::<i8>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32(value as i32)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Int8Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32Array(
+                    root::proto::v1::Int32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Int16 => match input.parse::<i16>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32(value as i32)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Int16Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32Array(
+                    root::proto::v1::Int32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Int32 => match input.parse::<i32>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Int32Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int32Array(
+                    root::proto::v1::Int32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Int64 => match input.parse::<i64>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int64(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Int64Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Int64Array(
+                    root::proto::v1::Int64Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Uint8 => match input.parse::<u8>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32(value as u32)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Uint8Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
+                    root::proto::v1::Uint32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Uint16 => match input.parse::<u16>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32(value as u32)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Uint16Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
+                    root::proto::v1::Uint32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Uint32 => match input.parse::<u32>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Uint32Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
+                    root::proto::v1::Uint32Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Uint64 => match input.parse::<u64>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint64(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::Uint64Array => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint64Array(
+                    root::proto::v1::Uint64Array { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Float => match input.parse::<f32>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Float(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::FloatArray => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::FloatArray(
+                    root::proto::v1::FloatArray { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            root::proto::v1::DataType::Double => match input.parse::<f64>() {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::Double(value)),
+                Err(_) => Err(ParseError {}),
+            },
+            root::proto::v1::DataType::DoubleArray => match get_array_from_input(input.to_owned()) {
+                Ok(value) => Ok(root::proto::v1::datapoint::Value::DoubleArray(
+                    root::proto::v1::DoubleArray { values: value },
+                )),
+                Err(err) => Err(err),
+            },
+            _ => Err(ParseError {}),
+        }
+    }
+    
 }
 
 #[cfg(test)]
@@ -1444,100 +2076,215 @@ mod test {
 
     #[test]
     fn test_parse_values() {
-        // String
-        assert!(matches!(
-            try_into_data_value("test", proto::v1::DataType::String),
-            Ok(proto::v1::datapoint::Value::StringValue(value)) if value == "test"
-        ));
+        #[cfg(feature = "feature_sdv")]{
+            // String
+            assert!(matches!(
+                try_into_data_value("test", root::proto::v1::DataType::String),
+                Ok(root::proto::v1::datapoint::Value::StringValue(value)) if value == "test"
+            ));
 
-        // StringArray
-        assert!(matches!(
-            try_into_data_value("[test, test2, test4]", proto::v1::DataType::StringArray),
-            Ok(proto::v1::datapoint::Value::StringArray(value)) if value == databroker_proto::sdv::databroker::v1::StringArray{values: vec!["test".to_string(), "test2".to_string(), "test4".to_string()]}
-        ));
+            // StringArray
+            assert!(matches!(
+                try_into_data_value("[test, test2, test4]", root::proto::v1::DataType::StringArray),
+                Ok(root::proto::v1::datapoint::Value::StringArray(value)) if value == root::proto::v1::StringArray{values: vec!["test".to_string(), "test2".to_string(), "test4".to_string()]}
+            ));
 
-        // Bool
-        assert!(matches!(
-            try_into_data_value("true", proto::v1::DataType::Bool),
-            Ok(proto::v1::datapoint::Value::BoolValue(value)) if value
-        ));
+            // Bool
+            assert!(matches!(
+                try_into_data_value("true", root::proto::v1::DataType::Bool),
+                Ok(root::proto::v1::datapoint::Value::BoolValue(value)) if value
+            ));
 
-        assert!(matches!(
-            try_into_data_value("false", proto::v1::DataType::Bool),
-            Ok(proto::v1::datapoint::Value::BoolValue(value)) if !value
-        ));
-        assert!(try_into_data_value("truefalse", proto::v1::DataType::Bool).is_err());
-        // BoolArray
-        assert!(matches!(
-            try_into_data_value("[true, false, true]", proto::v1::DataType::BoolArray),
-            Ok(proto::v1::datapoint::Value::BoolArray(value)) if value == databroker_proto::sdv::databroker::v1::BoolArray{values: vec![true, false, true]}
-        ));
+            assert!(matches!(
+                try_into_data_value("false", root::proto::v1::DataType::Bool),
+                Ok(root::proto::v1::datapoint::Value::BoolValue(value)) if !value
+            ));
+            assert!(try_into_data_value("truefalse", root::proto::v1::DataType::Bool).is_err());
+            // BoolArray
+            assert!(matches!(
+                try_into_data_value("[true, false, true]", root::proto::v1::DataType::BoolArray),
+                Ok(root::proto::v1::datapoint::Value::BoolArray(value)) if value == root::proto::v1::BoolArray{values: vec![true, false, true]}
+            ));
 
-        // Int8
-        assert!(matches!(
-            try_into_data_value("100", proto::v1::DataType::Int8),
-            Ok(proto::v1::datapoint::Value::Int32Value(value)) if value == 100
-        ));
-        assert!(matches!(
-            try_into_data_value("-100", proto::v1::DataType::Int8),
-            Ok(proto::v1::datapoint::Value::Int32Value(value)) if value == -100
-        ));
-        assert!(try_into_data_value("300", proto::v1::DataType::Int8).is_err());
-        assert!(try_into_data_value("-300", proto::v1::DataType::Int8).is_err());
-        assert!(try_into_data_value("-100.1", proto::v1::DataType::Int8).is_err());
+            // Int8
+            assert!(matches!(
+                try_into_data_value("100", root::proto::v1::DataType::Int8),
+                Ok(root::proto::v1::datapoint::Value::Int32Value(value)) if value == 100
+            ));
+            assert!(matches!(
+                try_into_data_value("-100", root::proto::v1::DataType::Int8),
+                Ok(root::proto::v1::datapoint::Value::Int32Value(value)) if value == -100
+            ));
+            assert!(try_into_data_value("300", root::proto::v1::DataType::Int8).is_err());
+            assert!(try_into_data_value("-300", root::proto::v1::DataType::Int8).is_err());
+            assert!(try_into_data_value("-100.1", root::proto::v1::DataType::Int8).is_err());
 
-        // Int16
-        assert!(matches!(
-            try_into_data_value("100", proto::v1::DataType::Int16),
-            Ok(proto::v1::datapoint::Value::Int32Value(value)) if value == 100
-        ));
-        assert!(matches!(
-            try_into_data_value("-100", proto::v1::DataType::Int16),
-            Ok(proto::v1::datapoint::Value::Int32Value(value)) if value == -100
-        ));
-        assert!(matches!(
-            try_into_data_value("32000", proto::v1::DataType::Int16),
-            Ok(proto::v1::datapoint::Value::Int32Value(value)) if value == 32000
-        ));
-        assert!(matches!(
-            try_into_data_value("-32000", proto::v1::DataType::Int16),
-            Ok(proto::v1::datapoint::Value::Int32Value(value)) if value == -32000
-        ));
-        assert!(try_into_data_value("33000", proto::v1::DataType::Int16).is_err());
-        assert!(try_into_data_value("-33000", proto::v1::DataType::Int16).is_err());
-        assert!(try_into_data_value("-32000.1", proto::v1::DataType::Int16).is_err());
+            // Int16
+            assert!(matches!(
+                try_into_data_value("100", root::proto::v1::DataType::Int16),
+                Ok(root::proto::v1::datapoint::Value::Int32Value(value)) if value == 100
+            ));
+            assert!(matches!(
+                try_into_data_value("-100", root::proto::v1::DataType::Int16),
+                Ok(root::proto::v1::datapoint::Value::Int32Value(value)) if value == -100
+            ));
+            assert!(matches!(
+                try_into_data_value("32000", root::proto::v1::DataType::Int16),
+                Ok(root::proto::v1::datapoint::Value::Int32Value(value)) if value == 32000
+            ));
+            assert!(matches!(
+                try_into_data_value("-32000", root::proto::v1::DataType::Int16),
+                Ok(root::proto::v1::datapoint::Value::Int32Value(value)) if value == -32000
+            ));
+            assert!(try_into_data_value("33000", root::proto::v1::DataType::Int16).is_err());
+            assert!(try_into_data_value("-33000", root::proto::v1::DataType::Int16).is_err());
+            assert!(try_into_data_value("-32000.1", root::proto::v1::DataType::Int16).is_err());
+        }
+        #[cfg(feature = "feature_kuksa")]{
+            // String
+            assert!(matches!(
+                try_into_data_value("test", root::proto::v1::DataType::String),
+                Ok(root::proto::v1::datapoint::Value::String(value)) if value == "test"
+            ));
+
+            // StringArray
+            assert!(matches!(
+                try_into_data_value("[test, test2, test4]", root::proto::v1::DataType::StringArray),
+                Ok(root::proto::v1::datapoint::Value::StringArray(value)) if value == root::proto::v1::StringArray{values: vec!["test".to_string(), "test2".to_string(), "test4".to_string()]}
+            ));
+
+            // Bool
+            assert!(matches!(
+                try_into_data_value("true", root::proto::v1::DataType::Boolean),
+                Ok(root::proto::v1::datapoint::Value::Bool(value)) if value
+            ));
+
+            assert!(matches!(
+                try_into_data_value("false", root::proto::v1::DataType::Boolean),
+                Ok(root::proto::v1::datapoint::Value::Bool(value)) if !value
+            ));
+            assert!(try_into_data_value("truefalse", root::proto::v1::DataType::Boolean).is_err());
+            // BoolArray
+            assert!(matches!(
+                try_into_data_value("[true, false, true]", root::proto::v1::DataType::BooleanArray),
+                Ok(root::proto::v1::datapoint::Value::BoolArray(value)) if value == root::proto::v1::BoolArray{values: vec![true, false, true]}
+            ));
+
+            // Int8
+            assert!(matches!(
+                try_into_data_value("100", root::proto::v1::DataType::Int8),
+                Ok(root::proto::v1::datapoint::Value::Int32(value)) if value == 100
+            ));
+            assert!(matches!(
+                try_into_data_value("-100", root::proto::v1::DataType::Int8),
+                Ok(root::proto::v1::datapoint::Value::Int32(value)) if value == -100
+            ));
+            assert!(try_into_data_value("300", root::proto::v1::DataType::Int8).is_err());
+            assert!(try_into_data_value("-300", root::proto::v1::DataType::Int8).is_err());
+            assert!(try_into_data_value("-100.1", root::proto::v1::DataType::Int8).is_err());
+
+            // Int16
+            assert!(matches!(
+                try_into_data_value("100", root::proto::v1::DataType::Int16),
+                Ok(root::proto::v1::datapoint::Value::Int32(value)) if value == 100
+            ));
+            assert!(matches!(
+                try_into_data_value("-100", root::proto::v1::DataType::Int16),
+                Ok(root::proto::v1::datapoint::Value::Int32(value)) if value == -100
+            ));
+            assert!(matches!(
+                try_into_data_value("32000", root::proto::v1::DataType::Int16),
+                Ok(root::proto::v1::datapoint::Value::Int32(value)) if value == 32000
+            ));
+            assert!(matches!(
+                try_into_data_value("-32000", root::proto::v1::DataType::Int16),
+                Ok(root::proto::v1::datapoint::Value::Int32(value)) if value == -32000
+            ));
+            assert!(try_into_data_value("33000", root::proto::v1::DataType::Int16).is_err());
+            assert!(try_into_data_value("-33000", root::proto::v1::DataType::Int16).is_err());
+            assert!(try_into_data_value("-32000.1", root::proto::v1::DataType::Int16).is_err());
+        }
     }
 
     #[test]
     fn test_entry_path_completion() {
-        let metadata = &[
-            proto::v1::Metadata {
-                id: 1,
-                name: "Vehicle.Test.Test1".into(),
-                data_type: proto::v1::DataType::Bool.into(),
-                entry_type: proto::v1::EntryType::Sensor.into(),
-                change_type: proto::v1::ChangeType::OnChange.into(),
-                description: "".into(),
-            },
-            proto::v1::Metadata {
-                id: 2,
-                name: "Vehicle.AnotherTest.AnotherTest1".into(),
-                data_type: proto::v1::DataType::Bool.into(),
-                entry_type: proto::v1::EntryType::Sensor.into(),
-                change_type: proto::v1::ChangeType::OnChange.into(),
-                description: "".into(),
-            },
-            proto::v1::Metadata {
-                id: 3,
-                name: "Vehicle.AnotherTest.AnotherTest2".into(),
-                data_type: proto::v1::DataType::Bool.into(),
-                entry_type: proto::v1::EntryType::Sensor.into(),
-                change_type: proto::v1::ChangeType::OnChange.into(),
-                description: "".into(),
-            },
-        ];
+        let mut metadata = Vec::new();
+        #[cfg(feature = "feature_sdv")]{
+            metadata = [
+                root::proto::v1::Metadata {
+                    id: 1,
+                    name: "Vehicle.Test.Test1".into(),
+                    data_type: root::proto::v1::DataType::Bool.into(),
+                    entry_type: root::proto::v1::EntryType::Sensor.into(),
+                    change_type: root::proto::v1::ChangeType::OnChange.into(),
+                    description: "".into(),
+                },
+                root::proto::v1::Metadata {
+                    id: 2,
+                    name: "Vehicle.AnotherTest.AnotherTest1".into(),
+                    data_type: root::proto::v1::DataType::Bool.into(),
+                    entry_type: root::proto::v1::EntryType::Sensor.into(),
+                    change_type: root::proto::v1::ChangeType::OnChange.into(),
+                    description: "".into(),
+                },
+                root::proto::v1::Metadata {
+                    id: 3,
+                    name: "Vehicle.AnotherTest.AnotherTest2".into(),
+                    data_type: root::proto::v1::DataType::Bool.into(),
+                    entry_type: root::proto::v1::EntryType::Sensor.into(),
+                    change_type: root::proto::v1::ChangeType::OnChange.into(),
+                    description: "".into(),
+                },
+            ].to_vec();
+        }
 
-        let completer = CliCompleter::from_metadata(metadata);
+        #[cfg(feature = "feature_kuksa")]{
+            metadata.push(root::proto::v1::DataEntry{
+                path: "Vehicle.Test.Test1".into() , 
+                value: None,
+                actuator_target: None,
+                metadata: Some(root::proto::v1::Metadata {
+                    data_type: root::proto::v1::DataType::Boolean.into(),
+                    entry_type: root::proto::v1::EntryType::Sensor.into(),
+                    comment: None,
+                    deprecation: None,
+                    unit: None,
+                    value_restriction: None,
+                    entry_specific: None,
+                    description: Some("".to_string()),
+                })});
+            metadata.push(root::proto::v1::DataEntry{
+                path: "Vehicle.Test.AnotherTest1".into() , 
+                value: None,
+                actuator_target: None,
+                metadata: Some(root::proto::v1::Metadata {
+                    data_type: root::proto::v1::DataType::Boolean.into(),
+                    entry_type: root::proto::v1::EntryType::Sensor.into(),
+                    comment: None,
+                    deprecation: None,
+                    unit: None,
+                    value_restriction: None,
+                    entry_specific: None,
+                    description: Some("".to_string()),
+                })});
+            metadata.push(root::proto::v1::DataEntry{
+                path: "Vehicle.Test.AnotherTest2".into() , 
+                value: None,
+                actuator_target: None,
+                metadata: Some(root::proto::v1::Metadata {
+                    data_type: root::proto::v1::DataType::Boolean.into(),
+                    entry_type: root::proto::v1::EntryType::Sensor.into(),
+                    comment: None,
+                    deprecation: None,
+                    unit: None,
+                    value_restriction: None,
+                    entry_specific: None,
+                    description: Some("".to_string()),
+                })});
+        }
+
+
+        let completer = CliCompleter::from_metadata(&metadata);
 
         assert_eq!(completer.paths.children.len(), 1);
         assert_eq!(completer.paths.children["vehicle"].children.len(), 2);
