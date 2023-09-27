@@ -15,14 +15,14 @@ use std::collections::HashMap;
 
 use databroker_proto::kuksa::val::{self as proto, v1::DataEntry};
 
-use common::{Client, ClientError,};
+use common::{Client, ClientError};
 
-pub struct KuksaClient{
-    pub basic_client: Client
+pub struct KuksaClient {
+    pub basic_client: Client,
 }
 
-impl KuksaClient{
-    pub fn new(basic_client: Client) -> Self{
+impl KuksaClient {
+    pub fn new(basic_client: Client) -> Self {
         KuksaClient { basic_client }
     }
 
@@ -59,11 +59,10 @@ impl KuksaClient{
         Ok(metadata_result)
     }
 
-
     pub async fn get_current_values(
         &mut self,
         paths: Vec<impl AsRef<str>>,
-    ) -> Result<Vec<DataEntry>, ClientError>{
+    ) -> Result<Vec<DataEntry>, ClientError> {
         let mut client = proto::v1::val_client::ValClient::with_interceptor(
             self.basic_client.get_channel().await?.clone(),
             self.basic_client.get_auth_interceptor(),
@@ -95,7 +94,7 @@ impl KuksaClient{
     pub async fn get_target_values(
         &mut self,
         paths: Vec<impl AsRef<str>>,
-    ) -> Result<Vec<DataEntry>, ClientError>{
+    ) -> Result<Vec<DataEntry>, ClientError> {
         let mut client = proto::v1::val_client::ValClient::with_interceptor(
             self.basic_client.get_channel().await?.clone(),
             self.basic_client.get_auth_interceptor(),
@@ -133,9 +132,9 @@ impl KuksaClient{
             self.basic_client.get_auth_interceptor(),
         );
 
-        let mut set_result = Vec::new(); 
+        let mut set_result = Vec::new();
 
-        for (path, datapoint) in datapoints{
+        for (path, datapoint) in datapoints {
             let set_request = proto::v1::SetRequest {
                 updates: vec![proto::v1::EntryUpdate {
                     entry: Some(proto::v1::DataEntry {
@@ -144,7 +143,10 @@ impl KuksaClient{
                         actuator_target: None,
                         metadata: None,
                     }),
-                    fields: vec![proto::v1::Field::Value.into(), proto::v1::Field::Path.into()],
+                    fields: vec![
+                        proto::v1::Field::Value.into(),
+                        proto::v1::Field::Path.into(),
+                    ],
                 }],
             };
             match client.set(set_request).await {
@@ -154,7 +156,7 @@ impl KuksaClient{
                 Err(err) => return Err(ClientError::Status(err)),
             }
         }
-        
+
         Ok(set_result)
     }
 
@@ -167,9 +169,9 @@ impl KuksaClient{
             self.basic_client.get_auth_interceptor(),
         );
 
-        let mut set_result = Vec::new(); 
+        let mut set_result = Vec::new();
 
-        for (path, datapoint) in datapoints{
+        for (path, datapoint) in datapoints {
             let set_request = proto::v1::SetRequest {
                 updates: vec![proto::v1::EntryUpdate {
                     entry: Some(proto::v1::DataEntry {
@@ -178,7 +180,10 @@ impl KuksaClient{
                         actuator_target: Some(datapoint),
                         metadata: None,
                     }),
-                    fields: vec![proto::v1::Field::ActuatorTarget.into(), proto::v1::Field::Path.into()],
+                    fields: vec![
+                        proto::v1::Field::ActuatorTarget.into(),
+                        proto::v1::Field::Path.into(),
+                    ],
                 }],
             };
             match client.set(set_request).await {
@@ -188,7 +193,7 @@ impl KuksaClient{
                 Err(err) => return Err(ClientError::Status(err)),
             }
         }
-        
+
         Ok(set_result)
     }
 
@@ -201,9 +206,9 @@ impl KuksaClient{
             self.basic_client.get_auth_interceptor(),
         );
 
-        let mut set_result = Vec::new(); 
+        let mut set_result = Vec::new();
 
-        for (path, metadata) in metadatas{
+        for (path, metadata) in metadatas {
             let set_request = proto::v1::SetRequest {
                 updates: vec![proto::v1::EntryUpdate {
                     entry: Some(proto::v1::DataEntry {
@@ -212,7 +217,10 @@ impl KuksaClient{
                         actuator_target: None,
                         metadata: Some(metadata),
                     }),
-                    fields: vec![proto::v1::Field::Metadata.into(), proto::v1::Field::Path.into()],
+                    fields: vec![
+                        proto::v1::Field::Metadata.into(),
+                        proto::v1::Field::Path.into(),
+                    ],
                 }],
             };
             match client.set(set_request).await {
@@ -222,7 +230,7 @@ impl KuksaClient{
                 Err(err) => return Err(ClientError::Status(err)),
             }
         }
-        
+
         Ok(set_result)
     }
 
@@ -236,13 +244,15 @@ impl KuksaClient{
         );
 
         let mut entries = Vec::new();
-        for path in paths{
-            entries.push(
-                proto::v1::SubscribeEntry{path: path.to_string(), view: proto::v1::View::CurrentValue.into() ,fields: vec![proto::v1::Field::Value.into()] }
-            )
+        for path in paths {
+            entries.push(proto::v1::SubscribeEntry {
+                path: path.to_string(),
+                view: proto::v1::View::CurrentValue.into(),
+                fields: vec![proto::v1::Field::Value.into()],
+            })
         }
 
-        let req = proto::v1::SubscribeRequest{entries: entries};
+        let req = proto::v1::SubscribeRequest { entries: entries };
 
         match client.subscribe(req).await {
             Ok(response) => Ok(response.into_inner()),
@@ -251,7 +261,8 @@ impl KuksaClient{
     }
 
     //masking subscribe curent values with subscribe
-    pub async fn subscribe(&mut self,
+    pub async fn subscribe(
+        &mut self,
         paths: Vec<&str>,
     ) -> Result<tonic::Streaming<proto::v1::SubscribeResponse>, ClientError> {
         return self.subscribe_current_values(paths).await;
@@ -266,13 +277,15 @@ impl KuksaClient{
             self.basic_client.get_auth_interceptor(),
         );
         let mut entries = Vec::new();
-        for path in paths{
-            entries.push(
-                proto::v1::SubscribeEntry{path: path.to_string(), view: proto::v1::View::TargetValue.into() ,fields: vec![proto::v1::Field::ActuatorTarget.into()] }
-            )
+        for path in paths {
+            entries.push(proto::v1::SubscribeEntry {
+                path: path.to_string(),
+                view: proto::v1::View::TargetValue.into(),
+                fields: vec![proto::v1::Field::ActuatorTarget.into()],
+            })
         }
 
-        let req = proto::v1::SubscribeRequest{entries: entries};
+        let req = proto::v1::SubscribeRequest { entries: entries };
 
         match client.subscribe(req).await {
             Ok(response) => Ok(response.into_inner()),
@@ -289,13 +302,15 @@ impl KuksaClient{
             self.basic_client.get_auth_interceptor(),
         );
         let mut entries = Vec::new();
-        for path in paths{
-            entries.push(
-                proto::v1::SubscribeEntry{path: path.to_string(), view: proto::v1::View::Metadata.into() ,fields: vec![proto::v1::Field::Metadata.into()] }
-            )
+        for path in paths {
+            entries.push(proto::v1::SubscribeEntry {
+                path: path.to_string(),
+                view: proto::v1::View::Metadata.into(),
+                fields: vec![proto::v1::Field::Metadata.into()],
+            })
         }
 
-        let req = proto::v1::SubscribeRequest{entries: entries};
+        let req = proto::v1::SubscribeRequest { entries: entries };
 
         match client.subscribe(req).await {
             Ok(response) => Ok(response.into_inner()),
