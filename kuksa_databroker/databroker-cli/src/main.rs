@@ -35,7 +35,11 @@ const CLI_COMMANDS: &[(&str, &str, &str)] = &[
     ("connect", "[URI]", "Connect to server"),
     ("get", "<PATH> [[PATH] ...]", "Get signal value(s)"),
     ("set", "<PATH> <VALUE>", "Set actuator signal"),
-    ("subscribe", "<QUERY>", "Subscribe to signals with QUERY, if you use kuksa feature comma separated list"),
+    (
+        "subscribe",
+        "<QUERY>",
+        "Subscribe to signals with QUERY, if you use kuksa feature comma separated list",
+    ),
     ("feed", "<PATH> <VALUE>", "Publish signal value"),
     (
         "metadata",
@@ -110,7 +114,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Using kuksa");
         properties = Vec::<root::proto::v1::DataEntry>::new();
     }
-    
+
     let mut subscription_nbr = 1;
 
     let completer = CliCompleter::new();
@@ -127,11 +131,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut basic_client = common::Client::new(to_uri(cli.server)?);
     let mut client;
-    #[cfg(feature = "feature_sdv")]{
+    #[cfg(feature = "feature_sdv")]
+    {
         client = root::SDVClient::new(basic_client);
     }
 
-    #[cfg(feature = "feature_kuksa")]{
+    #[cfg(feature = "feature_kuksa")]
+    {
         client = root::KuksaClient::new(basic_client);
     }
 
@@ -177,7 +183,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         Some(Commands::Get { paths }) => {
-            #[cfg(feature = "feature_sdv")]{
+            #[cfg(feature = "feature_sdv")]
+            {
                 match client.get_datapoints(paths).await {
                     Ok(datapoints) => {
                         for (name, datapoint) in datapoints {
@@ -189,14 +196,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
-            #[cfg(feature = "feature_kuksa")]{
+            #[cfg(feature = "feature_kuksa")]
+            {
                 match client.get_current_values(paths).await {
                     Ok(data_entries) => {
                         for entry in data_entries {
                             if let Some(val) = entry.value {
                                 println!("{}: {}", entry.path, DisplayDatapoint(val),);
-                            }
-                            else{
+                            } else {
                                 println!("{}: NotAvailable", entry.path);
                             }
                         }
@@ -218,9 +225,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             match client.basic_client.try_connect().await {
                 Ok(()) => {
-                    print_info(format!("Successfully connected to {}", client.basic_client.get_uri()))?;
+                    print_info(format!(
+                        "Successfully connected to {}",
+                        client.basic_client.get_uri()
+                    ))?;
                     let mut pattern = vec![];
-                    #[cfg(feature = "feature_kuksa")]{
+                    #[cfg(feature = "feature_kuksa")]
+                    {
                         pattern = vec!["**"];
                     }
                     match client.get_metadata(pattern).await {
@@ -260,15 +271,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         "get" => {
                             interface.add_history_unique(line.clone());
 
-                                if args.is_empty() {
-                                    print_usage(cmd);
-                                    continue;
-                                }
-                                let paths = args
-                                    .split_whitespace()
-                                    .map(|path| path.to_owned())
-                                    .collect();
-                            #[cfg(feature = "feature_sdv")]{
+                            if args.is_empty() {
+                                print_usage(cmd);
+                                continue;
+                            }
+                            let paths = args
+                                .split_whitespace()
+                                .map(|path| path.to_owned())
+                                .collect();
+                            #[cfg(feature = "feature_sdv")]
+                            {
                                 match client.get_datapoints(paths).await {
                                     Ok(datapoints) => {
                                         print_resp_ok(cmd)?;
@@ -284,15 +296,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     }
                                 }
                             }
-                            #[cfg(feature = "feature_kuksa")]{
+                            #[cfg(feature = "feature_kuksa")]
+                            {
                                 match client.get_current_values(paths).await {
                                     Ok(data_entries) => {
                                         print_resp_ok(cmd)?;
                                         for entry in data_entries {
-                                            if let Some(val) = entry.value{
-                                                println!("{}: {}", entry.path, DisplayDatapoint(val),);
-                                            }
-                                            else{
+                                            if let Some(val) = entry.value {
+                                                println!(
+                                                    "{}: {}",
+                                                    entry.path,
+                                                    DisplayDatapoint(val),
+                                                );
+                                            } else {
                                                 println!("{}: NotAvailable", entry.path);
                                             }
                                         }
@@ -384,8 +400,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 print_usage(cmd);
                                 continue;
                             }
-                            
-                            #[cfg(feature = "feature_sdv")]{
+
+                            #[cfg(feature = "feature_sdv")]
+                            {
                                 let datapoint_metadata = {
                                     let mut datapoint_metadata = None;
                                     for metadata in properties.iter() {
@@ -406,17 +423,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 if let Some(metadata) = datapoint_metadata {
                                     let data_value = try_into_data_value(
                                         value,
-                                        root::proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
+                                        root::proto::v1::DataType::from_i32(metadata.data_type)
+                                            .unwrap(),
                                     );
                                     if data_value.is_err() {
                                         println!(
                                             "Could not parse \"{value}\" as {:?}",
-                                            root::proto::v1::DataType::from_i32(metadata.data_type).unwrap()
+                                            root::proto::v1::DataType::from_i32(metadata.data_type)
+                                                .unwrap()
                                         );
                                         continue;
                                     }
 
-                                    if metadata.entry_type != root::proto::v1::EntryType::Actuator.into() {
+                                    if metadata.entry_type
+                                        != root::proto::v1::EntryType::Actuator.into()
+                                    {
                                         print_error(
                                             cmd,
                                             format!("{} is not an actuator.", metadata.name),
@@ -435,20 +456,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             value: Some(data_value.unwrap()),
                                         },
                                     )]);
-                                    
+
                                     match client.set_datapoints(datapoints).await {
                                         Ok(message) => {
                                             if message.errors.is_empty() {
                                                 print_resp_ok(cmd)?;
                                             } else {
                                                 for (id, error) in message.errors {
-                                                    match root::proto::v1::DatapointError::from_i32(error) {
+                                                    match root::proto::v1::DatapointError::from_i32(
+                                                        error,
+                                                    ) {
                                                         Some(error) => {
                                                             print_resp_ok(cmd)?;
                                                             println!(
                                                                 "Error setting {}: {}",
                                                                 id,
-                                                                Color::Red.paint(format!("{error:?}")),
+                                                                Color::Red
+                                                                    .paint(format!("{error:?}")),
                                                             );
                                                         }
                                                         None => print_resp_ok_fmt(
@@ -462,12 +486,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         Err(common::ClientError::Status(status)) => {
                                             print_resp_err(cmd, &status)?
                                         }
-                                        Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
+                                        Err(common::ClientError::Connection(msg)) => {
+                                            print_error(cmd, msg)?
+                                        }
                                     }
                                 }
                             }
-                            #[cfg(feature = "feature_kuksa")]{
-                                let datapoint_entries = match client.get_metadata(vec![path]).await {
+                            #[cfg(feature = "feature_kuksa")]
+                            {
+                                let datapoint_entries = match client.get_metadata(vec![path]).await
+                                {
                                     Ok(data_entries) => Some(data_entries),
                                     Err(common::ClientError::Status(status)) => {
                                         print_resp_err("metadata", &status)?;
@@ -478,23 +506,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         None
                                     }
                                 };
-    
+
                                 if let Some(entries) = datapoint_entries {
-                                    for entry in entries{
+                                    for entry in entries {
                                         if let Some(metadata) = entry.metadata {
                                             let data_value = try_into_data_value(
                                                 value,
-                                                root::proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
+                                                root::proto::v1::DataType::from_i32(
+                                                    metadata.data_type,
+                                                )
+                                                .unwrap(),
                                             );
                                             if data_value.is_err() {
                                                 println!(
                                                     "Could not parse \"{value}\" as {:?}",
-                                                    root::proto::v1::DataType::from_i32(metadata.data_type).unwrap()
+                                                    root::proto::v1::DataType::from_i32(
+                                                        metadata.data_type
+                                                    )
+                                                    .unwrap()
                                                 );
                                                 continue;
                                             }
-            
-                                            if metadata.entry_type != root::proto::v1::EntryType::Actuator.into() {
+
+                                            if metadata.entry_type
+                                                != root::proto::v1::EntryType::Actuator.into()
+                                            {
                                                 print_error(
                                                     cmd,
                                                     format!("{} is not an actuator.", path),
@@ -504,7 +540,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                 )?;
                                                 continue;
                                             }
-            
+
                                             let ts = Timestamp::from(SystemTime::now());
                                             let datapoints = HashMap::from([(
                                                 path.to_string().clone(),
@@ -526,28 +562,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                                 println!(
                                                                     "Error setting {}: {}",
                                                                     error.path,
-                                                                    Color::Red.paint(format!("{error_mes:?}")),
+                                                                    Color::Red.paint(format!(
+                                                                        "{error_mes:?}"
+                                                                    )),
                                                                 );
                                                             }
                                                         }
-                                                        match message.error{
-                                                            Some(error) => {print_resp_ok_fmt(
+                                                        match message.error {
+                                                            Some(error) => print_resp_ok_fmt(
                                                                 cmd,
                                                                 format_args!("Error {error:?}"),
-                                                            )?},
-                                                            None => ()
+                                                            )?,
+                                                            None => (),
                                                         };
                                                     }
                                                 }
                                                 Err(common::ClientError::Status(status)) => {
                                                     print_resp_err(cmd, &status)?
                                                 }
-                                                Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
+                                                Err(common::ClientError::Connection(msg)) => {
+                                                    print_error(cmd, msg)?
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }                                
+                            }
                         }
                         "feed" => {
                             interface.add_history_unique(line.clone());
@@ -559,7 +599,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 continue;
                             }
 
-                            #[cfg(feature = "feature_sdv")]{
+                            #[cfg(feature = "feature_sdv")]
+                            {
                                 let datapoint_metadata = {
                                     let mut datapoint_metadata = None;
                                     for metadata in properties.iter() {
@@ -580,13 +621,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 if let Some(metadata) = datapoint_metadata {
                                     let data_value = try_into_data_value(
                                         value,
-                                        root::proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
+                                        root::proto::v1::DataType::from_i32(metadata.data_type)
+                                            .unwrap(),
                                     );
                                     if data_value.is_err() {
                                         println!(
                                             "Could not parse \"{}\" as {:?}",
                                             value,
-                                            root::proto::v1::DataType::from_i32(metadata.data_type).unwrap()
+                                            root::proto::v1::DataType::from_i32(metadata.data_type)
+                                                .unwrap()
                                         );
                                         continue;
                                     }
@@ -599,7 +642,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         },
                                     )]);
 
-                                
                                     match client.update_datapoints(datapoints).await {
                                         Ok(message) => {
                                             if message.errors.is_empty() {
@@ -629,12 +671,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         Err(common::ClientError::Status(status)) => {
                                             print_resp_err(cmd, &status)?
                                         }
-                                        Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
+                                        Err(common::ClientError::Connection(msg)) => {
+                                            print_error(cmd, msg)?
+                                        }
                                     }
                                 }
                             }
-                            #[cfg(feature = "feature_kuksa")]{
-                                let datapoint_entries = match client.get_metadata(vec![path]).await {
+                            #[cfg(feature = "feature_kuksa")]
+                            {
+                                let datapoint_entries = match client.get_metadata(vec![path]).await
+                                {
                                     Ok(data_entries) => Some(data_entries),
                                     Err(common::ClientError::Status(status)) => {
                                         print_resp_err("metadata", &status)?;
@@ -645,19 +691,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         None
                                     }
                                 };
-    
+
                                 if let Some(entries) = datapoint_entries {
-                                    for entry in entries{
+                                    for entry in entries {
                                         if let Some(metadata) = entry.metadata {
                                             let data_value = try_into_data_value(
                                                 value,
-                                                root::proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
+                                                root::proto::v1::DataType::from_i32(
+                                                    metadata.data_type,
+                                                )
+                                                .unwrap(),
                                             );
                                             if data_value.is_err() {
                                                 println!(
                                                     "Could not parse \"{}\" as {:?}",
                                                     value,
-                                                    root::proto::v1::DataType::from_i32(metadata.data_type).unwrap()
+                                                    root::proto::v1::DataType::from_i32(
+                                                        metadata.data_type
+                                                    )
+                                                    .unwrap()
                                                 );
                                                 continue;
                                             }
@@ -682,23 +734,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                                 println!(
                                                                     "Error setting {}: {}",
                                                                     error.path,
-                                                                    Color::Red.paint(format!("{error_mes:?}")),
+                                                                    Color::Red.paint(format!(
+                                                                        "{error_mes:?}"
+                                                                    )),
                                                                 );
                                                             }
                                                         }
-                                                        match message.error{
-                                                            Some(error) => {print_resp_ok_fmt(
+                                                        match message.error {
+                                                            Some(error) => print_resp_ok_fmt(
                                                                 cmd,
                                                                 format_args!("Error {error:?}"),
-                                                            )?},
-                                                            None => ()
+                                                            )?,
+                                                            None => (),
                                                         };
                                                     }
                                                 }
                                                 Err(common::ClientError::Status(status)) => {
                                                     print_resp_err(cmd, &status)?
                                                 }
-                                                Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
+                                                Err(common::ClientError::Connection(msg)) => {
+                                                    print_error(cmd, msg)?
+                                                }
                                             }
                                         }
                                     }
@@ -712,13 +768,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 print_usage(cmd);
                                 continue;
                             }
-                            
+
                             let mut input;
 
-                            #[cfg(feature = "feature_sdv")]{
+                            #[cfg(feature = "feature_sdv")]
+                            {
                                 input = args.to_owned();
                             }
-                            #[cfg(feature = "feature_kuksa")]{
+                            #[cfg(feature = "feature_kuksa")]
+                            {
                                 input = args.split_whitespace().collect::<Vec<_>>();
                             }
 
@@ -740,7 +798,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                         use std::fmt::Write;
                                                         let mut output = String::new();
                                                         let mut first_line = true;
-                                                        #[cfg(feature = "feature_sdv")]{
+                                                        #[cfg(feature = "feature_sdv")]
+                                                        {
                                                             for (name, value) in resp.fields {
                                                                 if first_line {
                                                                     first_line = false;
@@ -768,7 +827,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                             }
                                                             write!(iface, "{output}").unwrap();
                                                         }
-                                                        #[cfg(feature = "feature_kuksa")]{
+                                                        #[cfg(feature = "feature_kuksa")]
+                                                        {
                                                             for update in resp.updates {
                                                                 if first_line {
                                                                     first_line = false;
@@ -786,8 +846,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                                     )
                                                                     .unwrap();
                                                                 }
-                                                                if let Some(entry) = update.entry{
-                                                                    if let Some(value) = entry.value{
+                                                                if let Some(entry) = update.entry {
+                                                                    if let Some(value) = entry.value
+                                                                    {
                                                                         writeln!(
                                                                             output,
                                                                             "{}: {}",
@@ -836,7 +897,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             )?;
                                     subscription_nbr += 1;
                                 }
-                                Err(common::ClientError::Status(status)) => print_resp_err(cmd, &status)?,
+                                Err(common::ClientError::Status(status)) => {
+                                    print_resp_err(cmd, &status)?
+                                }
                                 Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
                             }
                         }
@@ -858,7 +921,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 } else {
                                     match to_uri(args) {
                                         Ok(valid_uri) => {
-                                            match client.basic_client.try_connect_to(valid_uri).await {
+                                            match client
+                                                .basic_client
+                                                .try_connect_to(valid_uri)
+                                                .await
+                                            {
                                                 Ok(()) => {
                                                     print_info(format!(
                                                         "[{cmd}] Successfully connected to {}",
@@ -900,15 +967,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             interface.add_history_unique(line.clone());
 
                             let paths = args.split_whitespace().collect::<Vec<_>>();
-                            
-                            #[cfg(feature = "feature_sdv")]{
+
+                            #[cfg(feature = "feature_sdv")]
+                            {
                                 match client.get_metadata(vec![]).await {
                                     Ok(mut metadata) => {
                                         metadata.sort_by(|a, b| a.name.cmp(&b.name));
                                         properties = metadata;
-                                        interface.set_completer(Arc::new(CliCompleter::from_metadata(
-                                            &properties,
-                                        )));
+                                        interface.set_completer(Arc::new(
+                                            CliCompleter::from_metadata(&properties),
+                                        ));
                                         print_resp_ok(cmd)?;
                                     }
                                     Err(common::ClientError::Status(status)) => {
@@ -958,17 +1026,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         println!(
                                             "{:<max_len_path$} {:<10} {:<9}",
                                             entry.name,
-                                            DisplayEntryType::from(root::proto::v1::EntryType::from_i32(
-                                                entry.entry_type
-                                            )),
-                                            DisplayDataType::from(root::proto::v1::DataType::from_i32(
-                                                entry.data_type
-                                            )),
+                                            DisplayEntryType::from(
+                                                root::proto::v1::EntryType::from_i32(
+                                                    entry.entry_type
+                                                )
+                                            ),
+                                            DisplayDataType::from(
+                                                root::proto::v1::DataType::from_i32(
+                                                    entry.data_type
+                                                )
+                                            ),
                                         );
                                     }
                                 }
                             }
-                            #[cfg(feature = "feature_kuksa")]{
+                            #[cfg(feature = "feature_kuksa")]
+                            {
                                 if paths.is_empty() {
                                     print_info("If you want to list metadata of signals, use `metadata PATTERN`")?;
                                 } else {
@@ -1003,9 +1076,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                         );
                                                     } else {
                                                         let name = entry.path.clone();
-                                                        println!(
-                                                            "No entry metadata for {name}"
-                                                        );
+                                                        println!("No entry metadata for {name}");
                                                     }
                                                 }
                                             }
@@ -1018,9 +1089,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             print_error(cmd, msg)?;
                                             continue;
                                         }
-
                                     }
-                                }  
+                                }
                             }
                         }
                         "quit" | "exit" => {
@@ -1205,55 +1275,55 @@ impl CliCompleter {
     }
 
     #[cfg(feature = "feature_sdv")]
-        fn from_metadata(metadata: &[root::proto::v1::Metadata]) -> CliCompleter {
-            let mut root = PathPart::new();
-            for entry in metadata {
-                let mut parent = &mut root;
-                let parts = entry.name.split('.');
-                for part in parts {
-                    let full_path = match parent.full_path.as_str() {
-                        "" => part.to_owned(),
-                        _ => format!("{}.{}", parent.full_path, part),
-                    };
-                    let entry = parent
-                        .children
-                        .entry(part.to_lowercase())
-                        .or_insert(PathPart {
-                            rel_path: part.to_owned(),
-                            full_path,
-                            children: HashMap::new(),
-                        });
+    fn from_metadata(metadata: &[root::proto::v1::Metadata]) -> CliCompleter {
+        let mut root = PathPart::new();
+        for entry in metadata {
+            let mut parent = &mut root;
+            let parts = entry.name.split('.');
+            for part in parts {
+                let full_path = match parent.full_path.as_str() {
+                    "" => part.to_owned(),
+                    _ => format!("{}.{}", parent.full_path, part),
+                };
+                let entry = parent
+                    .children
+                    .entry(part.to_lowercase())
+                    .or_insert(PathPart {
+                        rel_path: part.to_owned(),
+                        full_path,
+                        children: HashMap::new(),
+                    });
 
-                    parent = entry;
-                }
+                parent = entry;
             }
-            CliCompleter { paths: root }
         }
+        CliCompleter { paths: root }
+    }
     #[cfg(feature = "feature_kuksa")]
-        fn from_metadata(entries: &Vec<root::proto::v1::DataEntry>) -> CliCompleter {
-            let mut root = PathPart::new();
-            for entry in entries {
-                let mut parent = &mut root;
-                let parts = entry.path.split('.');
-                for part in parts {
-                    let full_path = match parent.full_path.as_str() {
-                        "" => part.to_owned(),
-                        _ => format!("{}.{}", parent.full_path, part),
-                    };
-                    let entry = parent
-                        .children
-                        .entry(part.to_lowercase())
-                        .or_insert(PathPart {
-                            rel_path: part.to_owned(),
-                            full_path,
-                            children: HashMap::new(),
-                        });
-    
-                    parent = entry;
-                }
+    fn from_metadata(entries: &Vec<root::proto::v1::DataEntry>) -> CliCompleter {
+        let mut root = PathPart::new();
+        for entry in entries {
+            let mut parent = &mut root;
+            let parts = entry.path.split('.');
+            for part in parts {
+                let full_path = match parent.full_path.as_str() {
+                    "" => part.to_owned(),
+                    _ => format!("{}.{}", parent.full_path, part),
+                };
+                let entry = parent
+                    .children
+                    .entry(part.to_lowercase())
+                    .or_insert(PathPart {
+                        rel_path: part.to_owned(),
+                        full_path,
+                        children: HashMap::new(),
+                    });
+
+                parent = entry;
             }
-            CliCompleter { paths: root }
         }
+        CliCompleter { paths: root }
+    }
 
     fn complete_entry_path(&self, word: &str) -> Option<Vec<Completion>> {
         if !self.paths.children.is_empty() {
@@ -1553,34 +1623,68 @@ where
 
 impl fmt::Display for DisplayDatapoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        #[cfg(feature = "feature_sdv")]{
+        #[cfg(feature = "feature_sdv")]
+        {
             match &self.0.value {
                 Some(value) => match value {
-                    root::proto::v1::datapoint::Value::BoolValue(value) => f.pad(&format!("{value}")),
+                    root::proto::v1::datapoint::Value::BoolValue(value) => {
+                        f.pad(&format!("{value}"))
+                    }
                     root::proto::v1::datapoint::Value::FailureValue(failure) => f.pad(&format!(
                         "( {:?} )",
                         root::proto::v1::datapoint::Failure::from_i32(*failure).unwrap()
                     )),
-                    root::proto::v1::datapoint::Value::Int32Value(value) => f.pad(&format!("{value}")),
-                    root::proto::v1::datapoint::Value::Int64Value(value) => f.pad(&format!("{value}")),
-                    root::proto::v1::datapoint::Value::Uint32Value(value) => f.pad(&format!("{value}")),
-                    root::proto::v1::datapoint::Value::Uint64Value(value) => f.pad(&format!("{value}")),
-                    root::proto::v1::datapoint::Value::FloatValue(value) => f.pad(&format!("{value:.2}")),
-                    root::proto::v1::datapoint::Value::DoubleValue(value) => f.pad(&format!("{value}")),
-                    root::proto::v1::datapoint::Value::StringValue(value) => f.pad(&format!("'{value}'")),
-                    root::proto::v1::datapoint::Value::StringArray(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::BoolArray(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::Int32Array(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::Int64Array(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::Uint32Array(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::Uint64Array(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::FloatArray(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::DoubleArray(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::Int32Value(value) => {
+                        f.pad(&format!("{value}"))
+                    }
+                    root::proto::v1::datapoint::Value::Int64Value(value) => {
+                        f.pad(&format!("{value}"))
+                    }
+                    root::proto::v1::datapoint::Value::Uint32Value(value) => {
+                        f.pad(&format!("{value}"))
+                    }
+                    root::proto::v1::datapoint::Value::Uint64Value(value) => {
+                        f.pad(&format!("{value}"))
+                    }
+                    root::proto::v1::datapoint::Value::FloatValue(value) => {
+                        f.pad(&format!("{value:.2}"))
+                    }
+                    root::proto::v1::datapoint::Value::DoubleValue(value) => {
+                        f.pad(&format!("{value}"))
+                    }
+                    root::proto::v1::datapoint::Value::StringValue(value) => {
+                        f.pad(&format!("'{value}'"))
+                    }
+                    root::proto::v1::datapoint::Value::StringArray(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::BoolArray(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::Int32Array(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::Int64Array(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::Uint32Array(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::Uint64Array(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::FloatArray(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::DoubleArray(array) => {
+                        display_array(f, &array.values)
+                    }
                 },
                 None => f.pad("None"),
             }
         }
-        #[cfg(feature = "feature_kuksa")]{
+        #[cfg(feature = "feature_kuksa")]
+        {
             match &self.0.value {
                 Some(value) => match value {
                     root::proto::v1::datapoint::Value::Bool(value) => f.pad(&format!("{value}")),
@@ -1588,17 +1692,37 @@ impl fmt::Display for DisplayDatapoint {
                     root::proto::v1::datapoint::Value::Int64(value) => f.pad(&format!("{value}")),
                     root::proto::v1::datapoint::Value::Uint32(value) => f.pad(&format!("{value}")),
                     root::proto::v1::datapoint::Value::Uint64(value) => f.pad(&format!("{value}")),
-                    root::proto::v1::datapoint::Value::Float(value) => f.pad(&format!("{value:.2}")),
+                    root::proto::v1::datapoint::Value::Float(value) => {
+                        f.pad(&format!("{value:.2}"))
+                    }
                     root::proto::v1::datapoint::Value::Double(value) => f.pad(&format!("{value}")),
-                    root::proto::v1::datapoint::Value::String(value) => f.pad(&format!("'{value}'")),
-                    root::proto::v1::datapoint::Value::StringArray(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::BoolArray(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::Int32Array(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::Int64Array(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::Uint32Array(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::Uint64Array(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::FloatArray(array) => display_array(f, &array.values),
-                    root::proto::v1::datapoint::Value::DoubleArray(array) => display_array(f, &array.values),
+                    root::proto::v1::datapoint::Value::String(value) => {
+                        f.pad(&format!("'{value}'"))
+                    }
+                    root::proto::v1::datapoint::Value::StringArray(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::BoolArray(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::Int32Array(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::Int64Array(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::Uint32Array(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::Uint64Array(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::FloatArray(array) => {
+                        display_array(f, &array.values)
+                    }
+                    root::proto::v1::datapoint::Value::DoubleArray(array) => {
+                        display_array(f, &array.values)
+                    }
                 },
                 None => f.pad("None"),
             }
@@ -1692,29 +1816,32 @@ fn try_into_data_value(
     data_type: root::proto::v1::DataType,
 ) -> Result<root::proto::v1::datapoint::Value, ParseError> {
     if input == "NotAvailable" {
-        #[cfg(feature = "feature_sdv")]{
+        #[cfg(feature = "feature_sdv")]
+        {
             return Ok(root::proto::v1::datapoint::Value::FailureValue(
                 root::proto::v1::datapoint::Failure::NotAvailable as i32,
             ));
         }
-        #[cfg(feature = "feature_kuksa")]{
-            return Ok(root::proto::v1::datapoint::Value::String(
-                input.to_string(),
-            ));
+        #[cfg(feature = "feature_kuksa")]
+        {
+            return Ok(root::proto::v1::datapoint::Value::String(input.to_string()));
         }
     }
 
-    #[cfg(feature = "feature_sdv")]{
+    #[cfg(feature = "feature_sdv")]
+    {
         match data_type {
-            root::proto::v1::DataType::String => {
-                Ok(root::proto::v1::datapoint::Value::StringValue(input.to_owned()))
+            root::proto::v1::DataType::String => Ok(
+                root::proto::v1::datapoint::Value::StringValue(input.to_owned()),
+            ),
+            root::proto::v1::DataType::StringArray => {
+                match get_array_from_input(input.to_owned()) {
+                    Ok(value) => Ok(root::proto::v1::datapoint::Value::StringArray(
+                        root::proto::v1::StringArray { values: value },
+                    )),
+                    Err(err) => Err(err),
+                }
             }
-            root::proto::v1::DataType::StringArray => match get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(root::proto::v1::datapoint::Value::StringArray(
-                    root::proto::v1::StringArray { values: value },
-                )),
-                Err(err) => Err(err),
-            },
             root::proto::v1::DataType::Bool => match input.parse::<bool>() {
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::BoolValue(value)),
                 Err(_) => Err(ParseError {}),
@@ -1779,32 +1906,38 @@ fn try_into_data_value(
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Value(value as u32)),
                 Err(_) => Err(ParseError {}),
             },
-            root::proto::v1::DataType::Uint16Array => match get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
-                    root::proto::v1::Uint32Array { values: value },
-                )),
-                Err(err) => Err(err),
-            },
+            root::proto::v1::DataType::Uint16Array => {
+                match get_array_from_input(input.to_owned()) {
+                    Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
+                        root::proto::v1::Uint32Array { values: value },
+                    )),
+                    Err(err) => Err(err),
+                }
+            }
             root::proto::v1::DataType::Uint32 => match input.parse::<u32>() {
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Value(value)),
                 Err(_) => Err(ParseError {}),
             },
-            root::proto::v1::DataType::Uint32Array => match get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
-                    root::proto::v1::Uint32Array { values: value },
-                )),
-                Err(err) => Err(err),
-            },
+            root::proto::v1::DataType::Uint32Array => {
+                match get_array_from_input(input.to_owned()) {
+                    Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
+                        root::proto::v1::Uint32Array { values: value },
+                    )),
+                    Err(err) => Err(err),
+                }
+            }
             root::proto::v1::DataType::Uint64 => match input.parse::<u64>() {
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint64Value(value)),
                 Err(_) => Err(ParseError {}),
             },
-            root::proto::v1::DataType::Uint64Array => match get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint64Array(
-                    root::proto::v1::Uint64Array { values: value },
-                )),
-                Err(err) => Err(err),
-            },
+            root::proto::v1::DataType::Uint64Array => {
+                match get_array_from_input(input.to_owned()) {
+                    Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint64Array(
+                        root::proto::v1::Uint64Array { values: value },
+                    )),
+                    Err(err) => Err(err),
+                }
+            }
             root::proto::v1::DataType::Float => match input.parse::<f32>() {
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::FloatValue(value)),
                 Err(_) => Err(ParseError {}),
@@ -1819,31 +1952,37 @@ fn try_into_data_value(
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::DoubleValue(value)),
                 Err(_) => Err(ParseError {}),
             },
-            root::proto::v1::DataType::DoubleArray => match get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(root::proto::v1::datapoint::Value::DoubleArray(
-                    root::proto::v1::DoubleArray { values: value },
-                )),
-                Err(err) => Err(err),
-            },
+            root::proto::v1::DataType::DoubleArray => {
+                match get_array_from_input(input.to_owned()) {
+                    Ok(value) => Ok(root::proto::v1::datapoint::Value::DoubleArray(
+                        root::proto::v1::DoubleArray { values: value },
+                    )),
+                    Err(err) => Err(err),
+                }
+            }
             _ => Err(ParseError {}),
         }
     }
-    #[cfg(feature = "feature_kuksa")]{
+    #[cfg(feature = "feature_kuksa")]
+    {
         match data_type {
             root::proto::v1::DataType::String => {
                 Ok(root::proto::v1::datapoint::Value::String(input.to_owned()))
             }
-            root::proto::v1::DataType::StringArray => match get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(root::proto::v1::datapoint::Value::StringArray(
-                    root::proto::v1::StringArray { values: value },
-                )),
-                Err(err) => Err(err),
-            },
+            root::proto::v1::DataType::StringArray => {
+                match get_array_from_input(input.to_owned()) {
+                    Ok(value) => Ok(root::proto::v1::datapoint::Value::StringArray(
+                        root::proto::v1::StringArray { values: value },
+                    )),
+                    Err(err) => Err(err),
+                }
+            }
             root::proto::v1::DataType::Boolean => match input.parse::<bool>() {
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::Bool(value)),
                 Err(_) => Err(ParseError {}),
             },
-            root::proto::v1::DataType::BooleanArray => match get_array_from_input(input.to_owned()) {
+            root::proto::v1::DataType::BooleanArray => match get_array_from_input(input.to_owned())
+            {
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::BoolArray(
                     root::proto::v1::BoolArray { values: value },
                 )),
@@ -1903,32 +2042,38 @@ fn try_into_data_value(
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32(value as u32)),
                 Err(_) => Err(ParseError {}),
             },
-            root::proto::v1::DataType::Uint16Array => match get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
-                    root::proto::v1::Uint32Array { values: value },
-                )),
-                Err(err) => Err(err),
-            },
+            root::proto::v1::DataType::Uint16Array => {
+                match get_array_from_input(input.to_owned()) {
+                    Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
+                        root::proto::v1::Uint32Array { values: value },
+                    )),
+                    Err(err) => Err(err),
+                }
+            }
             root::proto::v1::DataType::Uint32 => match input.parse::<u32>() {
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32(value)),
                 Err(_) => Err(ParseError {}),
             },
-            root::proto::v1::DataType::Uint32Array => match get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
-                    root::proto::v1::Uint32Array { values: value },
-                )),
-                Err(err) => Err(err),
-            },
+            root::proto::v1::DataType::Uint32Array => {
+                match get_array_from_input(input.to_owned()) {
+                    Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint32Array(
+                        root::proto::v1::Uint32Array { values: value },
+                    )),
+                    Err(err) => Err(err),
+                }
+            }
             root::proto::v1::DataType::Uint64 => match input.parse::<u64>() {
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint64(value)),
                 Err(_) => Err(ParseError {}),
             },
-            root::proto::v1::DataType::Uint64Array => match get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint64Array(
-                    root::proto::v1::Uint64Array { values: value },
-                )),
-                Err(err) => Err(err),
-            },
+            root::proto::v1::DataType::Uint64Array => {
+                match get_array_from_input(input.to_owned()) {
+                    Ok(value) => Ok(root::proto::v1::datapoint::Value::Uint64Array(
+                        root::proto::v1::Uint64Array { values: value },
+                    )),
+                    Err(err) => Err(err),
+                }
+            }
             root::proto::v1::DataType::Float => match input.parse::<f32>() {
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::Float(value)),
                 Err(_) => Err(ParseError {}),
@@ -1943,16 +2088,17 @@ fn try_into_data_value(
                 Ok(value) => Ok(root::proto::v1::datapoint::Value::Double(value)),
                 Err(_) => Err(ParseError {}),
             },
-            root::proto::v1::DataType::DoubleArray => match get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(root::proto::v1::datapoint::Value::DoubleArray(
-                    root::proto::v1::DoubleArray { values: value },
-                )),
-                Err(err) => Err(err),
-            },
+            root::proto::v1::DataType::DoubleArray => {
+                match get_array_from_input(input.to_owned()) {
+                    Ok(value) => Ok(root::proto::v1::datapoint::Value::DoubleArray(
+                        root::proto::v1::DoubleArray { values: value },
+                    )),
+                    Err(err) => Err(err),
+                }
+            }
             _ => Err(ParseError {}),
         }
     }
-    
 }
 
 #[cfg(test)]
@@ -1962,7 +2108,8 @@ mod test {
 
     #[test]
     fn test_parse_values() {
-        #[cfg(feature = "feature_sdv")]{
+        #[cfg(feature = "feature_sdv")]
+        {
             // String
             assert!(matches!(
                 try_into_data_value("test", root::proto::v1::DataType::String),
@@ -2026,7 +2173,8 @@ mod test {
             assert!(try_into_data_value("-33000", root::proto::v1::DataType::Int16).is_err());
             assert!(try_into_data_value("-32000.1", root::proto::v1::DataType::Int16).is_err());
         }
-        #[cfg(feature = "feature_kuksa")]{
+        #[cfg(feature = "feature_kuksa")]
+        {
             // String
             assert!(matches!(
                 try_into_data_value("test", root::proto::v1::DataType::String),
@@ -2095,7 +2243,8 @@ mod test {
     #[test]
     fn test_entry_path_completion() {
         let mut metadata = Vec::new();
-        #[cfg(feature = "feature_sdv")]{
+        #[cfg(feature = "feature_sdv")]
+        {
             metadata = [
                 root::proto::v1::Metadata {
                     id: 1,
@@ -2121,12 +2270,14 @@ mod test {
                     change_type: root::proto::v1::ChangeType::OnChange.into(),
                     description: "".into(),
                 },
-            ].to_vec();
+            ]
+            .to_vec();
         }
 
-        #[cfg(feature = "feature_kuksa")]{
-            metadata.push(root::proto::v1::DataEntry{
-                path: "Vehicle.Test.Test1".into() , 
+        #[cfg(feature = "feature_kuksa")]
+        {
+            metadata.push(root::proto::v1::DataEntry {
+                path: "Vehicle.Test.Test1".into(),
                 value: None,
                 actuator_target: None,
                 metadata: Some(root::proto::v1::Metadata {
@@ -2138,9 +2289,10 @@ mod test {
                     value_restriction: None,
                     entry_specific: None,
                     description: Some("".to_string()),
-                })});
-            metadata.push(root::proto::v1::DataEntry{
-                path: "Vehicle.Test.AnotherTest1".into() , 
+                }),
+            });
+            metadata.push(root::proto::v1::DataEntry {
+                path: "Vehicle.Test.AnotherTest1".into(),
                 value: None,
                 actuator_target: None,
                 metadata: Some(root::proto::v1::Metadata {
@@ -2152,9 +2304,10 @@ mod test {
                     value_restriction: None,
                     entry_specific: None,
                     description: Some("".to_string()),
-                })});
-            metadata.push(root::proto::v1::DataEntry{
-                path: "Vehicle.Test.AnotherTest2".into() , 
+                }),
+            });
+            metadata.push(root::proto::v1::DataEntry {
+                path: "Vehicle.Test.AnotherTest2".into(),
                 value: None,
                 actuator_target: None,
                 metadata: Some(root::proto::v1::Metadata {
@@ -2166,9 +2319,9 @@ mod test {
                     value_restriction: None,
                     entry_specific: None,
                     description: Some("".to_string()),
-                })});
+                }),
+            });
         }
-
 
         let completer = CliCompleter::from_metadata(&metadata);
 

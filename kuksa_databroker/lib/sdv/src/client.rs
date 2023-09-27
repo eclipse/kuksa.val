@@ -13,15 +13,15 @@
 
 use std::collections::HashMap;
 
-use databroker_proto::sdv::databroker as proto;
 use common::{Client, ClientError};
+use databroker_proto::sdv::databroker as proto;
 
-pub struct SDVClient{
+pub struct SDVClient {
     pub basic_client: Client,
 }
 
-impl SDVClient{
-    pub fn new(basic_client: Client) -> Self{
+impl SDVClient {
+    pub fn new(basic_client: Client) -> Self {
         SDVClient { basic_client }
     }
 
