@@ -408,6 +408,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "databroker-proto",
+ "http",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
 name = "console"
 version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -573,12 +584,15 @@ version = "0.4.1"
 dependencies = [
  "ansi_term",
  "clap",
+ "common",
  "databroker-proto",
  "http",
+ "kuksa",
  "linefeed",
  "prost",
  "prost-types",
  "regex",
+ "sdv",
  "tokio",
  "tokio-stream",
  "tonic",
@@ -706,6 +720,15 @@ checksum = "ac3e13f66a2f95e32a39eaa81f6b95d42878ca0e1db0c7543723dfe12557e860"
 dependencies = [
  "libc",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "faster-hex"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "239f7bfb930f820ab16a9cd95afc26f88264cf6905c960b340a615384aa3338a"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -2481,6 +2504,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sdv"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "databroker-proto",
+ "http",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
 name = "sealed"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3224,12 +3259,6 @@ dependencies = [
  "rustversion",
  "time",
 ]
-
-[[package]]
-name = "version_check"
-version = "0.9.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "walkdir"
