@@ -1,0 +1,38 @@
+#********************************************************************************
+# Copyright (c) 2022, 2023 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License 2.0 which is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# SPDX-License-Identifier: Apache-2.0
+#*******************************************************************************/
+
+[package]
+name = "kuksa"
+version = "0.1.0"
+authors = ["Robert Bosch GmbH"]
+edition = "2018"
+license = "Apache-2.0"
+
+[dependencies]
+common = { path = "../."}
+databroker-proto = { workspace = true }
+tonic = { workspace = true, features = ["transport", "channel"] }
+tokio = { workspace = true, features = [
+    "macros",
+] }
+tokio-stream = { workspace = true, features = ["sync"] }
+http = "0.2.8"
+
+[lib]
+name = "kuksa"
+crate-type = ["lib"]
+path = "src/client.rs"
+
+[features]
+default = ["tls"]
+tls = ["tonic/tls"]
