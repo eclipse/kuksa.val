@@ -37,6 +37,7 @@ pub enum ConnectionState {
 pub enum ClientError {
     Connection(String),
     Status(tonic::Status),
+    Function(Vec<String>)
 }
 
 impl std::error::Error for ClientError {}
@@ -45,6 +46,15 @@ impl std::fmt::Display for ClientError {
         match self {
             ClientError::Connection(con) => f.pad(con),
             ClientError::Status(status) => f.pad(&format!("{status}")),
+            ClientError::Function(err) => {
+                let formatted_result: String = err
+                    .iter()
+                    .map(|element| format!("{}", element))
+                    .collect::<Vec<String>>()
+                    .join(", "); // Join the elements with a comma and space
+
+                f.pad(&formatted_result)
+            }
         }
     }
 }
