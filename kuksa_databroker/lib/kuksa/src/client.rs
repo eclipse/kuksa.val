@@ -49,8 +49,18 @@ impl KuksaClient {
             match client.get(get_request).await {
                 Ok(response) => {
                     let message = response.into_inner();
-                    let entries = message.entries;
-                    metadata_result = entries;
+                    metadata_result = message.entries;
+                    let mut errors = Vec::new();
+                    for error in message.errors{
+                        if let Some(err) = error.error{
+                            errors.push(err.code.to_string());
+                            errors.push(err.reason.to_string());
+                            errors.push(err.message.to_string());
+                        }
+                    }
+                    if !errors.is_empty(){
+                        return Err(ClientError::Function(errors));
+                    }
                 }
                 Err(err) => return Err(ClientError::Status(err)),
             }
@@ -83,6 +93,17 @@ impl KuksaClient {
                 Ok(response) => {
                     let message = response.into_inner();
                     get_result = message.entries;
+                    let mut errors = Vec::new();
+                    for error in message.errors{
+                        if let Some(err) = error.error{
+                            errors.push(err.code.to_string());
+                            errors.push(err.reason.to_string());
+                            errors.push(err.message.to_string());
+                        }
+                    }
+                    if !errors.is_empty(){
+                        return Err(ClientError::Function(errors));
+                    }
                 }
                 Err(err) => return Err(ClientError::Status(err)),
             }
@@ -115,6 +136,17 @@ impl KuksaClient {
                 Ok(response) => {
                     let message = response.into_inner();
                     get_result = message.entries;
+                    let mut errors = Vec::new();
+                    for error in message.errors{
+                        if let Some(err) = error.error{
+                            errors.push(err.code.to_string());
+                            errors.push(err.reason.to_string());
+                            errors.push(err.message.to_string());
+                        }
+                    }
+                    if !errors.is_empty(){
+                        return Err(ClientError::Function(errors));
+                    }
                 }
                 Err(err) => return Err(ClientError::Status(err)),
             }
