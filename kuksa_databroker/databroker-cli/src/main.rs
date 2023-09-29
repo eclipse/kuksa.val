@@ -103,6 +103,7 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[allow(unused_assignments)]
     let mut properties = Vec::new();
     #[cfg(feature = "feature_sdv")]
     {
@@ -129,7 +130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cli = Cli::parse();
 
-    let mut basic_client = common::Client::new(to_uri(cli.server)?);
+    let basic_client = common::Client::new(to_uri(cli.server)?);
     let mut client;
     #[cfg(feature = "feature_sdv")]
     {
@@ -229,6 +230,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         "Successfully connected to {}",
                         client.basic_client.get_uri()
                     ))?;
+                    #[allow(unused_mut)]
                     let mut pattern = vec![];
                     #[cfg(feature = "feature_kuksa")]
                     {
@@ -245,6 +247,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                         Err(common::ClientError::Connection(msg)) => {
                             print_error("metadata", msg)?;
+                        }
+                        Err(common::ClientError::Function(msg)) => {
+                            print_resp_err_fmt("metadata", format_args!("Error {msg:?}"))?;
                         }
                     }
                 }
@@ -294,6 +299,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     Err(common::ClientError::Connection(msg)) => {
                                         print_error(cmd, msg)?;
                                     }
+                                    Err(common::ClientError::Function(msg)) => {
+                                        print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                    }
                                 }
                             }
                             #[cfg(feature = "feature_kuksa")]
@@ -318,6 +326,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     }
                                     Err(common::ClientError::Connection(msg)) => {
                                         print_error(cmd, msg)?;
+                                    }
+                                    Err(common::ClientError::Function(msg)) => {
+                                        print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
                                     }
                                 }
                             }
@@ -345,6 +356,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         }
                                         Err(common::ClientError::Connection(msg)) => {
                                             print_error("metadata", msg)?;
+                                        }
+                                        Err(common::ClientError::Function(msg)) => {
+                                            print_resp_err_fmt("metadata", format_args!("Error {msg:?}"))?;
                                         }
                                     }
                                 }
@@ -376,6 +390,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             }
                                             Err(common::ClientError::Connection(msg)) => {
                                                 print_error("metadata", msg)?;
+                                            }
+                                            Err(common::ClientError::Function(msg)) => {
+                                                print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
                                             }
                                         }
                                     }
@@ -485,6 +502,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         Err(common::ClientError::Connection(msg)) => {
                                             print_error(cmd, msg)?
                                         }
+                                        Err(common::ClientError::Function(msg)) => {
+                                            print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                        }
                                     }
                                 }
                             }
@@ -499,6 +519,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     }
                                     Err(common::ClientError::Connection(msg)) => {
                                         print_error("metadata", msg)?;
+                                        None
+                                    }
+                                    Err(common::ClientError::Function(msg)) => {
+                                        print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
                                         None
                                     }
                                 };
@@ -548,36 +572,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                                             match client.set_current_values(datapoints).await {
                                                 Ok(res) => {
-                                                    for message in res {
-                                                        if message.errors.is_empty() {
-                                                            print_resp_ok(cmd)?;
-                                                        } else {
-                                                            for error in message.errors {
-                                                                print_resp_ok(cmd)?;
-                                                                let error_mes = error.error;
-                                                                println!(
-                                                                    "Error setting {}: {}",
-                                                                    error.path,
-                                                                    Color::Red.paint(format!(
-                                                                        "{error_mes:?}"
-                                                                    )),
-                                                                );
-                                                            }
-                                                        }
-                                                        match message.error {
-                                                            Some(error) => print_resp_ok_fmt(
-                                                                cmd,
-                                                                format_args!("Error {error:?}"),
-                                                            )?,
-                                                            None => (),
-                                                        };
-                                                    }
+                                                    print_resp_ok(cmd)?
                                                 }
                                                 Err(common::ClientError::Status(status)) => {
                                                     print_resp_err(cmd, &status)?
                                                 }
                                                 Err(common::ClientError::Connection(msg)) => {
                                                     print_error(cmd, msg)?
+                                                }
+                                                Err(common::ClientError::Function(msg)) => {
+                                                    print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?
                                                 }
                                             }
                                         }
@@ -670,6 +674,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         Err(common::ClientError::Connection(msg)) => {
                                             print_error(cmd, msg)?
                                         }
+                                        Err(common::ClientError::Function(msg)) => {
+                                            print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                        }
                                     }
                                 }
                             }
@@ -684,6 +691,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     }
                                     Err(common::ClientError::Connection(msg)) => {
                                         print_error("metadata", msg)?;
+                                        None
+                                    }
+                                    Err(common::ClientError::Function(msg)) => {
+                                        print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
                                         None
                                     }
                                 };
@@ -720,36 +731,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                                             match client.set_current_values(datapoints).await {
                                                 Ok(res) => {
-                                                    for message in res {
-                                                        if message.errors.is_empty() {
-                                                            print_resp_ok(cmd)?;
-                                                        } else {
-                                                            for error in message.errors {
-                                                                print_resp_ok(cmd)?;
-                                                                let error_mes = error.error;
-                                                                println!(
-                                                                    "Error setting {}: {}",
-                                                                    error.path,
-                                                                    Color::Red.paint(format!(
-                                                                        "{error_mes:?}"
-                                                                    )),
-                                                                );
-                                                            }
-                                                        }
-                                                        match message.error {
-                                                            Some(error) => print_resp_ok_fmt(
-                                                                cmd,
-                                                                format_args!("Error {error:?}"),
-                                                            )?,
-                                                            None => (),
-                                                        };
-                                                    }
+                                                    print_resp_ok(cmd);
                                                 }
                                                 Err(common::ClientError::Status(status)) => {
                                                     print_resp_err(cmd, &status)?
                                                 }
                                                 Err(common::ClientError::Connection(msg)) => {
                                                     print_error(cmd, msg)?
+                                                }
+                                                Err(common::ClientError::Function(msg)) => {
+                                                    print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
                                                 }
                                             }
                                         }
@@ -765,6 +756,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 continue;
                             }
 
+                            #[allow(unused_mut)]
                             let mut input;
 
                             #[cfg(feature = "feature_sdv")]
@@ -897,6 +889,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     print_resp_err(cmd, &status)?
                                 }
                                 Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
+                                Err(common::ClientError::Function(msg)) => print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?,
                             }
                         }
                         "connect" => {
@@ -955,6 +948,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         Err(common::ClientError::Connection(msg)) => {
                                             print_error("metadata", msg)?;
                                         }
+                                        Err(common::ClientError::Function(msg)) => {
+                                            print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                        }
                                     }
                                 }
                             };
@@ -981,6 +977,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     }
                                     Err(common::ClientError::Connection(msg)) => {
                                         print_error(cmd, msg)?;
+                                        continue;
+                                    }
+                                    Err(common::ClientError::Function(msg)) => {
+                                        print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
                                         continue;
                                     }
                                 }
@@ -1084,6 +1084,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         Err(common::ClientError::Connection(msg)) => {
                                             print_error(cmd, msg)?;
                                             continue;
+                                        }
+                                        Err(common::ClientError::Function(msg)) => {
+                                            print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
                                         }
                                     }
                                 }
@@ -1390,10 +1393,17 @@ impl CliCompleter {
 }
 
 fn set_connected_prompt(interface: &Arc<Interface<DefaultTerminal>>) {
+    let mut _text;
+    #[cfg(feature = "feature_sdv")]{
+        _text = "sdv.databroker.v1"
+    }
+    #[cfg(feature = "feature_kuksa")]{
+        _text = "kuksa.val.v1"
+    }
     let connected_prompt = format!(
         "\x01{prefix}\x02{text}\x01{suffix}\x02 > ",
         prefix = Color::Green.prefix(),
-        text = "sdv.databroker.v1",
+        text = _text,
         suffix = Color::Green.suffix()
     );
     interface.set_prompt(&connected_prompt).unwrap();
@@ -1463,6 +1473,15 @@ fn print_resp_err(operation: impl AsRef<str>, err: &tonic::Status) -> io::Result
     ))?;
     output.write_all(b"\n")?;
     output.flush()
+}
+
+fn print_resp_err_fmt(operation: impl AsRef<str>, fmt: fmt::Arguments<'_>) -> io::Result<()> {
+    let mut stderr = io::stderr().lock();
+    let mut stdout = io::stdout().lock();
+    write_resp_ok(&mut stderr, operation)?;
+    stdout.write_fmt(fmt)?;
+    stdout.write_all(b"\n")?;
+    stdout.flush()
 }
 
 fn print_resp_ok_fmt(operation: impl AsRef<str>, fmt: fmt::Arguments<'_>) -> io::Result<()> {
@@ -1551,10 +1570,21 @@ impl<Term: Terminal> Completer<Term> for CliCompleter {
                 }
             }
             Some("get") | Some("metadata") => self.complete_entry_path(word),
-            Some("subscribe") => match words.next() {
-                None => Some(vec![Completion::simple("SELECT".to_owned())]),
-                Some(next) => {
-                    if next == "SELECT" {
+            Some("subscribe") => {
+                #[cfg(feature = "feature_sdv")]{
+                    match words.next() {
+                        None => Some(vec![Completion::simple("SELECT".to_owned())]),
+                        Some(next) => {
+                            if next == "SELECT" {
+                                self.complete_entry_path(word)
+                            } else {
+                                None
+                            }
+                        }
+                    }
+                }
+                #[cfg(feature = "feature_kuksa")]{
+                    if words.count() == 0 {
                         self.complete_entry_path(word)
                     } else {
                         None
@@ -2354,6 +2384,7 @@ mod test {
 
     #[test]
     fn test_entry_path_completion() {
+        #[allow(unused_mut, unused_assignments)]
         let mut metadata = Vec::new();
         #[cfg(feature = "feature_sdv")]
         {
