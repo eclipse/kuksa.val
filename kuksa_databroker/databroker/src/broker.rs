@@ -29,6 +29,8 @@ use std::time::SystemTime;
 
 use tracing::{debug, info, warn};
 
+use crate::glob;
+
 #[derive(Debug)]
 pub enum UpdateError {
     NotFound,
@@ -46,7 +48,7 @@ pub enum ReadError {
     PermissionExpired,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RegistrationError {
     ValidationError,
     PermissionDenied,
@@ -1024,6 +1026,10 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
         allowed: Option<types::DataValue>,
         datapoint: Option<Datapoint>,
     ) -> Result<i32, RegistrationError> {
+        if !glob::is_valid_path(name.as_str()) {
+            return Err(RegistrationError::ValidationError);
+        }
+
         self.permissions
             .can_create(&name)
             .map_err(|err| match err {
@@ -2910,6 +2916,54 @@ mod tests {
                 "Vehicle.Test1" => assert_eq!(entry.id, id1),
                 "Vehicle.Test2" => assert_eq!(entry.id, id2),
                 _ => panic!("Unexpected metadata entry"),
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_register_invalid_and_valid_path() {
+        let broker = DataBroker::default();
+        let broker = broker.authorized_access(&permissions::ALLOW_ALL);
+
+        let error = broker
+            .add_entry(
+                "test. signal:3".to_owned(),
+                DataType::String,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test signal 3".to_owned(),
+                Some(DataValue::Int32Array(Vec::from([1, 2, 3, 4]))),
+            )
+            .await
+            .unwrap_err();
+        assert_eq!(error, RegistrationError::ValidationError);
+
+        let id = broker
+            .add_entry(
+                "Vehicle._kuksa.databroker.GitVersion.Do_you_not_like_smörgåstårta.tschö_mit_ö.東京_Москва_r#true".to_owned(),
+                DataType::Bool,
+                ChangeType::OnChange,
+                EntryType::Sensor,
+                "Test datapoint".to_owned(),
+                Some(DataValue::BoolArray(Vec::from([true]))),
+            )
+            .await
+            .expect("Register datapoint should succeed");
+        {
+            match broker.get_entry_by_id(id).await {
+                Ok(entry) => {
+                    assert_eq!(entry.metadata.id, id);
+                    assert_eq!(entry.metadata.path, "Vehicle._kuksa.databroker.GitVersion.Do_you_not_like_smörgåstårta.tschö_mit_ö.東京_Москва_r#true");
+                    assert_eq!(entry.metadata.data_type, DataType::Bool);
+                    assert_eq!(entry.metadata.description, "Test datapoint");
+                    assert_eq!(
+                        entry.metadata.allowed,
+                        Some(DataValue::BoolArray(Vec::from([true])))
+                    );
+                }
+                Err(_) => {
+                    panic!("no metadata returned");
+                }
             }
         }
     }

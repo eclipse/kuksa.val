@@ -40,21 +40,21 @@ pub fn to_regex_string(glob: &str) -> String {
         if glob.starts_with("**.") {
             regex_string = regex_string.replace("**\\.", ".+\\.");
         } else if glob.starts_with("*.") {
-            regex_string = regex_string.replace("*\\.", "[^.]+\\.");
+            regex_string = regex_string.replace("*\\.", "[^.\\s\\:]+\\.");
         }
 
         if glob.ends_with(".*") {
-            regex_string = regex_string.replace("\\.*", "\\.[^.]+");
+            regex_string = regex_string.replace("\\.*", "\\.[^.\\s\\:]+");
         } else if glob.ends_with(".**") {
             regex_string = regex_string.replace("\\.**", "\\..*");
         }
 
         if glob.contains(".**.") {
-            regex_string = regex_string.replace("\\.**", "[\\.[A-Z][a-zA-Z0-9]*]*");
+            regex_string = regex_string.replace("\\.**", "[\\.[^.\\s\\:]+]*");
         }
 
         if glob.contains(".*.") {
-            regex_string = regex_string.replace("\\.*", "\\.[^.]+");
+            regex_string = regex_string.replace("\\.*", "\\.[^.\\s\\:]+");
         }
     }
 
@@ -77,7 +77,7 @@ lazy_static! {
         ^  # anchor at start (only match full paths)
         # At least one subpath (consisting of either of three):
         (?:
-            [A-Z][a-zA-Z0-9]*  # An alphanumeric name (first letter capitalized)
+            [^\.\s\:]+  # Any character except :, whitespace and .
             |
             \*                 # An asterisk
             |
@@ -88,12 +88,12 @@ lazy_static! {
         (?:
             \. # Separator, literal dot
             (?:
-                [A-Z][a-zA-Z0-9]*  # Alphanumeric name (first letter capitalized)
+                [^\.\s\:]+  # Any character except :, whitespace and .
                 |
                 \*                 # An asterisk
                 |
                 \*\*               # A double asterisk
-            )
+            )+
         )*
         $  # anchor at end (to match only full paths)
         ",
@@ -105,11 +105,40 @@ pub fn is_valid_pattern(input: &str) -> bool {
     REGEX_VALID_PATTERN.is_match(input)
 }
 
+lazy_static! {
+    static ref REGEX_VALID_PATH: regex::Regex = regex::Regex::new(
+        r"(?x)
+        ^  # anchor at start (only match full paths)
+        # At least one subpath (consisting of either of three):
+        (?:
+            [^\.\s\:\*]+  # Any character except :, whitespace and .
+        )
+        # which can be followed by ( separator + another subpath )
+        # repeated any number of times
+        (?:
+            \. # Separator, literal dot
+            (?:
+                [^\.\s\:\*]+  # Any character except :, whitespace and .
+            )+
+        )*
+        $  # anchor at end (to match only full paths)
+        ",
+    )
+    .expect("regex compilation (of static path) should always succeed");
+}
+
+pub fn is_valid_path(input: &str) -> bool {
+    REGEX_VALID_PATH.is_match(input)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     static ALL_SIGNALS: &[&str] = &[
+        "Vehicle._kuksa.databroker.GitVersion",
+        "Vehicle._kuksa.databroker.CargoVersion",
+        "Vehicle._kuksa.databroker.GitVersion",
         "Vehicle.ADAS.ABS.IsEnabled",
         "Vehicle.ADAS.ABS.IsEngaged",
         "Vehicle.ADAS.ABS.IsError",
@@ -1250,7 +1279,7 @@ mod tests {
     #[test]
     fn test_regex_wildcard_at_end() {
         assert!(using_glob("Vehicle.Cabin.Sunroof.*")
-            .should_equal_regex_pattern(r"^Vehicle\.Cabin\.Sunroof\.[^.]+$"));
+            .should_equal_regex_pattern(r"^Vehicle\.Cabin\.Sunroof\.[^.\s\:]+$"));
     }
 
     #[test]
@@ -1267,7 +1296,7 @@ mod tests {
     #[test]
     fn test_regex_single_wildcard_in_middle() {
         assert!(using_glob("Vehicle.Cabin.Sunroof.*.Position")
-            .should_equal_regex_pattern(r"^Vehicle\.Cabin\.Sunroof\.[^.]+\.Position$"));
+            .should_equal_regex_pattern(r"^Vehicle\.Cabin\.Sunroof\.[^.\s\:]+\.Position$"));
     }
 
     #[test]
@@ -1357,7 +1386,7 @@ mod tests {
     #[ignore]
     #[test]
     fn test_regex_single_wildcard_at_the_beginning() {
-        assert!(using_glob("*.Sunroof").should_equal_regex_pattern(r"^[^.]+\.Sunroof$"));
+        assert!(using_glob("*.Sunroof").should_equal_regex_pattern(r"^[^.\s\:]+\.Sunroof$"));
     }
 
     #[test]
@@ -1381,13 +1410,23 @@ mod tests {
     }
 
     #[test]
+    fn test_matches_underscore_cases() {
+        assert!(using_glob("Vehicle._kuksa.**")
+            .with_signals(ALL_SIGNALS)
+            .should_match_signals(&[
+                "Vehicle._kuksa.databroker.GitVersion",
+                "Vehicle._kuksa.databroker.CargoVersion",
+                "Vehicle._kuksa.databroker.GitVersion",
+            ],));
+    }
+
+    #[test]
     fn test_is_valid_pattern() {
         assert!(is_valid_pattern("String.*"));
         assert!(is_valid_pattern("String.**"));
         assert!(is_valid_pattern("Vehicle.Chassis.Axle.Row2.Wheel.*"));
         assert!(is_valid_pattern("String.String.String.String.*"));
         assert!(is_valid_pattern("String.String.String.String.**"));
-        assert!(is_valid_pattern("String.String.String.String"));
         assert!(is_valid_pattern("String.String.String.String.String.**"));
         assert!(is_valid_pattern("String.String.String.*.String"));
         assert!(is_valid_pattern("String.String.String.**.String"));
@@ -1397,28 +1436,55 @@ mod tests {
         assert!(is_valid_pattern(
             "String.String.String.String.*.String.String"
         ));
-
         assert!(is_valid_pattern("String.*.String.String"));
         assert!(is_valid_pattern("String.String.**.String.String"));
         assert!(is_valid_pattern("String.**.String.String"));
         assert!(is_valid_pattern("**.String.String.String.**"));
-        assert!(is_valid_pattern("**.String.String.String.*"));
+        assert!(is_valid_pattern("**.String.String.9_tring.*"));
+        assert!(is_valid_pattern("**.string.String.String.*"));
+        assert!(is_valid_pattern("**._string.String.String.*"));
+        assert!(is_valid_pattern("String._kuksa.tring.9tring.*"));
         assert!(is_valid_pattern("**.String"));
         assert!(is_valid_pattern("*.String.String.String"));
         assert!(is_valid_pattern("*.String"));
-        assert!(!is_valid_pattern("String.String.String."));
-        assert!(!is_valid_pattern("String.String.String.String.."));
+        assert!(is_valid_pattern("*.String._"));
+
         assert!(!is_valid_pattern("String.*.String.String.."));
         assert!(!is_valid_pattern("*.String.String.String.."));
+        assert!(!is_valid_pattern("String.**.St ring.String"));
+        assert!(!is_valid_pattern("String.**:String. String"));
+        assert!(!is_valid_pattern("String.**.St. .ring.String"));
+        assert!(!is_valid_pattern("String.**.St. : .ring.String"));
+    }
+
+    #[test]
+    fn test_is_valid_path() {
+        assert!(is_valid_path("String.String.String.String"));
+        assert!(is_valid_path("String._kuksa.tring.9tring"));
+
+        assert!(is_valid_path("Vehicle.Con_ñ_de_España,_sí"));
+        assert!(is_valid_path("Vehicle.Do_you_not_like_smörgåstårta"));
+        assert!(is_valid_path("Vehicle.tschö_mit_ö"));
+        assert!(is_valid_path("Vehicle.wie_heißt_das_lied"));
+        assert!(is_valid_path("Vehicle.東京_Москва_r#true"));
+
+        assert!(!is_valid_path("String.String.String."));
+        assert!(!is_valid_path("String.String.String.String.."));
+        assert!(!is_valid_path("String:String.String"));
+        assert!(!is_valid_path("String.St ring.String"));
+        assert!(!is_valid_path("String:String. String"));
+        assert!(!is_valid_path("String.St. .ring.String"));
+        assert!(!is_valid_path("String.St. : .ring.String"));
+        assert!(!is_valid_path("*.String:String. String"));
     }
 
     #[test]
     fn test_valid_regex_path() {
-        assert_eq!(to_regex_string("String.*"), "^String\\.[^.]+$");
+        assert_eq!(to_regex_string("String.*"), "^String\\.[^.\\s\\:]+$");
         assert_eq!(to_regex_string("String.**"), "^String\\..*$");
         assert_eq!(
             to_regex_string("String.String.String.String.*"),
-            "^String\\.String\\.String\\.String\\.[^.]+$"
+            "^String\\.String\\.String\\.String\\.[^.\\s\\:]+$"
         );
         assert_eq!(
             to_regex_string("String.String.String.String.**"),
@@ -1434,31 +1500,31 @@ mod tests {
         );
         assert_eq!(
             to_regex_string("String.String.String.*.String"),
-            "^String\\.String\\.String\\.[^.]+\\.String$"
+            "^String\\.String\\.String\\.[^.\\s\\:]+\\.String$"
         );
         assert_eq!(
             to_regex_string("String.String.String.**.String"),
-            "^String\\.String\\.String[\\.[A-Z][a-zA-Z0-9]*]*\\.String$"
+            "^String\\.String\\.String[\\.[^.\\s\\:]+]*\\.String$"
         );
         assert_eq!(
             to_regex_string("String.String.String.String.String.**.String"),
-            "^String\\.String\\.String\\.String\\.String[\\.[A-Z][a-zA-Z0-9]*]*\\.String$"
+            "^String\\.String\\.String\\.String\\.String[\\.[^.\\s\\:]+]*\\.String$"
         );
         assert_eq!(
             to_regex_string("String.String.String.String.*.String.String"),
-            "^String\\.String\\.String\\.String\\.[^.]+\\.String\\.String$"
+            "^String\\.String\\.String\\.String\\.[^.\\s\\:]+\\.String\\.String$"
         );
         assert_eq!(
             to_regex_string("String.*.String.String"),
-            "^String\\.[^.]+\\.String\\.String$"
+            "^String\\.[^.\\s\\:]+\\.String\\.String$"
         );
         assert_eq!(
             to_regex_string("String.String.**.String.String"),
-            "^String\\.String[\\.[A-Z][a-zA-Z0-9]*]*\\.String\\.String$"
+            "^String\\.String[\\.[^.\\s\\:]+]*\\.String\\.String$"
         );
         assert_eq!(
             to_regex_string("String.**.String.String"),
-            "^String[\\.[A-Z][a-zA-Z0-9]*]*\\.String\\.String$"
+            "^String[\\.[^.\\s\\:]+]*\\.String\\.String$"
         );
         assert_eq!(
             to_regex_string("**.String.String.String.**"),
@@ -1466,13 +1532,13 @@ mod tests {
         );
         assert_eq!(
             to_regex_string("**.String.String.String.*"),
-            "^.+\\.String\\.String\\.String\\.[^.]+$"
+            "^.+\\.String\\.String\\.String\\.[^.\\s\\:]+$"
         );
         assert_eq!(to_regex_string("**.String"), "^.+\\.String$");
-        assert_eq!(to_regex_string("*.String"), "^[^.]+\\.String$");
+        assert_eq!(to_regex_string("*.String"), "^[^.\\s\\:]+\\.String$");
         assert_eq!(
             to_regex_string("*.String.String.String"),
-            "^[^.]+\\.String\\.String\\.String$"
+            "^[^.\\s\\:]+\\.String\\.String\\.String$"
         );
     }
 }
