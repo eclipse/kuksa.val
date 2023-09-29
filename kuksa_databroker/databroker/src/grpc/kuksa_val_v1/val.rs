@@ -72,17 +72,18 @@ impl proto::val_server::Val for broker::DataBroker {
 
             // Fill valid_requests structure.
             for request in requested {
-                if !glob::is_valid_pattern(&request.path) {
+                if request.path.contains('*') && !glob::is_valid_pattern(&request.path) {
                     errors.push(proto::DataEntryError {
                         path: request.path,
                         error: Some(proto::Error {
                             code: 400,
                             reason: "bad_request".to_owned(),
-                            message: "Bad Path Request".to_owned(),
+                            message: "Bad Wildcard Pattern Request".to_owned(),
                         }),
                     });
                     continue;
                 }
+
                 let view = proto::View::from_i32(request.view).ok_or_else(|| {
                     tonic::Status::invalid_argument(format!("Invalid View (id: {}", request.view))
                 })?;
