@@ -51,14 +51,14 @@ impl KuksaClient {
                     let message = response.into_inner();
                     metadata_result = message.entries;
                     let mut errors = Vec::new();
-                    for error in message.errors{
-                        if let Some(err) = error.error{
+                    for error in message.errors {
+                        if let Some(err) = error.error {
                             errors.push(err.code.to_string());
                             errors.push(err.reason.to_string());
                             errors.push(err.message.to_string());
                         }
                     }
-                    if !errors.is_empty(){
+                    if !errors.is_empty() {
                         return Err(ClientError::Function(errors));
                     }
                 }
@@ -94,14 +94,14 @@ impl KuksaClient {
                     let message = response.into_inner();
                     get_result = message.entries;
                     let mut errors = Vec::new();
-                    for error in message.errors{
-                        if let Some(err) = error.error{
+                    for error in message.errors {
+                        if let Some(err) = error.error {
                             errors.push(err.code.to_string());
                             errors.push(err.reason.to_string());
                             errors.push(err.message.to_string());
                         }
                     }
-                    if !errors.is_empty(){
+                    if !errors.is_empty() {
                         return Err(ClientError::Function(errors));
                     }
                 }
@@ -137,14 +137,14 @@ impl KuksaClient {
                     let message = response.into_inner();
                     get_result = message.entries;
                     let mut errors = Vec::new();
-                    for error in message.errors{
-                        if let Some(err) = error.error{
+                    for error in message.errors {
+                        if let Some(err) = error.error {
                             errors.push(err.code.to_string());
                             errors.push(err.reason.to_string());
                             errors.push(err.message.to_string());
                         }
                     }
-                    if !errors.is_empty(){
+                    if !errors.is_empty() {
                         return Err(ClientError::Function(errors));
                     }
                 }
@@ -284,7 +284,7 @@ impl KuksaClient {
             })
         }
 
-        let req = proto::v1::SubscribeRequest { entries: entries };
+        let req = proto::v1::SubscribeRequest { entries };
 
         match client.subscribe(req).await {
             Ok(response) => Ok(response.into_inner()),
@@ -297,7 +297,7 @@ impl KuksaClient {
         &mut self,
         paths: Vec<&str>,
     ) -> Result<tonic::Streaming<proto::v1::SubscribeResponse>, ClientError> {
-        return self.subscribe_current_values(paths).await;
+        self.subscribe_current_values(paths).await
     }
 
     pub async fn subscribe_target_values(
@@ -317,7 +317,7 @@ impl KuksaClient {
             })
         }
 
-        let req = proto::v1::SubscribeRequest { entries: entries };
+        let req = proto::v1::SubscribeRequest { entries };
 
         match client.subscribe(req).await {
             Ok(response) => Ok(response.into_inner()),
@@ -342,7 +342,7 @@ impl KuksaClient {
             })
         }
 
-        let req = proto::v1::SubscribeRequest { entries: entries };
+        let req = proto::v1::SubscribeRequest { entries };
 
         match client.subscribe(req).await {
             Ok(response) => Ok(response.into_inner()),
