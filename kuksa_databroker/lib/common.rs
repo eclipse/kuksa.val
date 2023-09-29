@@ -37,7 +37,7 @@ pub enum ConnectionState {
 pub enum ClientError {
     Connection(String),
     Status(tonic::Status),
-    Function(Vec<String>)
+    Function(Vec<String>),
 }
 
 impl std::error::Error for ClientError {}
@@ -49,7 +49,7 @@ impl std::fmt::Display for ClientError {
             ClientError::Function(err) => {
                 let formatted_result: String = err
                     .iter()
-                    .map(|element| format!("{}", element))
+                    .map(|element| element.to_string())
                     .collect::<Vec<String>>()
                     .join(", "); // Join the elements with a comma and space
 

@@ -103,17 +103,14 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    #[allow(unused_assignments)]
-    let mut properties = Vec::new();
+    let mut _properties = Vec::<root::proto::v1::Metadata>::new();
     #[cfg(feature = "feature_sdv")]
     {
         println!("Using sdv");
-        properties = Vec::<root::proto::v1::Metadata>::new();
     }
     #[cfg(feature = "feature_kuksa")]
     {
         println!("Using kuksa");
-        properties = Vec::<root::proto::v1::DataEntry>::new();
     }
 
     let mut subscription_nbr = 1;
@@ -230,7 +227,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         "Successfully connected to {}",
                         client.basic_client.get_uri()
                     ))?;
-                    #[allow(unused_mut)]
+                    #[allow(unused_mut, unused_assignments)]
                     let mut pattern = vec![];
                     #[cfg(feature = "feature_kuksa")]
                     {
@@ -240,7 +237,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Ok(metadata) => {
                             interface
                                 .set_completer(Arc::new(CliCompleter::from_metadata(&metadata)));
-                            properties = metadata;
+                            #[cfg(feature = "feature_sdv")]
+                            {
+                                _properties = metadata;
+                            }
                         }
                         Err(common::ClientError::Status(status)) => {
                             print_resp_err("metadata", &status)?;
@@ -349,7 +349,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             interface.set_completer(Arc::new(
                                                 CliCompleter::from_metadata(&metadata),
                                             ));
-                                            properties = metadata;
+                                            #[cfg(feature = "feature_sdv")]
+                                            {
+                                                _properties = metadata;
+                                            }
                                         }
                                         Err(common::ClientError::Status(status)) => {
                                             print_resp_err("metadata", &status)?;
@@ -358,7 +361,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             print_error("metadata", msg)?;
                                         }
                                         Err(common::ClientError::Function(msg)) => {
-                                            print_resp_err_fmt("metadata", format_args!("Error {msg:?}"))?;
+                                            print_resp_err_fmt(
+                                                "metadata",
+                                                format_args!("Error {msg:?}"),
+                                            )?;
                                         }
                                     }
                                 }
@@ -383,7 +389,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                 interface.set_completer(Arc::new(
                                                     CliCompleter::from_metadata(&metadata),
                                                 ));
-                                                properties = metadata;
+                                                #[cfg(feature = "feature_sdv")]
+                                                {
+                                                    _properties = metadata;
+                                                }
                                             }
                                             Err(common::ClientError::Status(status)) => {
                                                 print_resp_err("metadata", &status)?;
@@ -392,7 +401,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                 print_error("metadata", msg)?;
                                             }
                                             Err(common::ClientError::Function(msg)) => {
-                                                print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                                print_resp_err_fmt(
+                                                    cmd,
+                                                    format_args!("Error {msg:?}"),
+                                                )?;
                                             }
                                         }
                                     }
@@ -422,7 +434,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             {
                                 let datapoint_metadata = {
                                     let mut datapoint_metadata = None;
-                                    for metadata in properties.iter() {
+                                    for metadata in _properties.iter() {
                                         if metadata.name == path {
                                             datapoint_metadata = Some(metadata)
                                         }
@@ -571,9 +583,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             )]);
 
                                             match client.set_current_values(datapoints).await {
-                                                Ok(res) => {
-                                                    print_resp_ok(cmd)?
-                                                }
+                                                Ok(_) => print_resp_ok(cmd)?,
                                                 Err(common::ClientError::Status(status)) => {
                                                     print_resp_err(cmd, &status)?
                                                 }
@@ -581,7 +591,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                     print_error(cmd, msg)?
                                                 }
                                                 Err(common::ClientError::Function(msg)) => {
-                                                    print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?
+                                                    print_resp_err_fmt(
+                                                        cmd,
+                                                        format_args!("Error {msg:?}"),
+                                                    )?
                                                 }
                                             }
                                         }
@@ -603,7 +616,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             {
                                 let datapoint_metadata = {
                                     let mut datapoint_metadata = None;
-                                    for metadata in properties.iter() {
+                                    for metadata in _properties.iter() {
                                         if metadata.name == path {
                                             datapoint_metadata = Some(metadata)
                                         }
@@ -730,8 +743,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             )]);
 
                                             match client.set_current_values(datapoints).await {
-                                                Ok(res) => {
-                                                    print_resp_ok(cmd);
+                                                Ok(_) => {
+                                                    print_resp_ok(cmd)?;
                                                 }
                                                 Err(common::ClientError::Status(status)) => {
                                                     print_resp_err(cmd, &status)?
@@ -740,7 +753,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                     print_error(cmd, msg)?
                                                 }
                                                 Err(common::ClientError::Function(msg)) => {
-                                                    print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                                    print_resp_err_fmt(
+                                                        cmd,
+                                                        format_args!("Error {msg:?}"),
+                                                    )?;
                                                 }
                                             }
                                         }
@@ -889,7 +905,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     print_resp_err(cmd, &status)?
                                 }
                                 Err(common::ClientError::Connection(msg)) => print_error(cmd, msg)?,
-                                Err(common::ClientError::Function(msg)) => print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?,
+                                Err(common::ClientError::Function(msg)) => {
+                                    print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?
+                                }
                             }
                         }
                         "connect" => {
@@ -940,7 +958,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             interface.set_completer(Arc::new(
                                                 CliCompleter::from_metadata(&metadata),
                                             ));
-                                            properties = metadata;
+                                            #[cfg(feature = "feature_sdv")]
+                                            {
+                                                _properties = metadata;
+                                            }
                                         }
                                         Err(common::ClientError::Status(status)) => {
                                             print_resp_err("metadata", &status)?;
@@ -965,9 +986,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 match client.get_metadata(vec![]).await {
                                     Ok(mut metadata) => {
                                         metadata.sort_by(|a, b| a.name.cmp(&b.name));
-                                        properties = metadata;
+                                        _properties = metadata;
                                         interface.set_completer(Arc::new(
-                                            CliCompleter::from_metadata(&properties),
+                                            CliCompleter::from_metadata(&_properties),
                                         ));
                                         print_resp_ok(cmd)?;
                                     }
@@ -987,12 +1008,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 let mut filtered_metadata = Vec::new();
                                 if paths.is_empty() {
                                     print_info("If you want to list metadata of signals, use `metadata PATTERN`")?;
-                                    // filtered_metadata.extend(&properties);
+                                    // filtered_metadata.extend(&_properties);
                                 } else {
                                     for path in &paths {
                                         let path_re = path_to_regex(path);
                                         let filtered =
-                                            properties.iter().filter(|item| match &path_re {
+                                            _properties.iter().filter(|item| match &path_re {
                                                 Ok(re) => re.is_match(&item.name),
                                                 Err(err) => {
                                                     print_info(format!("Invalid path: {err}"))
@@ -1394,10 +1415,12 @@ impl CliCompleter {
 
 fn set_connected_prompt(interface: &Arc<Interface<DefaultTerminal>>) {
     let mut _text;
-    #[cfg(feature = "feature_sdv")]{
+    #[cfg(feature = "feature_sdv")]
+    {
         _text = "sdv.databroker.v1"
     }
-    #[cfg(feature = "feature_kuksa")]{
+    #[cfg(feature = "feature_kuksa")]
+    {
         _text = "kuksa.val.v1"
     }
     let connected_prompt = format!(
@@ -1450,6 +1473,7 @@ fn to_uri(uri: impl AsRef<str>) -> Result<Uri, String> {
     tonic::transport::Uri::from_parts(parts).map_err(|err| format!("{err}"))
 }
 
+#[allow(dead_code)]
 fn path_to_regex(path: impl AsRef<str>) -> Result<regex::Regex, regex::Error> {
     let path_as_re = format!(
         // Match the whole line (from left '^' to right '$')
@@ -1484,6 +1508,7 @@ fn print_resp_err_fmt(operation: impl AsRef<str>, fmt: fmt::Arguments<'_>) -> io
     stdout.flush()
 }
 
+#[allow(dead_code)]
 fn print_resp_ok_fmt(operation: impl AsRef<str>, fmt: fmt::Arguments<'_>) -> io::Result<()> {
     let mut stderr = io::stderr().lock();
     let mut stdout = io::stdout().lock();
@@ -1571,7 +1596,8 @@ impl<Term: Terminal> Completer<Term> for CliCompleter {
             }
             Some("get") | Some("metadata") => self.complete_entry_path(word),
             Some("subscribe") => {
-                #[cfg(feature = "feature_sdv")]{
+                #[cfg(feature = "feature_sdv")]
+                {
                     match words.next() {
                         None => Some(vec![Completion::simple("SELECT".to_owned())]),
                         Some(next) => {
@@ -1583,14 +1609,15 @@ impl<Term: Terminal> Completer<Term> for CliCompleter {
                         }
                     }
                 }
-                #[cfg(feature = "feature_kuksa")]{
+                #[cfg(feature = "feature_kuksa")]
+                {
                     if words.count() == 0 {
                         self.complete_entry_path(word)
                     } else {
                         None
                     }
                 }
-            },
+            }
             Some("token-file") => {
                 let path_completer = linefeed::complete::PathCompleter;
                 path_completer.complete(word, prompter, start, _end)
