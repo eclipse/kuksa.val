@@ -112,7 +112,7 @@ cargo run --bin databroker -- --port 55556
 Please note, this also applies if you use a container environment like K3S or Docker on Mac OS. If you forward the port or exposing the host network
 interfaces, the same problem occurs.
 
-For more information see also https://developer.apple.com/forums/thread/671197 
+For more information see also https://developer.apple.com/forums/thread/671197
 
 Currently, to run databroker-cli (see below), you do need to change the port it connects to in databroker-cli code and recompile it.
 
@@ -142,7 +142,7 @@ This will enable `TAB`-completion for the available properties in the client. Ru
 
 Get data points by running "get"
 ```shell
-sdv.databroker.v1 > get Vehicle.ADAS.CruiseControl.IsEnabled 
+sdv.databroker.v1 > get Vehicle.ADAS.CruiseControl.IsEnabled
 [get]  OK
 Vehicle.ADAS.CruiseControl.IsEnabled: ( NotAvailable )
 ```
@@ -164,7 +164,7 @@ or interactively
 sdv.databroker.v1 > token XXXXXXXXXX
 ```
 
-or 
+or
 
 ```shell
 sdv.databroker.v1 > token-file jwt/read-vehicle-speed.token
@@ -215,7 +215,7 @@ Use the following command to run Databroker test cases
 ```shell
  cargo test --all-targets
  ```
- 
+
 ## Build and run Databroker using Docker
 
 To build the release version of databroker, run the following command:
