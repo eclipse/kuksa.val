@@ -100,10 +100,14 @@ jobs:
           linux/arm64
         context: .
         file: kuksa-client/Dockerfile
-        push: false
+        push: true
         tags: "ttl.sh/kuksa.val/kuksa-client-${{github.sha}}"
         labels: ${{ steps.meta.outputs.labels }}
 
+    - name: Posting temporary container location
+      uses: ./.github/actions/post-container-location
+      with:
+        image: ttl.sh/kuksa.val/kuksa-client-${{github.sha}}
 
   kuksa-client-test:
     runs-on: ubuntu-latest
