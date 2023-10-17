@@ -13,6 +13,13 @@ Or install the protobuf compiler yourself(https://grpc.io/docs/protoc-installati
 ```
 > export PATH=$PATH:$HOME/protoc/bin
 ```
+
+If using a newer Linux version that has protoc >= 3.19 by default you may alternatively install the protobuf compiler with apt:
+
+```
+> sudo apt install protobuf-compiler
+```
+
 - Run the following command to install the needed GO protocol buffers plugins:
 ```
 > go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
