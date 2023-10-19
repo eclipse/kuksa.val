@@ -31,11 +31,13 @@ import websockets
 
 from kuksa_client import cli_backend
 
+
 class Backend(cli_backend.Backend):
     def __init__(self, config):
         super().__init__(config)
         self.wsConnected = False
-
+        self.subprotocol = None
+        self.token = None
         self.subscriptionCallbacks = {}
         self.sendMsgQueue = queue.Queue()
         self.recvMsgQueues = {}
@@ -125,13 +127,21 @@ class Backend(cli_backend.Backend):
             token = token_or_tokenfile.expanduser().read_text(encoding='utf-8')
         else:
             token = token_or_tokenfile
-        req = {}
-        req["action"] = "authorize"
-        req["tokens"] = token
-        return self._sendReceiveMsg(req, timeout)
+
+        if self.subprotocol == "VISSv2":
+            self.token = token
+            return "OK"
+        else:
+            req = {}
+            req["action"] = "authorize"
+            req["tokens"] = token
+            return self._sendReceiveMsg(req, timeout)
 
     # Update VSS Tree Entry
     def updateVSSTree(self, jsonStr, timeout=5):
+        if self.subprotocol == "VISSv2":
+            raise Exception("Not supported by VISSv2.")
+
         req = {}
         req["action"] = "updateVSSTree"
         if os.path.isfile(jsonStr):
@@ -141,8 +151,11 @@ class Backend(cli_backend.Backend):
             req["metadata"] = json.loads(jsonStr)
         return self._sendReceiveMsg(req, timeout)
 
-   # Update Meta Data of a given path
+    # Update Meta Data of a given path
     def updateMetaData(self, path, jsonStr, timeout=5):
+        if self.subprotocol == "VISSv2":
+            raise Exception("Not supported by VISSv2.")
+
         req = {}
         req["action"] = "updateMetaData"
         req["path"] = path
@@ -153,37 +166,68 @@ class Backend(cli_backend.Backend):
     def getMetaData(self, path, timeout=5):
         """Get MetaData of the parameter"""
         req = {}
-        req["action"] = "getMetaData"
-        req["path"] = path
+        if self.subprotocol == "VISSv2":
+            req["action"] = "get"
+            req["path"] = path
+            req["filter"] = {"type": "static-metadata"}
+        else:
+            req["action"] = "getMetaData"
+            if path == "":
+                path = "*"
+            req["path"] = path
+
         return self._sendReceiveMsg(req, timeout)
 
     # Set value to a given path
     def setValue(self, path, value, attribute="value", timeout=5):
+        if self.subprotocol == "VISSv2" and attribute != "targetValue":
+            raise Exception("Try using `setTargetValue` if you meant to use the `set` function of VISSv2")
+
         if 'nan' == value:
             return json.dumps({"error": path + " has an invalid value " + str(value)}, indent=2)
-        req = {}
-        req["action"] = "set"
-        req["path"] = path
-        req["attribute"] = attribute
+
         try:
             jsonValue = json.loads(value)
             if isinstance(jsonValue, list):
-                req[attribute] = []
+                value = []
                 for v in jsonValue:
-                    req[attribute].append(str(v))
+                    value.append(str(v))
             else:
-                req[attribute] = str(value)
+                value = str(value)
         except json.decoder.JSONDecodeError:
-            req[attribute] = str(value)
+            value = str(value)
+
+        req = {}
+        if self.subprotocol == "VISSv2":
+            req["action"] = "set"
+            req["path"] = path
+            if self.token:
+                req["authorization"] = self.token
+            req["value"] = value
+        else:
+            req["action"] = "set"
+            req["path"] = path
+            req["attribute"] = attribute
+            req[attribute] = value
 
         return self._sendReceiveMsg(req, timeout)
 
     # Get value to a given path
     def getValue(self, path, attribute="value", timeout=5):
+        if self.subprotocol == "VISSv2" and attribute != "value":
+            raise Exception("Try using `getValue` if you meant to use the `get` function of VISSv2")
+
         req = {}
-        req["action"] = "get"
-        req["path"] = path
-        req["attribute"] = attribute
+        if self.subprotocol == "VISSv2":
+            req["action"] = "get"
+            req["path"] = path
+            if self.token:
+                req["authorization"] = self.token
+        else:
+            req["action"] = "get"
+            req["path"] = path
+            req["attribute"] = attribute
+
         return self._sendReceiveMsg(req, timeout)
 
     # Subscribe value changes of to a given path.
@@ -191,15 +235,31 @@ class Backend(cli_backend.Backend):
     #   updateMessage = await webSocket.recv()
     #   callback(updateMessage)
     def subscribe(self, path, callback, attribute="value", timeout=5):
+        if self.subprotocol == "VISSv2" and attribute != "value":
+            raise Exception("Try using `subscribe` without any attributes if you "
+                            "meant to use the `subscribe` function of VISSv2")
+
         req = {}
-        req["action"] = "subscribe"
-        req["path"] = path
-        req["attribute"] = attribute
+        if self.subprotocol == "VISSv2":
+            req["action"] = "subscribe"
+            req["path"] = path
+            if self.token:
+                req["authorization"] = self.token
+        else:
+            req["action"] = "subscribe"
+            req["path"] = path
+            req["attribute"] = attribute
+
         res = self._sendReceiveMsg(req, timeout)
         resJson = json.loads(res)
         if "subscriptionId" in resJson:
             self.subscriptionCallbacks[resJson["subscriptionId"]] = callback
         return res
+
+    def subscribeMultiple(self, paths, callback, attribute="value", timeout=5):
+        raise Exception("Not supported by VISSv2. "
+                        "Try using `subscribe` if you meant to use the "
+                        "`subscribe` function of VISSv2")
 
     # Unsubscribe value changes of to a given path.
     # The subscription id from the response of the corresponding subscription request will be required
@@ -229,6 +289,7 @@ class Backend(cli_backend.Backend):
         return self.wsConnected
 
     async def connect(self, _=None):
+        subprotocols = ["VISSv2"]
         if not self.insecure:
             context = ssl.create_default_context()
             context.load_cert_chain(
@@ -240,23 +301,32 @@ class Backend(cli_backend.Backend):
             context.check_hostname = True
             try:
                 print("connect to wss://"+self.serverIP+":"+str(self.serverPort))
-                args = {'uri':"wss://"+self.serverIP+":"+str(self.serverPort),'ssl':context}
-                # If your certificates does not contain the name of the server 
+                args = {
+                    "uri": "wss://"+self.serverIP+":"+str(self.serverPort),
+                    "ssl": context,
+                    "subprotocols": subprotocols,
+                }
+                # If your certificates does not contain the name of the server
                 # (for example during testing, in production it should match)
                 # then you can specify that checks should be against a different name
                 if self.tls_server_name:
                     args['server_hostname'] = self.tls_server_name
 
                 async with websockets.connect(**args) as ws:
-                    print("Websocket connected securely.")
+                    self.subprotocol = ws.subprotocol
+                    print(f"Websocket connected. Negotiated subprotocol {self.subprotocol}")
                     await self._msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))
         else:
             try:
-                print("connect to ws://"+self.serverIP+":"+str(self.serverPort))
-                async with websockets.connect("ws://"+self.serverIP+":"+str(self.serverPort)) as ws:
-                    print("Websocket connected.")
+                uri = "ws://"+self.serverIP+":"+str(self.serverPort)
+                print(f"connect to {uri}")
+                async with websockets.connect(uri, subprotocols=subprotocols) as ws:
+                    self.subprotocol = ws.subprotocol
+                    if self.subprotocol == "VISSv2":
+                        print("subprotocol matches condition")
+                    print(f"Websocket connected. Negotiated subprotocol {self.subprotocol}")
                     await self._msgHandler(ws)
             except OSError as e:
                 print("Disconnected!! " + str(e))
