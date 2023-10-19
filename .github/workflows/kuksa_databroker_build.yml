@@ -43,6 +43,10 @@ jobs:
       - name: cargo clippy
         working-directory: ${{github.workspace}}
         run: cargo clippy --all-targets -- -W warnings -D warnings
+      - name: cargo clippy (feature viss)
+        working-directory: ${{github.workspace}}
+        run: cargo clippy --features viss --all-targets -- -W warnings -D warnings
+
 
   test:
     name: Test
