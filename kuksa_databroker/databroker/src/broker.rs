@@ -553,8 +553,6 @@ impl Entry {
                 DataValue::DoubleArray(_) => Ok(()),
                 _ => Err(UpdateError::WrongType),
             },
-            DataType::Timestamp => Err(UpdateError::UnsupportedType),
-            DataType::TimestampArray => Err(UpdateError::UnsupportedType),
         }
     }
 

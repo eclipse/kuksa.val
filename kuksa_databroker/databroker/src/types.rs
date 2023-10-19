@@ -27,7 +27,6 @@ pub enum DataType {
     Uint64,
     Float,
     Double,
-    Timestamp,
     StringArray,
     BoolArray,
     Int8Array,
@@ -40,7 +39,6 @@ pub enum DataType {
     Uint64Array,
     FloatArray,
     DoubleArray,
-    TimestampArray,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

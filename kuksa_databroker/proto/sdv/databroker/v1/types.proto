@@ -23,32 +23,30 @@ package sdv.databroker.v1;
 // These are mapped to sint32 and uint32 respectively.
 //
 enum DataType {
-  STRING          = 0;
-  BOOL            = 1;
-  INT8            = 2;
-  INT16           = 3;
-  INT32           = 4;
-  INT64           = 5;
-  UINT8           = 6;
-  UINT16          = 7;
-  UINT32          = 8;
-  UINT64          = 9;
-  FLOAT           = 10;
-  DOUBLE          = 11;
-  TIMESTAMP       = 12;
-  STRING_ARRAY    = 20;
-  BOOL_ARRAY      = 21;
-  INT8_ARRAY      = 22;
-  INT16_ARRAY     = 23;
-  INT32_ARRAY     = 24;
-  INT64_ARRAY     = 25;
-  UINT8_ARRAY     = 26;
-  UINT16_ARRAY    = 27;
-  UINT32_ARRAY    = 28;
-  UINT64_ARRAY    = 29;
-  FLOAT_ARRAY     = 30;
-  DOUBLE_ARRAY    = 31;
-  TIMESTAMP_ARRAY = 32;
+  STRING       = 0;
+  BOOL         = 1;
+  INT8         = 2;
+  INT16        = 3;
+  INT32        = 4;
+  INT64        = 5;
+  UINT8        = 6;
+  UINT16       = 7;
+  UINT32       = 8;
+  UINT64       = 9;
+  FLOAT        = 10;
+  DOUBLE       = 11;
+  STRING_ARRAY = 20;
+  BOOL_ARRAY   = 21;
+  INT8_ARRAY   = 22;
+  INT16_ARRAY  = 23;
+  INT32_ARRAY  = 24;
+  INT64_ARRAY  = 25;
+  UINT8_ARRAY  = 26;
+  UINT16_ARRAY = 27;
+  UINT32_ARRAY = 28;
+  UINT64_ARRAY = 29;
+  FLOAT_ARRAY  = 30;
+  DOUBLE_ARRAY = 31;
 }
 
 enum DatapointError {
