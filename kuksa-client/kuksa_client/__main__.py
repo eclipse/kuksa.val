@@ -97,7 +97,7 @@ class TestClient(Cmd):
             # Convert to dict with paths as key
             self.metadata = {entry["path"]: entry for entry in entries}
         else:
-            entries = json.loads(self.getMetaData("*"))
+            entries = json.loads(self.getMetaData(""))
             if 'metadata' in entries:
                 # Convert to dict with paths as key
                 self.metadata = metadata_tree_to_dict(entries['metadata'])
