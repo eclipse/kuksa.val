@@ -177,7 +177,6 @@ impl From<&proto::DataType> for broker::DataType {
             proto::DataType::Uint64 => broker::DataType::Uint64,
             proto::DataType::Float => broker::DataType::Float,
             proto::DataType::Double => broker::DataType::Double,
-            proto::DataType::Timestamp => broker::DataType::Timestamp,
             proto::DataType::StringArray => broker::DataType::StringArray,
             proto::DataType::BoolArray => broker::DataType::BoolArray,
             proto::DataType::Int8Array => broker::DataType::Int8Array,
@@ -190,7 +189,6 @@ impl From<&proto::DataType> for broker::DataType {
             proto::DataType::Uint64Array => broker::DataType::Uint64Array,
             proto::DataType::FloatArray => broker::DataType::FloatArray,
             proto::DataType::DoubleArray => broker::DataType::DoubleArray,
-            proto::DataType::TimestampArray => broker::DataType::TimestampArray,
         }
     }
 }
@@ -255,7 +253,6 @@ impl From<&broker::DataType> for proto::DataType {
             broker::DataType::Uint64 => proto::DataType::Uint64,
             broker::DataType::Float => proto::DataType::Float,
             broker::DataType::Double => proto::DataType::Double,
-            broker::DataType::Timestamp => proto::DataType::Timestamp,
             broker::DataType::StringArray => proto::DataType::StringArray,
             broker::DataType::BoolArray => proto::DataType::BoolArray,
             broker::DataType::Int8Array => proto::DataType::Int8Array,
@@ -268,7 +265,6 @@ impl From<&broker::DataType> for proto::DataType {
             broker::DataType::Uint64Array => proto::DataType::Uint64Array,
             broker::DataType::FloatArray => proto::DataType::FloatArray,
             broker::DataType::DoubleArray => proto::DataType::DoubleArray,
-            broker::DataType::TimestampArray => proto::DataType::TimestampArray,
         }
     }
 }

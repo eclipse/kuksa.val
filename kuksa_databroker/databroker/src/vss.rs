@@ -220,9 +220,6 @@ fn try_from_json_array(
                 types::DataType::Double => {
                     try_from_json_value(value, &types::DataType::DoubleArray)
                 }
-                types::DataType::Timestamp => {
-                    try_from_json_value(value, &types::DataType::TimestampArray)
-                }
                 types::DataType::StringArray
                 | types::DataType::BoolArray
                 | types::DataType::Int8Array
@@ -234,8 +231,7 @@ fn try_from_json_array(
                 | types::DataType::Uint32Array
                 | types::DataType::Uint64Array
                 | types::DataType::FloatArray
-                | types::DataType::DoubleArray
-                | types::DataType::TimestampArray => try_from_json_value(value, data_type),
+                | types::DataType::DoubleArray => try_from_json_value(value, data_type),
             }
         }
         None => Ok(None),
@@ -284,9 +280,6 @@ fn try_from_json_value(
             types::DataType::Double => serde_json::from_value::<f64>(value)
                 .map(|value| Some(types::DataValue::Double(value)))
                 .map_err(|err| err.into()),
-            types::DataType::Timestamp => {
-                Err(Error::ParseError("timestamp is not supported".to_owned()))
-            }
             types::DataType::StringArray => serde_json::from_value::<Vec<String>>(value)
                 .map(|array| Some(types::DataValue::StringArray(array)))
                 .map_err(|err| err.into()),
@@ -339,9 +332,6 @@ fn try_from_json_value(
             types::DataType::DoubleArray => serde_json::from_value::<Vec<f64>>(value)
                 .map(|array| Some(types::DataValue::DoubleArray(array)))
                 .map_err(|err| err.into()),
-            types::DataType::TimestampArray => Err(Error::ParseError(
-                "timestamp array is not supported".to_owned(),
-            )),
         },
         None => Ok(None),
     }

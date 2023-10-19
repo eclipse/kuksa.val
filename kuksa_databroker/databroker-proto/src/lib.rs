@@ -78,8 +78,6 @@ pub mod kuksa {
                         "float[]" => Ok(DataType::FloatArray),
                         "double" => Ok(DataType::Double),
                         "double[]" => Ok(DataType::DoubleArray),
-                        "timestamp" => Ok(DataType::Timestamp),
-                        "timestamp[]" => Ok(DataType::TimestampArray),
                         _ => Err(ParsingError::new(format!("unsupported data type '{s}'"))),
                     }
                 }

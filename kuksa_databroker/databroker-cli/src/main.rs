@@ -341,7 +341,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     continue;
                                 }
 
-                                if metadata.entry_type != proto::v1::EntryType::Actuator.into() {
+                                if metadata.entry_type != proto::v1::EntryType::Actuator as i32 {
                                     print_error(
                                         cmd,
                                         format!("{} is not an actuator.", metadata.name),
@@ -1434,7 +1434,6 @@ fn try_into_data_value(
             )),
             Err(err) => Err(err),
         },
-        _ => Err(ParseError {}),
     }
 }
 
