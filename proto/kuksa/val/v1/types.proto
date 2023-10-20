@@ -72,21 +72,28 @@ message Metadata {
 
   // Description
   // Describes the meaning and content of the entry.
-  optional string description = 13;  // [field: FIELD_METADATA_DESCRIPTION]
-
+  oneof optional_description {
+    string description = 13;  // [field: FIELD_METADATA_DESCRIPTION]
+  }
   // Comment [optional]
   // A comment can be used to provide additional informal information
   // on a entry.
-  optional string comment = 14;  // [field: FIELD_METADATA_COMMENT]
+  oneof optional_comment {
+    string comment = 14;  // [field: FIELD_METADATA_COMMENT]
+  }
 
   // Deprecation [optional]
   // Whether this entry is deprecated. Can contain recommendations of what
   // to use instead.
-  optional string deprecation = 15;  // [field: FIELD_METADATA_DEPRECATION]
+  oneof optional_deprecation {
+    string deprecation = 15;  // [field: FIELD_METADATA_DEPRECATION]
+  }
 
   // Unit [optional]
   // The unit of measurement
-  optional string unit = 16;  // [field: FIELD_METADATA_UNIT]
+  oneof optional_unit {
+    string unit = 16;  // [field: FIELD_METADATA_UNIT]
+  }
 
   // Value restrictions [optional]
   // Restrict which values are allowed.
@@ -137,20 +144,32 @@ message ValueRestriction {
 }
 
 message ValueRestrictionInt {
-  optional sint64 min            = 1;
-  optional sint64 max            = 2;
+  oneof optional_min {
+    sint64 min = 1;
+  }
+  oneof optional_max {
+    sint64 max = 2;
+  }
   repeated sint64 allowed_values = 3;
 }
 
 message ValueRestrictionUint {
-  optional uint64 min            = 1;
-  optional uint64 max            = 2;
+  oneof optional_min {
+    uint64 min = 1;
+  }
+  oneof optional_max {
+    uint64 max = 2;
+  }
   repeated uint64 allowed_values = 3;
 }
 
 message ValueRestrictionFloat {
-  optional double min = 1;
-  optional double max = 2;
+  oneof optional_min {
+    double min = 1;
+  }
+  oneof optional_max {
+    double max = 2;
+  }
 
   // allowed for doubles/floats not recommended
   repeated double allowed_values = 3;
