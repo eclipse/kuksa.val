@@ -488,7 +488,7 @@ fn proto_entry_from_entry_and_fields(
         }
         if all || fields.contains(&proto::Field::MetadataDescription) {
             metadata_is_set = true;
-            metadata.description = Some(entry.metadata().description.clone());
+            metadata.description = entry.metadata().description.clone();
         }
         if all || fields.contains(&proto::Field::MetadataEntryType) {
             metadata_is_set = true;
@@ -497,17 +497,14 @@ fn proto_entry_from_entry_and_fields(
         if all || fields.contains(&proto::Field::MetadataComment) {
             metadata_is_set = true;
             // TODO: Add to Metadata
-            metadata.comment = None;
         }
         if all || fields.contains(&proto::Field::MetadataDeprecation) {
             metadata_is_set = true;
             // TODO: Add to Metadata
-            metadata.deprecation = None;
         }
         if all || fields.contains(&proto::Field::MetadataUnit) {
             metadata_is_set = true;
             // TODO: Add to Metadata
-            metadata.unit = None;
         }
         if all || fields.contains(&proto::Field::MetadataValueRestriction) {
             metadata_is_set = true;

@@ -161,7 +161,7 @@ class Metadata:
         metadata = cls(data_type=DataType(message.data_type),
                        entry_type=EntryType(message.entry_type))
         for field in ('description', 'comment', 'deprecation', 'unit'):
-            if message.HasField(field):
+            if getattr(message, field):
                 setattr(metadata, field, getattr(message, field))
         if message.HasField('value_restriction'):
             value_restriction = getattr(
