@@ -411,6 +411,7 @@ impl proto::val_server::Val for broker::DataBroker {
         if !valid_requests.is_empty() {
             for (path, (regex, fields)) in valid_requests {
                 let mut requested_path_found = false;
+                let mut permission_error = false;
                 broker
                     .for_each_entry(|entry| {
                         let entry_path = &entry.metadata().path;
@@ -422,12 +423,21 @@ impl proto::val_server::Val for broker::DataBroker {
                                     existing_fields.extend(fields.clone());
                                 })
                                 .or_insert(fields.clone());
+
+                            match entry.datapoint() {
+                                Ok(_) => {}
+                                Err(_) => permission_error = true,
+                            }
                         }
                     })
                     .await;
                 if !requested_path_found {
-                    let message = format!("No entries found for the provided path: {}", path);
+                    let message = format!("No entries found for the provided. Path: {}", path);
                     return Err(tonic::Status::new(tonic::Code::NotFound, message));
+                }
+                if permission_error {
+                    let message = format!("Permission denied for some entries. Path: {}", path);
+                    return Err(tonic::Status::new(tonic::Code::PermissionDenied, message));
                 }
             }
         }
