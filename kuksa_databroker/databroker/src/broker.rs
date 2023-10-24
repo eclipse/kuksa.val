@@ -706,9 +706,13 @@ impl ChangeSubscription {
                         }
                         notifications
                     };
-                    match self.sender.send(notifications).await {
-                        Ok(()) => Ok(()),
-                        Err(_) => Err(NotificationError {}),
+                    if notifications.updates.is_empty() {
+                        Ok(())
+                    } else {
+                        match self.sender.send(notifications).await {
+                            Ok(()) => Ok(()),
+                            Err(_) => Err(NotificationError {}),
+                        }
                     }
                 } else {
                     Ok(())
