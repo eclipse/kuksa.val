@@ -249,10 +249,18 @@ impl Viss for Server {
             })?;
         let broker = self.broker.authorized_access(&permissions);
 
-        let entries = HashMap::from([(
-            Into::<String>::into(request.path),
-            HashSet::from([broker::Field::Datapoint]),
-        )]);
+        let Some(entries) = broker
+            .get_id_by_path(request.path.as_ref())
+            .await
+            .map(|id| HashMap::from([(id, HashSet::from([broker::Field::Datapoint]))]))
+        else {
+            return Err(SubscribeErrorResponse {
+                request_id,
+                error: Error::NotFoundInvalidPath,
+                ts: SystemTime::now().into(),
+            });
+        };
+
         match broker.subscribe(entries).await {
             Ok(stream) => {
                 let subscription_id = SubscriptionId::new();
