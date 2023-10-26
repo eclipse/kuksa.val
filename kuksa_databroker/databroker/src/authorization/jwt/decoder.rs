@@ -68,10 +68,10 @@ impl Decoder {
             }
         };
 
-        let validator = Validation::new(Algorithm::RS256);
-        // validator.leeway = 5;
-        // validator.set_audience(..);
-        // validator.set_issuer(..);
+        // TODO: Make algorithm configurable.
+        let mut validator = Validation::new(Algorithm::RS256);
+        // TODO: Make "aud" configurable.
+        validator.set_audience(&["kuksa.val"]);
 
         Ok(Decoder {
             decoding_key,
@@ -168,7 +168,7 @@ AEiqOjPq0D6X45wCzIwjILUCAwEAAQ==
             Ok(claims) => {
                 assert_eq!(claims.scope, "read:Vehicle.Speed");
             }
-            Err(_) => panic!("decode should succeed"),
+            Err(err) => panic!("decode should succeed but failed with:{}", err),
         }
     }
 }
