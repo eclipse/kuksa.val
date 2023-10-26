@@ -58,7 +58,7 @@ thiserror = "1.0.47"
 # VISS
 axum = { version = "0.6.20", optional = true, features = ["ws"] }
 futures = { version = "0.3.28", optional = true }
-chrono = { version = "0.4.26", optional = true, features = ["std", "time"] }
+chrono = { version = "0.4.31", optional = true, features = ["std"] }
 uuid = { version = "1.4.1", optional = true, features = ["v4"] }
 
 [features]
