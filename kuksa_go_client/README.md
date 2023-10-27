@@ -20,6 +20,13 @@ If using a newer Linux version that has protoc >= 3.19 by default you may altern
 > sudo apt install protobuf-compiler
 ```
 
+if you use `apt`you must manually create a folder called `proto`
+
+
+```
+> mkdir proto
+```
+
 - Run the following command to install the needed GO protocol buffers plugins:
 ```
 > go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
