@@ -78,7 +78,7 @@ vergen = { version = "8", features = [
 
 [dev-dependencies]
 anyhow = "1.0"
-cucumber = { version = "0.19", features = ["libtest"] }
+cucumber = { version = "0.20", features = ["libtest"] }
 
 [[test]]
 name = "current_values"

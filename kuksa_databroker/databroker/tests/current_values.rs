@@ -170,9 +170,13 @@ async fn main() {
     // databroker::init_logging();
 
     let opts = cli::Opts::<_, _, _, world::UnsupportedLibtestArgs>::parsed();
+    if let Some(thread_count) = opts.custom.test_threads {
+        println!("Ignoring command line parameter \"--test-threads {thread_count}\" passed in by test runner");
+    }
 
     DataBrokerWorld::cucumber()
-        .with_writer(writer::Libtest::or_basic())
+        // support "--format json" argument being passed into test
+        .with_writer(writer::Normalize::new(writer::Libtest::or_basic()))
         .with_cli(opts)
         .after(|_feature, _rule, _scenario, _ev, world| {
             if let Some(w) = world {
