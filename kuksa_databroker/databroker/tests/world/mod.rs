@@ -107,10 +107,9 @@ const DATAPOINTS: &[(
 
 #[derive(clap::Args)] // re-export of `clap::Args`
 pub struct UnsupportedLibtestArgs {
+    // allow "--test-threads" parameter being passed into the test
     #[arg(long)]
-    report_time: Option<bool>,
-    #[arg(long)]
-    test_threads: Option<u16>,
+    pub test_threads: Option<u16>,
 }
 
 #[derive(Debug)]
