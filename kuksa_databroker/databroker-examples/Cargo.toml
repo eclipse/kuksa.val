@@ -14,7 +14,7 @@
 [package]
 name = "databroker-examples"
 version = "0.4.1"
-authors = ["Robert Bosch GmbH"]
+authors = ["Eclipse KUKSA Project"]
 edition = "2018"
 license = "Apache-2.0"
 
