@@ -13,10 +13,10 @@
 
 use std::convert::TryFrom;
 
+use databroker_proto::kuksa::val::v1::Error;
 use http::Uri;
 use tokio_stream::wrappers::BroadcastStream;
 use tonic::transport::Channel;
-use databroker_proto::kuksa::val::v1::Error;
 
 #[derive(Debug)]
 pub struct Client {
@@ -51,7 +51,10 @@ impl std::fmt::Display for ClientError {
                 let formatted_result: String = err
                     .iter()
                     .map(|element| {
-                        format!("code: {}, message: {}, reason: {}", element.code, element.message, element.reason)
+                        format!(
+                            "code: {}, message: {}, reason: {}",
+                            element.code, element.message, element.reason
+                        )
                     })
                     .collect::<Vec<String>>()
                     .join(", "); // Join the elements with a comma and space

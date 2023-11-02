@@ -11,8 +11,8 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-use std::collections::HashMap;
 use http::Uri;
+use std::collections::HashMap;
 
 use databroker_proto::kuksa::val::{self as proto, v1::DataEntry};
 
@@ -25,13 +25,12 @@ pub struct KuksaClient {
 
 impl KuksaClient {
     pub fn new(uri: Uri) -> Self {
-        KuksaClient { basic_client: Client::new(uri) }
+        KuksaClient {
+            basic_client: Client::new(uri),
+        }
     }
 
-    async fn set(&mut self,
-        entry: DataEntry,
-        fields: Vec<i32>,
-    ) -> Result<(), ClientError>{
+    async fn set(&mut self, entry: DataEntry, fields: Vec<i32>) -> Result<(), ClientError> {
         let mut client = proto::v1::val_client::ValClient::with_interceptor(
             self.basic_client.get_channel().await?.clone(),
             self.basic_client.get_auth_interceptor(),
@@ -46,7 +45,7 @@ impl KuksaClient {
             Ok(response) => {
                 let message = response.into_inner();
                 let mut errors: Vec<proto::v1::Error> = Vec::new();
-                if let Some(err) = message.error{
+                if let Some(err) = message.error {
                     errors.push(err);
                 }
                 for error in message.errors {
@@ -54,28 +53,26 @@ impl KuksaClient {
                         errors.push(err);
                     }
                 }
-                if errors.is_empty(){
-
-                    return Ok(())
-                }
-                else{
-                    return Err(ClientError::Function(errors))
+                if errors.is_empty() {
+                    return Ok(());
+                } else {
+                    return Err(ClientError::Function(errors));
                 }
             }
             Err(err) => return Err(ClientError::Status(err)),
         }
     }
 
-    async fn get( &mut self,
+    async fn get(
+        &mut self,
         path: &str,
         view: proto::v1::View,
-        fields: Vec<i32>
-    )-> Result<Vec<DataEntry>, ClientError>{
+        fields: Vec<i32>,
+    ) -> Result<Vec<DataEntry>, ClientError> {
         let mut client = proto::v1::val_client::ValClient::with_interceptor(
             self.basic_client.get_channel().await?.clone(),
             self.basic_client.get_auth_interceptor(),
         );
-
 
         let get_request = proto::v1::GetRequest {
             entries: vec![proto::v1::EntryRequest {
@@ -89,7 +86,7 @@ impl KuksaClient {
             Ok(response) => {
                 let message = response.into_inner();
                 let mut errors = Vec::new();
-                if let Some(err) = message.error{
+                if let Some(err) = message.error {
                     errors.push(err);
                 }
                 for error in message.errors {
@@ -99,28 +96,29 @@ impl KuksaClient {
                 }
                 if !errors.is_empty() {
                     return Err(ClientError::Function(errors));
-                }
-                else{
+                } else {
                     // since there is only one DataEntry in the vector return only the according DataEntry
                     Ok(message.entries.clone())
                 }
             }
-            Err(err) => {
-                return Err(ClientError::Status(err))
-            }
+            Err(err) => return Err(ClientError::Status(err)),
         }
     }
 
-    pub async fn get_metadata(
-        &mut self,
-        paths: Vec<&str>,
-    ) -> Result<Vec<DataEntry>, ClientError> {
+    pub async fn get_metadata(&mut self, paths: Vec<&str>) -> Result<Vec<DataEntry>, ClientError> {
         let mut metadata_result = Vec::new();
 
         for path in paths {
-            match self.get(path, proto::v1::View::Metadata.into(), vec![proto::v1::Field::Metadata.into()]).await{
+            match self
+                .get(
+                    path,
+                    proto::v1::View::Metadata.into(),
+                    vec![proto::v1::Field::Metadata.into()],
+                )
+                .await
+            {
                 Ok(mut entry) => metadata_result.append(&mut entry),
-                Err(err) => return Err(err)
+                Err(err) => return Err(err),
             }
         }
 
@@ -134,9 +132,19 @@ impl KuksaClient {
         let mut get_result = Vec::new();
 
         for path in paths {
-            match self.get(&path, proto::v1::View::CurrentValue.into(), vec![proto::v1::Field::Value.into(), proto::v1::Field::Metadata.into()]).await{
+            match self
+                .get(
+                    &path,
+                    proto::v1::View::CurrentValue.into(),
+                    vec![
+                        proto::v1::Field::Value.into(),
+                        proto::v1::Field::Metadata.into(),
+                    ],
+                )
+                .await
+            {
                 Ok(mut entry) => get_result.append(&mut entry),
-                Err(err) => return Err(err)
+                Err(err) => return Err(err),
             }
         }
 
@@ -150,9 +158,19 @@ impl KuksaClient {
         let mut get_result = Vec::new();
 
         for path in paths {
-            match self.get(path, proto::v1::View::TargetValue.into(), vec![proto::v1::Field::ActuatorTarget.into(), proto::v1::Field::Metadata.into()]).await{
+            match self
+                .get(
+                    path,
+                    proto::v1::View::TargetValue.into(),
+                    vec![
+                        proto::v1::Field::ActuatorTarget.into(),
+                        proto::v1::Field::Metadata.into(),
+                    ],
+                )
+                .await
+            {
                 Ok(mut entry) => get_result.append(&mut entry),
-                Err(err) => return Err(err)
+                Err(err) => return Err(err),
             }
         }
 
@@ -164,15 +182,21 @@ impl KuksaClient {
         datapoints: HashMap<String, proto::v1::Datapoint>,
     ) -> Result<(), ClientError> {
         for (path, datapoint) in datapoints {
-            match self.set(proto::v1::DataEntry {
-                    path: path.clone(),
-                    value: Some(datapoint),
-                    actuator_target: None,
-                    metadata: None,
-                }, vec![
-                    proto::v1::Field::Value.into(),
-                    proto::v1::Field::Path.into(),
-                ]).await {
+            match self
+                .set(
+                    proto::v1::DataEntry {
+                        path: path.clone(),
+                        value: Some(datapoint),
+                        actuator_target: None,
+                        metadata: None,
+                    },
+                    vec![
+                        proto::v1::Field::Value.into(),
+                        proto::v1::Field::Path.into(),
+                    ],
+                )
+                .await
+            {
                 Ok(_) => {
                     continue;
                 }
@@ -188,15 +212,21 @@ impl KuksaClient {
         datapoints: HashMap<String, proto::v1::Datapoint>,
     ) -> Result<(), ClientError> {
         for (path, datapoint) in datapoints {
-            match self.set(proto::v1::DataEntry {
-                    path: path.clone(),
-                    value: None,
-                    actuator_target: Some(datapoint),
-                    metadata: None,
-                }, vec![
-                    proto::v1::Field::ActuatorTarget.into(),
-                    proto::v1::Field::Path.into(),
-                ]).await {
+            match self
+                .set(
+                    proto::v1::DataEntry {
+                        path: path.clone(),
+                        value: None,
+                        actuator_target: Some(datapoint),
+                        metadata: None,
+                    },
+                    vec![
+                        proto::v1::Field::ActuatorTarget.into(),
+                        proto::v1::Field::Path.into(),
+                    ],
+                )
+                .await
+            {
                 Ok(_) => {
                     continue;
                 }
@@ -212,15 +242,21 @@ impl KuksaClient {
         metadatas: HashMap<String, proto::v1::Metadata>,
     ) -> Result<(), ClientError> {
         for (path, metadata) in metadatas {
-            match self.set(proto::v1::DataEntry {
-                    path: path.clone(),
-                    value: None,
-                    actuator_target: None,
-                    metadata: Some(metadata),
-                }, vec![
-                    proto::v1::Field::Metadata.into(),
-                    proto::v1::Field::Path.into(),
-                ]).await {
+            match self
+                .set(
+                    proto::v1::DataEntry {
+                        path: path.clone(),
+                        value: None,
+                        actuator_target: None,
+                        metadata: Some(metadata),
+                    },
+                    vec![
+                        proto::v1::Field::Metadata.into(),
+                        proto::v1::Field::Path.into(),
+                    ],
+                )
+                .await
+            {
                 Ok(_) => {
                     continue;
                 }
