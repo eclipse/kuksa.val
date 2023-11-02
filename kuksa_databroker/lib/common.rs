@@ -16,6 +16,7 @@ use std::convert::TryFrom;
 use http::Uri;
 use tokio_stream::wrappers::BroadcastStream;
 use tonic::transport::Channel;
+use databroker_proto::kuksa::val::v1::Error;
 
 #[derive(Debug)]
 pub struct Client {
@@ -33,11 +34,11 @@ pub enum ConnectionState {
     Disconnected,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ClientError {
     Connection(String),
     Status(tonic::Status),
-    Function(Vec<String>),
+    Function(Vec<Error>),
 }
 
 impl std::error::Error for ClientError {}
@@ -49,7 +50,9 @@ impl std::fmt::Display for ClientError {
             ClientError::Function(err) => {
                 let formatted_result: String = err
                     .iter()
-                    .map(|element| element.to_string())
+                    .map(|element| {
+                        format!("code: {}, message: {}, reason: {}", element.code, element.message, element.reason)
+                    })
                     .collect::<Vec<String>>()
                     .join(", "); // Join the elements with a comma and space
 

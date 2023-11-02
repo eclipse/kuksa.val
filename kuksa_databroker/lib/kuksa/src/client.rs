@@ -12,57 +12,115 @@
 ********************************************************************************/
 
 use std::collections::HashMap;
+use http::Uri;
 
 use databroker_proto::kuksa::val::{self as proto, v1::DataEntry};
 
 use common::{Client, ClientError};
 
+#[derive(Debug)]
 pub struct KuksaClient {
     pub basic_client: Client,
 }
 
 impl KuksaClient {
-    pub fn new(basic_client: Client) -> Self {
-        KuksaClient { basic_client }
+    pub fn new(uri: Uri) -> Self {
+        KuksaClient { basic_client: Client::new(uri) }
     }
 
-    pub async fn get_metadata(
-        &mut self,
-        paths: Vec<&str>,
-    ) -> Result<Vec<proto::v1::DataEntry>, ClientError> {
+    async fn set(&mut self,
+        entry: DataEntry,
+        fields: Vec<i32>,
+    ) -> Result<(), ClientError>{
+        let mut client = proto::v1::val_client::ValClient::with_interceptor(
+            self.basic_client.get_channel().await?.clone(),
+            self.basic_client.get_auth_interceptor(),
+        );
+        let set_request = proto::v1::SetRequest {
+            updates: vec![proto::v1::EntryUpdate {
+                entry: Some(entry),
+                fields: fields.into(),
+            }],
+        };
+        match client.set(set_request).await {
+            Ok(response) => {
+                let message = response.into_inner();
+                let mut errors: Vec<proto::v1::Error> = Vec::new();
+                if let Some(err) = message.error{
+                    errors.push(err);
+                }
+                for error in message.errors {
+                    if let Some(err) = error.error {
+                        errors.push(err);
+                    }
+                }
+                if errors.is_empty(){
+
+                    return Ok(())
+                }
+                else{
+                    return Err(ClientError::Function(errors))
+                }
+            }
+            Err(err) => return Err(ClientError::Status(err)),
+        }
+    }
+
+    async fn get( &mut self,
+        path: &str,
+        view: proto::v1::View,
+        fields: Vec<i32>
+    )-> Result<Vec<DataEntry>, ClientError>{
         let mut client = proto::v1::val_client::ValClient::with_interceptor(
             self.basic_client.get_channel().await?.clone(),
             self.basic_client.get_auth_interceptor(),
         );
 
+
+        let get_request = proto::v1::GetRequest {
+            entries: vec![proto::v1::EntryRequest {
+                path: path.to_string(),
+                view: view.into(),
+                fields: fields,
+            }],
+        };
+
+        match client.get(get_request).await {
+            Ok(response) => {
+                let message = response.into_inner();
+                let mut errors = Vec::new();
+                if let Some(err) = message.error{
+                    errors.push(err);
+                }
+                for error in message.errors {
+                    if let Some(err) = error.error {
+                        errors.push(err);
+                    }
+                }
+                if !errors.is_empty() {
+                    return Err(ClientError::Function(errors));
+                }
+                else{
+                    // since there is only one DataEntry in the vector return only the according DataEntry
+                    Ok(message.entries.clone())
+                }
+            }
+            Err(err) => {
+                return Err(ClientError::Status(err))
+            }
+        }
+    }
+
+    pub async fn get_metadata(
+        &mut self,
+        paths: Vec<&str>,
+    ) -> Result<Vec<DataEntry>, ClientError> {
         let mut metadata_result = Vec::new();
 
         for path in paths {
-            let get_request = proto::v1::GetRequest {
-                entries: vec![proto::v1::EntryRequest {
-                    path: path.to_string(),
-                    view: proto::v1::View::Metadata.into(),
-                    fields: vec![proto::v1::Field::Metadata.into()],
-                }],
-            };
-
-            match client.get(get_request).await {
-                Ok(response) => {
-                    let message = response.into_inner();
-                    metadata_result = message.entries;
-                    let mut errors = Vec::new();
-                    for error in message.errors {
-                        if let Some(err) = error.error {
-                            errors.push(err.code.to_string());
-                            errors.push(err.reason.to_string());
-                            errors.push(err.message.to_string());
-                        }
-                    }
-                    if !errors.is_empty() {
-                        return Err(ClientError::Function(errors));
-                    }
-                }
-                Err(err) => return Err(ClientError::Status(err)),
+            match self.get(path, proto::v1::View::Metadata.into(), vec![proto::v1::Field::Metadata.into()]).await{
+                Ok(mut entry) => metadata_result.append(&mut entry),
+                Err(err) => return Err(err)
             }
         }
 
@@ -71,41 +129,14 @@ impl KuksaClient {
 
     pub async fn get_current_values(
         &mut self,
-        paths: Vec<impl AsRef<str>>,
+        paths: Vec<String>,
     ) -> Result<Vec<DataEntry>, ClientError> {
-        let mut client = proto::v1::val_client::ValClient::with_interceptor(
-            self.basic_client.get_channel().await?.clone(),
-            self.basic_client.get_auth_interceptor(),
-        );
-
         let mut get_result = Vec::new();
 
         for path in paths {
-            let get_request = proto::v1::GetRequest {
-                entries: vec![proto::v1::EntryRequest {
-                    path: path.as_ref().to_string(),
-                    view: proto::v1::View::CurrentValue.into(),
-                    fields: vec![proto::v1::Field::Value.into()],
-                }],
-            };
-
-            match client.get(get_request).await {
-                Ok(response) => {
-                    let message = response.into_inner();
-                    get_result = message.entries;
-                    let mut errors = Vec::new();
-                    for error in message.errors {
-                        if let Some(err) = error.error {
-                            errors.push(err.code.to_string());
-                            errors.push(err.reason.to_string());
-                            errors.push(err.message.to_string());
-                        }
-                    }
-                    if !errors.is_empty() {
-                        return Err(ClientError::Function(errors));
-                    }
-                }
-                Err(err) => return Err(ClientError::Status(err)),
+            match self.get(&path, proto::v1::View::CurrentValue.into(), vec![proto::v1::Field::Value.into(), proto::v1::Field::Metadata.into()]).await{
+                Ok(mut entry) => get_result.append(&mut entry),
+                Err(err) => return Err(err)
             }
         }
 
@@ -114,41 +145,14 @@ impl KuksaClient {
 
     pub async fn get_target_values(
         &mut self,
-        paths: Vec<impl AsRef<str>>,
+        paths: Vec<&str>,
     ) -> Result<Vec<DataEntry>, ClientError> {
-        let mut client = proto::v1::val_client::ValClient::with_interceptor(
-            self.basic_client.get_channel().await?.clone(),
-            self.basic_client.get_auth_interceptor(),
-        );
-
         let mut get_result = Vec::new();
 
         for path in paths {
-            let get_request = proto::v1::GetRequest {
-                entries: vec![proto::v1::EntryRequest {
-                    path: path.as_ref().to_string(),
-                    view: proto::v1::View::TargetValue.into(),
-                    fields: vec![proto::v1::Field::ActuatorTarget.into()],
-                }],
-            };
-
-            match client.get(get_request).await {
-                Ok(response) => {
-                    let message = response.into_inner();
-                    get_result = message.entries;
-                    let mut errors = Vec::new();
-                    for error in message.errors {
-                        if let Some(err) = error.error {
-                            errors.push(err.code.to_string());
-                            errors.push(err.reason.to_string());
-                            errors.push(err.message.to_string());
-                        }
-                    }
-                    if !errors.is_empty() {
-                        return Err(ClientError::Function(errors));
-                    }
-                }
-                Err(err) => return Err(ClientError::Status(err)),
+            match self.get(path, proto::v1::View::TargetValue.into(), vec![proto::v1::Field::ActuatorTarget.into(), proto::v1::Field::Metadata.into()]).await{
+                Ok(mut entry) => get_result.append(&mut entry),
+                Err(err) => return Err(err)
             }
         }
 
@@ -158,112 +162,73 @@ impl KuksaClient {
     pub async fn set_current_values(
         &mut self,
         datapoints: HashMap<String, proto::v1::Datapoint>,
-    ) -> Result<Vec<proto::v1::SetResponse>, ClientError> {
-        let mut client = proto::v1::val_client::ValClient::with_interceptor(
-            self.basic_client.get_channel().await?.clone(),
-            self.basic_client.get_auth_interceptor(),
-        );
-
-        let mut set_result = Vec::new();
-
+    ) -> Result<(), ClientError> {
         for (path, datapoint) in datapoints {
-            let set_request = proto::v1::SetRequest {
-                updates: vec![proto::v1::EntryUpdate {
-                    entry: Some(proto::v1::DataEntry {
-                        path: path.clone(),
-                        value: Some(datapoint),
-                        actuator_target: None,
-                        metadata: None,
-                    }),
-                    fields: vec![
-                        proto::v1::Field::Value.into(),
-                        proto::v1::Field::Path.into(),
-                    ],
-                }],
-            };
-            match client.set(set_request).await {
-                Ok(response) => {
-                    set_result.push(response.into_inner());
+            match self.set(proto::v1::DataEntry {
+                    path: path.clone(),
+                    value: Some(datapoint),
+                    actuator_target: None,
+                    metadata: None,
+                }, vec![
+                    proto::v1::Field::Value.into(),
+                    proto::v1::Field::Path.into(),
+                ]).await {
+                Ok(_) => {
+                    continue;
                 }
-                Err(err) => return Err(ClientError::Status(err)),
+                Err(err) => return Err(err),
             }
         }
 
-        Ok(set_result)
+        Ok(())
     }
 
     pub async fn set_target_values(
         &mut self,
         datapoints: HashMap<String, proto::v1::Datapoint>,
-    ) -> Result<Vec<proto::v1::SetResponse>, ClientError> {
-        let mut client = proto::v1::val_client::ValClient::with_interceptor(
-            self.basic_client.get_channel().await?.clone(),
-            self.basic_client.get_auth_interceptor(),
-        );
-
-        let mut set_result = Vec::new();
-
+    ) -> Result<(), ClientError> {
         for (path, datapoint) in datapoints {
-            let set_request = proto::v1::SetRequest {
-                updates: vec![proto::v1::EntryUpdate {
-                    entry: Some(proto::v1::DataEntry {
-                        path: path.clone(),
-                        value: None,
-                        actuator_target: Some(datapoint),
-                        metadata: None,
-                    }),
-                    fields: vec![
-                        proto::v1::Field::ActuatorTarget.into(),
-                        proto::v1::Field::Path.into(),
-                    ],
-                }],
-            };
-            match client.set(set_request).await {
-                Ok(response) => {
-                    set_result.push(response.into_inner());
+            match self.set(proto::v1::DataEntry {
+                    path: path.clone(),
+                    value: None,
+                    actuator_target: Some(datapoint),
+                    metadata: None,
+                }, vec![
+                    proto::v1::Field::ActuatorTarget.into(),
+                    proto::v1::Field::Path.into(),
+                ]).await {
+                Ok(_) => {
+                    continue;
                 }
-                Err(err) => return Err(ClientError::Status(err)),
+                Err(err) => return Err(err),
             }
         }
 
-        Ok(set_result)
+        Ok(())
     }
 
     pub async fn set_metadata(
         &mut self,
         metadatas: HashMap<String, proto::v1::Metadata>,
-    ) -> Result<Vec<proto::v1::SetResponse>, ClientError> {
-        let mut client = proto::v1::val_client::ValClient::with_interceptor(
-            self.basic_client.get_channel().await?.clone(),
-            self.basic_client.get_auth_interceptor(),
-        );
-
-        let mut set_result = Vec::new();
-
+    ) -> Result<(), ClientError> {
         for (path, metadata) in metadatas {
-            let set_request = proto::v1::SetRequest {
-                updates: vec![proto::v1::EntryUpdate {
-                    entry: Some(proto::v1::DataEntry {
-                        path: path.clone(),
-                        value: None,
-                        actuator_target: None,
-                        metadata: Some(metadata),
-                    }),
-                    fields: vec![
-                        proto::v1::Field::Metadata.into(),
-                        proto::v1::Field::Path.into(),
-                    ],
-                }],
-            };
-            match client.set(set_request).await {
-                Ok(response) => {
-                    set_result.push(response.into_inner());
+            match self.set(proto::v1::DataEntry {
+                    path: path.clone(),
+                    value: None,
+                    actuator_target: None,
+                    metadata: Some(metadata),
+                }, vec![
+                    proto::v1::Field::Metadata.into(),
+                    proto::v1::Field::Path.into(),
+                ]).await {
+                Ok(_) => {
+                    continue;
                 }
-                Err(err) => return Err(ClientError::Status(err)),
+                Err(err) => return Err(err),
             }
         }
 
-        Ok(set_result)
+        Ok(())
     }
 
     pub async fn subscribe_current_values(
@@ -292,7 +257,7 @@ impl KuksaClient {
         }
     }
 
-    //masking subscribe curent values with subscribe
+    //masking subscribe curent values with subscribe due to plugability
     pub async fn subscribe(
         &mut self,
         paths: Vec<&str>,
