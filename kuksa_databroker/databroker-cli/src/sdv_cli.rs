@@ -11,8 +11,6 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-
-
 use databroker_proto::sdv::databroker as proto;
 use sdv::*;
 
@@ -20,17 +18,17 @@ use prost_types::Timestamp;
 use tokio_stream::StreamExt;
 
 use std::collections::HashMap;
+use std::fmt;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
-use std::fmt;
 
 use ansi_term::Color;
 
+use crate::cli::ParseError;
+use crate::cli::{self, Cli};
 use linefeed::complete::{Completer, Completion, Suffix};
 use linefeed::terminal::Terminal;
 use linefeed::{Command, Interface, Prompter, ReadResult};
-use crate::cli::{self, Cli};
-use crate::cli::ParseError;
 
 const VERSION: &str = "sdv.databroker.v1";
 const TIMEOUT: Duration = Duration::from_millis(500);
@@ -68,7 +66,7 @@ fn print_usage(command: impl AsRef<str>) {
     }
 }
 
-pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
+pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     let mut _properties = Vec::<proto::v1::Metadata>::new();
     println!("Using {VERSION}");
     let mut cli = _cli;
@@ -256,7 +254,9 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                         }
                                     }
                                 }
-                                Err(err) => cli::print_error(cmd, &format!("Malformed token: {err}"))?,
+                                Err(err) => {
+                                    cli::print_error(cmd, &format!("Malformed token: {err}"))?
+                                }
                             }
                         }
                         "token-file" => {
@@ -315,7 +315,6 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                 continue;
                             }
 
-
                             let datapoint_metadata = {
                                 let mut datapoint_metadata = None;
                                 for metadata in _properties.iter() {
@@ -336,21 +335,17 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                             if let Some(metadata) = datapoint_metadata {
                                 let data_value = try_into_data_value(
                                     value,
-                                    proto::v1::DataType::from_i32(metadata.data_type)
-                                        .unwrap(),
+                                    proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
                                 );
                                 if data_value.is_err() {
                                     println!(
                                         "Could not parse \"{value}\" as {:?}",
-                                        proto::v1::DataType::from_i32(metadata.data_type)
-                                            .unwrap()
+                                        proto::v1::DataType::from_i32(metadata.data_type).unwrap()
                                     );
                                     continue;
                                 }
 
-                                if metadata.entry_type
-                                    != proto::v1::EntryType::Actuator.into()
-                                {
+                                if metadata.entry_type != proto::v1::EntryType::Actuator.into() {
                                     cli::print_error(
                                         cmd,
                                         format!("{} is not an actuator.", metadata.name),
@@ -376,16 +371,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                             cli::print_resp_ok(cmd)?;
                                         } else {
                                             for (id, error) in message.errors {
-                                                match proto::v1::DatapointError::from_i32(
-                                                    error,
-                                                ) {
+                                                match proto::v1::DatapointError::from_i32(error) {
                                                     Some(error) => {
                                                         cli::print_resp_ok(cmd)?;
                                                         println!(
                                                             "Error setting {}: {}",
                                                             id,
-                                                            Color::Red
-                                                                .paint(format!("{error:?}")),
+                                                            Color::Red.paint(format!("{error:?}")),
                                                         );
                                                     }
                                                     None => cli::print_resp_ok_fmt(
@@ -403,7 +395,10 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                         cli::print_error(cmd, msg)?
                                     }
                                     Err(common::ClientError::Function(msg)) => {
-                                        cli::print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                        cli::print_resp_err_fmt(
+                                            cmd,
+                                            format_args!("Error {msg:?}"),
+                                        )?;
                                     }
                                 }
                             }
@@ -417,7 +412,6 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                 print_usage(cmd);
                                 continue;
                             }
-
 
                             let datapoint_metadata = {
                                 let mut datapoint_metadata = None;
@@ -439,15 +433,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                             if let Some(metadata) = datapoint_metadata {
                                 let data_value = try_into_data_value(
                                     value,
-                                    proto::v1::DataType::from_i32(metadata.data_type)
-                                        .unwrap(),
+                                    proto::v1::DataType::from_i32(metadata.data_type).unwrap(),
                                 );
                                 if data_value.is_err() {
                                     println!(
                                         "Could not parse \"{}\" as {:?}",
                                         value,
-                                        proto::v1::DataType::from_i32(metadata.data_type)
-                                            .unwrap()
+                                        proto::v1::DataType::from_i32(metadata.data_type).unwrap()
                                     );
                                     continue;
                                 }
@@ -493,7 +485,10 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                         cli::print_error(cmd, msg)?
                                     }
                                     Err(common::ClientError::Function(msg)) => {
-                                        cli::print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                        cli::print_resp_err_fmt(
+                                            cmd,
+                                            format_args!("Error {msg:?}"),
+                                        )?;
                                     }
                                 }
                             }
@@ -591,7 +586,9 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                 Err(common::ClientError::Status(status)) => {
                                     cli::print_resp_err(cmd, &status)?
                                 }
-                                Err(common::ClientError::Connection(msg)) => cli::print_error(cmd, msg)?,
+                                Err(common::ClientError::Connection(msg)) => {
+                                    cli::print_error(cmd, msg)?
+                                }
                                 Err(common::ClientError::Function(msg)) => {
                                     cli::print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?
                                 }
@@ -654,7 +651,10 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                             cli::print_error("metadata", msg)?;
                                         }
                                         Err(common::ClientError::Function(msg)) => {
-                                            cli::print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                            cli::print_resp_err_fmt(
+                                                cmd,
+                                                format_args!("Error {msg:?}"),
+                                            )?;
                                         }
                                     }
                                 }
@@ -665,14 +665,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
 
                             let paths = args.split_whitespace().collect::<Vec<_>>();
 
-
                             match client.get_metadata(vec![]).await {
                                 Ok(mut metadata) => {
                                     metadata.sort_by(|a, b| a.name.cmp(&b.name));
                                     _properties = metadata;
-                                    interface.set_completer(Arc::new(
-                                        CliCompleter::from_metadata(&_properties),
-                                    ));
+                                    interface.set_completer(Arc::new(CliCompleter::from_metadata(
+                                        &_properties,
+                                    )));
                                     cli::print_resp_ok(cmd)?;
                                 }
                                 Err(common::ClientError::Status(status)) => {
@@ -726,16 +725,12 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                     println!(
                                         "{:<max_len_path$} {:<10} {:<9}",
                                         entry.name,
-                                        DisplayEntryType::from(
-                                            proto::v1::EntryType::from_i32(
-                                                entry.entry_type
-                                            )
-                                        ),
-                                        DisplayDataType::from(
-                                            proto::v1::DataType::from_i32(
-                                                entry.data_type
-                                            )
-                                        ),
+                                        DisplayEntryType::from(proto::v1::EntryType::from_i32(
+                                            entry.entry_type
+                                        )),
+                                        DisplayDataType::from(proto::v1::DataType::from_i32(
+                                            entry.data_type
+                                        )),
                                     );
                                 }
                             }
@@ -769,7 +764,6 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
         }
     }
 }
-
 
 struct CliCompleter {
     paths: PathPart,
@@ -929,18 +923,16 @@ impl<Term: Terminal> Completer<Term> for CliCompleter {
                 }
             }
             Some("get") | Some("metadata") => self.complete_entry_path(word),
-            Some("subscribe") => {
-                match words.next() {
-                    None => Some(vec![Completion::simple("SELECT".to_owned())]),
-                    Some(next) => {
-                        if next == "SELECT" {
-                            self.complete_entry_path(word)
-                        } else {
-                            None
-                        }
+            Some("subscribe") => match words.next() {
+                None => Some(vec![Completion::simple("SELECT".to_owned())]),
+                Some(next) => {
+                    if next == "SELECT" {
+                        self.complete_entry_path(word)
+                    } else {
+                        None
                     }
                 }
-            }
+            },
             Some("token-file") => {
                 let path_completer = linefeed::complete::PathCompleter;
                 path_completer.complete(word, prompter, start, _end)
@@ -975,58 +967,26 @@ impl fmt::Display for DisplayDatapoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0.value {
             Some(value) => match value {
-                proto::v1::datapoint::Value::BoolValue(value) => {
-                    f.pad(&format!("{value}"))
-                }
+                proto::v1::datapoint::Value::BoolValue(value) => f.pad(&format!("{value}")),
                 proto::v1::datapoint::Value::FailureValue(failure) => f.pad(&format!(
                     "( {:?} )",
                     proto::v1::datapoint::Failure::from_i32(*failure).unwrap()
                 )),
-                proto::v1::datapoint::Value::Int32Value(value) => {
-                    f.pad(&format!("{value}"))
-                }
-                proto::v1::datapoint::Value::Int64Value(value) => {
-                    f.pad(&format!("{value}"))
-                }
-                proto::v1::datapoint::Value::Uint32Value(value) => {
-                    f.pad(&format!("{value}"))
-                }
-                proto::v1::datapoint::Value::Uint64Value(value) => {
-                    f.pad(&format!("{value}"))
-                }
-                proto::v1::datapoint::Value::FloatValue(value) => {
-                    f.pad(&format!("{value:.2}"))
-                }
-                proto::v1::datapoint::Value::DoubleValue(value) => {
-                    f.pad(&format!("{value}"))
-                }
-                proto::v1::datapoint::Value::StringValue(value) => {
-                    f.pad(&format!("'{value}'"))
-                }
-                proto::v1::datapoint::Value::StringArray(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::BoolArray(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::Int32Array(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::Int64Array(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::Uint32Array(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::Uint64Array(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::FloatArray(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::DoubleArray(array) => {
-                    display_array(f, &array.values)
-                }
+                proto::v1::datapoint::Value::Int32Value(value) => f.pad(&format!("{value}")),
+                proto::v1::datapoint::Value::Int64Value(value) => f.pad(&format!("{value}")),
+                proto::v1::datapoint::Value::Uint32Value(value) => f.pad(&format!("{value}")),
+                proto::v1::datapoint::Value::Uint64Value(value) => f.pad(&format!("{value}")),
+                proto::v1::datapoint::Value::FloatValue(value) => f.pad(&format!("{value:.2}")),
+                proto::v1::datapoint::Value::DoubleValue(value) => f.pad(&format!("{value}")),
+                proto::v1::datapoint::Value::StringValue(value) => f.pad(&format!("'{value}'")),
+                proto::v1::datapoint::Value::StringArray(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::BoolArray(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::Int32Array(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::Int64Array(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::Uint32Array(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::Uint64Array(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::FloatArray(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::DoubleArray(array) => display_array(f, &array.values),
             },
             None => f.pad("None"),
         }
@@ -1087,17 +1047,15 @@ fn try_into_data_value(
         ));
     }
     match data_type {
-        proto::v1::DataType::String => Ok(
-            proto::v1::datapoint::Value::StringValue(input.to_owned()),
-        ),
-        proto::v1::DataType::StringArray => {
-            match cli::get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(proto::v1::datapoint::Value::StringArray(
-                    proto::v1::StringArray { values: value },
-                )),
-                Err(err) => Err(err),
-            }
+        proto::v1::DataType::String => {
+            Ok(proto::v1::datapoint::Value::StringValue(input.to_owned()))
         }
+        proto::v1::DataType::StringArray => match cli::get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::StringArray(
+                proto::v1::StringArray { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Bool => match input.parse::<bool>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::BoolValue(value)),
             Err(_) => Err(ParseError {}),
@@ -1162,38 +1120,32 @@ fn try_into_data_value(
             Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Value(value as u32)),
             Err(_) => Err(ParseError {}),
         },
-        proto::v1::DataType::Uint16Array => {
-            match cli::get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
-                    proto::v1::Uint32Array { values: value },
-                )),
-                Err(err) => Err(err),
-            }
-        }
+        proto::v1::DataType::Uint16Array => match cli::get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
+                proto::v1::Uint32Array { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Uint32 => match input.parse::<u32>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Value(value)),
             Err(_) => Err(ParseError {}),
         },
-        proto::v1::DataType::Uint32Array => {
-            match cli::get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
-                    proto::v1::Uint32Array { values: value },
-                )),
-                Err(err) => Err(err),
-            }
-        }
+        proto::v1::DataType::Uint32Array => match cli::get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
+                proto::v1::Uint32Array { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Uint64 => match input.parse::<u64>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Uint64Value(value)),
             Err(_) => Err(ParseError {}),
         },
-        proto::v1::DataType::Uint64Array => {
-            match cli::get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(proto::v1::datapoint::Value::Uint64Array(
-                    proto::v1::Uint64Array { values: value },
-                )),
-                Err(err) => Err(err),
-            }
-        }
+        proto::v1::DataType::Uint64Array => match cli::get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Uint64Array(
+                proto::v1::Uint64Array { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Float => match input.parse::<f32>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::FloatValue(value)),
             Err(_) => Err(ParseError {}),
@@ -1208,14 +1160,12 @@ fn try_into_data_value(
             Ok(value) => Ok(proto::v1::datapoint::Value::DoubleValue(value)),
             Err(_) => Err(ParseError {}),
         },
-        proto::v1::DataType::DoubleArray => {
-            match cli::get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(proto::v1::datapoint::Value::DoubleArray(
-                    proto::v1::DoubleArray { values: value },
-                )),
-                Err(err) => Err(err),
-            }
-        }
+        proto::v1::DataType::DoubleArray => match cli::get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::DoubleArray(
+                proto::v1::DoubleArray { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         _ => Err(ParseError {}),
     }
 }
@@ -1329,7 +1279,8 @@ mod test {
                 change_type: proto::v1::ChangeType::OnChange.into(),
                 description: "".into(),
             },
-        ].to_vec();
+        ]
+        .to_vec();
 
         let completer = CliCompleter::from_metadata(&metadata);
 

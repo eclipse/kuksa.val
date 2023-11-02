@@ -23,7 +23,9 @@ pub struct SDVClient {
 
 impl SDVClient {
     pub fn new(uri: Uri) -> Self {
-        SDVClient { basic_client: Client::new(uri) }
+        SDVClient {
+            basic_client: Client::new(uri),
+        }
     }
 
     pub async fn get_metadata(
