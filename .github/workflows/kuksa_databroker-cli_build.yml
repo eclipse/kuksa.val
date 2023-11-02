@@ -44,30 +44,8 @@ jobs:
       - name: cargo clippy
         working-directory: ${{github.workspace}}
         run: cargo clippy --all-targets -- -W warnings -D warnings
-<<<<<<< HEAD
   check_ghcr_push:
     uses: eclipse-kuksa/kuksa-actions/.github/workflows/check_ghcr_push.yml@2
-=======
-      - name: cargo clippy feature kuksa
-        working-directory: ${{github.workspace}}
-        run: cargo clippy --all-targets --no-default-features --features feature_kuksa -- -W warnings -D warnings
-
-      - name: "Createbom: License check and Dash output generation"
-        working-directory: ${{github.workspace}}/kuksa_databroker/createbom
-        run: |
-         cargo install cargo-license
-         python3 createbom.py --dash ${{github.workspace}}/dash-databroker-cli-deps ../databroker-cli
-
-      - name: Dash license check
-        uses: ./.github/actions/check-dash
-        with:
-          dashinput: ${{github.workspace}}/dash-databroker-cli-deps
-
-
-
-  checkrights:
-    uses: ./.github/workflows/check_push_rights.yml
->>>>>>> 8456870... Add CI for kuksa_feature and fix clippy findings
     secrets: inherit
 
 # Run on selfhosted, because our runner has native ARM build in a remote

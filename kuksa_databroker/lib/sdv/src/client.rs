@@ -15,14 +15,15 @@ use std::collections::HashMap;
 
 use common::{Client, ClientError};
 use databroker_proto::sdv::databroker as proto;
+use http::Uri;
 
 pub struct SDVClient {
     pub basic_client: Client,
 }
 
 impl SDVClient {
-    pub fn new(basic_client: Client) -> Self {
-        SDVClient { basic_client }
+    pub fn new(uri: Uri) -> Self {
+        SDVClient { basic_client: Client::new(uri) }
     }
 
     pub async fn get_metadata(

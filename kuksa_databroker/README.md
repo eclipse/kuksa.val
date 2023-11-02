@@ -114,6 +114,8 @@ The quickest possible way to get Kuksa.val Databroker up and running.
 ### Reading and writing VSS data using the CLI
 
 1. Start the CLI in a container attached to the *kuksa* bridge network and connect to the Databroker container:
+  The databroker supports both of ```sdv.databroker.v1``` and ```kuksa.val.v1``` as an API. Per default the databroker-cli uses the ```sdv.databroker.v1``` interface. To change it use ```--protocol``` option when starting. Chosse eihter one of ```kuksa-val-v1``` and ```sdv-databroker-v1```.
+
 
    ```sh
    # in a new terminal
@@ -183,6 +185,8 @@ The quickest possible way to get Kuksa.val Databroker up and running.
    [get]  OK
    Vehicle.Speed: 100.34
    ```
+
+Run the cli with:
 
 4. Exit the client
    ```sh
