@@ -11,8 +11,6 @@
 * SPDX-License-Identifier: Apache-2.0
 ********************************************************************************/
 
-
-
 use databroker_proto::kuksa::val as proto;
 use kuksa::*;
 
@@ -20,17 +18,17 @@ use prost_types::Timestamp;
 use tokio_stream::StreamExt;
 
 use std::collections::HashMap;
+use std::fmt;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
-use std::fmt;
 
 use ansi_term::Color;
 
+use crate::cli::ParseError;
+use crate::cli::{self, Cli};
 use linefeed::complete::{Completer, Completion, Suffix};
 use linefeed::terminal::Terminal;
 use linefeed::{Command, Interface, Prompter, ReadResult};
-use crate::cli::{self, Cli};
-use crate::cli::ParseError;
 
 const VERSION: &str = "kuksa.val.v1";
 const TIMEOUT: Duration = Duration::from_millis(500);
@@ -68,7 +66,7 @@ fn print_usage(command: impl AsRef<str>) {
     }
 }
 
-pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
+pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     println!("Using {VERSION}");
 
     let mut subscription_nbr = 1;
@@ -213,11 +211,7 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                     cli::print_resp_ok(cmd)?;
                                     for entry in data_entries {
                                         if let Some(val) = entry.value {
-                                            println!(
-                                                "{}: {}",
-                                                entry.path,
-                                                DisplayDatapoint(val),
-                                            );
+                                            println!("{}: {}", entry.path, DisplayDatapoint(val),);
                                         } else {
                                             println!("{}: NotAvailable", entry.path);
                                         }
@@ -265,7 +259,9 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                         }
                                     }
                                 }
-                                Err(err) => cli::print_error(cmd, &format!("Malformed token: {err}"))?,
+                                Err(err) => {
+                                    cli::print_error(cmd, &format!("Malformed token: {err}"))?
+                                }
                             }
                         }
                         "token-file" => {
@@ -323,8 +319,7 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                 continue;
                             }
 
-                            let datapoint_entries = match client.get_metadata(vec![path]).await
-                            {
+                            let datapoint_entries = match client.get_metadata(vec![path]).await {
                                 Ok(data_entries) => Some(data_entries),
                                 Err(common::ClientError::Status(status)) => {
                                     cli::print_resp_err("metadata", &status)?;
@@ -345,18 +340,14 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                     if let Some(metadata) = entry.metadata {
                                         let data_value = try_into_data_value(
                                             value,
-                                            proto::v1::DataType::from_i32(
-                                                metadata.data_type,
-                                            )
-                                            .unwrap(),
+                                            proto::v1::DataType::from_i32(metadata.data_type)
+                                                .unwrap(),
                                         );
                                         if data_value.is_err() {
                                             println!(
                                                 "Could not parse \"{value}\" as {:?}",
-                                                proto::v1::DataType::from_i32(
-                                                    metadata.data_type
-                                                )
-                                                .unwrap()
+                                                proto::v1::DataType::from_i32(metadata.data_type)
+                                                    .unwrap()
                                             );
                                             continue;
                                         }
@@ -412,8 +403,7 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                 continue;
                             }
 
-                            let datapoint_entries = match client.get_metadata(vec![path]).await
-                            {
+                            let datapoint_entries = match client.get_metadata(vec![path]).await {
                                 Ok(data_entries) => Some(data_entries),
                                 Err(common::ClientError::Status(status)) => {
                                     cli::print_resp_err("metadata", &status)?;
@@ -434,19 +424,15 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                     if let Some(metadata) = entry.metadata {
                                         let data_value = try_into_data_value(
                                             value,
-                                            proto::v1::DataType::from_i32(
-                                                metadata.data_type,
-                                            )
-                                            .unwrap(),
+                                            proto::v1::DataType::from_i32(metadata.data_type)
+                                                .unwrap(),
                                         );
                                         if data_value.is_err() {
                                             println!(
                                                 "Could not parse \"{}\" as {:?}",
                                                 value,
-                                                proto::v1::DataType::from_i32(
-                                                    metadata.data_type
-                                                )
-                                                .unwrap()
+                                                proto::v1::DataType::from_i32(metadata.data_type)
+                                                    .unwrap()
                                             );
                                             continue;
                                         }
@@ -526,8 +512,7 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                                                 .unwrap();
                                                             }
                                                             if let Some(entry) = update.entry {
-                                                                if let Some(value) = entry.value
-                                                                {
+                                                                if let Some(value) = entry.value {
                                                                     writeln!(
                                                                         output,
                                                                         "{}: {}",
@@ -578,7 +563,9 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                 Err(common::ClientError::Status(status)) => {
                                     cli::print_resp_err(cmd, &status)?
                                 }
-                                Err(common::ClientError::Connection(msg)) => cli::print_error(cmd, msg)?,
+                                Err(common::ClientError::Connection(msg)) => {
+                                    cli::print_error(cmd, msg)?
+                                }
                                 Err(common::ClientError::Function(msg)) => {
                                     cli::print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?
                                 }
@@ -644,7 +631,10 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                             cli::print_error("metadata", msg)?;
                                         }
                                         Err(common::ClientError::Function(msg)) => {
-                                            cli::print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                            cli::print_resp_err_fmt(
+                                                cmd,
+                                                format_args!("Error {msg:?}"),
+                                            )?;
                                         }
                                     }
                                 }
@@ -680,12 +670,16 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                                     println!(
                                                         "{:<max_len_path$} {:<10} {:<9}",
                                                         entry.path,
-                                                        DisplayEntryType::from(proto::v1::EntryType::from_i32(
-                                                            entry_metadata.entry_type
-                                                        )),
-                                                        DisplayDataType::from(proto::v1::DataType::from_i32(
-                                                            entry_metadata.data_type
-                                                        )),
+                                                        DisplayEntryType::from(
+                                                            proto::v1::EntryType::from_i32(
+                                                                entry_metadata.entry_type
+                                                            )
+                                                        ),
+                                                        DisplayDataType::from(
+                                                            proto::v1::DataType::from_i32(
+                                                                entry_metadata.data_type
+                                                            )
+                                                        ),
                                                     );
                                                 } else {
                                                     let name = entry.path.clone();
@@ -703,7 +697,10 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>>{
                                         continue;
                                     }
                                     Err(common::ClientError::Function(msg)) => {
-                                        cli::print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
+                                        cli::print_resp_err_fmt(
+                                            cmd,
+                                            format_args!("Error {msg:?}"),
+                                        )?;
                                     }
                                 }
                             }
@@ -914,7 +911,6 @@ impl<Term: Terminal> Completer<Term> for CliCompleter {
     }
 }
 
-
 struct DisplayDataType(Option<proto::v1::DataType>);
 struct DisplayEntryType(Option<proto::v1::EntryType>);
 struct DisplayDatapoint(proto::v1::Datapoint);
@@ -943,37 +939,17 @@ impl fmt::Display for DisplayDatapoint {
                 proto::v1::datapoint::Value::Int64(value) => f.pad(&format!("{value}")),
                 proto::v1::datapoint::Value::Uint32(value) => f.pad(&format!("{value}")),
                 proto::v1::datapoint::Value::Uint64(value) => f.pad(&format!("{value}")),
-                proto::v1::datapoint::Value::Float(value) => {
-                    f.pad(&format!("{value:.2}"))
-                }
+                proto::v1::datapoint::Value::Float(value) => f.pad(&format!("{value:.2}")),
                 proto::v1::datapoint::Value::Double(value) => f.pad(&format!("{value}")),
-                proto::v1::datapoint::Value::String(value) => {
-                    f.pad(&format!("'{value}'"))
-                }
-                proto::v1::datapoint::Value::StringArray(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::BoolArray(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::Int32Array(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::Int64Array(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::Uint32Array(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::Uint64Array(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::FloatArray(array) => {
-                    display_array(f, &array.values)
-                }
-                proto::v1::datapoint::Value::DoubleArray(array) => {
-                    display_array(f, &array.values)
-                }
+                proto::v1::datapoint::Value::String(value) => f.pad(&format!("'{value}'")),
+                proto::v1::datapoint::Value::StringArray(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::BoolArray(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::Int32Array(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::Int64Array(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::Uint32Array(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::Uint64Array(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::FloatArray(array) => display_array(f, &array.values),
+                proto::v1::datapoint::Value::DoubleArray(array) => display_array(f, &array.values),
             },
             None => f.pad("None"),
         }
@@ -1019,23 +995,18 @@ fn try_into_data_value(
     }
 
     match data_type {
-        proto::v1::DataType::String => {
-            Ok(proto::v1::datapoint::Value::String(input.to_owned()))
-        }
-        proto::v1::DataType::StringArray => {
-            match cli::get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(proto::v1::datapoint::Value::StringArray(
-                    proto::v1::StringArray { values: value },
-                )),
-                Err(err) => Err(err),
-            }
-        }
+        proto::v1::DataType::String => Ok(proto::v1::datapoint::Value::String(input.to_owned())),
+        proto::v1::DataType::StringArray => match cli::get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::StringArray(
+                proto::v1::StringArray { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Boolean => match input.parse::<bool>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Bool(value)),
             Err(_) => Err(ParseError {}),
         },
-        proto::v1::DataType::BooleanArray => match cli::get_array_from_input(input.to_owned())
-        {
+        proto::v1::DataType::BooleanArray => match cli::get_array_from_input(input.to_owned()) {
             Ok(value) => Ok(proto::v1::datapoint::Value::BoolArray(
                 proto::v1::BoolArray { values: value },
             )),
@@ -1095,38 +1066,32 @@ fn try_into_data_value(
             Ok(value) => Ok(proto::v1::datapoint::Value::Uint32(value as u32)),
             Err(_) => Err(ParseError {}),
         },
-        proto::v1::DataType::Uint16Array => {
-            match cli::get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
-                    proto::v1::Uint32Array { values: value },
-                )),
-                Err(err) => Err(err),
-            }
-        }
+        proto::v1::DataType::Uint16Array => match cli::get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
+                proto::v1::Uint32Array { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Uint32 => match input.parse::<u32>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Uint32(value)),
             Err(_) => Err(ParseError {}),
         },
-        proto::v1::DataType::Uint32Array => {
-            match cli::get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
-                    proto::v1::Uint32Array { values: value },
-                )),
-                Err(err) => Err(err),
-            }
-        }
+        proto::v1::DataType::Uint32Array => match cli::get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Uint32Array(
+                proto::v1::Uint32Array { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Uint64 => match input.parse::<u64>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Uint64(value)),
             Err(_) => Err(ParseError {}),
         },
-        proto::v1::DataType::Uint64Array => {
-            match cli::get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(proto::v1::datapoint::Value::Uint64Array(
-                    proto::v1::Uint64Array { values: value },
-                )),
-                Err(err) => Err(err),
-            }
-        }
+        proto::v1::DataType::Uint64Array => match cli::get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::Uint64Array(
+                proto::v1::Uint64Array { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         proto::v1::DataType::Float => match input.parse::<f32>() {
             Ok(value) => Ok(proto::v1::datapoint::Value::Float(value)),
             Err(_) => Err(ParseError {}),
@@ -1141,18 +1106,15 @@ fn try_into_data_value(
             Ok(value) => Ok(proto::v1::datapoint::Value::Double(value)),
             Err(_) => Err(ParseError {}),
         },
-        proto::v1::DataType::DoubleArray => {
-            match cli::get_array_from_input(input.to_owned()) {
-                Ok(value) => Ok(proto::v1::datapoint::Value::DoubleArray(
-                    proto::v1::DoubleArray { values: value },
-                )),
-                Err(err) => Err(err),
-            }
-        }
+        proto::v1::DataType::DoubleArray => match cli::get_array_from_input(input.to_owned()) {
+            Ok(value) => Ok(proto::v1::datapoint::Value::DoubleArray(
+                proto::v1::DoubleArray { values: value },
+            )),
+            Err(err) => Err(err),
+        },
         _ => Err(ParseError {}),
     }
 }
-
 
 #[cfg(test)]
 mod test {
@@ -1223,7 +1185,7 @@ mod test {
         assert!(try_into_data_value("33000", proto::v1::DataType::Int16).is_err());
         assert!(try_into_data_value("-33000", proto::v1::DataType::Int16).is_err());
         assert!(try_into_data_value("-32000.1", proto::v1::DataType::Int16).is_err());
-}
+    }
 
     #[test]
     fn test_entry_path_completion() {

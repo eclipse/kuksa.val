@@ -20,7 +20,7 @@ use ansi_term::Color;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
-use linefeed::{DefaultTerminal, Interface, Terminal, Prompter, Function};
+use linefeed::{DefaultTerminal, Function, Interface, Prompter, Terminal};
 
 #[derive(Debug)]
 pub struct ParseError {}
@@ -60,24 +60,24 @@ pub struct Cli {
     command: Option<Commands>,
 }
 
-impl Cli{
-    pub fn get_ca_cert(&mut self) -> Option<String>{
+impl Cli {
+    pub fn get_ca_cert(&mut self) -> Option<String> {
         return self.ca_cert.clone();
     }
 
-    pub fn get_token_file(&mut self) -> Option<String>{
+    pub fn get_token_file(&mut self) -> Option<String> {
         return self.token_file.clone();
     }
 
-    pub fn get_command(&mut self) -> Option<Commands>{
+    pub fn get_command(&mut self) -> Option<Commands> {
         return self.command.clone();
     }
 
-    pub fn get_server(&mut self) -> String{
+    pub fn get_server(&mut self) -> String {
         return self.server.clone();
     }
 
-    pub fn get_protocol(&mut self) -> CliAPI{
+    pub fn get_protocol(&mut self) -> CliAPI {
         return self.protocol;
     }
 }
