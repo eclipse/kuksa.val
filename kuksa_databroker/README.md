@@ -118,7 +118,7 @@ Currently, to run databroker-cli (see below), you do need to change the port it 
 
 ## Test the Databroker using CLI
 
-The databroker supports both of ```sdv.databroker.v1``` and ```kuksa.val.v1``` as an API. Per default the databroker-cli uses the ```sdv.databroker.v1``` interface. To change it use ```--protocol``` option when starting. Chosse eihter one of ```kuksa-val-v1``` and ```sdv-databroker-v1```.
+The databroker supports both of ```sdv.databroker.v1``` and ```kuksa.val.v1``` as an API. Per default the databroker-cli uses the ```sdv.databroker.v1``` interface. To change it use ```--protocol``` option when starting. Chosse either one of ```kuksa-val-v1``` and ```sdv-databroker-v1```.
 
 Run the cli with:
 
