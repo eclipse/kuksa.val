@@ -1207,7 +1207,7 @@ mod test {
             }),
         });
         metadata.push(proto::v1::DataEntry {
-            path: "Vehicle.Test.AnotherTest1".into(),
+            path: "Vehicle.AnotherTest.AnotherTest1".into(),
             value: None,
             actuator_target: None,
             metadata: Some(proto::v1::Metadata {
@@ -1222,7 +1222,7 @@ mod test {
             }),
         });
         metadata.push(proto::v1::DataEntry {
-            path: "Vehicle.Test.AnotherTest2".into(),
+            path: "Vehicle.AnotherTest.AnotherTest2".into(),
             value: None,
             actuator_target: None,
             metadata: Some(proto::v1::Metadata {
