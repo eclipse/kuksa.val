@@ -78,8 +78,8 @@ vergen = { version = "8", features = [
 
 [dev-dependencies]
 anyhow = "1.0"
-cucumber = { version = "0.20", features = ["libtest"] }
+cucumber = { version = "0.20", default-features = false, features = ["libtest", "macros"] }
 
 [[test]]
-name = "current_values"
+name = "read_write_values"
 harness = false

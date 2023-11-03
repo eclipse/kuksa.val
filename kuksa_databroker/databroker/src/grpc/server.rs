@@ -13,6 +13,7 @@
 
 use std::{convert::TryFrom, future::Future, time::Duration};
 
+use tokio::net::TcpListener;
 use tokio_stream::wrappers::TcpListenerStream;
 use tonic::transport::Server;
 #[cfg(feature = "tls")]
@@ -99,10 +100,35 @@ where
     F: Future<Output = ()>,
 {
     let socket_addr = addr.into();
+    let listener = TcpListener::bind(socket_addr).await?;
+    serve_with_incoming_shutdown(
+        listener,
+        broker,
+        #[cfg(feature = "tls")]
+        server_tls,
+        authorization,
+        signal,
+    )
+    .await
+}
 
+pub async fn serve_with_incoming_shutdown<F>(
+    listener: TcpListener,
+    broker: broker::DataBroker,
+    #[cfg(feature = "tls")] server_tls: ServerTLS,
+    authorization: Authorization,
+    signal: F,
+) -> Result<(), Box<dyn std::error::Error>>
+where
+    F: Future<Output = ()>,
+{
     broker.start_housekeeping_task();
+    if let Ok(addr) = listener.local_addr() {
+        info!("Listening on {}", addr);
+    }
 
-    let mut builder = tonic::transport::Server::builder()
+    let incoming = TcpListenerStream::new(listener);
+    let mut builder = Server::builder()
         .http2_keepalive_interval(Some(Duration::from_secs(10)))
         .http2_keepalive_timeout(Some(Duration::from_secs(20)));
 
@@ -121,46 +147,7 @@ where
         info!("Authorization is not enabled.");
     }
 
-    let router = builder
-        .add_service(
-            sdv::databroker::v1::broker_server::BrokerServer::with_interceptor(
-                broker.clone(),
-                authorization.clone(),
-            ),
-        )
-        .add_service(
-            sdv::databroker::v1::collector_server::CollectorServer::with_interceptor(
-                broker.clone(),
-                authorization.clone(),
-            ),
-        )
-        .add_service(kuksa::val::v1::val_server::ValServer::with_interceptor(
-            broker.clone(),
-            authorization.clone(),
-        ));
-
-    info!("Listening on {}", socket_addr);
-    router
-        .serve_with_shutdown(socket_addr, shutdown(broker, signal))
-        .await?;
-
-    Ok(())
-}
-
-pub async fn serve_with_incoming_shutdown<F>(
-    stream: TcpListenerStream,
-    broker: broker::DataBroker,
-    authorization: Authorization,
-    signal: F,
-) -> Result<(), Box<dyn std::error::Error>>
-where
-    F: Future<Output = ()>,
-{
-    broker.start_housekeeping_task();
-
-    Server::builder()
-        .http2_keepalive_interval(Some(Duration::from_secs(10)))
-        .http2_keepalive_timeout(Some(Duration::from_secs(20)))
+    builder
         .add_service(
             sdv::databroker::v1::broker_server::BrokerServer::with_interceptor(
                 broker.clone(),
@@ -177,7 +164,7 @@ where
             broker.clone(),
             authorization,
         ))
-        .serve_with_incoming_shutdown(stream, shutdown(broker, signal))
+        .serve_with_incoming_shutdown(incoming, shutdown(broker, signal))
         .await?;
 
     Ok(())
