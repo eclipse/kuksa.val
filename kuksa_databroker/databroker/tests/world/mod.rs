@@ -14,102 +14,95 @@
 use std::{
     future::poll_fn,
     net::SocketAddr,
+    str::FromStr,
     sync::{Arc, Mutex},
     task::{Poll, Waker},
 };
 
-use databroker::{broker, grpc, permissions};
+use databroker::{
+    broker,
+    grpc::{self, server::ServerTLS},
+    permissions,
+};
 use databroker_proto::kuksa::val::v1::{
-    datapoint::Value, val_client::ValClient, DataEntry, DataType, GetResponse, SetResponse,
+    datapoint::Value, val_client::ValClient, DataEntry, GetResponse, SetResponse,
 };
 use tokio::net::TcpListener;
-use tonic::transport::Channel;
+use tonic::{
+    transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity},
+    Code, Status,
+};
 use tracing::debug;
 
-const DATAPOINTS: &[(
-    &str,
-    broker::DataType,
-    broker::ChangeType,
-    broker::EntryType,
-    &str,
-)] = &[
-    (
-        "Vehicle.Cabin.Lights.AmbientLight",
-        broker::DataType::Uint8,
-        broker::ChangeType::OnChange,
-        broker::EntryType::Sensor,
-        "How much ambient light is detected in cabin. 0 = No ambient light. 100 = Full brightness",
-    ),
-    (
-        "Vehicle.Cabin.Sunroof.Position",
-        broker::DataType::Int8,
-        broker::ChangeType::OnChange,
-        broker::EntryType::Sensor,
-        "Sunroof position. 0 = Fully closed 100 = Fully opened. -100 = Fully tilted.",
-    ),
-    (
-        "Vehicle.CurrentLocation.Longitude",
-        broker::DataType::Double,
-        broker::ChangeType::Continuous,
-        broker::EntryType::Sensor,
-        "Current longitude of vehicle in WGS 84 geodetic coordinates, as measured at the position of GNSS receiver antenna.",
-    ),
-    (
-        "Vehicle.IsMoving",
-        broker::DataType::Bool,
-        broker::ChangeType::OnChange,
-        broker::EntryType::Sensor,
-        "Whether the vehicle is moving",
-    ),
-    (
-        "Vehicle.Powertrain.ElectricMotor.Power",
-        broker::DataType::Int16,
-        broker::ChangeType::Continuous,
-        broker::EntryType::Sensor,
-        "Current motor power output. Negative values indicate regen mode.",
-    ),
-    (
-        "Vehicle.Powertrain.ElectricMotor.Speed",
-        broker::DataType::Int32,
-        broker::ChangeType::Continuous,
-        broker::EntryType::Sensor,
-        "Motor rotational speed measured as rotations per minute. Negative values indicate reverse driving mode.",
-    ),
-    (
-        "Vehicle.Powertrain.Range",
-        broker::DataType::Uint32,
-        broker::ChangeType::Continuous,
-        broker::EntryType::Sensor,
-        "Remaining range in meters using all energy sources available in the vehicle.",
-    ),
-    (
-        "Vehicle.Speed",
-        broker::DataType::Float,
-        broker::ChangeType::Continuous,
-        broker::EntryType::Sensor,
-        "Vehicle speed",
-    ),
-    (
-        "Vehicle.TraveledDistanceHighRes",
-        broker::DataType::Uint64,
-        broker::ChangeType::Continuous,
-        broker::EntryType::Sensor,
-        "Accumulated distance travelled by the vehicle during its operation.",
-    ),
-    (
-        "Vehicle.Width",
-        broker::DataType::Uint16,
-        broker::ChangeType::OnChange,
-        broker::EntryType::Attribute,
-        "Overall vehicle width.",
-    ),
-];
+use lazy_static::lazy_static;
+
+#[cfg(feature = "tls")]
+lazy_static! {
+    pub static ref CERTS: DataBrokerCertificates = DataBrokerCertificates::new();
+}
 
 #[derive(clap::Args)] // re-export of `clap::Args`
 pub struct UnsupportedLibtestArgs {
     // allow "--test-threads" parameter being passed into the test
     #[arg(long)]
     pub test_threads: Option<u16>,
+}
+
+#[derive(Debug, Default)]
+pub enum ValueType {
+    #[default]
+    Current,
+    Target,
+}
+
+impl FromStr for ValueType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
+            "current" => Self::Current,
+            "target" => Self::Target,
+            invalid => return Err(format!("Invalid `ValueType`: {invalid}")),
+        })
+    }
+}
+
+#[cfg(feature = "tls")]
+pub struct DataBrokerCertificates {
+    server_identity: Identity,
+    ca_certs: Certificate,
+}
+
+#[cfg(feature = "tls")]
+impl DataBrokerCertificates {
+    fn new() -> Self {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let cert_dir = format!("{manifest_dir}/../../kuksa_certificates");
+        debug!("reading key material from {}", cert_dir);
+        let key_file = format!("{cert_dir}/Server.key");
+        let server_key = std::fs::read(key_file).expect("could not read server key");
+        let cert_file = format!("{cert_dir}/Server.pem");
+        let server_cert = std::fs::read(cert_file).expect("could not read server certificate");
+        let server_identity = tonic::transport::Identity::from_pem(server_cert, server_key);
+        let ca_file = format!("{cert_dir}/CA.pem");
+        let ca_store = std::fs::read(ca_file).expect("could not read root CA file");
+        let ca_certs = Certificate::from_pem(ca_store);
+        DataBrokerCertificates {
+            server_identity,
+            ca_certs,
+        }
+    }
+
+    fn server_tls_config(&self) -> ServerTLS {
+        ServerTLS::Enabled {
+            tls_config: tonic::transport::ServerTlsConfig::new()
+                .identity(self.server_identity.clone()),
+        }
+    }
+
+    fn client_tls_config(&self) -> ClientTlsConfig {
+        ClientTlsConfig::new().ca_certificate(self.ca_certs.clone())
+    }
 }
 
 #[derive(Debug)]
@@ -124,6 +117,7 @@ struct DataBrokerState {
 pub struct DataBrokerWorld {
     pub current_get_response: Option<GetResponse>,
     pub current_set_response: Option<SetResponse>,
+    pub current_status: Option<Status>,
     pub broker_client: Option<ValClient<Channel>>,
     data_broker_state: Arc<Mutex<DataBrokerState>>,
 }
@@ -133,6 +127,7 @@ impl DataBrokerWorld {
         DataBrokerWorld {
             current_get_response: None,
             current_set_response: None,
+            current_status: None,
             data_broker_state: Arc::new(Mutex::new(DataBrokerState {
                 running: false,
                 address: None,
@@ -142,7 +137,15 @@ impl DataBrokerWorld {
         }
     }
 
-    pub async fn start_databroker(&mut self) {
+    pub async fn start_databroker(
+        &mut self,
+        data_entries: Vec<(
+            String,
+            broker::DataType,
+            broker::ChangeType,
+            broker::EntryType,
+        )>,
+    ) {
         {
             let state = self
                 .data_broker_state
@@ -169,14 +172,14 @@ impl DataBrokerWorld {
                 .unwrap_or(option_env!("VERGEN_GIT_SHA").unwrap_or("unknown"));
             let data_broker = broker::DataBroker::new(version);
             let database = data_broker.authorized_access(&permissions::ALLOW_ALL);
-            for (name, data_type, change_type, entry_type, description) in DATAPOINTS {
+            for (name, data_type, change_type, entry_type) in data_entries {
                 if let Err(_error) = database
                     .add_entry(
-                        name.to_string(),
-                        data_type.clone(),
-                        change_type.clone(),
-                        entry_type.clone(),
-                        description.to_string(),
+                        name,
+                        data_type,
+                        change_type,
+                        entry_type,
+                        "N/A".to_string(),
                         None,
                     )
                     .await
@@ -192,8 +195,10 @@ impl DataBrokerWorld {
             }
 
             grpc::server::serve_with_incoming_shutdown(
-                tokio_stream::wrappers::TcpListenerStream::new(listener),
+                listener,
                 data_broker,
+                #[cfg(feature = "tls")]
+                CERTS.server_tls_config(),
                 databroker::authorization::Authorization::Disabled,
                 poll_fn(|cx| {
                     let mut state = owned_state
@@ -227,9 +232,18 @@ impl DataBrokerWorld {
         });
 
         debug!("started Databroker [address: {addr}]");
-        let data_broker_url = format!("http://{}:{}", addr.ip(), addr.port());
+        #[cfg(not(feature = "tls"))]
+        let client_endpoint =
+            Endpoint::from_shared(format!("http://{}:{}", addr.ip(), addr.port()))
+                .expect("cannot create client endpoint");
+        #[cfg(feature = "tls")]
+        let client_endpoint =
+            Endpoint::from_shared(format!("https://{}:{}", addr.ip(), addr.port()))
+                .and_then(|conf| conf.tls_config(CERTS.client_tls_config()))
+                .expect("cannot create client endpoint");
+
         self.broker_client = Some(
-            ValClient::connect(data_broker_url)
+            ValClient::connect(client_endpoint)
                 .await
                 .expect("failed to create Databroker client"),
         );
@@ -262,10 +276,21 @@ impl DataBrokerWorld {
             .and_then(|datapoint| datapoint.value)
     }
 
-    pub fn get_current_value_type(&self, path: String) -> Option<DataType> {
+    pub fn get_target_value(&self, path: String) -> Option<Value> {
         self.get_current_data_entry(path)
-            .and_then(|data_entry| data_entry.metadata)
-            .and_then(|m| DataType::from_i32(m.data_type))
+            .and_then(|data_entry| data_entry.actuator_target)
+            .and_then(|datapoint| datapoint.value)
+    }
+
+    /// https://github.com/grpc/grpc/blob/master/doc/statuscodes.md#status-codes-and-their-use-in-grpc
+    pub fn assert_status_has_code(&self, expected_status_code: i32) {
+        assert!(
+            self.current_status.is_some(),
+            "operation did not result in an error"
+        );
+        if let Some(status) = self.current_status.clone() {
+            assert_eq!(status.code(), Code::from_i32(expected_status_code));
+        }
     }
 
     pub fn assert_set_response_has_error_code(&self, path: String, error_code: u32) {
