@@ -353,7 +353,7 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                         }
 
                                         if metadata.entry_type
-                                            != proto::v1::EntryType::Actuator.into()
+                                            != proto::v1::EntryType::Actuator as i32
                                         {
                                             cli::print_error(
                                                 cmd,
