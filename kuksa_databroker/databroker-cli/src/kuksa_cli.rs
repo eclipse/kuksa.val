@@ -1190,23 +1190,21 @@ mod test {
     #[test]
     fn test_entry_path_completion() {
         #[allow(unused_mut, unused_assignments)]
-        let mut metadata = vec![
-            proto::v1::DataEntry {
-                path: "Vehicle.Test.Test1".into(),
-                value: None,
-                actuator_target: None,
-                metadata: Some(proto::v1::Metadata {
-                    data_type: proto::v1::DataType::Boolean.into(),
-                    entry_type: proto::v1::EntryType::Sensor.into(),
-                    comment: None,
-                    deprecation: None,
-                    unit: None,
-                    value_restriction: None,
-                    entry_specific: None,
-                    description: Some("".to_string()),
-                }),
-            }
-        ];
+        let mut metadata = vec![proto::v1::DataEntry {
+            path: "Vehicle.Test.Test1".into(),
+            value: None,
+            actuator_target: None,
+            metadata: Some(proto::v1::Metadata {
+                data_type: proto::v1::DataType::Boolean.into(),
+                entry_type: proto::v1::EntryType::Sensor.into(),
+                comment: None,
+                deprecation: None,
+                unit: None,
+                value_restriction: None,
+                entry_specific: None,
+                description: Some("".to_string()),
+            }),
+        }];
         metadata.push(proto::v1::DataEntry {
             path: "Vehicle.AnotherTest.AnotherTest1".into(),
             value: None,
