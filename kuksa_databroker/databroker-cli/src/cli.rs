@@ -62,23 +62,23 @@ pub struct Cli {
 
 impl Cli {
     pub fn get_ca_cert(&mut self) -> Option<String> {
-        return self.ca_cert.clone();
+        self.ca_cert.clone()
     }
 
     pub fn get_token_file(&mut self) -> Option<String> {
-        return self.token_file.clone();
+        self.token_file.clone()
     }
 
     pub fn get_command(&mut self) -> Option<Commands> {
-        return self.command.clone();
+        self.command.clone()
     }
 
     pub fn get_server(&mut self) -> String {
-        return self.server.clone();
+        self.server.clone()
     }
 
     pub fn get_protocol(&mut self) -> CliAPI {
-        return self.protocol;
+        self.protocol
     }
 }
 

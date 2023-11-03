@@ -30,7 +30,7 @@ impl KuksaClient {
         }
     }
 
-    async fn set(&mut self, entry: DataEntry, fields: Vec<i32>) -> Result<(), ClientError> {
+    async fn set(&mut self, entry: DataEntry, _fields: Vec<i32>) -> Result<(), ClientError> {
         let mut client = proto::v1::val_client::ValClient::with_interceptor(
             self.basic_client.get_channel().await?.clone(),
             self.basic_client.get_auth_interceptor(),
@@ -38,7 +38,7 @@ impl KuksaClient {
         let set_request = proto::v1::SetRequest {
             updates: vec![proto::v1::EntryUpdate {
                 entry: Some(entry),
-                fields: fields.into(),
+                fields: _fields,
             }],
         };
         match client.set(set_request).await {
@@ -54,12 +54,12 @@ impl KuksaClient {
                     }
                 }
                 if errors.is_empty() {
-                    return Ok(());
+                    Ok(())
                 } else {
-                    return Err(ClientError::Function(errors));
+                    Err(ClientError::Function(errors))
                 }
             }
-            Err(err) => return Err(ClientError::Status(err)),
+            Err(err) => Err(ClientError::Status(err)),
         }
     }
 
@@ -67,7 +67,7 @@ impl KuksaClient {
         &mut self,
         path: &str,
         view: proto::v1::View,
-        fields: Vec<i32>,
+        _fields: Vec<i32>,
     ) -> Result<Vec<DataEntry>, ClientError> {
         let mut client = proto::v1::val_client::ValClient::with_interceptor(
             self.basic_client.get_channel().await?.clone(),
@@ -78,7 +78,7 @@ impl KuksaClient {
             entries: vec![proto::v1::EntryRequest {
                 path: path.to_string(),
                 view: view.into(),
-                fields: fields,
+                fields: _fields,
             }],
         };
 
@@ -95,13 +95,13 @@ impl KuksaClient {
                     }
                 }
                 if !errors.is_empty() {
-                    return Err(ClientError::Function(errors));
+                    Err(ClientError::Function(errors))
                 } else {
                     // since there is only one DataEntry in the vector return only the according DataEntry
                     Ok(message.entries.clone())
                 }
             }
-            Err(err) => return Err(ClientError::Status(err)),
+            Err(err) => Err(ClientError::Status(err)),
         }
     }
 
@@ -112,7 +112,7 @@ impl KuksaClient {
             match self
                 .get(
                     path,
-                    proto::v1::View::Metadata.into(),
+                    proto::v1::View::Metadata,
                     vec![proto::v1::Field::Metadata.into()],
                 )
                 .await
@@ -135,7 +135,7 @@ impl KuksaClient {
             match self
                 .get(
                     &path,
-                    proto::v1::View::CurrentValue.into(),
+                    proto::v1::View::CurrentValue,
                     vec![
                         proto::v1::Field::Value.into(),
                         proto::v1::Field::Metadata.into(),
@@ -161,7 +161,7 @@ impl KuksaClient {
             match self
                 .get(
                     path,
-                    proto::v1::View::TargetValue.into(),
+                    proto::v1::View::TargetValue,
                     vec![
                         proto::v1::Field::ActuatorTarget.into(),
                         proto::v1::Field::Metadata.into(),

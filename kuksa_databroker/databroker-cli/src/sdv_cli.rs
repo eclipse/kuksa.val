@@ -1046,6 +1046,8 @@ fn try_into_data_value(
             proto::v1::datapoint::Failure::NotAvailable as i32,
         ));
     }
+
+    #[allow(unreachable_patterns)]
     match data_type {
         proto::v1::DataType::String => {
             Ok(proto::v1::datapoint::Value::StringValue(input.to_owned()))
