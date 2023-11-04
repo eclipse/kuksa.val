@@ -12,57 +12,40 @@
 # ********************************************************************************/
 
 # This is expected to be executed in the kuksa.val top-level directory
+# You need to run build-all-targets.sh first, as this docker file jsut
+# collects the artifacts
 
-# This builds KUKSA databroker
 
-FROM ghcr.io/rust-cross/rust-musl-cross:x86_64-musl AS builder-amd64
+# Different targets need different base images, so prepare aliases here
+
+# AMD is a statically linked MUSL build
+FROM scratch AS target-amd64
 ENV BUILDTARGET="x86_64-unknown-linux-musl"
+COPY ./target/x86_64-unknown-linux-musl/release/databroker /app/databroker
 
 
-FROM ghcr.io/rust-cross/rust-musl-cross:aarch64-musl AS builder-arm64
+# ARM64 is a statically linked GRPC build
+FROM scratch AS target-arm64
 ENV BUILDTARGET="aarch64-unknown-linux-musl"
+COPY ./target/aarch64-unknown-linux-musl/release/databroker /app/databroker
 
-FROM builder-$TARGETARCH as builder
+
+# RISCV is a glibc build. Rust toolchain not supported for MUSL
+# Distroless has not RISCV support yet, using debian for now
+#FROM gcr.io/distroless/base-debian12:debug as target-riscv64
+FROM riscv64/debian:sid-slim as target-riscv64
+
+ENV BUILDTARGET="riscv64gc-unknown-linux-gnu"
+COPY ./target/riscv64gc-unknown-linux-gnu/release/databroker /app/databroker
+
+# Now adding generic parts
+FROM target-$TARGETARCH as target
 ARG TARGETARCH
 
-RUN apt-get update && apt-get install -y protobuf-compiler \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY ./dist/$TARGETARCH/thirdparty/ /app/thirdparty
 
-# This will speed up fetching the crate.io index in the future, see
-# https://blog.rust-lang.org/2022/06/22/sparse-registry-testing.html
-ENV CARGO_UNSTABLE_SPARSE_REGISTRY=true
-
-RUN echo "Building for $TARGETARCH"
-ENV SRC="/home/rust/src"
-WORKDIR ${SRC}
-
-ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
-
-RUN cargo install cargo-license
-
-# We need to add all files, because .git directory is needed to
-# extract verson information during build, and we can not leave
-# files out, if we do not want -dirty tags on every build
-# Does not influence final image size due to multistage build
-COPY . .
-
-# Creating BOM
-WORKDIR ${SRC}/kuksa_databroker/createbom
-RUN rm -rf ../thirdparty
-RUN python3 createbom.py ../databroker
-
-WORKDIR ${SRC}/kuksa_databroker/databroker 
-
-RUN cargo build --bin databroker --release --target $BUILDTARGET
-RUN mv ${SRC}/target/$BUILDTARGET/release/databroker ${SRC}/
-
-FROM scratch
-
-COPY --from=builder /home/rust/src/databroker /app/databroker
-COPY --from=builder /home/rust/src/kuksa_databroker/databroker/thirdparty /app/thirdparty
-
-ADD ./data/vss-core/vss_release_3.1.1.json vss_release_3.1.1.json
-ADD ./data/vss-core/vss_release_4.0.json vss_release_4.0.json
+COPY ./data/vss-core/vss_release_3.1.1.json vss_release_3.1.1.json
+COPY ./data/vss-core/vss_release_4.0.json vss_release_4.0.json
 
 ENV KUKSA_DATA_BROKER_ADDR=0.0.0.0
 ENV KUKSA_DATA_BROKER_PORT=55555

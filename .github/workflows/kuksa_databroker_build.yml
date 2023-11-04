@@ -89,16 +89,21 @@ jobs:
     uses: eclipse-kuksa/kuksa-actions/.github/workflows/check_ghcr_push.yml@2
     secrets: inherit
 
-# Run on selfhosted, because our runner has native ARM build in a remote
-# builder (no need for qemu)
   build-container:
-    runs-on: [ self-hosted ]
+    runs-on: ubuntu-latest
+
     needs: check_ghcr_push
 
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
+
+    - name: Building
+      working-directory: ${{github.workspace}}/kuksa_databroker/
+      run: |
+        cargo install cargo-license cross
+        ./build-all-targets.sh
 
     - name: Docker meta
       id: meta
@@ -116,12 +121,12 @@ jobs:
           type=semver,pattern={{major}}
 
     # only needed for runners without buildx setup, will be slow
-    #- name: Set up QEMU
-    #  uses: docker/setup-qemu-action@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
 
-    #- name: Set up Docker Buildx
-    #  id: buildx
-    #  uses: docker/setup-buildx-action@v2
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
 
     - name: Log in to the Container registry
       if: needs.check_ghcr_push.outputs.push == 'true'
@@ -139,6 +144,7 @@ jobs:
         platforms: |
           linux/amd64
           linux/arm64
+          linux/riscv64
         file: ./kuksa_databroker/Dockerfile
         context: .
         push: true
@@ -155,6 +161,7 @@ jobs:
         platforms: |
           linux/amd64
           linux/arm64
+          linux/riscv64
         file: ./kuksa_databroker/Dockerfile
         context: .
         push: true
@@ -166,26 +173,24 @@ jobs:
       with:
         image: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}
 
-    - name:  Extracting ARM64 binaries
-      uses: ./.github/actions/copy-from-oci
+    - name: "Archiving AMD64 artifacts"
+      uses: actions/upload-artifact@v3
       with:
-        platform: linux/arm64
-        id: databroker-arm64
-        image: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}
-        src: /app/
-        export: true
-        transform: s/app/databroker/
+          name: databroker-amd64
+          path: ${{github.workspace}}/dist/amd64
 
-
-    - name:  Extracting AMD64 binaries
-      uses: ./.github/actions/copy-from-oci
+    - name: "Archiving ARM64 artifacts"
+      uses: actions/upload-artifact@v3
       with:
-        platform: linux/amd64
-        id: databroker-amd64
-        image: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}
-        src: /app/
-        export: true
-        transform: s/app/databroker/
+          name: databroker-arm64
+          path: ${{github.workspace}}/dist/arm64
+
+    - name: "Archiving RISCV64 artifacts"
+      uses: actions/upload-artifact@v3
+      with:
+        name: databroker-riscv64
+        path: ${{github.workspace}}/dist/riscv64
+
 
   integration-test:
     name: Run integration test
@@ -194,11 +199,29 @@ jobs:
 
     steps:
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
       - uses: actions/checkout@v3
 
-      - name: Run integration test
+      - name: Run integration test on AMD64 container
         env:
           DATABROKER_IMAGE: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}
+          CONTAINER_PLATFORM: linux/amd64
+        run: |
+          ${{github.workspace}}/kuksa_databroker/integration_test/run.sh
+
+      - name: Run integration test on ARM64 container
+        env:
+          DATABROKER_IMAGE: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}
+          CONTAINER_PLATFORM: linux/arm64
+        run: |
+          ${{github.workspace}}/kuksa_databroker/integration_test/run.sh
+
+      - name: Run integration test on RISCV64 container
+        env:
+          DATABROKER_IMAGE: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}
+          CONTAINER_PLATFORM: linux/riscv64
         run: |
           ${{github.workspace}}/kuksa_databroker/integration_test/run.sh
 
