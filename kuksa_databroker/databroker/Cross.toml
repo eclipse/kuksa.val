@@ -1,0 +1,4 @@
+[build.env]
+passthrough = [
+    "CARGO_REGISTRIES_CRATES_IO_PROTOCOL",
+]
