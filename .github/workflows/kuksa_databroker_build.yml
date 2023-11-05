@@ -31,12 +31,25 @@ concurrency:
       cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
+  lint-and-test:
+    name: Linting and Testing
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
+
+      # Seems not neccessary on ubuntu-latest runner
+      #- uses: dtolnay/rust-toolchain@stable
+
+      - name: "Install cargo modules"
+        run: cargo install cargo-tarpaulin
+
+      - name: Show toolchain information
+        working-directory: ${{github.workspace}}
+        run: |
+          rustup toolchain list
+          cargo --version
+
       - name: cargo fmt
         working-directory: ${{github.workspace}}
         run: cargo fmt -- --check
@@ -46,23 +59,6 @@ jobs:
       - name: cargo clippy (feature viss)
         working-directory: ${{github.workspace}}
         run: cargo clippy --features viss --all-targets -- -W warnings -D warnings
-
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install dependencies
-        run: |
-          cargo install cargo-tarpaulin
-      - name: Show toolchain information
-        working-directory: ${{github.workspace}}
-        run: |
-          rustup toolchain list
-          cargo --version
 
       - name: Run tests and report code coverage
         run: |
@@ -83,6 +79,7 @@ jobs:
       #     path: cobertura.xml
       #     repo_token: ${{ secrets.GITHUB_TOKEN }}
       #     minimum_coverage: 40
+
 
 
   check_ghcr_push:
