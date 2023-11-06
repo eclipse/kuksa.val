@@ -614,15 +614,11 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                     }
                                 };
                                 if client.basic_client.is_connected() {
-                                    match client.get_metadata(vec![]).await {
+                                    match client.get_metadata(vec!["**"]).await {
                                         Ok(metadata) => {
                                             interface.set_completer(Arc::new(
                                                 CliCompleter::from_metadata(&metadata),
                                             ));
-                                            #[cfg(feature = "feature_sdv")]
-                                            {
-                                                _properties = metadata;
-                                            }
                                         }
                                         Err(common::ClientError::Status(status)) => {
                                             cli::print_resp_err("metadata", &status)?;
