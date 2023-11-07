@@ -12,51 +12,45 @@
 # ********************************************************************************/
 
 # This is expected to be executed in the kuksa.val top-level directory
+# You need to run build-all-targets-cli.sh first, as this docker file jsut
+# collects the artifacts
 
-# This builds the databroker-cli
-
-FROM ghcr.io/rust-cross/rust-musl-cross:x86_64-musl AS builder-amd64
+# AMD is a statically linked MUSL build
+FROM scratch AS target-amd64
 ENV BUILDTARGET="x86_64-unknown-linux-musl"
+COPY ./target/x86_64-unknown-linux-musl/release/databroker-cli /app/databroker-cli
 
 
-FROM ghcr.io/rust-cross/rust-musl-cross:aarch64-musl AS builder-arm64
+# ARM64 is a statically linked GRPC build
+FROM scratch AS target-arm64
 ENV BUILDTARGET="aarch64-unknown-linux-musl"
+COPY ./target/aarch64-unknown-linux-musl/release/databroker-cli /app/databroker-cli
 
-FROM builder-$TARGETARCH as builder
+
+# RISCV is a glibc build. Rust toolchain not supported for MUSL
+# Distroless has not RISCV support yet, using debian for now
+#FROM gcr.io/distroless/base-debian12:debug as target-riscv64
+FROM riscv64/debian:sid-slim as target-riscv64
+ENV BUILDTARGET="riscv64gc-unknown-linux-gnu"
+COPY ./target/riscv64gc-unknown-linux-gnu/release/databroker-cli /app/databroker-cli
+
+# Databroker-cli is an interactive cli, thus it can only work correctly
+# if we have some terminfo configurations available. We will transplant
+# them from a donor
+# While writing this, the latest versuion 3.18 does not support riscv yet,
+# but edge does. As we are only getting some config files, this will
+# likely not break
+FROM alpine:edge as terminfo-donor
+RUN apk update && apk add ncurses-terminfo-base
+
+
+# Now adding generic parts
+FROM target-$TARGETARCH as target
 ARG TARGETARCH
 
-RUN apt-get update && apt-get install -y protobuf-compiler \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY ./dist/$TARGETARCH/thirdparty/ /app/thirdparty
 
-# This will speed up fetching the crate.io index in the future, see
-# https://blog.rust-lang.org/2022/06/22/sparse-registry-testing.html
-ENV CARGO_UNSTABLE_SPARSE_REGISTRY=true
-
-RUN echo "Building for $TARGETARCH"
-ENV SRC="/home/rust/src"
-WORKDIR ${SRC}
-
-ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
-
-ADD kuksa_databroker kuksa_databroker
-ADD proto proto
-ADD Cargo.toml Cargo.toml
-
-# Creating BOM
-RUN cargo install cargo-license
-WORKDIR ${SRC}/kuksa_databroker/createbom
-RUN rm -rf ../thirdparty
-RUN python3 createbom.py ../databroker-cli
-
-WORKDIR ${SRC}/kuksa_databroker/databroker-cli
-
-RUN cargo build --bin databroker-cli --release --target $BUILDTARGET
-RUN mv ${SRC}/target/$BUILDTARGET/release/databroker-cli ${SRC}/
-
-FROM  scratch
-
-COPY --from=builder /home/rust/src/databroker-cli /app/databroker-cli
-COPY --from=builder /home/rust/src/kuksa_databroker/databroker-cli/thirdparty /app/thirdparty
-COPY --from=builder /lib/terminfo /etc/terminfo
+# Copy terminfo database
+COPY --from=terminfo-donor /etc/terminfo /etc/terminfo
 
 ENTRYPOINT [ "/app/databroker-cli" ]
