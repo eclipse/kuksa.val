@@ -31,8 +31,10 @@ COPY ./target/aarch64-unknown-linux-musl/release/databroker /app/databroker
 
 
 # RISCV is a glibc build. Rust toolchain not supported for MUSL
-# Distroless has not RISCV support yet, using debian for now
-#FROM gcr.io/distroless/base-debian12:debug as target-riscv64
+# Normally we prefer "distroless" base images, i.e.:
+# FROM gcr.io/distroless/base-debian12:debug as target-riscv64
+# However, distorless has no RISCV support yet,
+# (Nov 2023). Using debian unstable for now
 FROM riscv64/debian:sid-slim as target-riscv64
 
 ENV BUILDTARGET="riscv64gc-unknown-linux-gnu"
