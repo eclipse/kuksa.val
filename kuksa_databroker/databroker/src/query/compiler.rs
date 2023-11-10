@@ -153,7 +153,7 @@ pub fn compile_expr(
                 data_type,
                 lag: false,
             })
-        },
+        }
         ast::Expr::Function(f) => {
             let name = &f.name.to_string();
             return if name == "LAG" {
@@ -164,31 +164,33 @@ pub fn compile_expr(
                             ast::FunctionArgExpr::Expr(e) => {
                                 let function_expr = compile_expr(e, input, output)?;
                                 return match function_expr {
-                                    Expr::Datapoint { name, data_type, .. } => Ok(Expr::Datapoint {
+                                    Expr::Datapoint {
+                                        name, data_type, ..
+                                    } => Ok(Expr::Datapoint {
                                         name,
                                         data_type,
-                                        lag: true
+                                        lag: true,
                                     }),
                                     _ => Err(CompilationError::ParseError(format!(
                                         "Unable to create lag datapoint"
-                                    )))
+                                    ))),
                                 };
                             }
                             _ => Err(CompilationError::UnsupportedOperator(format!(
                                 "Unsupported function argument expression"
-                            )))
+                            ))),
                         }
-                    },
+                    }
                     _ => Err(CompilationError::UnsupportedOperator(format!(
                         "Unsupported function argument"
-                    )))
+                    ))),
                 }
             } else {
                 Err(CompilationError::UnsupportedOperator(format!(
                     "Unsupported operator \"{name}\""
                 )))
             };
-        },
+        }
 
         ast::Expr::BinaryOp {
             ref left,
@@ -352,20 +354,20 @@ pub fn compile_expr(
                     Ok(compiled_query) => {
                         output.subquery.push(compiled_query);
                         Ok(Expr::Subquery {
-                            index: (output.subquery.len() - 1) as u32
+                            index: (output.subquery.len() - 1) as u32,
                         })
-                    },
+                    }
 
                     _ => Err(CompilationError::UnsupportedOperator(format!(
                         "Subquery failed to compile query"
-                    )))
+                    ))),
                 }
             } else {
                 Err(CompilationError::UnsupportedOperation(
                     "Subquery to parse".to_string(),
                 ))
             }
-        },
+        }
 
         ast::Expr::UnaryOp { ref op, ref expr } => match op {
             ast::UnaryOperator::Not => Ok(Expr::UnaryOperation {
@@ -475,7 +477,7 @@ fn resolve_literal(
 
 fn compile_select_statement(
     select: &ast::Select,
-    input: &impl CompilationInput
+    input: &impl CompilationInput,
 ) -> Result<CompiledQuery, CompilationError> {
     let mut query = CompiledQuery::new();
 
@@ -486,8 +488,7 @@ fn compile_select_statement(
             if let Ok(data_type) = condition.get_type() {
                 if data_type != DataType::Bool {
                     return Err(CompilationError::TypeError(
-                        "WHERE statement doesn't evaluate to a boolean expression"
-                            .to_string(),
+                        "WHERE statement doesn't evaluate to a boolean expression".to_string(),
                     ));
                 }
             }
