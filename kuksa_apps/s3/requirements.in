@@ -1,0 +1,18 @@
+# For creating/distributing a binary, all dependencies should
+# be pinned to specific versions in order to provide for a reproducible
+# build.
+#
+# The 'pip-tools' package's 'pip-compile' command can be used for that
+# purpose. The following command will take the inputs from this file
+# and create a 'requirements.txt' file with pinned versions of all
+# dependencies:
+#
+# pip-compile --upgrade requirements.in
+#
+# If you depend on pre-releases (of e.g. kuksa-client) use
+#
+# pip-compile --pre --upgrade requirements.in
+
+kuksa-client
+boto3
+pyarrow
