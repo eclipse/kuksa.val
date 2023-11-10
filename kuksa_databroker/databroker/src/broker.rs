@@ -26,8 +26,10 @@ use std::convert::TryFrom;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use std::time::SystemTime;
+use crate::query::{CompiledQuery, ExecutionInput};
 
 use tracing::{debug, info, warn};
+use crate::types::ExecutionInputImplData;
 
 use crate::glob;
 
@@ -76,6 +78,7 @@ pub struct Datapoint {
 #[derive(Debug, Clone)]
 pub struct Entry {
     pub datapoint: Datapoint,
+    pub lag_datapoint: Datapoint,
     pub actuator_target: Option<Datapoint>,
     pub metadata: Metadata,
 }
@@ -559,9 +562,14 @@ impl Entry {
         }
     }
 
+    pub fn apply_lag_after_execute(&mut self) {
+        self.lag_datapoint = self.datapoint.clone();
+    }
+
     pub fn apply(&mut self, update: EntryUpdate) -> HashSet<Field> {
         let mut changed = HashSet::new();
         if let Some(datapoint) = update.datapoint {
+            self.lag_datapoint = self.datapoint.clone();
             self.datapoint = datapoint;
             changed.insert(Field::Datapoint);
         }
@@ -601,11 +609,21 @@ impl Subscriptions {
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
         db: &Database,
-    ) -> Result<(), NotificationError> {
+    ) -> Result<Option<HashMap<String, ()>>, NotificationError> {
         let mut error = None;
+        let mut lag_updates: HashMap<String, ()> = HashMap::new();
         for sub in &self.query_subscriptions {
             match sub.notify(changed, db).await {
-                Ok(_) => {}
+                Ok(None) => {},
+                Ok(Some(input)) => {
+                    for x in input.get_fields() {
+                        if x.1.lag_value != x.1.value {
+                            if ! lag_updates.contains_key(x.0) {
+                                lag_updates.insert(x.0.clone(), ());
+                            }
+                        }
+                    }
+                }
                 Err(err) => error = Some(err),
             }
         }
@@ -619,7 +637,13 @@ impl Subscriptions {
 
         match error {
             Some(err) => Err(err),
-            None => Ok(()),
+            None => {
+                if lag_updates.len() > 0 {
+                    Ok(Some(lag_updates))
+                } else {
+                    Ok(None)
+                }
+            },
         }
     }
 
@@ -762,45 +786,85 @@ impl ChangeSubscription {
 }
 
 impl QuerySubscription {
-    fn generate_input(
+    fn find_in_db_and_add(
         &self,
-        changed: Option<&HashMap<i32, HashSet<Field>>>,
+        name: &String,
         db: &DatabaseReadAccess,
-    ) -> Option<impl query::ExecutionInput> {
-        let id_used_in_query = {
-            let mut query_uses_id = false;
-            match changed {
-                Some(changed) => {
-                    for (id, fields) in changed {
-                        if let Some(metadata) = db.get_metadata_by_id(*id) {
-                            if self.query.input_spec.contains(&metadata.path)
-                                && fields.contains(&Field::Datapoint)
-                            {
-                                query_uses_id = true;
-                                break;
+        input: &mut query::ExecutionInputImpl) {
+        match db.get_entry_by_path(name) {
+            Ok(entry) => {
+                input.add(name.to_owned(), ExecutionInputImplData{
+                    value: entry.datapoint.value.to_owned(),
+                    lag_value: entry.lag_datapoint.value.to_owned()
+                });
+
+            },
+            Err(_) => {
+                // TODO: This should probably generate an error
+                input.add(name.to_owned(), ExecutionInputImplData {
+                    value: DataValue::NotAvailable,
+                    lag_value: DataValue::NotAvailable
+                })
+            }
+        }
+    }
+    fn check_if_changes_match(
+        &self,
+        query: &CompiledQuery,
+        changed_origin: Option<&HashMap<i32, HashSet<Field>>>,
+        db: &DatabaseReadAccess,
+    ) -> bool {
+        match changed_origin {
+            Some(changed) => {
+                for (id, fields) in changed {
+                    if let Some(metadata) = db.get_metadata_by_id(*id) {
+                        if query.input_spec.contains(&metadata.path)
+                            && fields.contains(&Field::Datapoint)
+                        {
+                            return true;
+                        }
+                        if query.subquery.len() > 0 {
+                            for sub in query.subquery.iter() {
+                                if self.check_if_changes_match(sub, changed_origin, db) {
+                                    return true;
+                                }
                             }
                         }
                     }
                 }
-                None => {
-                    // Always generate input if `changed` is None
-                    query_uses_id = true;
-                }
             }
-            query_uses_id
-        };
+            None => {
+                // Always generate input if `changed` is None
+                return true
+            }
+        }
+        false
+    }
+    fn generate_input_list(
+        &self,
+        query: &CompiledQuery,
+        db: &DatabaseReadAccess,
+        input: &mut query::ExecutionInputImpl
+    ) {
+        for name in query.input_spec.iter() {
+            self.find_in_db_and_add(name, db, input);
+        }
+        if query.subquery.len() > 0 {
+            for sub in query.subquery.iter() {
+                self.generate_input_list(sub, db, input)
+            }
+        }
+    }
+    fn generate_input(
+        &self,
+        changed: Option<&HashMap<i32, HashSet<Field>>>,
+        db: &DatabaseReadAccess,
+    ) -> Option<impl ExecutionInput> {
+        let id_used_in_query = self.check_if_changes_match(&self.query, changed, db);
 
         if id_used_in_query {
             let mut input = query::ExecutionInputImpl::new();
-            for name in self.query.input_spec.iter() {
-                match db.get_entry_by_path(name) {
-                    Ok(entry) => input.add(name.to_owned(), entry.datapoint.value.to_owned()),
-                    Err(_) => {
-                        // TODO: This should probably generate an error
-                        input.add(name.to_owned(), DataValue::NotAvailable)
-                    }
-                }
-            }
+            self.generate_input_list(&self.query, db, &mut input);
             Some(input)
         } else {
             None
@@ -811,8 +875,9 @@ impl QuerySubscription {
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
         db: &Database,
-    ) -> Result<(), NotificationError> {
+    ) -> Result<Option<impl query::ExecutionInput>, NotificationError> {
         let db_read = db.authorized_read_access(&self.permissions);
+
         match self.generate_input(changed, &db_read) {
             Some(input) =>
             // Execute query (if anything queued)
@@ -832,19 +897,19 @@ impl QuerySubscription {
                             })
                             .await
                         {
-                            Ok(()) => Ok(()),
+                            Ok(()) => Ok(Some(input)),
                             Err(_) => Err(NotificationError {}),
                         },
-                        None => Ok(()),
+                        None => Ok(None),
                     },
                     Err(e) => {
                         // TODO: send error to subscriber
                         debug!("{:?}", e);
-                        Ok(()) // no cleanup needed
+                        Ok(None) // no cleanup needed
                     }
                 }
             }
-            None => Ok(()),
+            None => Ok(None),
         }
     }
 }
@@ -968,6 +1033,21 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
         }
     }
 
+    pub fn update_entry_lag_to_be_equal(&mut self, path: &str) -> Result<(), UpdateError> {
+        match self.db.path_to_id.get(path) {
+            Some(id) => {
+                match self.db.entries.get_mut(&id) {
+                    Some(entry) => {
+                        entry.apply_lag_after_execute();
+                        Ok(())
+                    }
+                    None => Err(UpdateError::NotFound),
+                }
+            },
+            None => Err(UpdateError::NotFound),
+        }
+    }
+
     pub fn update(&mut self, id: i32, update: EntryUpdate) -> Result<HashSet<Field>, UpdateError> {
         match self.db.entries.get_mut(&id) {
             Some(entry) => {
@@ -1063,7 +1143,14 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
                 allowed,
                 unit,
             },
-            datapoint: match datapoint {
+            datapoint: match datapoint.clone() {
+                Some(datapoint) => datapoint,
+                None => Datapoint {
+                    ts: SystemTime::now(),
+                    value: DataValue::NotAvailable,
+                },
+            },
+            lag_datapoint: match datapoint {
                 Some(datapoint) => datapoint,
                 None => Datapoint {
                     ts: SystemTime::now(),
@@ -1287,6 +1374,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
         let mut errors = Vec::new();
         let mut db = self.broker.database.write().await;
         let mut db_write = db.authorized_write_access(self.permissions);
+        let mut lag_updates: HashMap<String, ()> = HashMap::new();
 
         let cleanup_needed = {
             let changed = {
@@ -1311,6 +1399,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
             // notifying subscribers (no writes in between)
             let db = db.downgrade();
 
+
             // Notify
             match self
                 .broker
@@ -1320,10 +1409,25 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
                 .notify(Some(&changed), &db)
                 .await
             {
-                Ok(()) => false,
+                Ok(None) => false,
+                Ok(Some(lag_updates_)) => {
+                    lag_updates = lag_updates_.clone();
+                    false
+                },
                 Err(_) => true, // Cleanup needed
             }
         };
+
+        if lag_updates.len() > 0 {
+            let mut db = self.broker.database.write().await;
+            let mut db_write = db.authorized_write_access(self.permissions);
+            for x in lag_updates {
+                match db_write.update_entry_lag_to_be_equal(x.0.as_str()) {
+                    Ok(_) => {},
+                    Err(_) => {},
+                };
+            }
+        }
 
         // Cleanup closed subscriptions
         if cleanup_needed {
@@ -1377,6 +1481,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
     ) -> Result<impl Stream<Item = QueryResponse>, QueryError> {
         let db_read = self.broker.database.read().await;
         let db_read_access = db_read.authorized_read_access(self.permissions);
+
         let compiled_query = query::compile(query, &db_read_access);
 
         match compiled_query {

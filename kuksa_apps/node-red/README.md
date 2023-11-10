@@ -61,3 +61,7 @@ docker-compose -f docker-compose.yml  -f feeders.yml up
 - [websocket-advanced.json](./websocket-advanced.json) implements a test client and uses secure connection with server
 
 ![screenshot](./node-red-screenshot.png)
+
+*Note*: Websocket node-red configs are using url **wss://127.0.0.1:8090** if docker-compose used for running demo **127.0.0.1** is not
+available by docker container and in the flow dashboard state will be "disconnected". Compose is creating network between containers so check ip address of
+kuksa-val container and change websocket node accordingly.

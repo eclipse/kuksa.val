@@ -65,6 +65,7 @@ impl CompilationInput for CompilationInputImpl {
     }
 }
 
+#[derive(Debug)]
 pub struct CompiledQuery {
     /// A single expression (tree) evaluating to either
     /// true or false.
@@ -81,6 +82,9 @@ pub struct CompiledQuery {
     /// These needs to be provided in the `input` when
     /// executing the query.
     pub input_spec: HashSet<String>, // Needed datapoints (values) for execution
+
+    /// Vector of subquery in SELECT query
+    pub subquery: Vec<CompiledQuery>,
 }
 
 impl CompiledQuery {
@@ -89,6 +93,7 @@ impl CompiledQuery {
             selection: None,
             projection: Vec::new(),
             input_spec: HashSet::new(),
+            subquery: Vec::new(),
         }
     }
 }
@@ -132,6 +137,7 @@ pub fn compile_expr(
             Ok(Expr::Datapoint {
                 name: name.clone(),
                 data_type,
+                lag: false,
             })
         }
 
@@ -145,8 +151,44 @@ pub fn compile_expr(
             Ok(Expr::Datapoint {
                 name: field,
                 data_type,
+                lag: false,
             })
-        }
+        },
+        ast::Expr::Function(f) => {
+            let name = &f.name.to_string();
+            return if name == "LAG" {
+                let args = &f.args[0];
+                match args {
+                    ast::FunctionArg::Unnamed(e) => {
+                        return match e {
+                            ast::FunctionArgExpr::Expr(e) => {
+                                let function_expr = compile_expr(e, input, output)?;
+                                return match function_expr {
+                                    Expr::Datapoint { name, data_type, .. } => Ok(Expr::Datapoint {
+                                        name,
+                                        data_type,
+                                        lag: true
+                                    }),
+                                    _ => Err(CompilationError::ParseError(format!(
+                                        "Unable to create lag datapoint"
+                                    )))
+                                };
+                            }
+                            _ => Err(CompilationError::UnsupportedOperator(format!(
+                                "Unsupported function argument expression"
+                            )))
+                        }
+                    },
+                    _ => Err(CompilationError::UnsupportedOperator(format!(
+                        "Unsupported function argument"
+                    )))
+                }
+            } else {
+                Err(CompilationError::UnsupportedOperator(format!(
+                    "Unsupported operator \"{name}\""
+                )))
+            };
+        },
 
         ast::Expr::BinaryOp {
             ref left,
@@ -298,6 +340,33 @@ pub fn compile_expr(
         }
         ast::Expr::Nested(e) => compile_expr(e, input, output),
 
+        ast::Expr::Subquery(q) => {
+            let select_statement = match &q.body {
+                sqlparser::ast::SetExpr::Select(query) => Some(query.clone()),
+                _ => None,
+            };
+            if let Some(select) = select_statement {
+                let compiled_query = compile_select_statement(&select, input);
+                println!("{:?}", compiled_query);
+                match compiled_query {
+                    Ok(compiled_query) => {
+                        output.subquery.push(compiled_query);
+                        Ok(Expr::Subquery {
+                            index: (output.subquery.len() - 1) as u32
+                        })
+                    },
+
+                    _ => Err(CompilationError::UnsupportedOperator(format!(
+                        "Subquery failed to compile query"
+                    )))
+                }
+            } else {
+                Err(CompilationError::UnsupportedOperation(
+                    "Subquery to parse".to_string(),
+                ))
+            }
+        },
+
         ast::Expr::UnaryOp { ref op, ref expr } => match op {
             ast::UnaryOperator::Not => Ok(Expr::UnaryOperation {
                 expr: Box::new(compile_expr(expr, input, output)?),
@@ -404,6 +473,55 @@ fn resolve_literal(
     }
 }
 
+fn compile_select_statement(
+    select: &ast::Select,
+    input: &impl CompilationInput
+) -> Result<CompiledQuery, CompilationError> {
+    let mut query = CompiledQuery::new();
+
+    match &select.selection {
+        None => {}
+        Some(expr) => {
+            let condition = compile_expr(expr, input, &mut query)?;
+            if let Ok(data_type) = condition.get_type() {
+                if data_type != DataType::Bool {
+                    return Err(CompilationError::TypeError(
+                        "WHERE statement doesn't evaluate to a boolean expression"
+                            .to_string(),
+                    ));
+                }
+            }
+
+            query.selection = Some(condition);
+        }
+    };
+
+    for c in &select.projection {
+        match c {
+            ast::SelectItem::UnnamedExpr(expr) => {
+                let expr = compile_expr(expr, input, &mut query)?;
+                query.projection.push(expr);
+            }
+            ast::SelectItem::ExprWithAlias { expr, alias } => {
+                let expr = compile_expr(expr, input, &mut query)?;
+
+                let name = alias.value.clone();
+                query.projection.push(Expr::Alias {
+                    expr: Box::new(expr),
+                    alias: name,
+                });
+            }
+            _ => {
+                return Err(CompilationError::UnsupportedOperation(
+                    "unrecognized entry in SELECT statement".to_string(),
+                ))
+            }
+        }
+    }
+
+    Ok(query)
+}
+
 pub fn compile(
     sql: &str,
     input: &impl CompilationInput,
@@ -419,50 +537,8 @@ pub fn compile(
                 },
                 _ => None,
             };
-
             if let Some(select) = select_statement {
-                let mut query = CompiledQuery::new();
-
-                match &select.selection {
-                    None => {}
-                    Some(expr) => {
-                        let condition = compile_expr(expr, input, &mut query)?;
-                        if let Ok(data_type) = condition.get_type() {
-                            if data_type != DataType::Bool {
-                                return Err(CompilationError::TypeError(
-                                    "WHERE statement doesn't evaluate to a boolean expression"
-                                        .to_string(),
-                                ));
-                            }
-                        }
-
-                        query.selection = Some(condition);
-                    }
-                };
-
-                for c in &select.projection {
-                    match c {
-                        ast::SelectItem::UnnamedExpr(expr) => {
-                            let expr = compile_expr(expr, input, &mut query)?;
-                            query.projection.push(expr);
-                        }
-                        ast::SelectItem::ExprWithAlias { expr, alias } => {
-                            let expr = compile_expr(expr, input, &mut query)?;
-                            let name = alias.value.clone();
-                            query.projection.push(Expr::Alias {
-                                expr: Box::new(expr),
-                                alias: name,
-                            });
-                        }
-                        _ => {
-                            return Err(CompilationError::UnsupportedOperation(
-                                "unrecognized entry in SELECT statement".to_string(),
-                            ))
-                        }
-                    }
-                }
-
-                Ok(query)
+                return compile_select_statement(&select, input);
             } else {
                 Err(CompilationError::UnsupportedOperation(
                     "unrecognized SELECT statement".to_string(),
