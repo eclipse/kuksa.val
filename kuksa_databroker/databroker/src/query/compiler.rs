@@ -156,40 +156,38 @@ pub fn compile_expr(
         }
         ast::Expr::Function(f) => {
             let name = &f.name.to_string();
-            return if name == "LAG" {
+            if name == "LAG" {
                 let args = &f.args[0];
                 match args {
-                    ast::FunctionArg::Unnamed(e) => {
-                        return match e {
-                            ast::FunctionArgExpr::Expr(e) => {
-                                let function_expr = compile_expr(e, input, output)?;
-                                return match function_expr {
-                                    Expr::Datapoint {
-                                        name, data_type, ..
-                                    } => Ok(Expr::Datapoint {
-                                        name,
-                                        data_type,
-                                        lag: true,
-                                    }),
-                                    _ => Err(CompilationError::ParseError(format!(
-                                        "Unable to create lag datapoint"
-                                    ))),
-                                };
+                    ast::FunctionArg::Unnamed(e) => match e {
+                        ast::FunctionArgExpr::Expr(e) => {
+                            let function_expr = compile_expr(e, input, output)?;
+                            match function_expr {
+                                Expr::Datapoint {
+                                    name, data_type, ..
+                                } => Ok(Expr::Datapoint {
+                                    name,
+                                    data_type,
+                                    lag: true,
+                                }),
+                                _ => Err(CompilationError::ParseError(
+                                    "Unable to create lag datapoint".to_string(),
+                                )),
                             }
-                            _ => Err(CompilationError::UnsupportedOperator(format!(
-                                "Unsupported function argument expression"
-                            ))),
                         }
-                    }
-                    _ => Err(CompilationError::UnsupportedOperator(format!(
-                        "Unsupported function argument"
-                    ))),
+                        _ => Err(CompilationError::UnsupportedOperator(
+                            "Unsupported function argument expression".to_string(),
+                        )),
+                    },
+                    _ => Err(CompilationError::UnsupportedOperator(
+                        "Unsupported function argument".to_string(),
+                    )),
                 }
             } else {
                 Err(CompilationError::UnsupportedOperator(format!(
                     "Unsupported operator \"{name}\""
                 )))
-            };
+            }
         }
 
         ast::Expr::BinaryOp {
@@ -358,9 +356,9 @@ pub fn compile_expr(
                         })
                     }
 
-                    _ => Err(CompilationError::UnsupportedOperator(format!(
-                        "Subquery failed to compile query"
-                    ))),
+                    _ => Err(CompilationError::UnsupportedOperator(
+                        "Subquery failed to compile query".to_string(),
+                    )),
                 }
             } else {
                 Err(CompilationError::UnsupportedOperation(
@@ -539,7 +537,7 @@ pub fn compile(
                 _ => None,
             };
             if let Some(select) = select_statement {
-                return compile_select_statement(&select, input);
+                compile_select_statement(&select, input)
             } else {
                 Err(CompilationError::UnsupportedOperation(
                     "unrecognized SELECT statement".to_string(),

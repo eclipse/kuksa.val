@@ -38,7 +38,6 @@ pub trait ExecutionInput {
 
 impl CompiledQuery {
     fn execute_internal(
-        &self,
         query: &CompiledQuery,
         input: &impl ExecutionInput,
     ) -> Result<Option<Vec<(String, DataValue)>>, ExecutionError> {
@@ -76,8 +75,10 @@ impl CompiledQuery {
                         match expr.as_ref() {
                             Expr::Subquery { index } => {
                                 is_subquery = true;
-                                match self.execute_internal(&query.subquery[*index as usize], input)
-                                {
+                                match CompiledQuery::execute_internal(
+                                    &query.subquery[*index as usize],
+                                    input,
+                                ) {
                                     Ok(f) => match f {
                                         None => NameAndData {
                                             name: alias.clone(),
@@ -105,7 +106,10 @@ impl CompiledQuery {
                     }
                     Expr::Subquery { index } => {
                         is_subquery = true;
-                        match self.execute_internal(&query.subquery[*index as usize], input) {
+                        match CompiledQuery::execute_internal(
+                            &query.subquery[*index as usize],
+                            input,
+                        ) {
                             Ok(f) => match f {
                                 None => NameAndData {
                                     name: format!("subquery_{index}"),
@@ -143,7 +147,7 @@ impl CompiledQuery {
                     Some(mut vec) => fields.append(&mut vec),
                 }
             }
-            if fields.len() > 0 {
+            if !fields.is_empty() {
                 Ok(Some(fields))
             } else {
                 Ok(None)
@@ -157,7 +161,7 @@ impl CompiledQuery {
         &self,
         input: &impl ExecutionInput,
     ) -> Result<Option<Vec<(String, DataValue)>>, ExecutionError> {
-        self.execute_internal(self, input)
+        CompiledQuery::execute_internal(self, input)
     }
 }
 
@@ -208,7 +212,7 @@ impl Expr {
                     "Unresolved literal found while executing query".to_string(),
                 ))
             }
-            Expr::Subquery { index } => Ok(DataValue::Uint32(index.clone())),
+            Expr::Subquery { index } => Ok(DataValue::Uint32(*index)),
         }
     }
 }
@@ -534,15 +538,10 @@ fn executor_lag_test() {
 
     let test_compilation_input = TestCompilationInput {};
     let compiled_query = compiler::compile(sql, &test_compilation_input).unwrap();
-    if let Some(p) = compiled_query.projection.get(1) {
-        match p {
-            Expr::Alias { alias, expr } => {
-                assert_eq!(alias, "previousCabinSeatRow1PosPosition");
-                if let Expr::Datapoint { lag, .. } = **expr {
-                    assert_eq!(lag, true);
-                }
-            }
-            _ => {}
+    if let Some(Expr::Alias { alias, expr }) = compiled_query.projection.get(1) {
+        assert_eq!(alias, "previousCabinSeatRow1PosPosition");
+        if let Expr::Datapoint { lag, .. } = **expr {
+            assert!(lag);
         }
     }
 

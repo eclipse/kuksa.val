@@ -617,10 +617,8 @@ impl Subscriptions {
                 Ok(None) => {}
                 Ok(Some(input)) => {
                     for x in input.get_fields() {
-                        if x.1.lag_value != x.1.value {
-                            if !lag_updates.contains_key(x.0) {
-                                lag_updates.insert(x.0.clone(), ());
-                            }
+                        if x.1.lag_value != x.1.value && !lag_updates.contains_key(x.0) {
+                            lag_updates.insert(x.0.clone(), ());
                         }
                     }
                 }
@@ -638,7 +636,7 @@ impl Subscriptions {
         match error {
             Some(err) => Err(err),
             None => {
-                if lag_updates.len() > 0 {
+                if !lag_updates.is_empty() {
                     Ok(Some(lag_updates))
                 } else {
                     Ok(None)
@@ -815,7 +813,6 @@ impl QuerySubscription {
         }
     }
     fn check_if_changes_match(
-        &self,
         query: &CompiledQuery,
         changed_origin: Option<&HashMap<i32, HashSet<Field>>>,
         db: &DatabaseReadAccess,
@@ -829,9 +826,13 @@ impl QuerySubscription {
                         {
                             return true;
                         }
-                        if query.subquery.len() > 0 {
+                        if !query.subquery.is_empty() {
                             for sub in query.subquery.iter() {
-                                if self.check_if_changes_match(sub, changed_origin, db) {
+                                if QuerySubscription::check_if_changes_match(
+                                    sub,
+                                    changed_origin,
+                                    db,
+                                ) {
                                     return true;
                                 }
                             }
@@ -855,7 +856,7 @@ impl QuerySubscription {
         for name in query.input_spec.iter() {
             self.find_in_db_and_add(name, db, input);
         }
-        if query.subquery.len() > 0 {
+        if !query.subquery.is_empty() {
             for sub in query.subquery.iter() {
                 self.generate_input_list(sub, db, input)
             }
@@ -866,7 +867,7 @@ impl QuerySubscription {
         changed: Option<&HashMap<i32, HashSet<Field>>>,
         db: &DatabaseReadAccess,
     ) -> Option<impl ExecutionInput> {
-        let id_used_in_query = self.check_if_changes_match(&self.query, changed, db);
+        let id_used_in_query = QuerySubscription::check_if_changes_match(&self.query, changed, db);
 
         if id_used_in_query {
             let mut input = query::ExecutionInputImpl::new();
@@ -1041,7 +1042,7 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
 
     pub fn update_entry_lag_to_be_equal(&mut self, path: &str) -> Result<(), UpdateError> {
         match self.db.path_to_id.get(path) {
-            Some(id) => match self.db.entries.get_mut(&id) {
+            Some(id) => match self.db.entries.get_mut(id) {
                 Some(entry) => {
                     entry.apply_lag_after_execute();
                     Ok(())
@@ -1421,14 +1422,11 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
             }
         };
 
-        if lag_updates.len() > 0 {
+        if !lag_updates.is_empty() {
             let mut db = self.broker.database.write().await;
             let mut db_write = db.authorized_write_access(self.permissions);
             for x in lag_updates {
-                match db_write.update_entry_lag_to_be_equal(x.0.as_str()) {
-                    Ok(_) => {}
-                    Err(_) => {}
-                };
+                if db_write.update_entry_lag_to_be_equal(x.0.as_str()).is_ok() {}
             }
         }
 
