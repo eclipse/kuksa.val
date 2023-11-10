@@ -41,7 +41,7 @@ By default, the mqtt flows will be configured in node-red. You can also use the 
 
 Now you can view the example under [http://localhost:1880](http://localhost:1880/).
 
-<!-- markdown-link-check-enable --> 
+<!-- markdown-link-check-enable -->
 
 To test the example, you can use [Kuksa Client](../../kuksa-client) or use the [gps feeder](https://github.com/eclipse/kuksa.val.feeders/tree/main/gps2val).
 In [`feeders.yml`](./feeders.yml), you can find the experimental [config](kuksa_config/gpsd_feeder.ini) for gps feeder container. You use the following command to also start containers of feeders:
@@ -61,3 +61,7 @@ docker-compose -f docker-compose.yml  -f feeders.yml up
 - [websocket-advanced.json](./websocket-advanced.json) implements a test client and uses secure connection with server
 
 ![screenshot](./node-red-screenshot.png)
+
+*Note*: Websocket node-red configs are using url **wss://127.0.0.1:8090** if docker-compose used for running demo **127.0.0.1** is not
+available by docker container and in the flow dashboard state will be "disconnected". Compose is creating network between containers so check ip address of
+kuksa-val container and change websocket node accordingly.

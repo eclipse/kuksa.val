@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use super::compiler::CompiledQuery;
 use super::expr::*;
 
-use crate::types::DataValue;
+use crate::types::{DataValue, ExecutionInputImplData};
 
 #[derive(Debug)]
 pub enum ExecutionError {
@@ -27,20 +27,22 @@ pub enum ExecutionError {
 
 #[derive(Debug)]
 pub struct ExecutionInputImpl {
-    fields: HashMap<String, DataValue>,
+    fields: HashMap<String, ExecutionInputImplData>,
 }
 
 pub trait ExecutionInput {
-    fn lookup(&self, field: &str) -> DataValue;
+    fn lookup(&self, field: &str) -> &ExecutionInputImplData;
+
+    fn get_fields(&self) -> &HashMap<String, ExecutionInputImplData>;
 }
 
 impl CompiledQuery {
-    pub fn execute(
+    fn execute_internal(
         &self,
-        input: &impl ExecutionInput,
-    ) -> Result<Option<Vec<(String, DataValue)>>, ExecutionError> {
+        query: &CompiledQuery,
+        input: &impl ExecutionInput) -> Result<Option<Vec<(String, DataValue)>>, ExecutionError> {
         // Check condition
-        let condition_fulfilled = match &self.selection {
+        let condition_fulfilled = match &query.selection {
             Some(condition) => match condition.execute(input) {
                 Ok(DataValue::Bool(b)) => b,
                 Ok(_) => {
@@ -55,30 +57,114 @@ impl CompiledQuery {
         };
 
         if condition_fulfilled {
+            struct NameAndData {
+                name: String,
+                data: Option<Vec<(String, DataValue)>>,
+            }
             let mut fields = Vec::new();
-            for (index, e) in self.projection.iter().enumerate() {
-                let name = match e {
-                    Expr::Datapoint { name, data_type: _ } => name.clone(),
-                    Expr::Alias { alias, .. } => alias.clone(),
-                    _ => format!("field_{index}"),
+            let mut is_subquery = false;
+            for (index, e) in query.projection.iter().enumerate() {
+                let expr_info = match e {
+                    Expr::Datapoint { name, data_type: _, .. } => NameAndData {
+                        name: name.clone(),
+                        data: None
+                    },
+                    Expr::Alias { alias, expr } => {
+                        match expr.as_ref() {
+                            Expr::Subquery { index } => {
+                                is_subquery = true;
+                                match self.execute_internal(&query.subquery[*index as usize], input) {
+                                    Ok(f) => match f {
+                                        None => NameAndData {
+                                            name: alias.clone(),
+                                            data: None,
+                                        },
+                                        Some(vec) => NameAndData {
+                                            name: alias.clone(),
+                                            data: Some(vec)
+                                        }
+                                    },
+                                    Err(_) => {
+                                        // Don't be rude and just return None
+                                        NameAndData {
+                                            name: alias.clone(),
+                                            data: None,
+                                        }
+                                    }
+                                }
+                            },
+                            _ => NameAndData { name: alias.clone(), data: None }
+                        }
+                    },
+                    Expr::Subquery { index } => {
+                        is_subquery = true;
+                        match self.execute_internal(&query.subquery[*index as usize], input) {
+                            Ok(f) => match f {
+                                None => NameAndData {
+                                    name: format!("subquery_{index}"),
+                                    data: None,
+                                },
+                                Some(vec) => NameAndData {
+                                    name: format!("subquery_{index}"),
+                                    data: Some(vec)
+                                }
+                            },
+                            Err(_) => {
+                                // Don't be rude and just return None
+                                NameAndData {
+                                    name: format!("subquery_{index}"),
+                                    data: None,
+                                }
+                            }
+                        }
+                    },
+                    _ => NameAndData {
+                        name: format!("field_{index}"),
+                        data: None
+                    },
                 };
-                match e.execute(input) {
-                    Ok(value) => fields.push((name, value)),
-                    Err(e) => return Err(e),
+
+                match expr_info.data {
+                    None => match e.execute(input) {
+                        Ok(value) => {
+                            if ! is_subquery {
+                                fields.push((expr_info.name, value))
+                            }
+                        },
+                        Err(e) => return Err(e),
+                    }
+                    Some(mut vec) => fields.append(&mut vec)
                 }
             }
-            Ok(Some(fields))
+            if fields.len() > 0 {
+                Ok(Some(fields))
+            } else {
+                Ok(None)
+            }
         } else {
             // Successful execution, but condition wasn't met
             Ok(None)
         }
+    }
+    pub fn execute(
+        &self,
+        input: &impl ExecutionInput,
+    ) -> Result<Option<Vec<(String, DataValue)>>, ExecutionError> {
+        self.execute_internal(self, input)
     }
 }
 
 impl Expr {
     pub fn execute(&self, input: &impl ExecutionInput) -> Result<DataValue, ExecutionError> {
         match &self {
-            Expr::Datapoint { name, data_type: _ } => Ok(input.lookup(name)),
+            Expr::Datapoint { name, data_type: _, lag } => {
+                let field = input.lookup(name);
+                if *lag {
+                    Ok(field.lag_value.clone())
+                } else {
+                    Ok(field.value.clone())
+                }
+            },
             Expr::Alias { expr, .. } => expr.execute(input),
             Expr::BinaryOperation {
                 left,
@@ -110,7 +196,8 @@ impl Expr {
                 Err(ExecutionError::TypeError(
                     "Unresolved literal found while executing query".to_string(),
                 ))
-            }
+            },
+            Expr::Subquery { index } => Ok(DataValue::Uint32(index.clone()))
         }
     }
 }
@@ -272,7 +359,7 @@ impl ExecutionInputImpl {
         }
     }
 
-    pub fn add(&mut self, name: String, value: DataValue) {
+    pub fn add(&mut self, name: String, value: ExecutionInputImplData) {
         self.fields.insert(name, value);
     }
 }
@@ -284,11 +371,18 @@ impl Default for ExecutionInputImpl {
 }
 
 impl ExecutionInput for ExecutionInputImpl {
-    fn lookup(&self, field: &str) -> DataValue {
+    fn lookup(&self, field: &str) -> &ExecutionInputImplData {
         match self.fields.get(field) {
-            Some(value) => value.to_owned(),
-            None => DataValue::NotAvailable,
+            Some(value) => value,
+            None => &ExecutionInputImplData {
+                value: DataValue::NotAvailable,
+                lag_value: DataValue::NotAvailable
+            },
         }
+    }
+
+    fn get_fields(&self) -> &HashMap<String, ExecutionInputImplData> {
+        &self.fields
     }
 }
 
@@ -300,26 +394,7 @@ use crate::query::compiler;
 use crate::types::DataType;
 
 #[cfg(test)]
-struct TestExecutionInput {
-    seat_pos: i32,
-    datapoint1: i32,
-    datapoint2: bool,
-}
-
-#[cfg(test)]
 struct TestCompilationInput {}
-
-#[cfg(test)]
-impl ExecutionInput for TestExecutionInput {
-    fn lookup(&self, field: &str) -> DataValue {
-        match field {
-            "Vehicle.Cabin.Seat.Row1.Pos1.Position" => DataValue::Int32(self.seat_pos),
-            "Vehicle.Datapoint1" => DataValue::Int32(self.datapoint1),
-            "Vehicle.Datapoint2" => DataValue::Bool(self.datapoint2),
-            _ => DataValue::NotAvailable,
-        }
-    }
-}
 
 #[cfg(test)]
 impl CompilationInput for TestCompilationInput {
@@ -331,6 +406,19 @@ impl CompilationInput for TestCompilationInput {
             "Vehicle.Datapoint2" => Ok(DataType::Bool),
             "Vehicle.ADAS.ABS.IsActive" => Ok(DataType::Bool),
             _ => Err(CompilationError::UnknownField(field.to_owned())),
+        }
+    }
+}
+
+#[cfg(test)]
+fn assert_expected(res: Option<Vec<(String, DataValue)>>, expected: &Vec<(String, DataValue)>) {
+    assert!(matches!(res, Some(_)));
+    if let Some(fields) = &res {
+        assert_eq!(fields.len(), expected.len());
+        for (i, (name, value)) in fields.iter().enumerate() {
+            assert_eq!(name, &expected[i].0);
+            assert_eq!(value, &expected[i].1);
+            println!("{name}: {value:?}")
         }
     }
 }
@@ -360,11 +448,19 @@ fn executor_test() {
     assert!(&compiled_query.input_spec.contains("Vehicle.Datapoint2"));
 
     println!("EXECUTE");
-    let execution_input1 = TestExecutionInput {
-        seat_pos: 230,
-        datapoint1: 61,
-        datapoint2: true,
-    };
+    let mut execution_input1 = ExecutionInputImpl::new();
+    execution_input1.add("Vehicle.Cabin.Seat.Row1.Pos1.Position".parse().unwrap(), ExecutionInputImplData{
+        value: DataValue::Int32(230),
+        lag_value: DataValue::NotAvailable
+    });
+    execution_input1.add("Vehicle.Datapoint1".parse().unwrap(), ExecutionInputImplData {
+        value: DataValue::Int32(61),
+        lag_value: DataValue::NotAvailable
+    });
+    execution_input1.add("Vehicle.Datapoint2".parse().unwrap(), ExecutionInputImplData {
+        value: DataValue::Bool(true),
+        lag_value: DataValue::NotAvailable
+    });
     let res = compiled_query.execute(&execution_input1).unwrap();
 
     println!("RESULT: ");
@@ -378,23 +474,134 @@ fn executor_test() {
             DataValue::NotAvailable,
         ),
     ];
-    assert!(res.is_some());
-    if let Some(fields) = &res {
-        assert_eq!(fields.len(), 2);
-        for (i, (name, value)) in fields.iter().enumerate() {
-            assert_eq!(name, &expected[i].0);
-            assert_eq!(value, &expected[i].1);
-            println!("{name}: {value:?}")
+    assert_expected(res,&expected);
+
+    println!("EXECUTE");
+    let mut execution_input1 = ExecutionInputImpl::new();
+    execution_input1.add("Vehicle.Cabin.Seat.Row1.Pos1.Position".to_string(), ExecutionInputImplData{
+        value: DataValue::Int32(230),
+        lag_value: DataValue::NotAvailable
+    });
+    execution_input1.add("Vehicle.Datapoint1".parse().unwrap(), ExecutionInputImplData {
+        value: DataValue::Int32(40),
+        lag_value: DataValue::NotAvailable
+    });
+    execution_input1.add("Vehicle.Datapoint2".parse().unwrap(), ExecutionInputImplData {
+        value: DataValue::Bool(true),
+        lag_value: DataValue::NotAvailable
+    });
+    let res = compiled_query.execute(&execution_input1).unwrap();
+
+    assert!(matches!(res, None));
+}
+
+#[test]
+fn executor_lag_test() {
+    let sql = "
+    SELECT
+        Vehicle.Cabin.Seat.Row1.Pos1.Position,
+        LAG(Vehicle.Cabin.Seat.Row1.Pos1.Position) as previousCabinSeatRow1PosPosition
+    ";
+
+    let test_compilation_input = TestCompilationInput {};
+    let compiled_query = compiler::compile(sql, &test_compilation_input).unwrap();
+    if let Some(p) = compiled_query.projection.get(1) {
+        match p {
+            Expr::Alias { alias, expr } => {
+                assert_eq!(alias, "previousCabinSeatRow1PosPosition");
+                if let Expr::Datapoint { lag, .. } = **expr {
+                    assert_eq!(lag, true);
+                }
+            }
+            _ => {}
         }
     }
 
     println!("EXECUTE");
-    let execution_input1 = TestExecutionInput {
-        seat_pos: 230,
-        datapoint1: 40, // Condition not met
-        datapoint2: true,
-    };
+    let mut execution_input1 = ExecutionInputImpl::new();
+    execution_input1.add("Vehicle.Cabin.Seat.Row1.Pos1.Position".parse().unwrap(), ExecutionInputImplData{
+        value: DataValue::Int32(230),
+        lag_value: DataValue::Int32(231)
+    });
     let res = compiled_query.execute(&execution_input1).unwrap();
+    assert!(matches!(res, Some(_)));
+    let expected = vec![
+        (
+            "Vehicle.Cabin.Seat.Row1.Pos1.Position".to_owned(),
+            DataValue::Int32(230),
+        ),
+        (
+            "previousCabinSeatRow1PosPosition".to_owned(),
+            DataValue::Int32(231),
+        ),
+    ];
+    assert_expected(res,&expected);
+}
 
-    assert!(res.is_none());
+#[test]
+fn executor_lag_subquery_test() {
+    let sql = "
+    SELECT
+        (SELECT Vehicle.Cabin.Seat.Row1.Pos1.Position),
+        (SELECT LAG(Vehicle.Cabin.Seat.Row1.Pos1.Position) as previousCabinSeatRow1PosPosition)
+    ";
+    let test_compilation_input = TestCompilationInput {};
+    let compiled_query = compiler::compile(sql, &test_compilation_input).unwrap();
+    assert_eq!(compiled_query.subquery.len(), 2);
+    if let Some(subquery) = compiled_query.subquery.get(0) {
+        assert!(subquery.input_spec.contains("Vehicle.Cabin.Seat.Row1.Pos1.Position"));
+    }
+    let mut execution_input1 = ExecutionInputImpl::new();
+    execution_input1.add("Vehicle.Cabin.Seat.Row1.Pos1.Position".parse().unwrap(), ExecutionInputImplData{
+        value: DataValue::Int32(230),
+        lag_value: DataValue::Int32(231)
+    });
+    let res = compiled_query.execute(&execution_input1).unwrap();
+    assert!(matches!(res, Some(_)));
+    let expected = vec![
+        (
+            "Vehicle.Cabin.Seat.Row1.Pos1.Position".to_owned(),
+            DataValue::Int32(230),
+        ),
+        (
+            "previousCabinSeatRow1PosPosition".to_owned(),
+            DataValue::Int32(231),
+        ),
+    ];
+    assert_expected(res,&expected);
+}
+
+#[test]
+fn executor_where_lag_subquery_test() {
+    let sql = "
+    SELECT
+        (SELECT Vehicle.Cabin.Seat.Row1.Pos1.Position
+            WHERE
+                LAG(Vehicle.Cabin.Seat.Row1.Pos1.Position) <> Vehicle.Cabin.Seat.Row1.Pos1.Position
+        )
+    ";
+    let test_compilation_input = TestCompilationInput {};
+    let compiled_query = compiler::compile(sql, &test_compilation_input).unwrap();
+    let mut execution_input1 = ExecutionInputImpl::new();
+    execution_input1.add("Vehicle.Cabin.Seat.Row1.Pos1.Position".parse().unwrap(), ExecutionInputImplData{
+        value: DataValue::Int32(230),
+        lag_value: DataValue::NotAvailable
+    });
+    let res = compiled_query.execute(&execution_input1).unwrap();
+    assert!(matches!(res, Some(_)));
+    let expected = vec![
+        (
+            "Vehicle.Cabin.Seat.Row1.Pos1.Position".to_owned(),
+            DataValue::Int32(230),
+        ),
+    ];
+    assert_expected(res,&expected);
+
+    let mut execution_input1 = ExecutionInputImpl::new();
+    execution_input1.add("Vehicle.Cabin.Seat.Row1.Pos1.Position".parse().unwrap(), ExecutionInputImplData{
+        value: DataValue::Int32(230),
+        lag_value: DataValue::Int32(230)
+    });
+    let res = compiled_query.execute(&execution_input1).unwrap();
+    assert!(matches!(res, None));
 }
