@@ -26,10 +26,10 @@ use std::convert::TryFrom;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use std::time::SystemTime;
-use crate::query::{CompiledQuery, ExecutionInput};
 
-use tracing::{debug, info, warn};
+use crate::query::{CompiledQuery, ExecutionInput};
 use crate::types::ExecutionInputImplData;
+use tracing::{debug, info, warn};
 
 use crate::glob;
 
@@ -614,11 +614,11 @@ impl Subscriptions {
         let mut lag_updates: HashMap<String, ()> = HashMap::new();
         for sub in &self.query_subscriptions {
             match sub.notify(changed, db).await {
-                Ok(None) => {},
+                Ok(None) => {}
                 Ok(Some(input)) => {
                     for x in input.get_fields() {
                         if x.1.lag_value != x.1.value {
-                            if ! lag_updates.contains_key(x.0) {
+                            if !lag_updates.contains_key(x.0) {
                                 lag_updates.insert(x.0.clone(), ());
                             }
                         }
@@ -643,7 +643,7 @@ impl Subscriptions {
                 } else {
                     Ok(None)
                 }
-            },
+            }
         }
     }
 
@@ -790,21 +790,27 @@ impl QuerySubscription {
         &self,
         name: &String,
         db: &DatabaseReadAccess,
-        input: &mut query::ExecutionInputImpl) {
+        input: &mut query::ExecutionInputImpl,
+    ) {
         match db.get_entry_by_path(name) {
             Ok(entry) => {
-                input.add(name.to_owned(), ExecutionInputImplData{
-                    value: entry.datapoint.value.to_owned(),
-                    lag_value: entry.lag_datapoint.value.to_owned()
-                });
-
-            },
+                input.add(
+                    name.to_owned(),
+                    ExecutionInputImplData {
+                        value: entry.datapoint.value.to_owned(),
+                        lag_value: entry.lag_datapoint.value.to_owned(),
+                    },
+                );
+            }
             Err(_) => {
                 // TODO: This should probably generate an error
-                input.add(name.to_owned(), ExecutionInputImplData {
-                    value: DataValue::NotAvailable,
-                    lag_value: DataValue::NotAvailable
-                })
+                input.add(
+                    name.to_owned(),
+                    ExecutionInputImplData {
+                        value: DataValue::NotAvailable,
+                        lag_value: DataValue::NotAvailable,
+                    },
+                )
             }
         }
     }
@@ -835,7 +841,7 @@ impl QuerySubscription {
             }
             None => {
                 // Always generate input if `changed` is None
-                return true
+                return true;
             }
         }
         false
@@ -844,7 +850,7 @@ impl QuerySubscription {
         &self,
         query: &CompiledQuery,
         db: &DatabaseReadAccess,
-        input: &mut query::ExecutionInputImpl
+        input: &mut query::ExecutionInputImpl,
     ) {
         for name in query.input_spec.iter() {
             self.find_in_db_and_add(name, db, input);
@@ -1035,14 +1041,12 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
 
     pub fn update_entry_lag_to_be_equal(&mut self, path: &str) -> Result<(), UpdateError> {
         match self.db.path_to_id.get(path) {
-            Some(id) => {
-                match self.db.entries.get_mut(&id) {
-                    Some(entry) => {
-                        entry.apply_lag_after_execute();
-                        Ok(())
-                    }
-                    None => Err(UpdateError::NotFound),
+            Some(id) => match self.db.entries.get_mut(&id) {
+                Some(entry) => {
+                    entry.apply_lag_after_execute();
+                    Ok(())
                 }
+                None => Err(UpdateError::NotFound),
             },
             None => Err(UpdateError::NotFound),
         }
@@ -1399,7 +1403,6 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
             // notifying subscribers (no writes in between)
             let db = db.downgrade();
 
-
             // Notify
             match self
                 .broker
@@ -1413,7 +1416,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
                 Ok(Some(lag_updates_)) => {
                     lag_updates = lag_updates_.clone();
                     false
-                },
+                }
                 Err(_) => true, // Cleanup needed
             }
         };
@@ -1423,8 +1426,8 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
             let mut db_write = db.authorized_write_access(self.permissions);
             for x in lag_updates {
                 match db_write.update_entry_lag_to_be_equal(x.0.as_str()) {
-                    Ok(_) => {},
-                    Err(_) => {},
+                    Ok(_) => {}
+                    Err(_) => {}
                 };
             }
         }

@@ -76,8 +76,6 @@ pub enum DataValue {
     DoubleArray(Vec<f64>),
 }
 
-
-
 #[derive(Debug)]
 pub struct CastError {}
 
@@ -555,22 +553,18 @@ impl DataValue {
                 // TODO: Implement better floating point comparison
                 Ok((value - other_value).abs() < f64::EPSILON)
             }
-            (DataValue::NotAvailable, DataValue::Int32(..)) |
-            (DataValue::NotAvailable, DataValue::Int64(..)) |
-            (DataValue::NotAvailable, DataValue::Uint32(..)) |
-            (DataValue::NotAvailable, DataValue::Uint64(..)) |
-            (DataValue::NotAvailable, DataValue::Float(..)) |
-            (DataValue::NotAvailable, DataValue::Double(..)) => {
-                Ok(false)
-            }
-            (DataValue::Int32(..), DataValue::NotAvailable) |
-            (DataValue::Int64(..), DataValue::NotAvailable) |
-            (DataValue::Uint32(..), DataValue::NotAvailable) |
-            (DataValue::Uint64(..), DataValue::NotAvailable) |
-            (DataValue::Float(..), DataValue::NotAvailable) |
-            (DataValue::Double(..), DataValue::NotAvailable) => {
-                Ok(false)
-            }
+            (DataValue::NotAvailable, DataValue::Int32(..))
+            | (DataValue::NotAvailable, DataValue::Int64(..))
+            | (DataValue::NotAvailable, DataValue::Uint32(..))
+            | (DataValue::NotAvailable, DataValue::Uint64(..))
+            | (DataValue::NotAvailable, DataValue::Float(..))
+            | (DataValue::NotAvailable, DataValue::Double(..)) => Ok(false),
+            (DataValue::Int32(..), DataValue::NotAvailable)
+            | (DataValue::Int64(..), DataValue::NotAvailable)
+            | (DataValue::Uint32(..), DataValue::NotAvailable)
+            | (DataValue::Uint64(..), DataValue::NotAvailable)
+            | (DataValue::Float(..), DataValue::NotAvailable)
+            | (DataValue::Double(..), DataValue::NotAvailable) => Ok(false),
             _ => Err(CastError {}),
         }
     }
@@ -579,7 +573,7 @@ impl DataValue {
 #[derive(Debug)]
 pub struct ExecutionInputImplData {
     pub value: DataValue,
-    pub lag_value: DataValue
+    pub lag_value: DataValue,
 }
 
 #[test]

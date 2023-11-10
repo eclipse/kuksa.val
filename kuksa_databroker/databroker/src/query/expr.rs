@@ -18,7 +18,7 @@ pub enum Expr {
     Datapoint {
         name: String,
         data_type: DataType,
-        lag: bool
+        lag: bool,
     },
     Alias {
         expr: Box<Expr>,
@@ -45,7 +45,7 @@ pub enum Expr {
         operator: UnaryOperator,
     },
     Subquery {
-        index: u32
+        index: u32,
     },
     Between {
         expr: Box<Expr>,
@@ -80,7 +80,9 @@ pub enum UnresolvedLiteral {
 impl Expr {
     pub fn get_type(&self) -> Result<DataType, UnresolvedLiteral> {
         match self {
-            Expr::Datapoint { name: _, data_type, .. } => Ok(data_type.clone()),
+            Expr::Datapoint {
+                name: _, data_type, ..
+            } => Ok(data_type.clone()),
             Expr::Alias { expr, alias: _ } => expr.get_type(),
             Expr::Cast { expr: _, data_type } => Ok(data_type.clone()),
             Expr::UnresolvedLiteral { raw } => Err(UnresolvedLiteral::Number(raw.clone())),
