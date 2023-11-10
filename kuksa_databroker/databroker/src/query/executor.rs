@@ -427,7 +427,7 @@ impl CompilationInput for TestCompilationInput {
 
 #[cfg(test)]
 fn assert_expected(res: Option<Vec<(String, DataValue)>>, expected: &Vec<(String, DataValue)>) {
-    assert!(matches!(res, Some(_)));
+    assert!(res.is_some());
     if let Some(fields) = &res {
         assert_eq!(fields.len(), expected.len());
         for (i, (name, value)) in fields.iter().enumerate() {
@@ -525,7 +525,7 @@ fn executor_test() {
     );
     let res = compiled_query.execute(&execution_input1).unwrap();
 
-    assert!(matches!(res, None));
+    assert!(res.is_none());
 }
 
 #[test]
@@ -555,7 +555,7 @@ fn executor_lag_test() {
         },
     );
     let res = compiled_query.execute(&execution_input1).unwrap();
-    assert!(matches!(res, Some(_)));
+    assert!(res.is_some());
     let expected = vec![
         (
             "Vehicle.Cabin.Seat.Row1.Pos1.Position".to_owned(),
@@ -593,7 +593,7 @@ fn executor_lag_subquery_test() {
         },
     );
     let res = compiled_query.execute(&execution_input1).unwrap();
-    assert!(matches!(res, Some(_)));
+    assert!(res.is_some());
     let expected = vec![
         (
             "Vehicle.Cabin.Seat.Row1.Pos1.Position".to_owned(),
@@ -627,7 +627,7 @@ fn executor_where_lag_subquery_test() {
         },
     );
     let res = compiled_query.execute(&execution_input1).unwrap();
-    assert!(matches!(res, Some(_)));
+    assert!(res.is_some());
     let expected = vec![(
         "Vehicle.Cabin.Seat.Row1.Pos1.Position".to_owned(),
         DataValue::Int32(230),
@@ -643,5 +643,5 @@ fn executor_where_lag_subquery_test() {
         },
     );
     let res = compiled_query.execute(&execution_input1).unwrap();
-    assert!(matches!(res, None));
+    assert!(res.is_none());
 }
