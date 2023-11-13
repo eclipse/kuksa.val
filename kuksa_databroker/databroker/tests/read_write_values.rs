@@ -175,7 +175,7 @@ async fn get_value(w: &mut DataBrokerWorld, value_type: ValueType, path: String,
             }
         },
         ValueType::Current => {
-            match client.get_current_values(vec![&path,]).await {
+            match client.get_current_values(vec![path,]).await {
                 Ok(res) => w.current_data_entries = Some(res),
                 Err(e) => {
                     debug!("failed to invoke Databroker's get operation: {:?}", e);
