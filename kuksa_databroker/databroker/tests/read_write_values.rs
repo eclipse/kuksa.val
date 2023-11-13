@@ -12,15 +12,16 @@
  ********************************************************************************/
 
 use core::panic;
-use std::{future, time::SystemTime, vec};
+use std::{future, time::SystemTime, vec, collections::HashMap};
 
+use common::ClientError;
 use cucumber::{cli, gherkin::Step, given, then, when, writer, World as _};
 use databroker::broker;
 use databroker_proto::kuksa::val::v1::{
-    datapoint::Value, DataEntry, DataType, Datapoint, EntryRequest, EntryUpdate, Field, GetRequest,
-    SetRequest, View,
+    datapoint::Value, DataType, Datapoint,
 };
 use tracing::debug;
+use tonic::Code;
 use world::{DataBrokerWorld, ValueType};
 
 mod world;
@@ -75,9 +76,9 @@ fn get_data_entries_from_table(
     data_entries
 }
 
-#[given(regex = "^a running Databroker server.*$")]
-async fn start_databroker_server(w: &mut DataBrokerWorld, step: &Step) {
-    w.start_databroker(get_data_entries_from_table(step)).await;
+#[given(regex = "^a running Databroker server with authorization (true|false).*$")]
+async fn start_databroker_server(w: &mut DataBrokerWorld, auth: bool, step: &Step) {
+    w.start_databroker(get_data_entries_from_table(step), auth).await;
     assert!(w.broker_client.is_some())
 }
 
@@ -89,21 +90,32 @@ async fn a_known_data_entry_has_value(
     value_type: ValueType,
     value: String,
 ) {
-    set_value(w, value_type, path, data_type, value).await;
-    w.assert_set_response_has_succeeded()
+    let token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3NjcyMjU1OTksInNjb3BlIjoiYWN0dWF0ZSBwcm92aWRlIn0.x-bUZwDCC663wGYrWCYjQZwQWhN1CMuKgxuIN5dUF_izwMutiqF6Xc-tnXgZa93BbT3I74WOMk4awKHBUSTWekGs3-qF6gajorbat6n5180TOqvNu4CXuIPZN5zpngf4id3smMkKOT699tPnSEbmlkj4vk-mIjeOAU-FcYA-VbkKBTsjvfFgKa2OdB5h9uZARBg5Rx7uBN3JsH1I6j9zoLid184Ewa6bhU2qniFt5iPsGJniNsKsRrrndN1KzthO13My44s56yvwSHIOrgDGbXdja_eLuOVOq9pHCjCtorPScgEuUUE4aldIuML-_j397taNP9Y3VZYVvofEK7AuiePTbzwxrZ1RAjK74h1-4ued3A2gUTjr5BsRlc9b7eLZzxLJkrqdfGAzBh_rtrB7p32TbvpjeFP30NW6bB9JS43XACUUm_S_RcyI7BLuUdnFyQDQr6l6sRz9XayYXceilHdCxbAVN0HVnBeui5Bb0mUZYIRZeY8k6zcssmokANTD8ZviDMpKlOU3t5AlXJ0nLkgyMhV9IUTwPUv6F8BTPc-CquJCUNbTyo4ywTSoODWbm3PmQ3Y46gWF06xqnB4wehLscBdVk3iAihQp3tckGhMnx5PI_Oy7utIncr4pRCMos63TnBkfrl7d43cHQTuK0kO76EWtv4ODEHgLvEAv4HA";
+    set_value(w, value_type, path, data_type, value, token.to_string()).await;
+    w.assert_set_succeeded()
 }
 
-#[when(expr = "a client sets the {word} value of {word} of type {word} to {word}")]
+#[when(expr = "a client sets the {word} value of {word} of type {word} to {word} with token {word}")]
 async fn set_value(
     w: &mut DataBrokerWorld,
     value_type: ValueType,
     path: String,
     data_type: DataType,
     value: String,
+    token: String
 ) {
     let client = w
         .broker_client
         .as_mut()
+        .and_then(|client|
+            match client.basic_client.set_access_token(token){
+                Ok(()) => Some(client),
+                Err(e) => {
+                    println!("Error: {e}");
+                    None
+                }
+            }
+        )
         .expect("no Databroker client available, broker not started?");
     let value = Value::new(data_type, value.as_str()).expect("cannot parse value into given type");
     let datapoint = Datapoint {
@@ -111,67 +123,65 @@ async fn set_value(
         value: Some(value),
     };
 
-    let data_entry = match value_type {
-        ValueType::Current => DataEntry {
-            path: path.clone(),
-            value: Some(datapoint),
-            actuator_target: None,
-            metadata: None,
+    match value_type{
+        ValueType::Target => {
+            match client.set_target_values(HashMap::from([(path.clone(), datapoint.clone())])).await {
+                Ok(_) => {
+                    w.current_client_error = None;
+                }
+                Err(e) => {
+                    debug!("failed to invoke Databroker's set operation: {:?}", e);
+                    w.current_client_error = Some(e);
+                }
+            }
         },
-        ValueType::Target => DataEntry {
-            path: path.clone(),
-            value: None,
-            actuator_target: Some(datapoint),
-            metadata: None,
-        },
-    };
-    let req = SetRequest {
-        updates: vec![EntryUpdate {
-            entry: Some(data_entry),
-            fields: vec![
-                Field::ActuatorTarget.into(),
-                Field::Value.into(),
-                Field::Path.into(),
-            ],
-        }],
-    };
-    match client.set(req).await {
-        Ok(res) => {
-            let set_response = res.into_inner();
-            debug!(
-                "response from Databroker [global error: {:?}, Data Entry errors: {:?}]",
-                set_response.error, set_response.errors
-            );
-            w.current_set_response = Some(set_response);
-        }
-        Err(e) => {
-            debug!("failed to invoke Databroker's set operation: {:?}", e);
-            w.current_status = Some(e);
+        ValueType::Current => {
+            match client.set_current_values(HashMap::from([(path.clone(), datapoint.clone())])).await {
+                Ok(_) => {
+                    w.current_client_error = None;
+                }
+                Err(e) => {
+                    debug!("failed to invoke Databroker's set operation: {:?}", e);
+                    w.current_client_error = Some(e);
+                }
+            }
         }
     }
 }
 
-#[when(expr = "a client gets the {word} value of {word}")]
-async fn get_value(w: &mut DataBrokerWorld, value_type: ValueType, path: String) {
+#[when(expr = "a client gets the {word} value of {word} with token {word}")]
+async fn get_value(w: &mut DataBrokerWorld, value_type: ValueType, path: String, token: String) {
     let client = w
         .broker_client
         .as_mut()
+        .and_then(|client|
+            match client.basic_client.set_access_token(token){
+                Ok(()) => Some(client),
+                Err(e) => {
+                    println!("Error: {e}");
+                    None
+                }
+            }
+        )
         .expect("no Databroker client available, broker not started?");
-    let get_request = GetRequest {
-        entries: vec![EntryRequest {
-            path: path.to_string(),
-            view: match value_type {
-                ValueType::Current => View::CurrentValue.into(),
-                ValueType::Target => View::TargetValue.into(),
-            },
-            fields: vec![Field::Value.into(), Field::Metadata.into()],
-        }],
-    };
-    match client.get(get_request).await {
-        Ok(res) => w.current_get_response = Some(res.into_inner()),
-        Err(e) => {
-            debug!("failed to invoke Databroker's get operation: {:?}", e);
-            w.current_status = Some(e);
+    match value_type{
+        ValueType::Target => {
+            match client.get_target_values(vec![&path,]).await {
+                Ok(res) => w.current_data_entries = Some(res),
+                Err(e) => {
+                    debug!("failed to invoke Databroker's get operation: {:?}", e);
+                    w.current_client_error = Some(e);
+                }
+            }
+        },
+        ValueType::Current => {
+            match client.get_current_values(vec![&path,]).await {
+                Ok(res) => w.current_data_entries = Some(res),
+                Err(e) => {
+                    debug!("failed to invoke Databroker's get operation: {:?}", e);
+                    w.current_client_error = Some(e);
+                }
+            }
         }
     }
 }
@@ -224,24 +234,34 @@ fn assert_value_is_unspecified(w: &mut DataBrokerWorld, value_type: ValueType, p
 
 #[then(regex = r"^the (current|target) value is not found$")]
 fn assert_value_not_found(w: &mut DataBrokerWorld) {
-    let error_code = w
-        .current_get_response
-        .clone()
-        .and_then(|res| res.error)
-        .map(|error| error.code);
-
-    assert_eq!(error_code, Some(404));
+    w.assert_response_has_error_code(vec![404]);
 }
 
 #[then(expr = "setting the value for {word} fails with error code {int}")]
-fn assert_set_request_failure(w: &mut DataBrokerWorld, path: String, expected_error_code: u32) {
-    w.assert_set_response_has_error_code(path, expected_error_code)
+fn assert_set_request_failure(w: &mut DataBrokerWorld, _path: String, expected_error_code: u32) {
+    w.assert_response_has_error_code(vec![expected_error_code])
 }
 
 /// https://github.com/grpc/grpc/blob/master/doc/statuscodes.md#status-codes-and-their-use-in-grpc
 #[then(expr = "the operation fails with status code {int}")]
 fn assert_request_failure(w: &mut DataBrokerWorld, expected_status_code: i32) {
     w.assert_status_has_code(expected_status_code)
+}
+
+#[then(expr = "the current value for {word} can not be accessed because we are unauthorized")]
+fn assert_current_value_unauthenticated(w: &mut DataBrokerWorld) {
+    if let Some(error) = w.current_client_error.clone() {
+        match error{
+            ClientError::Connection(e) => assert!(false, "No connection error {:?} should occcur", e),
+            ClientError::Function(e) => assert!(false, "No function error {:?} should occur", e),
+            ClientError::Status(status) => assert_eq!(status.code(), Code::Unauthenticated)
+        }
+    }
+}
+
+#[then(expr = "the set operation succeeds without an error")]
+fn assert_set_succeeds(w: &mut DataBrokerWorld) {
+    w.assert_set_succeeded()
 }
 
 #[tokio::main]

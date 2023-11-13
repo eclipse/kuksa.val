@@ -19,22 +19,24 @@ use std::{
     task::{Poll, Waker},
 };
 
+use common::ClientError;
+use databroker_proto::kuksa::val::v1::{
+    datapoint::Value, DataEntry,
+};
+
 use databroker::{
     broker,
     grpc::{self, server::ServerTLS},
     permissions,
 };
-use databroker_proto::kuksa::val::v1::{
-    datapoint::Value, val_client::ValClient, DataEntry, GetResponse, SetResponse,
-};
+
 use tokio::net::TcpListener;
-use tonic::{
-    transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity},
-    Code, Status,
-};
 use tracing::debug;
 
 use lazy_static::lazy_static;
+
+use tonic::Code;
+use tonic::transport::{Identity, Certificate, ClientTlsConfig};
 
 #[cfg(feature = "tls")]
 lazy_static! {
@@ -115,19 +117,17 @@ struct DataBrokerState {
 #[derive(cucumber::World, Debug)]
 #[world(init = Self::new)]
 pub struct DataBrokerWorld {
-    pub current_get_response: Option<GetResponse>,
-    pub current_set_response: Option<SetResponse>,
-    pub current_status: Option<Status>,
-    pub broker_client: Option<ValClient<Channel>>,
+    pub current_data_entries: Option<Vec<DataEntry>>,
+    pub current_client_error: Option<ClientError>,
+    pub broker_client: Option<kuksa::KuksaClient>,
     data_broker_state: Arc<Mutex<DataBrokerState>>,
 }
 
 impl DataBrokerWorld {
     pub fn new() -> DataBrokerWorld {
         DataBrokerWorld {
-            current_get_response: None,
-            current_set_response: None,
-            current_status: None,
+            current_data_entries: Some(vec![]),
+            current_client_error: None,
             data_broker_state: Arc::new(Mutex::new(DataBrokerState {
                 running: false,
                 address: None,
@@ -145,6 +145,7 @@ impl DataBrokerWorld {
             broker::ChangeType,
             broker::EntryType,
         )>,
+        authorization_enabled: bool,
     ) {
         {
             let state = self
@@ -194,12 +195,21 @@ impl DataBrokerWorld {
                 state.address = Some(addr);
             }
 
+            let mut _authorization = databroker::authorization::Authorization::Disabled;
+
+            if authorization_enabled{
+                match databroker::authorization::Authorization::new("-----BEGIN PUBLIC KEY----- MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA6ScE9EKXEWVyYhzfhfvg+LC8NseiuEjfrdFx3HKkb31bRw/SeS0Rye0KDP7uzffwreKf6wWYGxVUPYmyKC7jPji5MpDBGM9r3pIZSvPUFdpTE5TiRHFBxWbqPSYt954BTLq4rMu/W+oq5PdfnugbvoYpLf0dclBl1g9KyszkDnItz3TYbWhGMbsUSfyeSPzH0IADzLoifxbc5mgiR73NCA/4yNSpfLoqWgQ2vdTM1182sMSmxfqSgMzIMUX/tiaXGdkoKITF1sULlLyWfTo979XRZ0hmUwvfzr3OjMZNoClpYSVbKY+vtxHyux9KOOtv9lPMsgYIaPXvisrsneDZfCS0afOfjgR96uHIe2UPSGAXru3yGziqEfpRZoxsgXaOe905ordLD5bSX14xkN7NCz7rxDLlxPQyxp4Vhog7p/QeUyydBpZjq2bAE5GAJtiu+XGvG8RypzJFKFQwMNswg1BoZVD0mb0MtU8KQmHcZIfY0FVer/CR0mUjfl1rHbtoJB+RY03lQvYNAD04ibAGNI1RhlTziu35Xo6NDEgs9hVs9k3WrtF+ZUxhivWmP2VXhWruRakVkC1NzKGh54e5/KlluFbBNpWgvWZqzWo9Jr7/fzHtR0Q0IZwkxh+Vd/bUZya1uLKqP+sTcc+aTHbnAEiqOjPq0D6X45wCzIwjILUCAwEAAQ== -----END PUBLIC KEY-----".to_string()){
+                        Ok(auth) => _authorization = auth,
+                        Err(e) => println!("Error: {e}"),
+                    }
+            }
+
             grpc::server::serve_with_incoming_shutdown(
                 listener,
                 data_broker,
                 #[cfg(feature = "tls")]
                 CERTS.server_tls_config(),
-                databroker::authorization::Authorization::Disabled,
+                _authorization,
                 poll_fn(|cx| {
                     let mut state = owned_state
                         .lock()
@@ -232,21 +242,21 @@ impl DataBrokerWorld {
         });
 
         debug!("started Databroker [address: {addr}]");
-        #[cfg(not(feature = "tls"))]
-        let client_endpoint =
-            Endpoint::from_shared(format!("http://{}:{}", addr.ip(), addr.port()))
-                .expect("cannot create client endpoint");
-        #[cfg(feature = "tls")]
-        let client_endpoint =
-            Endpoint::from_shared(format!("https://{}:{}", addr.ip(), addr.port()))
-                .and_then(|conf| conf.tls_config(CERTS.client_tls_config()))
-                .expect("cannot create client endpoint");
 
-        self.broker_client = Some(
-            ValClient::connect(client_endpoint)
-                .await
-                .expect("failed to create Databroker client"),
-        );
+        let data_broker_url = format!("http://{}:{}", addr.ip(), addr.port());
+
+        self.broker_client = match common::to_uri(data_broker_url.clone()){
+            Ok(uri) => Some(kuksa::KuksaClient::new(uri)),
+            Err(e) => {
+                println!("Error connecting to {data_broker_url}: {e}");
+                None
+            }
+        };
+
+        #[cfg(feature = "tls")]
+        if let Some(client) = self.broker_client.as_mut(){
+            client.basic_client.set_tls_config(CERTS.client_tls_config());
+        }
     }
 
     pub fn stop_databroker(&mut self) {
@@ -263,9 +273,8 @@ impl DataBrokerWorld {
     }
 
     pub fn get_current_data_entry(&self, path: String) -> Option<DataEntry> {
-        self.current_get_response.clone().and_then(|res| {
-            res.entries
-                .into_iter()
+        self.current_data_entries.clone().and_then(|res| {
+            res.into_iter()
                 .find(|data_entry| data_entry.path == path)
         })
     }
@@ -284,34 +293,48 @@ impl DataBrokerWorld {
 
     /// https://github.com/grpc/grpc/blob/master/doc/statuscodes.md#status-codes-and-their-use-in-grpc
     pub fn assert_status_has_code(&self, expected_status_code: i32) {
-        assert!(
-            self.current_status.is_some(),
-            "operation did not result in an error"
-        );
-        if let Some(status) = self.current_status.clone() {
-            assert_eq!(status.code(), Code::from_i32(expected_status_code));
+        match &self.current_client_error{
+            Some(ClientError::Connection(_)) => assert!(false, "Connection error shall not occur"),
+            Some(ClientError::Function(_)) => assert!(false, "Fucntion has an error that shall not occur"),
+            Some(ClientError::Status(status)) => assert_eq!(status.code(), Code::from_i32(expected_status_code)),
+            None => assert!(false, "No error, but an errror is expected")
         }
     }
 
-    pub fn assert_set_response_has_error_code(&self, path: String, error_code: u32) {
-        let code = self.current_set_response.clone().and_then(|res| {
-            res.errors
-                .into_iter()
-                .find(|error| error.path == path)
-                .and_then(|data_entry_error| data_entry_error.error)
-                .map(|error| error.code)
-        });
-        assert!(code.is_some(), "response contains no error code");
-        assert_eq!(
-            code,
-            Some(error_code),
-            "response contains unexpected error code"
-        );
+    pub fn assert_response_has_error_code(&self, error_codes: Vec<u32>) {
+        let mut code = Vec::new();
+
+        if let Some(client_error) = self.current_client_error.clone() {
+            match client_error{
+                ClientError::Connection(_) => assert!(false, "response contains connection error"),
+                ClientError::Function(e) => {
+                    for element in e{
+                        if !code.contains(&element.code){
+                            code.push(element.code)
+                        }
+                    }
+                },
+                ClientError::Status(_) => assert!(false, "response contains channel error"),
+            }
+
+            assert!(!code.is_empty(), "response contains no error code {:?}", code);
+            assert_eq!(code, error_codes, "response contains unexpected error code");
+        }
+        else{
+            assert!(false, "response contains no error code");
+        }
     }
 
-    pub fn assert_set_response_has_succeeded(&self) {
-        if let Some(res) = self.current_set_response.clone() {
-            assert!(res.error.is_none() && res.errors.is_empty())
+    pub fn assert_set_succeeded(&self) {
+        if let Some(error) = self.current_client_error.clone() {
+            match error{
+                ClientError::Connection(e) => assert!(false, "No connection error {:?} should occcur", e),
+                ClientError::Function(e) => assert!(false, "No function error {:?} should occur", e),
+                ClientError::Status(status) => assert!(false, "No status error {:?} should occur", status)
+            }
+        }
+        else{
+            assert!(true, "Succeeded")
         }
     }
 }
