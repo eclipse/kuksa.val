@@ -67,7 +67,7 @@ fn print_usage(command: impl AsRef<str>) {
 }
 
 pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
-    let mut _properties = Vec::<proto::v1::Metadata>::new();
+    let mut properties = Vec::<proto::v1::Metadata>::new();
     println!("Using {VERSION}");
     let mut cli = _cli;
 
@@ -160,6 +160,7 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                         Ok(metadata) => {
                             interface
                                 .set_completer(Arc::new(CliCompleter::from_metadata(&metadata)));
+                            properties = metadata;
                         }
                         Err(common::ClientError::Status(status)) => {
                             cli::print_resp_err("metadata", &status)?;
@@ -238,7 +239,7 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                             interface.set_completer(Arc::new(
                                                 CliCompleter::from_metadata(&metadata),
                                             ));
-                                            _properties = metadata;
+                                            properties = metadata;
                                         }
                                         Err(common::ClientError::Status(status)) => {
                                             cli::print_resp_err("metadata", &status)?;
@@ -277,7 +278,7 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                                 interface.set_completer(Arc::new(
                                                     CliCompleter::from_metadata(&metadata),
                                                 ));
-                                                _properties = metadata;
+                                                properties = metadata;
                                             }
                                             Err(common::ClientError::Status(status)) => {
                                                 cli::print_resp_err("metadata", &status)?;
@@ -317,7 +318,7 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
 
                             let datapoint_metadata = {
                                 let mut datapoint_metadata = None;
-                                for metadata in _properties.iter() {
+                                for metadata in properties.iter() {
                                     if metadata.name == path {
                                         datapoint_metadata = Some(metadata)
                                     }
@@ -415,7 +416,7 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
 
                             let datapoint_metadata = {
                                 let mut datapoint_metadata = None;
-                                for metadata in _properties.iter() {
+                                for metadata in properties.iter() {
                                     if metadata.name == path {
                                         datapoint_metadata = Some(metadata)
                                     }
@@ -642,7 +643,7 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                             interface.set_completer(Arc::new(
                                                 CliCompleter::from_metadata(&metadata),
                                             ));
-                                            _properties = metadata;
+                                            properties = metadata;
                                         }
                                         Err(common::ClientError::Status(status)) => {
                                             cli::print_resp_err("metadata", &status)?;
@@ -668,9 +669,9 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                             match client.get_metadata(vec![]).await {
                                 Ok(mut metadata) => {
                                     metadata.sort_by(|a, b| a.name.cmp(&b.name));
-                                    _properties = metadata;
+                                    properties = metadata;
                                     interface.set_completer(Arc::new(CliCompleter::from_metadata(
-                                        &_properties,
+                                        &properties,
                                     )));
                                     cli::print_resp_ok(cmd)?;
                                 }
@@ -690,12 +691,12 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                             let mut filtered_metadata = Vec::new();
                             if paths.is_empty() {
                                 cli::print_info("If you want to list metadata of signals, use `metadata PATTERN`")?;
-                                // filtered_metadata.extend(&_properties);
+                                // filtered_metadata.extend(&properties);
                             } else {
                                 for path in &paths {
                                     let path_re = path_to_regex(path);
                                     let filtered =
-                                        _properties.iter().filter(|item| match &path_re {
+                                        properties.iter().filter(|item| match &path_re {
                                             Ok(re) => re.is_match(&item.name),
                                             Err(err) => {
                                                 cli::print_info(format!("Invalid path: {err}"))
