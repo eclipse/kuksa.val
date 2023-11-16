@@ -23,8 +23,8 @@ Providers have the same protocol options of accessing the VSS server as consumer
 
 In the following we will provide some more specific example of consumer and provider components.
 
-## Providers 
-Components providing data for leaves in the VSS tree are called  *data-providers*. Technically they are just normal KUKSA.val clients. Sometimes you will see data-providers to be referred to as "feeders".  
+## Providers
+Components providing data for leaves in the VSS tree are called  *data-providers*. Technically they are just normal KUKSA.val clients. Sometimes you will see data-providers to be referred to as "feeders".
 
 A data-provider will gather some data from a vehicle  using whatever standard or proprietary protocol is needed to access the data. It will then convert the gathered data to the representation defined in a VSS model and provide those standard signals to the VSS server using the VISS or GRPC protocol.
 
@@ -44,21 +44,21 @@ The Vehicle Computer running the VSS server might run other (automotive) middlew
 
 Finally, there may be other  processor based platforms in a vehicle such as another vehicle computer (VCU in the example), a domain, or zone controller or an infotainment system. These systems can run any kind of provider themselves and connect to a VSS server running on a different compute unit directly through the VISS or GRPC directly.
 
-A provider can be implemented directly against the KUKSA.val GRPC or VISS specification using any programming language. For Python-based providers you can make use of the [KUKSA.val client library](../kuksa-client/).
+A provider can be implemented directly against the KUKSA.val GRPC or VISS specification using any programming language. For Python-based providers you can make use of the [KUKSA Python SDK](https://github.com/eclipse-kuksa/kuksa-python-sdk).
 
 ## Consumers
 Consumers are usually different kind of applications that are accessing VSS signals through KUKSA.val. The following figure shows common consumer patterns:
 
 ![Application patterns](./pictures/sysarch_consumers.svg)
 
-A standard consumer ("Application)"  will interact with VSS datapoints from the VSS server to realize a vehicle functionality. A simple example is gathering some signals and visualizing them. 
+A standard consumer ("Application)"  will interact with VSS datapoints from the VSS server to realize a vehicle functionality. A simple example is gathering some signals and visualizing them.
 
 Another common use case is providing telemetry to the cloud. With cellular networks, being hidden behind NATs or using dynamic IP addresses, the VISS/GRPC pattern of contacting a VSS server is not a suitable. The common pattern is, that the vehicle pushes relevant data, using suitable IoT protocols and potentially dealing with buffering and connection loss. This is the "Cloud Adapter" pattern. An example is the [KUKSA.val S3 uploader](../kuksa_apps/s3/).
 
 As a VSS data catalogue can contain signals of different abstraction levels, often higher level signals depend on lower level ones. Thus an  application might use data from some signals to calculate the value of of others ("Signal Refinement"). An example is, taking current battery voltage and other low level signals from the battery system to calculate a state-of-charge and pushing it back. Another service might use state of-charge, system and ambient temperature to calculate remaining range. Such a client combines the roles of consumer and data-provider.
 
 
-A consumer can be implemented directly against the KUKSA.val GRPC or VISS specification using any programming language. For Python-based consumers you can make use of the [KUKSA.val client library](../kuksa-client/).
+A consumer can be implemented directly against the KUKSA.val GRPC or VISS specification using any programming language. For Python-based consumers you can make use of the [KUKSA Python SDK](https://github.com/eclipse-kuksa/kuksa-python-sdk).
 
 ## (Distributed) KUKSA.val deployment
 
@@ -76,4 +76,4 @@ In a redundancy scenario there may be a backup vehicle computer with a KUKSA.val
 
 A vehicle can have additional  domain controllers such as the powertrain controller. The Powertrain controller might use VSS to manage private internal datapoints not relevant to other domains. At the same time it is accessing VSS signals relevant to powertrain functionality provided by the VSS server on the central vehicle computer as well as providing higher level powertrain signals to the vehicle computer.
 
-The Infotainment/Displays example extends this pattern, where the system subscribes needed data from the central Vehicle Computer (e.g. data that needs to be visualized), but also wants to actuate things in the vehicle via VSS model (e.g. if a driver sets charge limits in the UI). 
+The Infotainment/Displays example extends this pattern, where the system subscribes needed data from the central Vehicle Computer (e.g. data that needs to be visualized), but also wants to actuate things in the vehicle via VSS model (e.g. if a driver sets charge limits in the UI).

@@ -14,7 +14,7 @@ See [Supported Protocol](../doc/protocol/README.md) for a detailled overview of 
  - Websocket interface, TLS-secured or plain
  - [Fine-grained authorisation](../doc/KUKSA.val_server/jwt.md) based on JSON Webtokens (RFC 7519)
  - Built-in MQTT publisher
- - Python [Kuksa Client](../kuksa-client) to interactively explore and modify the VSS data points and data structure
+ - Python [Kuksa Python SDK Client](https://github.com/eclipse-kuksa/kuksa-python-sdk) to interactively explore and modify the VSS data points and data structure
  - Multiple [example apps](../kuksa_apps) in different programming languages to communicate with different frameworks
  - Multiple [feeders](https://github.com/eclipse/kuksa.val.feeders/tree/main) to provide vehicle data for the `kuksa.val` server
  - Support most of data types, which is specified in [COVESA VSS data model](https://covesa.github.io/vehicle_signal_specification/rule_set/data_entry/data_types/).
@@ -102,7 +102,7 @@ if no other config file is specified using the command line option `-c/--config-
 For more information check [usage](../doc/KUKSA.val_server/usage.md).
 
 ## Using kuksa.val
-The easiest way to try `kuksa-val-server` out, is to use the test client [`kuksa-client`](../kuksa-client):
+The easiest way to try `kuksa-val-server` out, is to use the KUKSA Python SDK [`kuksa-client`](https://github.com/eclipse-kuksa/kuksa-python-sdk):
 
 ```
 pip install kuksa-client
@@ -113,6 +113,6 @@ kuksa-client
 
 The jwt tokens for testing can also be found under [kuksa_certificates/jwt](../kuksa_certificates/jwt).
 
-You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa-client` can be found [here](../kuksa-client).
+You can also use the provided python sdk to develop your own `kuksa.val` clients. More details about `kuksa-client` can be found [here](https://github.com/eclipse-kuksa/kuksa-python-sdk).
 
 Additionally, you can use the [example apps](../kuksa_apps) and [feeders](https://github.com/eclipse/kuksa.val.feeders/tree/main) to handle vehicle data, interacting with `kuksa-val-server`.

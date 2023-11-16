@@ -58,7 +58,7 @@ use the full name. When official release is created replace the copied *.json-fi
 ### Kuksa-val-server smoke test
 * Build and start kuksa-val-server with new VSS release as described in the [README](https://github.com/eclipse/kuksa.val/blob/master/kuksa-val-server/README.md)
 * If needed [generate new certificates](https://github.com/eclipse/kuksa.val/tree/master/kuksa_certificates)
-* [Start Kuksa Client](https://github.com/eclipse/kuksa.val/blob/master/kuksa-client/README.md) and perform some basic tests that VSS changes are present
+* [Start Kuksa Client](https://github.com/eclipse-kuksa/kuksa-python-sdk) and perform some basic tests that VSS changes are present
 
 Examples:
 
@@ -129,7 +129,7 @@ VERBOSE: SubscriptionHandler::publishForVSSPath: set value 8.927633333 for path 
 VERBOSE: SubscriptionHandler::publishForVSSPath: set value 12.244000434875488 for path Vehicle.Speed
 ```
 
-The [Kuksa Client](https://github.com/eclipse/kuksa.val/blob/master/kuksa-client/README.md) can be used to verify that data actually is correctly interpreted.
+The [Kuksa Python SDK](https://github.com/eclipse-kuksa/kuksa-python-sdk) can be used to verify that data actually is correctly interpreted.
 
 ```
 Test Client> getValue Vehicle.CurrentLocation.Latitude

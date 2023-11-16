@@ -100,7 +100,7 @@ as the [Dockerfile](../kuksa-val-server/docker/Dockerfile) specifies that the de
 
 ## KUKSA.val Client (command line)
 
-See [KUKSA.val Client Documentation](../kuksa-client/README.md).
+See [KUKSA Python SDK](https://github.com/eclipse-kuksa/kuksa-python-sdk).
 
 ## KUKSA.val Client (library)
 

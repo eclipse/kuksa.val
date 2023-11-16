@@ -41,9 +41,9 @@ By default, the mqtt flows will be configured in node-red. You can also use the 
 
 Now you can view the example under [http://localhost:1880](http://localhost:1880/).
 
-<!-- markdown-link-check-enable --> 
+<!-- markdown-link-check-enable -->
 
-To test the example, you can use [Kuksa Client](../../kuksa-client) or use the [gps feeder](https://github.com/eclipse/kuksa.val.feeders/tree/main/gps2val).
+To test the example, you can use [Kuksa Python SDK Client](https://github.com/eclipse-kuksa/kuksa-python-sdk) or use the [gps feeder](https://github.com/eclipse/kuksa.val.feeders/tree/main/gps2val).
 In [`feeders.yml`](./feeders.yml), you can find the experimental [config](kuksa_config/gpsd_feeder.ini) for gps feeder container. You use the following command to also start containers of feeders:
 
 ```
