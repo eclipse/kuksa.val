@@ -40,7 +40,7 @@ An alternative is the kuksa-client CLI (based on our Python client library).
 Here is how you start it:
 
 ```
-docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/kuksa-client:master
+docker run -it --rm --net=host ghcr.io/eclipse-kuksa/kuksa-python-sdk/kuksa-client:main
 ```
 
 Here is how you can use it:
@@ -138,7 +138,7 @@ docker run -it --rm --net=host -e KUKSA_DATA_BROKER_PORT=55556 ghcr.io/eclipse/k
 Using kuksa-client CLI
 
 ```
-docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/kuksa-client:master grpc://127.0.0.1:55556
+docker run -it --rm --net=host ghcr.io/eclipse-kuksa/kuksa-python-sdk/kuksa-client:main grpc://127.0.0.1:55556
 ```
 
 ### Docker desktop: Host networking not supported
