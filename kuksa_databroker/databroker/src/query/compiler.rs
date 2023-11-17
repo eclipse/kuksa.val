@@ -347,7 +347,6 @@ pub fn compile_expr(
             };
             if let Some(select) = select_statement {
                 let compiled_query = compile_select_statement(&select, input);
-                println!("{:?}", compiled_query);
                 match compiled_query {
                     Ok(compiled_query) => {
                         output.subquery.push(compiled_query);
