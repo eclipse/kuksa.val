@@ -675,6 +675,12 @@ using {'KUKSA GRPC' if config['protocol'] == 'grpc' else 'VISS' } protocol."
 
 
 def main():
+    print(("⚠️ ⚠️ ⚠️  KUKSA client has moved. "
+          "You are using code from an old location that will not be updated anymore. ⚠️ ⚠️ ⚠️"))
+    print("🛠  The current source can be found at https://github.com/eclipse-kuksa/kuksa-python-sdk")
+    print(("💻  Up to date containers for kuksa-client are published at "
+           "ghcr.io/eclipse-kuksa/kuksa-python-sdk/kuksa-client"))
+    print("🐍  PyPI package remains at https://pypi.org/project/kuksa-client/")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "server",
