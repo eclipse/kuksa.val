@@ -173,7 +173,7 @@ docker run --rm -it -p 55555:55555 ghcr.io/eclipse/kuksa.val/databroker:master -
 
 Internally, databroker knows different change types for VSS signals. There are three change-types
 
- - **Continuos**: This are usually sensor values that are continuos, such as vehicle speed. Whenever a continuos signal is updated by a provider, all subscribers are notified.
+ - **Continuous**: This are usually sensor values that are continuous, such as vehicle speed. Whenever a continuous signal is updated by a provider, all subscribers are notified.
  - **OnChange**: This are usually signals that indicate a state, for example whether a door is open or closed. Even if this data is updated regularly by a provider, subscribers are only notified if the the value actually changed.
  - **Static**: This are signals that you would not expect to change during one ignition cycle, i.e. if an application reads it once, it could expect this signal to remain static during the runtime of the application. The VIN might be an example for a static signal. Currently, in the implementation subscribing `static` signals behaves exactly the same as `onchange` signals.
 
@@ -183,10 +183,10 @@ Up until version 0.4.1 (including)
  - All signals where registered as **OnChange**
 
 Starting from version 0.4.2, if nothing else is specified
- - All signals that are of VSS type `sensor` or `actuator` are registered as change type `continuos`
+ - All signals that are of VSS type `sensor` or `actuator` are registered as change type `continuous`
  - All attributes are registered as change type `static`
 
-VSS itself has no concept of change types, but you can explicitly configure this behavior on vss level with the custom extended attribute `x-kuksa-changetype`, where valid values are `continuos`, `onchange`, `static`.
+VSS itself has no concept of change types, but you can explicitly configure this behavior on vss level with the custom extended attribute `x-kuksa-changetype`, where valid values are `continuous`, `onchange`, `static`.
 
 Check these `.vspec` snippets as example
 
@@ -201,7 +201,7 @@ Vehicle.Speed:
   datatype: float
   type: sensor
   unit: km/h
-  x-kuksa-changetype: continuos
+  x-kuksa-changetype: continuous
   description: Vehicle speed.
 
 Vehicle.Cabin.Door.Row1.Left.IsOpen:
@@ -211,7 +211,7 @@ Vehicle.Cabin.Door.Row1.Left.IsOpen:
   description: Is door open or closed
 ```
 
-The change types currently apply on *current* values, when subscribing to a *target value*, as an actuation provider would do, any set on the target value is propagated just like in `continuos` mode, even if a datapoint (and thus its current value behavior) is set to `onchange` or `static`. The idea here is, that a "set" by an application is the intent to actuate something (maybe a retry even), and should thus always be forwarded to the provider.
+The change types currently apply on *current* values, when subscribing to a *target value*, as an actuation provider would do, any set on the target value is propagated just like in `continuous` mode, even if a datapoint (and thus its current value behavior) is set to `onchange` or `static`. The idea here is, that a "set" by an application is the intent to actuate something (maybe a retry even), and should thus always be forwarded to the provider.
 
 
 ## Configuration Reference
