@@ -1,0 +1,135 @@
+# This is a configuration for ORT - the OSS Review toolkit
+# https://oss-review-toolkit.org/ort/
+#
+# This is currently scoped to scan databroker. Test and build
+# dependencies, examples  and val-server components are excluded
+# This should contain everything that will end up in our released
+# databroker containers.
+analyzer:
+  skip_excluded: true
+excludes:
+  scopes:
+  - pattern: "build-dependencies"
+    reason: "BUILD_DEPENDENCY_OF"
+    comment: "Packages only required during build"
+  - pattern: "dev-dependencies"
+    reason: "DEV_DEPENDENCY_OF"
+    comment: "Packages required for testing"
+  paths:
+  - pattern: "doc/**"
+    reason: "DOCUMENTATION_OF"
+    comment: "Not in release artifacts"
+  - pattern: "NOTICE.md"
+    reason: "OTHER"
+    comment: "We don't trust NOTICE, we scan"
+  - pattern: "kuksa-val-server/**"
+    reason: "OTHER"
+    comment: "Not part of databroker. Not in release artifact"
+  - pattern: "kuksa_apps/**"
+    reason: "OTHER"
+    comment: "Not part of databroker. Not in release artifact"
+  - pattern: "kuksa_go_client/**"
+    reason: "OTHER"
+    comment: "Not part of databroker. Not in release artifact"
+  - pattern: "test/**"
+    reason: "OTHER"
+    comment: "Not part of databroker. Not in release artifact"
+  - pattern: "kuksa_databroker/integration_test/**"
+    reason: "TEST_TOOL_OF"
+    comment: "Test only"
+  - pattern: "**/test-requirements.txt"
+    reason: "TEST_TOOL_OF"
+    comment: "Test only. Scope not working for Py"
+license_choices:
+  repository_license_choices:
+  - given: "OpenSSL OR BSD-3-Clause OR GPL-1.0-or-later"
+    choice: "BSD-3-Clause"
+  - given: "OpenSSL OR BSD-3-Clause OR GPL-1.0-or-later OR GPL-2.0-only"
+    choice: "BSD-3-Clause"
+  - given: "(Apache-2.0 OR MS-PL) AND MIT"
+    choice: "Apache-2.0 AND MIT"
+  - given: "Apache-2.0 AND (Apache-2.0 OR MS-PL) AND MIT"
+    choice: "Apache-2.0 AND MIT"
+  - given: "(Apache-2.0 AND MIT) OR (MIT AND MS-PL)"
+    choice: "Apache-2.0 AND MIT"
+  - given: "(Apache-2.0 AND MIT) OR (Apache-2.0 AND MIT AND MS-PL)"
+    choice: "Apache-2.0 AND MIT"
+  - given: "MIT OR GPL-2.0-only"
+    choice: "MIT"
+  - given: "Apache-2.0 AND ISC AND BSD-3-Clause AND LicenseRef-scancode-ssleay-windows\
+      \ AND LicenseRef-scancode-openssl AND NTP AND Zlib AND LicenseRef-scancode-public-domain\
+      \ AND MPL-2.0 AND LicenseRef-scancode-x11-lucent AND Apache-2.0 WITH LLVM-exception\
+      \ AND BSD-2-Clause AND LicenseRef-scancode-info-zip-2001-01 AND LicenseRef-scancode-openssl-nokia-psk-contribution\
+      \ AND (LicenseRef-scancode-openssl OR BSD-3-Clause OR GPL-2.0-only)"
+    choice: "Apache-2.0 AND ISC AND BSD-3-Clause AND LicenseRef-scancode-ssleay-windows\
+      \ AND LicenseRef-scancode-openssl AND NTP AND Zlib AND LicenseRef-scancode-public-domain\
+      \ AND MPL-2.0 AND LicenseRef-scancode-x11-lucent AND Apache-2.0 WITH LLVM-exception\
+      \ AND BSD-2-Clause AND LicenseRef-scancode-info-zip-2001-01 AND LicenseRef-scancode-openssl-nokia-psk-contribution"
+
+curations:
+  packages:
+    - id: "Crate::windows"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/windows
+        concluded_license: "MIT OR Apache-2.0"
+    - id: "Crate::windows_aarch64_msvc"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/windows
+        concluded_license: "MIT OR Apache-2.0"
+    - id: "Crate::windows_i686_msvc"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/windows
+        concluded_license: "MIT OR Apache-2.0"
+    - id: "Crate::windows_x86_64_msvc"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/windows
+        concluded_license: "MIT OR Apache-2.0"
+    - id: "Crate::rand_core"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/rand_core
+        concluded_license: "MIT OR Apache-2.0"
+    - id: "Crate::nix"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/nix
+        concluded_license: "MIT"
+    - id: "Crate::ureq"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/ureq
+        concluded_license: "MIT OR Apache-2.0"
+    - id: "Crate::web-sys"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/web-sys
+        concluded_license: "MIT OR Apache-2.0"
+    - id: "Crate::ryu"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/ryu
+        concluded_license: "Apache-2.0 OR BSL-1.0"
+    - id: "Crate::num-bigint"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/num-bigint . Scanned and approved https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/11390
+        concluded_license: "MIT OR Apache-2.0"
+    - id: "Crate::os_str_bytes"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/os_str_bytes. 87 Clearlydefined.io score  for MIT APACHE-2.0
+        concluded_license: "MIT OR Apache-2.0"
+    - id: "Crate::os_str_bytes:6.4.1"
+      curations:
+        comment: >-
+          License information as per https://crates.io/crates/os_str_bytes. 87 Clearlydefined.io score  for MIT APACHE-2.0
+        concluded_license: "MIT OR Apache-2.0"
+    - id: "PyPI::setuptools"
+      curations:
+        comment: >-
+          License information as per https://pypi.org/project/setuptools/ . The detected GPL is a false positive from an EXAMPLE in Readme.
+        concluded_license: "MIT"
