@@ -12,16 +12,14 @@
  ********************************************************************************/
 
 use core::panic;
-use std::{future, time::SystemTime, vec, collections::HashMap};
+use std::{collections::HashMap, future, time::SystemTime, vec};
 
 use common::ClientError;
 use cucumber::{cli, gherkin::Step, given, then, when, writer, World as _};
 use databroker::broker;
-use databroker_proto::kuksa::val::v1::{
-    datapoint::Value, DataType, Datapoint,
-};
-use tracing::debug;
+use databroker_proto::kuksa::val::v1::{datapoint::Value, DataType, Datapoint};
 use tonic::Code;
+use tracing::debug;
 use world::{DataBrokerWorld, ValueType};
 
 mod world;
@@ -78,7 +76,8 @@ fn get_data_entries_from_table(
 
 #[given(regex = "^a running Databroker server with authorization (true|false).*$")]
 async fn start_databroker_server(w: &mut DataBrokerWorld, auth: bool, step: &Step) {
-    w.start_databroker(get_data_entries_from_table(step), auth).await;
+    w.start_databroker(get_data_entries_from_table(step), auth)
+        .await;
     assert!(w.broker_client.is_some())
 }
 
@@ -96,27 +95,27 @@ async fn a_known_data_entry_has_value(
     w.assert_set_succeeded()
 }
 
-#[when(expr = "a client sets the {word} value of {word} of type {word} to {word} with token {word}")]
+#[when(
+    expr = "a client sets the {word} value of {word} of type {word} to {word} with token {word}"
+)]
 async fn set_value(
     w: &mut DataBrokerWorld,
     value_type: ValueType,
     path: String,
     data_type: DataType,
     value: String,
-    token: String
+    token: String,
 ) {
     let client = w
         .broker_client
         .as_mut()
-        .and_then(|client|
-            match client.basic_client.set_access_token(token){
-                Ok(()) => Some(client),
-                Err(e) => {
-                    println!("Error: {e}");
-                    None
-                }
+        .and_then(|client| match client.basic_client.set_access_token(token) {
+            Ok(()) => Some(client),
+            Err(e) => {
+                println!("Error: {e}");
+                None
             }
-        )
+        })
         .expect("no Databroker client available, broker not started?");
     let value = Value::new(data_type, value.as_str()).expect("cannot parse value into given type");
     let datapoint = Datapoint {
@@ -124,9 +123,12 @@ async fn set_value(
         value: Some(value),
     };
 
-    match value_type{
+    match value_type {
         ValueType::Target => {
-            match client.set_target_values(HashMap::from([(path.clone(), datapoint.clone())])).await {
+            match client
+                .set_target_values(HashMap::from([(path.clone(), datapoint.clone())]))
+                .await
+            {
                 Ok(_) => {
                     w.current_client_error = None;
                 }
@@ -135,9 +137,12 @@ async fn set_value(
                     w.current_client_error = Some(e);
                 }
             }
-        },
+        }
         ValueType::Current => {
-            match client.set_current_values(HashMap::from([(path.clone(), datapoint.clone())])).await {
+            match client
+                .set_current_values(HashMap::from([(path.clone(), datapoint.clone())]))
+                .await
+            {
                 Ok(_) => {
                     w.current_client_error = None;
                 }
@@ -155,35 +160,29 @@ async fn get_value(w: &mut DataBrokerWorld, value_type: ValueType, path: String,
     let client = w
         .broker_client
         .as_mut()
-        .and_then(|client|
-            match client.basic_client.set_access_token(token){
-                Ok(()) => Some(client),
-                Err(e) => {
-                    println!("Error: {e}");
-                    None
-                }
+        .and_then(|client| match client.basic_client.set_access_token(token) {
+            Ok(()) => Some(client),
+            Err(e) => {
+                println!("Error: {e}");
+                None
             }
-        )
+        })
         .expect("no Databroker client available, broker not started?");
-    match value_type{
-        ValueType::Target => {
-            match client.get_target_values(vec![&path,]).await {
-                Ok(res) => w.current_data_entries = Some(res),
-                Err(e) => {
-                    debug!("failed to invoke Databroker's get operation: {:?}", e);
-                    w.current_client_error = Some(e);
-                }
+    match value_type {
+        ValueType::Target => match client.get_target_values(vec![&path]).await {
+            Ok(res) => w.current_data_entries = Some(res),
+            Err(e) => {
+                debug!("failed to invoke Databroker's get operation: {:?}", e);
+                w.current_client_error = Some(e);
             }
         },
-        ValueType::Current => {
-            match client.get_current_values(vec![path,]).await {
-                Ok(res) => w.current_data_entries = Some(res),
-                Err(e) => {
-                    debug!("failed to invoke Databroker's get operation: {:?}", e);
-                    w.current_client_error = Some(e);
-                }
+        ValueType::Current => match client.get_current_values(vec![path]).await {
+            Ok(res) => w.current_data_entries = Some(res),
+            Err(e) => {
+                debug!("failed to invoke Databroker's get operation: {:?}", e);
+                w.current_client_error = Some(e);
             }
-        }
+        },
     }
 }
 
@@ -252,10 +251,12 @@ fn assert_request_failure(w: &mut DataBrokerWorld, expected_status_code: i32) {
 #[then(expr = "the current value for {word} can not be accessed because we are unauthorized")]
 fn assert_current_value_unauthenticated(w: &mut DataBrokerWorld) {
     if let Some(error) = w.current_client_error.clone() {
-        match error{
-            ClientError::Connection(e) => assert!(false, "No connection error {:?} should occcur", e),
-            ClientError::Function(e) => assert!(false, "No function error {:?} should occur", e),
-            ClientError::Status(status) => assert_eq!(status.code(), Code::Unauthenticated)
+        match error {
+            ClientError::Connection(e) => {
+                panic!("No connection error {:?} should occcur", e)
+            }
+            ClientError::Function(e) => panic!("No function error {:?} should occur", e),
+            ClientError::Status(status) => assert_eq!(status.code(), Code::Unauthenticated),
         }
     }
 }
