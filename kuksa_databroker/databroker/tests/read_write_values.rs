@@ -14,11 +14,9 @@
 use core::panic;
 use std::{collections::HashMap, future, time::SystemTime, vec};
 
-use common::ClientError;
 use cucumber::{cli, gherkin::Step, given, then, when, writer, World as _};
 use databroker::broker;
 use databroker_proto::kuksa::val::v1::{datapoint::Value, DataType, Datapoint};
-use tonic::Code;
 use tracing::debug;
 use world::{DataBrokerWorld, ValueType};
 
@@ -74,9 +72,18 @@ fn get_data_entries_from_table(
     data_entries
 }
 
-#[given(regex = "^a running Databroker server with authorization (true|false).*$")]
-async fn start_databroker_server(w: &mut DataBrokerWorld, auth: bool, step: &Step) {
-    w.start_databroker(get_data_entries_from_table(step), auth)
+#[given(regex = "^a running Databroker server with authorization (enabled|disabled).*$")]
+async fn start_databroker_server(w: &mut DataBrokerWorld, auth: String, step: &Step) {
+    let authorization_enabled: bool;
+    if auth == "enabled" {
+        authorization_enabled = true;
+    } else if auth == "disabled" {
+        authorization_enabled = false;
+    } else {
+        panic!("Not a known authorization keyword use enabled/disabled!")
+    }
+
+    w.start_databroker(get_data_entries_from_table(step), authorization_enabled)
         .await;
     assert!(w.broker_client.is_some())
 }
@@ -93,7 +100,7 @@ async fn a_known_data_entry_has_value(
     w.assert_set_succeeded()
 }
 
-#[when(expr = "a client uses a token with auhtorization {word}")]
+#[when(expr = "a client uses a token with scope {word}")]
 async fn authorize_client(w: &mut DataBrokerWorld, scope: String) {
     let token = w.create_token(scope);
     w.broker_client
@@ -244,20 +251,7 @@ fn assert_request_failure(w: &mut DataBrokerWorld, expected_status_code: i32) {
     w.assert_status_has_code(expected_status_code)
 }
 
-#[then(expr = "the current value for {word} can not be accessed because we are unauthorized")]
-fn assert_current_value_unauthenticated(w: &mut DataBrokerWorld) {
-    if let Some(error) = w.current_client_error.clone() {
-        match error {
-            ClientError::Connection(e) => {
-                panic!("No connection error {:?} should occcur", e)
-            }
-            ClientError::Function(e) => panic!("No function error {:?} should occur", e),
-            ClientError::Status(status) => assert_eq!(status.code(), Code::Unauthenticated),
-        }
-    }
-}
-
-#[then(expr = "the set operation succeeds without an error")]
+#[then(expr = "the set operation succeeds")]
 fn assert_set_succeeds(w: &mut DataBrokerWorld) {
     w.assert_set_succeeded()
 }
