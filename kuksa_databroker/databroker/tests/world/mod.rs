@@ -371,7 +371,7 @@ impl DataBrokerWorld {
         }
     }
 
-    pub fn create_token(&self, _scope: String) -> String {
+    pub fn create_token(&self, scope: String) -> String {
         let datetime = Utc::now();
         let timestamp = datetime.timestamp();
         let timestamp_exp = (match datetime.checked_add_months(chrono::Months::new(24)) {
@@ -386,7 +386,7 @@ impl DataBrokerWorld {
             aud: vec!["kuksa.val".to_string()],
             iat: timestamp,
             exp: timestamp_exp,
-            scope: _scope,
+            scope,
         };
 
         // Create an encoding key from the private key

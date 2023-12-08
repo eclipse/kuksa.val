@@ -3,63 +3,63 @@ Feature: Reading and writing values of a VSS Data Entry
   Rule: Access with right permissions succeeds and fails with wrong/no permissions
 
     Background:
-      Given a running Databroker server with authorization true with the following Data Entries registered
+      Given a running Databroker server with authorization enabled with the following Data Entries registered
         | path                                    | data type | change type | type      |
         | Vehicle.Speed                           | float     | Static      | Sensor    |
         | Vehicle.ADAS.ABS.IsEnabled              | bool      | Static      | Actuator  |
 
-    Scenario: Write the current value of an unset Data Entry without authenticating fails
+    Scenario: Writing the current value of an unset Data Entry without authenticating fails
       When a client sets the current value of Vehicle.Width of type float to 13.4
-      Then the current value for Vehicle.Width can not be accessed because we are unauthorized
+       Then the operation fails with status code 16
 
     Scenario: Read the current value of an unset Data Entry without authenticating fails
       When a client gets the current value of Vehicle.Width
-      Then the current value for Vehicle.Width can not be accessed because we are unauthorized
+       Then the operation fails with status code 16
 
-    Scenario: Write the current value of a Data Entry without right permissions fails
-      When a client uses a token with auhtorization read
+    Scenario: Writing the current value of a Data Entry without right permissions fails
+      When a client uses a token with scope read
       And a client sets the current value of Vehicle.Speed of type float to 13.4
       Then setting the value for Vehicle.Speed fails with error code 403
 
-    Scenario: Write the current value of a Data Entry without right permissions fails
-      When a client uses a token with auhtorization actuate
+    Scenario: Writing the current value of a Data Entry without right permissions fails
+      When a client uses a token with scope actuate
       And a client sets the current value of Vehicle.Speed of type float to 13.4
       Then setting the value for Vehicle.Speed fails with error code 403
 
-    Scenario: Write the current value of a Data Entry without right permissions fails
-      When a client uses a token with auhtorization provide:Vehicle.ADAS.ABS.IsEnabled
+    Scenario: Writing the current value of a Data Entry without right permissions fails
+      When a client uses a token with scope provide:Vehicle.ADAS.ABS.IsEnabled
       And a client sets the current value of Vehicle.Speed of type float to 13.4
       Then setting the value for Vehicle.Speed fails with error code 403
 
-    Scenario: Write the current value of a Data Entry with right permissions succeeds
-      When a client uses a token with auhtorization provide:Vehicle.Speed
+    Scenario: Writing the current value of a Data Entry with right permissions succeeds
+      When a client uses a token with scope provide:Vehicle.Speed
       And a client sets the current value of Vehicle.Speed of type float to 13.4
-      Then the set operation succeeds without an error
+      Then the set operation succeeds
 
-    Scenario: Write the target value of a Data Entry without right permissions fails
-      When a client uses a token with auhtorization read
+    Scenario: Writing the target value of a Data Entry without right permissions fails
+      When a client uses a token with scope read
       And a client sets the target value of Vehicle.ADAS.ABS.IsEnabled of type bool to true
       Then setting the value for Vehicle.Speed fails with error code 403
 
-    Scenario: Write the target value of a Data Entry without right permissions fails
-      When a client uses a token with auhtorization provide
+    Scenario: Writing the target value of a Data Entry without right permissions fails
+      When a client uses a token with scope provide
       And a client sets the target value of Vehicle.ADAS.ABS.IsEnabled of type bool to true
       Then setting the value for Vehicle.Speed fails with error code 403
 
-    Scenario: Write the target value of a Data Entry without right permissions fails
-      When a client uses a token with auhtorization actuate:Vehicle.Speed
+    Scenario: Writing the target value of a Data Entry without right permissions fails
+      When a client uses a token with scope actuate:Vehicle.Speed
       And a client sets the target value of Vehicle.ADAS.ABS.IsEnabled of type bool to true
       Then setting the value for Vehicle.Speed fails with error code 403
 
-    Scenario: Write the target value of a Data Entry with right permissions succeeds
-      When a client uses a token with auhtorization actuate:Vehicle.ADAS.ABS.IsEnabled
+    Scenario: Writing the target value of a Data Entry with right permissions succeeds
+      When a client uses a token with scope actuate:Vehicle.ADAS.ABS.IsEnabled
       And a client sets the target value of Vehicle.ADAS.ABS.IsEnabled of type bool to true
-      Then the set operation succeeds without an error
+      Then the set operation succeeds
 
   Rule: Accessing unregistered Data Entries fails
 
     Background:
-      Given a running Databroker server with authorization false
+      Given a running Databroker server with authorization disabled
 
     Scenario: Setting the current value of an unregistered Data Entry fails
       When a client sets the current value of No.Such.Path of type float to 13.4
@@ -80,7 +80,7 @@ Feature: Reading and writing values of a VSS Data Entry
   Rule: Target values can only be set on Actuators
 
     Background:
-      Given a running Databroker server with authorization false with the following Data Entries registered
+      Given a running Databroker server with authorization disabled with the following Data Entries registered
         | path                                    | data type | change type | type      |
         | Vehicle.Powertrain.Range                | uint32    | Continuous  | Sensor    |
         | Vehicle.Width                           | uint16    | Static      | Attribute |
@@ -96,7 +96,7 @@ Feature: Reading and writing values of a VSS Data Entry
   Rule: Accessing registered Data Entries works
 
     Background:
-      Given a running Databroker server with authorization false with the following Data Entries registered
+      Given a running Databroker server with authorization disabled with the following Data Entries registered
         | path                                    | data type | change type | type      |
         | Vehicle.Cabin.Lights.AmbientLight       | uint8     | OnChange    | Actuator  |
         | Vehicle.Cabin.Sunroof.Position          | int8      | OnChange    | Actuator  |
