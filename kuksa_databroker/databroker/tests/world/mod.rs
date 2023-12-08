@@ -19,6 +19,9 @@ use std::{
     task::{Poll, Waker},
 };
 
+use chrono::Utc;
+use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
+
 use common::ClientError;
 use databroker_proto::kuksa::val::v1::{datapoint::Value, DataEntry};
 
@@ -55,6 +58,16 @@ pub enum ValueType {
     Target,
 }
 
+#[derive(Debug, serde::Serialize)]
+struct Token {
+    sub: String,
+    iss: String,
+    aud: Vec<String>,
+    iat: i64,
+    exp: i64,
+    scope: String,
+}
+
 impl FromStr for ValueType {
     type Err = String;
 
@@ -71,6 +84,8 @@ impl FromStr for ValueType {
 pub struct DataBrokerCertificates {
     server_identity: Identity,
     ca_certs: Certificate,
+    private_key: String,
+    public_key: String,
 }
 
 #[cfg(feature = "tls")]
@@ -87,9 +102,17 @@ impl DataBrokerCertificates {
         let ca_file = format!("{cert_dir}/CA.pem");
         let ca_store = std::fs::read(ca_file).expect("could not read root CA file");
         let ca_certs = Certificate::from_pem(ca_store);
+        let private_key_file = format!("{cert_dir}/jwt/jwt.key");
+        let private_key: String =
+            std::fs::read_to_string(private_key_file).expect("could not read private key file");
+        let public_key_file = format!("{cert_dir}/jwt/jwt.key.pub");
+        let public_key: String =
+            std::fs::read_to_string(public_key_file).expect("could not read public key file");
         DataBrokerCertificates {
             server_identity,
             ca_certs,
+            private_key,
+            public_key,
         }
     }
 
@@ -197,10 +220,10 @@ impl DataBrokerWorld {
 
             if authorization_enabled {
                 // public key comes from kuksa.val/kuksa_certificates/jwt/jwt.key.pub
-                match databroker::authorization::Authorization::new("-----BEGIN PUBLIC KEY----- MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA6ScE9EKXEWVyYhzfhfvg+LC8NseiuEjfrdFx3HKkb31bRw/SeS0Rye0KDP7uzffwreKf6wWYGxVUPYmyKC7jPji5MpDBGM9r3pIZSvPUFdpTE5TiRHFBxWbqPSYt954BTLq4rMu/W+oq5PdfnugbvoYpLf0dclBl1g9KyszkDnItz3TYbWhGMbsUSfyeSPzH0IADzLoifxbc5mgiR73NCA/4yNSpfLoqWgQ2vdTM1182sMSmxfqSgMzIMUX/tiaXGdkoKITF1sULlLyWfTo979XRZ0hmUwvfzr3OjMZNoClpYSVbKY+vtxHyux9KOOtv9lPMsgYIaPXvisrsneDZfCS0afOfjgR96uHIe2UPSGAXru3yGziqEfpRZoxsgXaOe905ordLD5bSX14xkN7NCz7rxDLlxPQyxp4Vhog7p/QeUyydBpZjq2bAE5GAJtiu+XGvG8RypzJFKFQwMNswg1BoZVD0mb0MtU8KQmHcZIfY0FVer/CR0mUjfl1rHbtoJB+RY03lQvYNAD04ibAGNI1RhlTziu35Xo6NDEgs9hVs9k3WrtF+ZUxhivWmP2VXhWruRakVkC1NzKGh54e5/KlluFbBNpWgvWZqzWo9Jr7/fzHtR0Q0IZwkxh+Vd/bUZya1uLKqP+sTcc+aTHbnAEiqOjPq0D6X45wCzIwjILUCAwEAAQ== -----END PUBLIC KEY-----".to_string()){
-                        Ok(auth) => _authorization = auth,
-                        Err(e) => println!("Error: {e}"),
-                    }
+                match databroker::authorization::Authorization::new(CERTS.public_key.clone()) {
+                    Ok(auth) => _authorization = auth,
+                    Err(e) => println!("Error: {e}"),
+                }
             }
 
             grpc::server::serve_with_incoming_shutdown(
@@ -346,5 +369,32 @@ impl DataBrokerWorld {
                 }
             }
         }
+    }
+
+    pub fn create_token(&self, _scope: String) -> String {
+        let datetime = Utc::now();
+        let timestamp = datetime.timestamp();
+        let timestamp_exp = (match datetime.checked_add_months(chrono::Months::new(24)) {
+            None => panic!("couldn't add 2 years"),
+            Some(date) => date,
+        })
+        .timestamp();
+        // Your payload as a Rust struct or any serializable type
+        let payload = Token {
+            sub: "test dev".to_string(),
+            iss: "integration test instance".to_string(),
+            aud: vec!["kuksa.val".to_string()],
+            iat: timestamp,
+            exp: timestamp_exp,
+            scope: _scope,
+        };
+
+        // Create an encoding key from the private key
+        let encoding_key = EncodingKey::from_rsa_pem(CERTS.private_key.clone().as_bytes())
+            .expect("Failed to create encoding key");
+
+        // Encode the payload using RS256 algorithm
+        encode(&Header::new(Algorithm::RS256), &payload, &encoding_key)
+            .expect("Failed to encode JWT")
     }
 }

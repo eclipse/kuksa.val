@@ -89,25 +89,14 @@ async fn a_known_data_entry_has_value(
     value_type: ValueType,
     value: String,
 ) {
-    // comes from jwt/actuate-provide-all.token and is expiring 31st of December 2025
-    let token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE3NjcyMjU1OTksInNjb3BlIjoiYWN0dWF0ZSBwcm92aWRlIn0.x-bUZwDCC663wGYrWCYjQZwQWhN1CMuKgxuIN5dUF_izwMutiqF6Xc-tnXgZa93BbT3I74WOMk4awKHBUSTWekGs3-qF6gajorbat6n5180TOqvNu4CXuIPZN5zpngf4id3smMkKOT699tPnSEbmlkj4vk-mIjeOAU-FcYA-VbkKBTsjvfFgKa2OdB5h9uZARBg5Rx7uBN3JsH1I6j9zoLid184Ewa6bhU2qniFt5iPsGJniNsKsRrrndN1KzthO13My44s56yvwSHIOrgDGbXdja_eLuOVOq9pHCjCtorPScgEuUUE4aldIuML-_j397taNP9Y3VZYVvofEK7AuiePTbzwxrZ1RAjK74h1-4ued3A2gUTjr5BsRlc9b7eLZzxLJkrqdfGAzBh_rtrB7p32TbvpjeFP30NW6bB9JS43XACUUm_S_RcyI7BLuUdnFyQDQr6l6sRz9XayYXceilHdCxbAVN0HVnBeui5Bb0mUZYIRZeY8k6zcssmokANTD8ZviDMpKlOU3t5AlXJ0nLkgyMhV9IUTwPUv6F8BTPc-CquJCUNbTyo4ywTSoODWbm3PmQ3Y46gWF06xqnB4wehLscBdVk3iAihQp3tckGhMnx5PI_Oy7utIncr4pRCMos63TnBkfrl7d43cHQTuK0kO76EWtv4ODEHgLvEAv4HA";
-    set_value(w, value_type, path, data_type, value, token.to_string()).await;
+    set_value(w, value_type, path, data_type, value).await;
     w.assert_set_succeeded()
 }
 
-#[when(
-    expr = "a client sets the {word} value of {word} of type {word} to {word} with token {word}"
-)]
-async fn set_value(
-    w: &mut DataBrokerWorld,
-    value_type: ValueType,
-    path: String,
-    data_type: DataType,
-    value: String,
-    token: String,
-) {
-    let client = w
-        .broker_client
+#[when(expr = "a client uses a token with auhtorization {word}")]
+async fn authorize_client(w: &mut DataBrokerWorld, scope: String) {
+    let token = w.create_token(scope);
+    w.broker_client
         .as_mut()
         .and_then(|client| match client.basic_client.set_access_token(token) {
             Ok(()) => Some(client),
@@ -116,6 +105,20 @@ async fn set_value(
                 None
             }
         })
+        .expect("no Databroker client available, broker not started?");
+}
+
+#[when(expr = "a client sets the {word} value of {word} of type {word} to {word}")]
+async fn set_value(
+    w: &mut DataBrokerWorld,
+    value_type: ValueType,
+    path: String,
+    data_type: DataType,
+    value: String,
+) {
+    let client = w
+        .broker_client
+        .as_mut()
         .expect("no Databroker client available, broker not started?");
     let value = Value::new(data_type, value.as_str()).expect("cannot parse value into given type");
     let datapoint = Datapoint {
@@ -155,18 +158,11 @@ async fn set_value(
     }
 }
 
-#[when(expr = "a client gets the {word} value of {word} with token {word}")]
-async fn get_value(w: &mut DataBrokerWorld, value_type: ValueType, path: String, token: String) {
+#[when(expr = "a client gets the {word} value of {word}")]
+async fn get_value(w: &mut DataBrokerWorld, value_type: ValueType, path: String) {
     let client = w
         .broker_client
         .as_mut()
-        .and_then(|client| match client.basic_client.set_access_token(token) {
-            Ok(()) => Some(client),
-            Err(e) => {
-                println!("Error: {e}");
-                None
-            }
-        })
         .expect("no Databroker client available, broker not started?");
     match value_type {
         ValueType::Target => match client.get_target_values(vec![&path]).await {
