@@ -13,7 +13,7 @@
 
 use std::collections::HashMap;
 
-use common::{Client, ClientError};
+use sdk_common::{Client, ClientError};
 use databroker_proto::sdv::databroker as proto;
 use http::Uri;
 

@@ -22,7 +22,7 @@ use std::{
 use chrono::Utc;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 
-use common::ClientError;
+use sdk_common::ClientError;
 use databroker_proto::kuksa::val::v1::{datapoint::Value, DataEntry};
 
 use databroker::{
@@ -140,7 +140,7 @@ struct DataBrokerState {
 pub struct DataBrokerWorld {
     pub current_data_entries: Option<Vec<DataEntry>>,
     pub current_client_error: Option<ClientError>,
-    pub broker_client: Option<kuksa::KuksaClient>,
+    pub broker_client: Option<sdk_kuksa::KuksaClient>,
     data_broker_state: Arc<Mutex<DataBrokerState>>,
 }
 
@@ -267,8 +267,8 @@ impl DataBrokerWorld {
 
         let data_broker_url = format!("http://{}:{}", addr.ip(), addr.port());
 
-        self.broker_client = match common::to_uri(data_broker_url.clone()) {
-            Ok(uri) => Some(kuksa::KuksaClient::new(uri)),
+        self.broker_client = match sdk_common::to_uri(data_broker_url.clone()) {
+            Ok(uri) => Some(sdk_kuksa::KuksaClient::new(uri)),
             Err(e) => {
                 println!("Error connecting to {data_broker_url}: {e}");
                 None

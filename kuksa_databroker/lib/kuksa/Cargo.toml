@@ -12,14 +12,14 @@
 #*******************************************************************************/
 
 [package]
-name = "kuksa"
+name = "sdk-kuksa"
 version = "0.1.0"
 authors = ["Eclipse KUKSA Project"]
 edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-common = { path = "../."}
+sdk-common = { path = "../."}
 databroker-proto = { workspace = true }
 tonic = { workspace = true, features = ["transport", "channel"] }
 tokio = { workspace = true, features = [
@@ -29,7 +29,7 @@ tokio-stream = { workspace = true, features = ["sync"] }
 http = "0.2.8"
 
 [lib]
-name = "kuksa"
+name = "sdk_kuksa"
 crate-type = ["lib"]
 path = "src/client.rs"
 

@@ -408,17 +408,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
-name = "common"
-version = "0.1.0"
-dependencies = [
- "databroker-proto",
- "http",
- "tokio",
- "tokio-stream",
- "tonic",
-]
-
-[[package]]
 name = "console"
 version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -556,17 +545,17 @@ dependencies = [
  "axum",
  "chrono",
  "clap",
- "common",
  "cucumber",
  "databroker-proto",
  "futures",
  "jemallocator",
  "jsonwebtoken",
- "kuksa",
  "lazy_static",
  "prost",
  "prost-types",
  "regex",
+ "sdk-common",
+ "sdk-kuksa",
  "serde",
  "serde_json",
  "sqlparser",
@@ -586,15 +575,15 @@ version = "0.4.1"
 dependencies = [
  "ansi_term",
  "clap",
- "common",
  "databroker-proto",
  "http",
- "kuksa",
  "linefeed",
  "prost",
  "prost-types",
  "regex",
- "sdv",
+ "sdk-common",
+ "sdk-kuksa",
+ "sdk-sdv",
  "tokio",
  "tokio-stream",
  "tonic",
@@ -1724,18 +1713,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kuksa"
-version = "0.1.0"
-dependencies = [
- "common",
- "databroker-proto",
- "http",
- "tokio",
- "tokio-stream",
- "tonic",
-]
-
-[[package]]
 name = "lazy-regex"
 version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2509,12 +2486,35 @@ dependencies = [
 ]
 
 [[package]]
-name = "sdv"
+name = "sdk-common"
 version = "0.1.0"
 dependencies = [
- "common",
  "databroker-proto",
  "http",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
+name = "sdk-kuksa"
+version = "0.1.0"
+dependencies = [
+ "databroker-proto",
+ "http",
+ "sdk-common",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
+name = "sdk-sdv"
+version = "0.1.0"
+dependencies = [
+ "databroker-proto",
+ "http",
+ "sdk-common",
  "tokio",
  "tokio-stream",
  "tonic",
