@@ -13,9 +13,9 @@
 
 use std::collections::HashMap;
 
-use sdk_common::{Client, ClientError};
 use databroker_proto::sdv::databroker as proto;
 use http::Uri;
+use sdk_common::{Client, ClientError};
 
 pub struct SDVClient {
     pub basic_client: Client,
