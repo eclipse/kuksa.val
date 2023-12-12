@@ -12,7 +12,7 @@
 #*******************************************************************************/
 
 [package]
-name = "common"
+name = "sdk-common"
 version = "0.1.0"
 authors = ["Eclipse KUKSA Project"]
 edition = "2018"
@@ -28,7 +28,7 @@ tokio-stream = { workspace = true, features = ["sync"] }
 http = "0.2.8"
 
 [lib]
-name = "common"
+name = "sdk_common"
 crate-type = ["lib"]
 path = "common.rs"
 

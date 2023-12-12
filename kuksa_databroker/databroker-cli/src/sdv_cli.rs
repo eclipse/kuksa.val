@@ -12,7 +12,7 @@
 ********************************************************************************/
 
 use databroker_proto::sdv::databroker as proto;
-use sdv::*;
+use sdk_sdv::*;
 
 use prost_types::Timestamp;
 use tokio_stream::StreamExt;
@@ -83,7 +83,7 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
 
     cli::set_disconnected_prompt(&interface);
 
-    let mut client = SDVClient::new(common::to_uri(cli.get_server())?);
+    let mut client = SDVClient::new(sdk_common::to_uri(cli.get_server())?);
 
     if let Some(token_filename) = cli.get_token_file() {
         let token = std::fs::read_to_string(token_filename)?;
@@ -107,10 +107,10 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         while let Some(state) = connection_state_subscription.next().await {
             match state {
                 Ok(state) => match state {
-                    common::ConnectionState::Connected => {
+                    sdk_common::ConnectionState::Connected => {
                         cli::set_connected_prompt(&interface_ref, VERSION.to_string());
                     }
-                    common::ConnectionState::Disconnected => {
+                    sdk_common::ConnectionState::Disconnected => {
                         cli::set_disconnected_prompt(&interface_ref);
                     }
                 },
@@ -162,13 +162,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                 .set_completer(Arc::new(CliCompleter::from_metadata(&metadata)));
                             properties = metadata;
                         }
-                        Err(common::ClientError::Status(status)) => {
+                        Err(sdk_common::ClientError::Status(status)) => {
                             cli::print_resp_err("metadata", &status)?;
                         }
-                        Err(common::ClientError::Connection(msg)) => {
+                        Err(sdk_common::ClientError::Connection(msg)) => {
                             cli::print_error("metadata", msg)?;
                         }
-                        Err(common::ClientError::Function(msg)) => {
+                        Err(sdk_common::ClientError::Function(msg)) => {
                             cli::print_resp_err_fmt("metadata", format_args!("Error {msg:?}"))?;
                         }
                     }
@@ -212,13 +212,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                         println!("{}: {}", name, DisplayDatapoint(datapoint),);
                                     }
                                 }
-                                Err(common::ClientError::Status(err)) => {
+                                Err(sdk_common::ClientError::Status(err)) => {
                                     cli::print_resp_err(cmd, &err)?;
                                 }
-                                Err(common::ClientError::Connection(msg)) => {
+                                Err(sdk_common::ClientError::Connection(msg)) => {
                                     cli::print_error(cmd, msg)?;
                                 }
-                                Err(common::ClientError::Function(msg)) => {
+                                Err(sdk_common::ClientError::Function(msg)) => {
                                     cli::print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
                                 }
                             }
@@ -241,13 +241,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                             ));
                                             properties = metadata;
                                         }
-                                        Err(common::ClientError::Status(status)) => {
+                                        Err(sdk_common::ClientError::Status(status)) => {
                                             cli::print_resp_err("metadata", &status)?;
                                         }
-                                        Err(common::ClientError::Connection(msg)) => {
+                                        Err(sdk_common::ClientError::Connection(msg)) => {
                                             cli::print_error("metadata", msg)?;
                                         }
-                                        Err(common::ClientError::Function(msg)) => {
+                                        Err(sdk_common::ClientError::Function(msg)) => {
                                             cli::print_resp_err_fmt(
                                                 "metadata",
                                                 format_args!("Error {msg:?}"),
@@ -280,13 +280,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                                 ));
                                                 properties = metadata;
                                             }
-                                            Err(common::ClientError::Status(status)) => {
+                                            Err(sdk_common::ClientError::Status(status)) => {
                                                 cli::print_resp_err("metadata", &status)?;
                                             }
-                                            Err(common::ClientError::Connection(msg)) => {
+                                            Err(sdk_common::ClientError::Connection(msg)) => {
                                                 cli::print_error("metadata", msg)?;
                                             }
-                                            Err(common::ClientError::Function(msg)) => {
+                                            Err(sdk_common::ClientError::Function(msg)) => {
                                                 cli::print_resp_err_fmt(
                                                     cmd,
                                                     format_args!("Error {msg:?}"),
@@ -389,13 +389,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                             }
                                         }
                                     }
-                                    Err(common::ClientError::Status(status)) => {
+                                    Err(sdk_common::ClientError::Status(status)) => {
                                         cli::print_resp_err(cmd, &status)?
                                     }
-                                    Err(common::ClientError::Connection(msg)) => {
+                                    Err(sdk_common::ClientError::Connection(msg)) => {
                                         cli::print_error(cmd, msg)?
                                     }
-                                    Err(common::ClientError::Function(msg)) => {
+                                    Err(sdk_common::ClientError::Function(msg)) => {
                                         cli::print_resp_err_fmt(
                                             cmd,
                                             format_args!("Error {msg:?}"),
@@ -479,13 +479,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                             }
                                         }
                                     }
-                                    Err(common::ClientError::Status(status)) => {
+                                    Err(sdk_common::ClientError::Status(status)) => {
                                         cli::print_resp_err(cmd, &status)?
                                     }
-                                    Err(common::ClientError::Connection(msg)) => {
+                                    Err(sdk_common::ClientError::Connection(msg)) => {
                                         cli::print_error(cmd, msg)?
                                     }
-                                    Err(common::ClientError::Function(msg)) => {
+                                    Err(sdk_common::ClientError::Function(msg)) => {
                                         cli::print_resp_err_fmt(
                                             cmd,
                                             format_args!("Error {msg:?}"),
@@ -584,13 +584,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                             )?;
                                     subscription_nbr += 1;
                                 }
-                                Err(common::ClientError::Status(status)) => {
+                                Err(sdk_common::ClientError::Status(status)) => {
                                     cli::print_resp_err(cmd, &status)?
                                 }
-                                Err(common::ClientError::Connection(msg)) => {
+                                Err(sdk_common::ClientError::Connection(msg)) => {
                                     cli::print_error(cmd, msg)?
                                 }
-                                Err(common::ClientError::Function(msg)) => {
+                                Err(sdk_common::ClientError::Function(msg)) => {
                                     cli::print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?
                                 }
                             }
@@ -645,13 +645,13 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                             ));
                                             properties = metadata;
                                         }
-                                        Err(common::ClientError::Status(status)) => {
+                                        Err(sdk_common::ClientError::Status(status)) => {
                                             cli::print_resp_err("metadata", &status)?;
                                         }
-                                        Err(common::ClientError::Connection(msg)) => {
+                                        Err(sdk_common::ClientError::Connection(msg)) => {
                                             cli::print_error("metadata", msg)?;
                                         }
-                                        Err(common::ClientError::Function(msg)) => {
+                                        Err(sdk_common::ClientError::Function(msg)) => {
                                             cli::print_resp_err_fmt(
                                                 cmd,
                                                 format_args!("Error {msg:?}"),
@@ -675,15 +675,15 @@ pub async fn sdv_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                     )));
                                     cli::print_resp_ok(cmd)?;
                                 }
-                                Err(common::ClientError::Status(status)) => {
+                                Err(sdk_common::ClientError::Status(status)) => {
                                     cli::print_resp_err(cmd, &status)?;
                                     continue;
                                 }
-                                Err(common::ClientError::Connection(msg)) => {
+                                Err(sdk_common::ClientError::Connection(msg)) => {
                                     cli::print_error(cmd, msg)?;
                                     continue;
                                 }
-                                Err(common::ClientError::Function(msg)) => {
+                                Err(sdk_common::ClientError::Function(msg)) => {
                                     cli::print_resp_err_fmt(cmd, format_args!("Error {msg:?}"))?;
                                     continue;
                                 }
