@@ -22,8 +22,8 @@ use std::{
 use chrono::Utc;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 
-use sdk_common::ClientError;
 use databroker_proto::kuksa::val::v1::{datapoint::Value, DataEntry};
+use sdk_common::ClientError;
 
 use databroker::{
     broker,
