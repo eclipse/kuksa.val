@@ -19,9 +19,9 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-sdk-common = { path = "../lib"}
-sdk-kuksa = { path = "../lib/kuksa"}
-sdk-sdv = { path = "../lib/sdv"}
+kuksa-common = { path = "../lib/common"}
+kuksa = { path = "../lib/kuksa"}
+kuksa-sdv = { path = "../lib/sdv"}
 databroker-proto = { workspace = true }
 tonic = { workspace = true, features = ["transport", "channel", "prost"] }
 prost = { workspace = true }
