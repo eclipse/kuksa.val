@@ -16,7 +16,7 @@ use std::collections::HashMap;
 
 use databroker_proto::kuksa::val::{self as proto, v1::DataEntry};
 
-use sdk_common::{Client, ClientError};
+use kuksa_common::{Client, ClientError};
 
 #[derive(Debug)]
 pub struct KuksaClient {

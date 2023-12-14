@@ -550,12 +550,12 @@ dependencies = [
  "futures",
  "jemallocator",
  "jsonwebtoken",
+ "kuksa",
+ "kuksa-common",
  "lazy_static",
  "prost",
  "prost-types",
  "regex",
- "sdk-common",
- "sdk-kuksa",
  "serde",
  "serde_json",
  "sqlparser",
@@ -577,25 +577,13 @@ dependencies = [
  "clap",
  "databroker-proto",
  "http",
+ "kuksa",
+ "kuksa-common",
+ "kuksa-sdv",
  "linefeed",
  "prost",
  "prost-types",
  "regex",
- "sdk-common",
- "sdk-kuksa",
- "sdk-sdv",
- "tokio",
- "tokio-stream",
- "tonic",
-]
-
-[[package]]
-name = "databroker-examples"
-version = "0.4.1"
-dependencies = [
- "databroker-proto",
- "prost",
- "prost-types",
  "tokio",
  "tokio-stream",
  "tonic",
@@ -1713,6 +1701,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "kuksa"
+version = "0.1.0"
+dependencies = [
+ "databroker-proto",
+ "http",
+ "kuksa-common",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
+name = "kuksa-common"
+version = "0.1.0"
+dependencies = [
+ "databroker-proto",
+ "http",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
+name = "kuksa-sdv"
+version = "0.1.0"
+dependencies = [
+ "databroker-proto",
+ "http",
+ "kuksa-common",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
 name = "lazy-regex"
 version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2483,41 +2506,6 @@ checksum = "da046153aa2352493d6cb7da4b6e5c0c057d8a1d0a9aa8560baffdd945acd414"
 dependencies = [
  "ring",
  "untrusted",
-]
-
-[[package]]
-name = "sdk-common"
-version = "0.1.0"
-dependencies = [
- "databroker-proto",
- "http",
- "tokio",
- "tokio-stream",
- "tonic",
-]
-
-[[package]]
-name = "sdk-kuksa"
-version = "0.1.0"
-dependencies = [
- "databroker-proto",
- "http",
- "sdk-common",
- "tokio",
- "tokio-stream",
- "tonic",
-]
-
-[[package]]
-name = "sdk-sdv"
-version = "0.1.0"
-dependencies = [
- "databroker-proto",
- "http",
- "sdk-common",
- "tokio",
- "tokio-stream",
- "tonic",
 ]
 
 [[package]]

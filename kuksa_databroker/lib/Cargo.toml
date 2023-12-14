@@ -1,37 +1,20 @@
-#********************************************************************************
-# Copyright (c) 2022, 2023 Contributors to the Eclipse Foundation
-#
-# See the NOTICE file(s) distributed with this work for additional
-# information regarding copyright ownership.
-#
-# This program and the accompanying materials are made available under the
-# terms of the Apache License 2.0 which is available at
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# SPDX-License-Identifier: Apache-2.0
-#*******************************************************************************/
+[workspace]
 
-[package]
-name = "sdk-common"
-version = "0.1.0"
-authors = ["Eclipse KUKSA Project"]
-edition = "2018"
-license = "Apache-2.0"
+members = [
+    "common",
+    "kuksa",
+    "sdv"
+]
 
-[dependencies]
-databroker-proto = { workspace = true }
-tonic = { workspace = true, features = ["transport", "channel"] }
-tokio = { workspace = true, features = [
-    "macros",
-] }
-tokio-stream = { workspace = true, features = ["sync"] }
-http = "0.2.8"
-
-[lib]
-name = "sdk_common"
-crate-type = ["lib"]
-path = "common.rs"
-
-[features]
-default = ["tls"]
-tls = ["tonic/tls"]
+[workspace.dependencies]
+databroker-proto = { path = "../databroker-proto" }
+# prost has no features
+prost = "0.11"
+# prost-types has no features
+prost-types = "0.11"
+# tokio does not enable features by default
+tokio = "1.17.0"
+# tokio-stream has no features
+tokio-stream = "0.1.8"
+tonic = { version = "0.9.1", default-features = false }
+tonic-build = { version = "0.8", default-features = false }
