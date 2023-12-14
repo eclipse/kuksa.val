@@ -31,7 +31,7 @@ http = "0.2.8"
 [lib]
 name = "kuksa"
 crate-type = ["lib"]
-path = "lib.rs"
+path = "src/lib.rs"
 
 [features]
 default = ["tls"]
