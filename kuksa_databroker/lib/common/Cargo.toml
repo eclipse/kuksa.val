@@ -1,5 +1,5 @@
 #********************************************************************************
-# Copyright (c) 2023 Contributors to the Eclipse Foundation
+# Copyright (c) 2022, 2023 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -12,21 +12,26 @@
 #*******************************************************************************/
 
 [package]
-name = "databroker-examples"
-version = "0.4.1"
+name = "kuksa-common"
+version = "0.1.0"
 authors = ["Eclipse KUKSA Project"]
 edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
 databroker-proto = { workspace = true }
-tonic = { workspace = true }
-prost = { workspace = true }
-prost-types = { workspace = true }
+tonic = { workspace = true, features = ["transport", "channel"] }
 tokio = { workspace = true, features = [
     "macros",
-    "rt-multi-thread",
-    "time",
-    "signal",
 ] }
 tokio-stream = { workspace = true, features = ["sync"] }
+http = "0.2.8"
+
+[lib]
+name = "kuksa_common"
+crate-type = ["lib"]
+path = "src/lib.rs"
+
+[features]
+default = ["tls"]
+tls = ["tonic/tls"]

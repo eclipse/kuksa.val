@@ -111,7 +111,9 @@ def generate_bom(source_path, target_path, dashout):
     # Cargo will also pick up our own dependencies. As they are not thirdparty
     # creating a new list without our own packages
     crates = [
-        crate for crate in crates if not crate["name"].startswith("databroker") and not crate["name"].startswith("sdk")]
+        crate for crate in crates if not crate["name"].startswith("databroker")
+        and not crate["name"].startswith("kuksa")
+    ]
 
     license_files = set()
     errors = []
