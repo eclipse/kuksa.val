@@ -13,12 +13,12 @@ docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/databroker:master --ins
 
 
 ## Reading and Writing VSS data via CLI
-You can interact with the VSS datapoints using the cli clients. The first option is databroker-cli.
+You can interact with the VSS datapoints using the cli clients. The first option is kuksa-cli.
 
 This is, how you start it:
 
 ```
-docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/databroker-cli:master
+docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/kuksa-cli:master
 ```
 
 Here is how you can use it:
@@ -129,10 +129,10 @@ Unfortunately OS X has a bug that does not allow you to use the Databroker defau
 docker run -it --rm --net=host ghcr.io/eclipse/kuksa.val/databroker:master  --port 55556 --insecure
 ```
 
-Using the databroker-cli
+Using the kuksa-cli
 
 ```
-docker run -it --rm --net=host -e KUKSA_DATA_BROKER_PORT=55556 ghcr.io/eclipse/kuksa.val/databroker-cli:master
+docker run -it --rm --net=host -e KUKSA_DATA_BROKER_PORT=55556 ghcr.io/eclipse/kuksa.val/kuksa-cli:master
 ```
 
 Using kuksa-client CLI
@@ -157,13 +157,13 @@ docker run -it --rm  --publish 55556:55556 ghcr.io/eclipse/kuksa.val/databroker:
 From your host computer you can now reach databroker at `127.0.0.1:55556`. To connect from another container, you need to use your computers IP address (**not** 127.0.0.1), i.e. to use the client
 
 ```
-docker run -it --rm  -e KUKSA_DATA_BROKER_PORT=55556 -e KUKSA_DATA_BROKER_ADDR=<YOUR_IP> ghcr.io/eclipse/kuksa.val/databroker-cli:master
+docker run -it --rm  -e KUKSA_DATA_BROKER_PORT=55556 -e KUKSA_DATA_BROKER_ADDR=<YOUR_IP> ghcr.io/eclipse/kuksa.val/kuksa-cli:master
 ```
 
-Recent versions of the databroker-cli also support command line arguments, so you can also write
+Recent versions of the kuksa-cli also support command line arguments, so you can also write
 
 ```
-docker run -it --rm   ghcr.io/eclipse/kuksa.val/databroker-cli:master  --server http://<YOUR_IP>:55556
+docker run -it --rm   ghcr.io/eclipse/kuksa.val/kuksa-cli:master  --server http://<YOUR_IP>:55556
 ```
 
 
@@ -185,7 +185,7 @@ set Vehicle.Speed 200
 The other thing, that VSS provides you are "actuators" `Vehicle.Body.Trunk.Rear.IsOpen`. The most important thing to remember about actuators: Every actuators is also a sensor, so everything written on top applies as well!
 The second-most important thing is: For VSS actuatorss, it is expected that you might be able to influence the state of the real Vehicle by writing to them. So while being used as a sensor, you will get the current position of the Window in the example, you might also want to set the _desired_ position.
 
-You express this in the databroker-cli as
+You express this in the kuksa-cli as
 
 ```
 set Vehicle.Body.Trunk.Rear.IsOpen true

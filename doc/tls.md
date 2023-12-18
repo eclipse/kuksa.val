@@ -58,19 +58,19 @@ so if running KUKSA.val Databroker from a default container you need to mount th
 ~/kuksa.val/kuksa_databroker$ docker run --rm -it  -p 55555:55555/tcp -v /home/user/kuksa.val/kuksa_certificates:/certs databroker --tls-cert /certs/Server.pem --tls-private-key /certs/Server.key
 ```
 
-## KUKSA.val databroker-cli
+## KUKSA.val kuksa-cli
 
 Can be run in TLS mode like below.
 
 ```
-~/kuksa.val/kuksa_databroker$ cargo run --bin databroker-cli -- --ca-cert ../kuksa_certificates/CA.pem
+~/kuksa.val/kuksa_databroker$ cargo run --bin kuksa-cli -- --ca-cert ../kuksa_certificates/CA.pem
 ```
 
-Default certificates and keys are not included in the default KUKSA.val Databroker-cli container,
-so if running KUKSA.val Databroker-cli from a default container you need to mount the directory containing the keys and certificates.
+Default certificates and keys are not included in the default KUKSA.val kuksa-cli container,
+so if running KUKSA.val kuksa-cli from a default container you need to mount the directory containing the keys and certificates.
 
 ```
-docker run --rm -it --net=host -v /home/user/kuksa.val/kuksa_certificates:/certs databroker-cli --ca-cert /certs/CA.pem
+docker run --rm -it --net=host -v /home/user/kuksa.val/kuksa_certificates:/certs kuksa-cli --ca-cert /certs/CA.pem
 ```
 
 ## KUKSA.val Server

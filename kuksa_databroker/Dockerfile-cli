@@ -18,13 +18,13 @@
 # AMD is a statically linked MUSL build
 FROM scratch AS target-amd64
 ENV BUILDTARGET="x86_64-unknown-linux-musl"
-COPY ./target/x86_64-unknown-linux-musl/release/databroker-cli /app/databroker-cli
+COPY ./target/x86_64-unknown-linux-musl/release/kuksa-cli /app/kuksa-cli
 
 
 # ARM64 is a statically linked GRPC build
 FROM scratch AS target-arm64
 ENV BUILDTARGET="aarch64-unknown-linux-musl"
-COPY ./target/aarch64-unknown-linux-musl/release/databroker-cli /app/databroker-cli
+COPY ./target/aarch64-unknown-linux-musl/release/kuksa-cli /app/kuksa-cli
 
 
 # RISCV is a glibc build. Rust toolchain not supported for MUSL
@@ -34,9 +34,9 @@ COPY ./target/aarch64-unknown-linux-musl/release/databroker-cli /app/databroker-
 # (Nov 2023). Using debian unstable for now
 FROM riscv64/debian:sid-slim as target-riscv64
 ENV BUILDTARGET="riscv64gc-unknown-linux-gnu"
-COPY ./target/riscv64gc-unknown-linux-gnu/release/databroker-cli /app/databroker-cli
+COPY ./target/riscv64gc-unknown-linux-gnu/release/kuksa-cli /app/kuksa-cli
 
-# Databroker-cli is an interactive cli, thus it can only work correctly
+# kuksa-cli is an interactive cli, thus it can only work correctly
 # if we have some terminfo configurations available. We will transplant
 # them from a donor
 # While writing this, the latest versuion 3.18 does not support riscv yet,
@@ -55,4 +55,4 @@ COPY ./dist/$TARGETARCH/thirdparty/ /app/thirdparty
 # Copy terminfo database
 COPY --from=terminfo-donor /etc/terminfo /etc/terminfo
 
-ENTRYPOINT [ "/app/databroker-cli" ]
+ENTRYPOINT [ "/app/kuksa-cli" ]

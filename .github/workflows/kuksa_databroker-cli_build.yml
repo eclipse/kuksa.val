@@ -18,7 +18,7 @@ on:
     branches: [ master ]
   pull_request:
     paths:
-      - ".github/workflows/kuksa_databroker-cli_build.yml"
+      - ".github/workflows/kuksa-cli_build.yml"
       - "kuksa_databroker/**"
       - "proto/**"
       - "Cargo.*"
@@ -71,7 +71,7 @@ jobs:
       with:
         # list of Docker images to use as base name for tags
         images: |
-          ghcr.io/eclipse/kuksa.val/databroker-cli
+          ghcr.io/eclipse/kuksa.val/kuksa-cli
         # generate Docker tags based on the following events/attributes
         tags: |
           type=ref,event=branch
@@ -109,7 +109,7 @@ jobs:
         push: true
         tags: |
           ${{ steps.meta.outputs.tags }}
-          ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}
+          ttl.sh/kuksa.val/kuksa-cli-${{github.sha}}
         labels: ${{ steps.meta.outputs.labels }}
 
     - name: Build ephemeral KUKSA Databroker container and push to ttl.sh
@@ -124,31 +124,31 @@ jobs:
         file: ./kuksa_databroker/Dockerfile-cli
         context: .
         push: true
-        tags: "ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}"
+        tags: "ttl.sh/kuksa.val/kuksa-cli-${{github.sha}}"
         labels: ${{ steps.meta.outputs.labels }}
 
 
     - name: Posting message
       uses: ./.github/actions/post-container-location
       with:
-        image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}
+        image: ttl.sh/kuksa.val/kuksa-cli-${{github.sha}}
 
     - name: "Archiving AMD64 artifacts"
       uses: actions/upload-artifact@v3
       with:
-        name: databroker-cli-amd64
+        name: kuksa-cli-amd64
         path: ${{github.workspace}}/dist/amd64
 
     - name: "Archiving ARM64 artifacts"
       uses: actions/upload-artifact@v3
       with:
-        name: databroker-cli-arm64
+        name: kuksa-cli-arm64
         path: ${{github.workspace}}/dist/arm64
 
     - name: "Archiving RISCV64 artifacts"
       uses: actions/upload-artifact@v3
       with:
-        name: databroker--cli-riscv64
+        name: kuksa--cli-riscv64
         path: ${{github.workspace}}/dist/riscv64
 
 

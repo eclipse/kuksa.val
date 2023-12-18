@@ -188,7 +188,7 @@ pub fn print_logo(version: impl fmt::Display) {
         Color::White.dimmed().paint("⣿⣿⠀⠀⠀⢀⣠⣾⣿⠟"),
         Color::White
             .dimmed()
-            .paint(format!("{:<30}", "databroker-cli")),
+            .paint(format!("{:<30}", "kuksa-cli")),
     )
     .unwrap();
     writeln!(

@@ -148,7 +148,7 @@ $cargo run --bin databroker -- --metadata ../data/vss-core/vss_release_4.0.json
 Use the client to verify that changes in VSS are reflected, by doing e.g. set/get on some new or renamed signals.
 
 ```sh
-$cargo run --bin databroker-cli
+$cargo run --bin kuksa-cli
 
 client> set Vehicle.CurrentLocation.Latitude 3
 -> Ok

@@ -33,7 +33,7 @@ DATA_BROKER_ROOT="$SCRIPT_DIR"
 sed -i -E "s/^version = \"${VERSION_REGEX}\"$/version = \"${VERSION}\"/" \
 	"$DATA_BROKER_ROOT/databroker/Cargo.toml" \
 	"$DATA_BROKER_ROOT/databroker-api/Cargo.toml" \
-	"$DATA_BROKER_ROOT/databroker-cli/Cargo.toml" \
+	"$DATA_BROKER_ROOT/kuksa-cli/Cargo.toml" \
 	"$DATA_BROKER_ROOT/databroker-examples/Cargo.toml"
 
 # Create release commit and tag it

@@ -175,7 +175,7 @@ SPDX-License-Identifier: Apache-2.0
 |vcpkg|0.2.15|Apache 2.0<br/>MIT|
 |databroker-api|0.17.0|Apache 2.0|
 |databroker|0.17.0|Apache 2.0|
-|databroker-cli|0.17.0|Apache 2.0|
+|kuksa-cli|0.17.0|Apache 2.0|
 |databroker-examples|0.17.0|Apache 2.0|
 |vergen|7.0.0|MIT OR Apache-2.0|
 |version_check|0.9.4|Apache 2.0<br/>MIT|

@@ -12,7 +12,7 @@
 #*******************************************************************************/
 
 [package]
-name = "databroker-cli"
+name = "kuksa-cli"
 version = "0.4.1"
 authors = ["Eclipse KUKSA Project"]
 edition = "2018"

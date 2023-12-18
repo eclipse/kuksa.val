@@ -87,7 +87,7 @@ The CLI can then be configured to use a corresponding token when connecting to t
 
 ```shell
 # in repository root
-docker run --rm -it --network kuksa -v ./jwt:/opt/kuksa ghcr.io/eclipse/kuksa.val/databroker-cli:master --server Server:55555 --token-file /opt/kuksa/read-vehicle-speed.token
+docker run --rm -it --network kuksa -v ./jwt:/opt/kuksa ghcr.io/eclipse/kuksa.val/kuksa-cli:master --server Server:55555 --token-file /opt/kuksa/read-vehicle-speed.token
 ```
 
 The token contains a claim that authorizes the client to read the *Vehicle.Speed* signal only.
@@ -127,7 +127,7 @@ The CLI can then be configured to use a corresponding trusted CA certificate sto
 
 ```shell
 # in repository root
-docker run --rm -it --network kuksa -v ./kuksa_certificates:/opt/kuksa ghcr.io/eclipse/kuksa.val/databroker-cli:master --server Server:55555 --ca-cert /opt/kuksa/CA.pem
+docker run --rm -it --network kuksa -v ./kuksa_certificates:/opt/kuksa ghcr.io/eclipse/kuksa.val/kuksa-cli:master --server Server:55555 --ca-cert /opt/kuksa/CA.pem
 ```
 <p align="right">(<a href="#top">back to top</a>)</p>
 
