@@ -25,7 +25,7 @@ path = "src/lib.rs"
 [dependencies]
 common = { path = "../lib"}
 kuksa = { path = "../lib/kuksa"}
-databroker-proto = { workspace = true }
+kuksa-proto = { workspace = true }
 tonic = { workspace = true, features = ["transport", "channel", "prost"] }
 prost = { workspace = true }
 prost-types = { workspace = true }

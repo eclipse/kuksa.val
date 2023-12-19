@@ -22,7 +22,7 @@ license = "Apache-2.0"
 common = { path = "../lib"}
 kuksa = { path = "../lib/kuksa"}
 sdv = { path = "../lib/sdv"}
-databroker-proto = { workspace = true }
+kuksa-proto = { workspace = true }
 tonic = { workspace = true, features = ["transport", "channel", "prost"] }
 prost = { workspace = true }
 prost-types = { workspace = true }
