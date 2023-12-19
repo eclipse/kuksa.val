@@ -87,7 +87,7 @@ The CLI can then be configured to use a corresponding token when connecting to t
 
 ```shell
 # in repository root
-docker run --rm -it --network kuksa -v ./jwt:/opt/kuksa ghcr.io/eclipse/kuksa.val/kuksa-cli:master --server Server:55555 --token-file /opt/kuksa/read-vehicle-speed.token
+docker run --rm -it --network kuksa -v ./jwt:/opt/kuksa ghcr.io/eclipse/kuksa.val/kuksa-proto:master --server Server:55555 --token-file /opt/kuksa/read-vehicle-speed.token
 ```
 
 The token contains a claim that authorizes the client to read the *Vehicle.Speed* signal only.
@@ -127,7 +127,7 @@ The CLI can then be configured to use a corresponding trusted CA certificate sto
 
 ```shell
 # in repository root
-docker run --rm -it --network kuksa -v ./kuksa_certificates:/opt/kuksa ghcr.io/eclipse/kuksa.val/kuksa-cli:master --server Server:55555 --ca-cert /opt/kuksa/CA.pem
+docker run --rm -it --network kuksa -v ./kuksa_certificates:/opt/kuksa ghcr.io/eclipse/kuksa.val/databroker-cli:master --server Server:55555 --ca-cert /opt/kuksa/CA.pem
 ```
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -249,9 +249,9 @@ It also supports bi-directional streaming between client and server.
 
 Kuksa.val Databroker implements the following service interfaces:
 
-* [kuksa.val.v1.VAL](../databroker-proto/proto/kuksa/val/v1/val.proto)
-* [sdv.databroker.v1.Broker](../databroker-proto/proto/sdv/databroker/v1/broker.proto)
-* [sdv.databroker.v1.Collector](../databroker-proto/proto/sdv/databroker/v1/collector.proto)
+* [kuksa.val.v1.VAL](../kuksa-proto/proto/kuksa/val/v1/val.proto)
+* [sdv.databroker.v1.Broker](../kuksa-proto/proto/sdv/databroker/v1/broker.proto)
+* [sdv.databroker.v1.Collector](../kuksa-proto/proto/sdv/databroker/v1/collector.proto)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 

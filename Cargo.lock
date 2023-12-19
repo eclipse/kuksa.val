@@ -581,26 +581,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "databroker-cli"
-version = "0.4.1"
-dependencies = [
- "ansi_term",
- "clap",
- "common",
- "databroker-proto",
- "http",
- "kuksa",
- "linefeed",
- "prost",
- "prost-types",
- "regex",
- "sdv",
- "tokio",
- "tokio-stream",
- "tonic",
-]
-
-[[package]]
 name = "databroker-examples"
 version = "0.4.1"
 dependencies = [
@@ -1730,6 +1710,26 @@ dependencies = [
  "common",
  "databroker-proto",
  "http",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
+name = "kuksa-cli"
+version = "0.4.1"
+dependencies = [
+ "ansi_term",
+ "clap",
+ "common",
+ "databroker-proto",
+ "http",
+ "kuksa",
+ "linefeed",
+ "prost",
+ "prost-types",
+ "regex",
+ "sdv",
  "tokio",
  "tokio-stream",
  "tonic",

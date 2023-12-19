@@ -15,7 +15,7 @@
 
 members = [
     "kuksa_databroker/databroker",
-    "kuksa_databroker/databroker-proto",
+    "kuksa_databroker/kuksa-proto",
     "kuksa_databroker/kuksa-cli",
     "kuksa_databroker/databroker-examples",
     "kuksa_databroker/lib",
@@ -25,7 +25,7 @@ members = [
 
 [workspace.dependencies]
 clap = { version = "4.2", default-features = false }
-databroker-proto = { path = "kuksa_databroker/databroker-proto" }
+kuksa-proto = { path = "kuksa_databroker/kuksa-proto" }
 # prost has no features
 prost = "0.11"
 # prost-types has no features

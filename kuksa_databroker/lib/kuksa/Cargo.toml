@@ -20,7 +20,7 @@ license = "Apache-2.0"
 
 [dependencies]
 common = { path = "../."}
-databroker-proto = { workspace = true }
+kuksa-proto = { workspace = true }
 tonic = { workspace = true, features = ["transport", "channel"] }
 tokio = { workspace = true, features = [
     "macros",
