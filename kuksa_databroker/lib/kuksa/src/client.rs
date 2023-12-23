@@ -281,7 +281,10 @@ impl KuksaClient {
             entries.push(proto::v1::SubscribeEntry {
                 path: path.to_string(),
                 view: proto::v1::View::CurrentValue.into(),
-                fields: vec![proto::v1::Field::Value.into()],
+                fields: vec![
+                    proto::v1::Field::Value.into(),
+                    proto::v1::Field::Metadata.into(),
+                ],
             })
         }
 

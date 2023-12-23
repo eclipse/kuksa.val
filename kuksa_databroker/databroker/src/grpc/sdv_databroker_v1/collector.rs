@@ -206,6 +206,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
                             broker::types::EntryType::Sensor,
                             metadata.description,
                             None,
+                            None,
                         )
                         .await
                     {

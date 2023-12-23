@@ -203,6 +203,7 @@ impl DataBrokerWorld {
                         entry_type,
                         "N/A".to_string(),
                         None,
+                        None,
                     )
                     .await
                 {

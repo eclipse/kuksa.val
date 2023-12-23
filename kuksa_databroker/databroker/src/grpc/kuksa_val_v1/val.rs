@@ -396,6 +396,9 @@ impl proto::val_server::Val for broker::DataBroker {
                             proto::Field::ActuatorTarget => {
                                 fields.insert(broker::Field::ActuatorTarget);
                             }
+                            proto::Field::MetadataUnit => {
+                                fields.insert(broker::Field::MetadataUnit);
+                            }
                             _ => {
                                 // Just ignore other fields for now
                             }
@@ -546,8 +549,7 @@ fn proto_entry_from_entry_and_fields(
         }
         if all || fields.contains(&proto::Field::MetadataUnit) {
             metadata_is_set = true;
-            // TODO: Add to Metadata
-            metadata.unit = None;
+            metadata.unit = entry.metadata().unit.clone();
         }
         if all || fields.contains(&proto::Field::MetadataValueRestriction) {
             metadata_is_set = true;
@@ -698,6 +700,7 @@ mod tests {
                 broker::ChangeType::OnChange,
                 broker::EntryType::Sensor,
                 "Test datapoint 1".to_owned(),
+                None,
                 None,
             )
             .await
