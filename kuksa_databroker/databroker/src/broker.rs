@@ -64,6 +64,7 @@ pub struct Metadata {
     pub change_type: ChangeType,
     pub description: String,
     pub allowed: Option<types::DataValue>,
+    pub unit: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -83,6 +84,7 @@ pub struct Entry {
 pub enum Field {
     Datapoint,
     ActuatorTarget,
+    MetadataUnit,
 }
 
 #[derive(Default)]
@@ -1027,6 +1029,7 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
         description: String,
         allowed: Option<types::DataValue>,
         datapoint: Option<Datapoint>,
+        unit: Option<String>,
     ) -> Result<i32, RegistrationError> {
         if !glob::is_valid_path(name.as_str()) {
             return Err(RegistrationError::ValidationError);
@@ -1055,6 +1058,7 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
                 entry_type,
                 description,
                 allowed,
+                unit,
             },
             datapoint: match datapoint {
                 Some(datapoint) => datapoint,
@@ -1139,6 +1143,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
         entry_type: EntryType,
         description: String,
         allowed: Option<types::DataValue>,
+        unit: Option<String>
     ) -> Result<i32, RegistrationError> {
         self.broker
             .database
@@ -1153,6 +1158,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
                 description,
                 allowed,
                 None,
+                unit,
             )
     }
 
@@ -1478,6 +1484,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint 1".to_owned(),
                 Some(DataValue::BoolArray(Vec::from([true]))),
+                Some("kg".to_string())
             )
             .await
             .expect("Register datapoint should succeed");
@@ -1493,6 +1500,7 @@ mod tests {
                         entry.metadata.allowed,
                         Some(DataValue::BoolArray(Vec::from([true])))
                     );
+                    assert_eq!(entry.metadata.unit, Some("kg".to_string()));
                 }
                 Err(_) => {
                     panic!("datapoint should exist");
@@ -1508,6 +1516,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint 2".to_owned(),
                 None,
+                Some("km".to_string())
             )
             .await
             .expect("Register datapoint should succeed");
@@ -1520,6 +1529,8 @@ mod tests {
                     assert_eq!(entry.metadata.data_type, DataType::String);
                     assert_eq!(entry.metadata.description, "Test datapoint 2");
                     assert_eq!(entry.metadata.allowed, None);
+                    assert_eq!(entry.metadata.unit, Some("km".to_string()));
+
                 }
                 Err(_) => {
                     panic!("no metadata returned");
@@ -1534,6 +1545,7 @@ mod tests {
                 ChangeType::OnChange,
                 EntryType::Sensor,
                 "Test datapoint 1 (modified)".to_owned(),
+                None,
                 None,
             )
             .await
@@ -1555,6 +1567,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test signal 3".to_owned(),
                 Some(DataValue::Int32Array(Vec::from([1, 2, 3, 4]))),
+                None,
             )
             .await
             .is_ok()
@@ -1578,6 +1591,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint 1".to_owned(),
                 None,
+                None,
             )
             .await
             .expect("Register datapoint should succeed");
@@ -1589,6 +1603,7 @@ mod tests {
                 ChangeType::OnChange,
                 EntryType::Actuator,
                 "Test datapoint 2".to_owned(),
+                None,
                 None,
             )
             .await
@@ -1731,6 +1746,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint 1".to_owned(),
                 Some(DataValue::Int32Array(vec![100])),
+                None,
             )
             .await
             .expect("Register datapoint should succeed");
@@ -1844,6 +1860,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint 1".to_owned(),
                 None,
+                None,
             )
             .await
             .expect("Register datapoint should succeed");
@@ -1923,6 +1940,7 @@ mod tests {
                 ChangeType::OnChange,
                 EntryType::Sensor,
                 "Test datapoint 1".to_owned(),
+                None,
                 None,
             )
             .await
@@ -2023,6 +2041,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint 1".to_owned(),
                 None,
+                None,
             )
             .await
             .expect("Register datapoint should succeed");
@@ -2095,6 +2114,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint 1 (new description)".to_owned(),
                 None,
+                None,
             )
             .await
             .expect("Registration should succeed");
@@ -2157,6 +2177,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint 1".to_owned(),
                 None,
+                None,
             )
             .await
             .expect("Register datapoint should succeed");
@@ -2168,6 +2189,7 @@ mod tests {
                 ChangeType::OnChange,
                 EntryType::Sensor,
                 "Test datapoint 2".to_owned(),
+                None,
                 None,
             )
             .await
@@ -2265,6 +2287,7 @@ mod tests {
                 EntryType::Sensor,
                 "Run of the mill test array".to_owned(),
                 None,
+                None,
             )
             .await
             .unwrap();
@@ -2326,6 +2349,7 @@ mod tests {
                 ChangeType::OnChange,
                 EntryType::Sensor,
                 "Run of the mill test array".to_owned(),
+                None,
                 None,
             )
             .await
@@ -2404,6 +2428,7 @@ mod tests {
                     String::from("maybe"),
                     String::from("nah"),
                 ])),
+                None,
             )
             .await
             .unwrap();
@@ -2560,6 +2585,7 @@ mod tests {
                 EntryType::Sensor,
                 "Run of the mill test array".to_owned(),
                 None,
+                None,
             )
             .await
             .unwrap();
@@ -2640,6 +2666,7 @@ mod tests {
                 ChangeType::OnChange,
                 EntryType::Sensor,
                 "Run of the mill test array".to_owned(),
+                None,
                 None,
             )
             .await
@@ -2725,6 +2752,7 @@ mod tests {
                 EntryType::Sensor,
                 "Run of the mill test array".to_owned(),
                 None,
+                None,
             )
             .await
             .unwrap();
@@ -2786,6 +2814,7 @@ mod tests {
                 ChangeType::OnChange,
                 EntryType::Sensor,
                 "Test datapoint 1".to_owned(),
+                None,
                 None,
             )
             .await
@@ -2878,6 +2907,7 @@ mod tests {
                 EntryType::Sensor,
                 "Run of the mill test signal".to_owned(),
                 None,
+                None,
             )
             .await
             .unwrap();
@@ -2888,6 +2918,7 @@ mod tests {
                 ChangeType::OnChange,
                 EntryType::Sensor,
                 "Run of the mill test signal".to_owned(),
+                None,
                 None,
             )
             .await
@@ -2919,6 +2950,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test signal 3".to_owned(),
                 Some(DataValue::Int32Array(Vec::from([1, 2, 3, 4]))),
+                None,
             )
             .await
             .unwrap_err();
@@ -2932,6 +2964,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint".to_owned(),
                 Some(DataValue::BoolArray(Vec::from([true]))),
+                None,
             )
             .await
             .expect("Register datapoint should succeed");

@@ -282,6 +282,7 @@ impl From<&broker::Field> for proto::Field {
         match from {
             broker::Field::Datapoint => proto::Field::Value,
             broker::Field::ActuatorTarget => proto::Field::ActuatorTarget,
+            broker::Field::MetadataUnit => proto::Field::MetadataUnit,
         }
     }
 }

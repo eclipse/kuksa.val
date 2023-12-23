@@ -63,6 +63,7 @@ async fn add_kuksa_attribute(
             databroker::broker::EntryType::Attribute,
             description,
             None,
+            None,
         )
         .await
     {
@@ -121,6 +122,7 @@ async fn read_metadata_file<'a, 'b>(
                 entry.entry_type,
                 entry.description,
                 entry.allowed,
+                entry.unit,
             )
             .await
         {
