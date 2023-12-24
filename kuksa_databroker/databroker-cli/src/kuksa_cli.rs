@@ -211,11 +211,16 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                     cli::print_resp_ok(cmd)?;
                                     for entry in data_entries {
                                         if let Some(val) = entry.value {
-                                            println!("{}: {} {}", entry.path, DisplayDatapoint(val),
-                                                entry.metadata
+                                            println!(
+                                                "{}: {} {}",
+                                                entry.path,
+                                                DisplayDatapoint(val),
+                                                entry
+                                                    .metadata
                                                     .and_then(|meta| meta.unit)
                                                     .map(|unit| format!("{}", unit))
-                                                    .unwrap_or_else(|| "".to_string()));
+                                                    .unwrap_or_else(|| "".to_string())
+                                            );
                                         } else {
                                             println!("{}: NotAvailable", entry.path);
                                         }
@@ -522,10 +527,18 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                                                         "{}: {} {}",
                                                                         entry.path,
                                                                         DisplayDatapoint(value),
-                                                                        entry.metadata
-                                                                            .and_then(|meta| meta.unit)
-                                                                            .map(|unit| format!("{}", unit))
-                                                                            .unwrap_or_else(|| "".to_string())
+                                                                        entry
+                                                                            .metadata
+                                                                            .and_then(
+                                                                                |meta| meta.unit
+                                                                            )
+                                                                            .map(|unit| format!(
+                                                                                "{}",
+                                                                                unit
+                                                                            ))
+                                                                            .unwrap_or_else(
+                                                                                || "".to_string()
+                                                                            )
                                                                     )
                                                                     .unwrap();
                                                                 }
@@ -684,7 +697,7 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                                                 entry_metadata.data_type
                                                             )
                                                         ),
-                                                                                                            );
+                                                    );
                                                 } else {
                                                     let name = entry.path.clone();
                                                     println!("No entry metadata for {name}");
