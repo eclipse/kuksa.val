@@ -481,7 +481,7 @@ fn convert_to_proto_stream(
     input.map(move |item| {
         let mut updates = Vec::new();
         for update in item.updates {
-            updates.push(proto::EntryUpdate {
+                        updates.push(proto::EntryUpdate {
                 entry: Some(proto::DataEntry::from(update.update)),
                 fields: update
                     .fields
@@ -679,6 +679,7 @@ impl broker::EntryUpdate {
             data_type: None,
             description: None,
             allowed: None,
+            unit: None,
         }
     }
 }
