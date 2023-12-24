@@ -168,6 +168,7 @@ impl Viss for Server {
                         data_type: None,
                         description: None,
                         allowed: None,
+                        unit: None,
                     })
                     .map_err(|err| SetErrorResponse {
                         request_id: request_id.clone(),
