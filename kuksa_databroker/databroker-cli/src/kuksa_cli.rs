@@ -218,7 +218,7 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                                 entry
                                                     .metadata
                                                     .and_then(|meta| meta.unit)
-                                                    .map(|unit| format!("{}", unit))
+                                                    .map(|unit| unit.to_string())
                                                     .unwrap_or_else(|| "".to_string())
                                             );
                                         } else {
@@ -532,10 +532,8 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                                                             .and_then(
                                                                                 |meta| meta.unit
                                                                             )
-                                                                            .map(|unit| format!(
-                                                                                "{}",
-                                                                                unit
-                                                                            ))
+                                                                            .map(|unit| unit
+                                                                                .to_string())
                                                                             .unwrap_or_else(
                                                                                 || "".to_string()
                                                                             )

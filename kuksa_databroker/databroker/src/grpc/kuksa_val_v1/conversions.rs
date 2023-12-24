@@ -328,8 +328,10 @@ impl From<broker::EntryUpdate> for proto::DataEntry {
                 None => None,
             },
             metadata: {
-                let mut metadata = proto::Metadata::default();
-                metadata.unit = from.unit;
+                let metadata = proto::Metadata {
+                    unit: from.unit,
+                    ..Default::default()
+                };
                 Some(metadata)
             },
         }

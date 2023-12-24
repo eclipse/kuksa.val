@@ -1138,6 +1138,7 @@ pub struct AuthorizedAccess<'a, 'b> {
 }
 
 impl<'a, 'b> AuthorizedAccess<'a, 'b> {
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_entry(
         &self,
         name: String,
@@ -1647,6 +1648,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -1677,6 +1679,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -1697,6 +1700,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -1767,6 +1771,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: Some(Some(DataValue::Int32Array(vec![100]))),
+                    unit: None,
                 },
             )])
             .await
@@ -1788,6 +1793,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: Some(Some(DataValue::BoolArray(vec![true]))),
+                    unit: None,
                 },
             )])
             .await
@@ -1809,6 +1815,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: Some(None),
+                    unit: None,
                 },
             )])
             .await
@@ -1830,6 +1837,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -1899,6 +1907,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -1999,6 +2008,7 @@ mod tests {
                         data_type: None,
                         description: None,
                         allowed: None,
+                        unit: None,
                     },
                 )])
                 .await
@@ -2080,6 +2090,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2137,6 +2148,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2233,6 +2245,7 @@ mod tests {
                             data_type: None,
                             description: None,
                             allowed: None,
+                            unit: None,
                         },
                     ),
                     (
@@ -2248,6 +2261,7 @@ mod tests {
                             data_type: None,
                             description: None,
                             allowed: None,
+                            unit: None,
                         },
                     ),
                 ])
@@ -2309,6 +2323,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2377,6 +2392,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2455,6 +2471,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2510,6 +2527,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2563,6 +2581,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2607,6 +2626,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2634,6 +2654,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2689,6 +2710,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2716,6 +2738,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2774,6 +2797,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
@@ -2859,6 +2883,7 @@ mod tests {
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )])
             .await
