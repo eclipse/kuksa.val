@@ -177,6 +177,7 @@ pub struct EntryUpdate {
     // order to be able to convey "update it to None" which would
     // mean setting it to `Some(None)`.
     pub allowed: Option<Option<types::DataValue>>,
+    pub unit: Option<String>,
 }
 
 impl Entry {
@@ -692,6 +693,8 @@ impl ChangeSubscription {
                                                     Some(entry.actuator_target.clone());
                                                 notify_fields.insert(Field::ActuatorTarget);
                                             }
+                                            // fill unit field always
+                                            update.unit = entry.metadata.unit.clone();
                                             notifications.updates.push(ChangeNotification {
                                                 update,
                                                 fields: notify_fields,

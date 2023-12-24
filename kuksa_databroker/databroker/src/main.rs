@@ -81,6 +81,7 @@ async fn add_kuksa_attribute(
                     data_type: None,
                     description: None,
                     allowed: None,
+                    unit: None,
                 },
             )];
             if let Err(errors) = database.update_entries(ids).await {
@@ -141,6 +142,7 @@ async fn read_metadata_file<'a, 'b>(
                             data_type: None,
                             description: None,
                             allowed: None,
+                            unit: None,
                         },
                     )];
                     if let Err(errors) = database.update_entries(ids).await {

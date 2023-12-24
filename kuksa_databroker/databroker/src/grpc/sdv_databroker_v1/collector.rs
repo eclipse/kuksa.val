@@ -60,6 +60,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
                         data_type: None,
                         description: None,
                         allowed: None,
+                        unit: None,
                     },
                 )
             })
@@ -128,6 +129,7 @@ impl proto::collector_server::Collector for broker::DataBroker {
                                                         data_type: None,
                                                         description: None,
                                                         allowed: None,
+                                                        unit: None,
                                                     }
                                                 )
                                             )
