@@ -1146,7 +1146,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
         entry_type: EntryType,
         description: String,
         allowed: Option<types::DataValue>,
-        unit: Option<String>
+        unit: Option<String>,
     ) -> Result<i32, RegistrationError> {
         self.broker
             .database
@@ -1487,7 +1487,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint 1".to_owned(),
                 Some(DataValue::BoolArray(Vec::from([true]))),
-                Some("kg".to_string())
+                Some("kg".to_string()),
             )
             .await
             .expect("Register datapoint should succeed");
@@ -1519,7 +1519,7 @@ mod tests {
                 EntryType::Sensor,
                 "Test datapoint 2".to_owned(),
                 None,
-                Some("km".to_string())
+                Some("km".to_string()),
             )
             .await
             .expect("Register datapoint should succeed");
@@ -1533,7 +1533,6 @@ mod tests {
                     assert_eq!(entry.metadata.description, "Test datapoint 2");
                     assert_eq!(entry.metadata.allowed, None);
                     assert_eq!(entry.metadata.unit, Some("km".to_string()));
-
                 }
                 Err(_) => {
                     panic!("no metadata returned");
