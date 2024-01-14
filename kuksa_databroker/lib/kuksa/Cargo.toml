@@ -19,7 +19,7 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-common = { path = "../."}
+kuksa-common = { path = "../common"}
 databroker-proto = { workspace = true }
 tonic = { workspace = true, features = ["transport", "channel"] }
 tokio = { workspace = true, features = [
@@ -31,7 +31,7 @@ http = "0.2.8"
 [lib]
 name = "kuksa"
 crate-type = ["lib"]
-path = "src/client.rs"
+path = "src/lib.rs"
 
 [features]
 default = ["tls"]

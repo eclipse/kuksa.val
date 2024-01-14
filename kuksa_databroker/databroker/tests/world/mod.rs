@@ -22,8 +22,8 @@ use std::{
 use chrono::Utc;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 
-use common::ClientError;
 use databroker_proto::kuksa::val::v1::{datapoint::Value, DataEntry};
+use kuksa_common::ClientError;
 
 use databroker::{
     broker,
@@ -268,7 +268,7 @@ impl DataBrokerWorld {
 
         let data_broker_url = format!("http://{}:{}", addr.ip(), addr.port());
 
-        self.broker_client = match common::to_uri(data_broker_url.clone()) {
+        self.broker_client = match kuksa_common::to_uri(data_broker_url.clone()) {
             Ok(uri) => Some(kuksa::KuksaClient::new(uri)),
             Err(e) => {
                 println!("Error connecting to {data_broker_url}: {e}");
