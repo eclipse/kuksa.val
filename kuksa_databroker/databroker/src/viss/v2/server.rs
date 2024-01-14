@@ -190,7 +190,7 @@ impl Viss for Server {
                         ts: SystemTime::now().into(),
                     }),
                     Err(errors) => {
-                        let error = if let Some((_, error)) = errors.get(0) {
+                        let error = if let Some((_, error)) = errors.first() {
                             match error {
                                 UpdateError::NotFound => Error::NotFoundInvalidPath,
                                 UpdateError::WrongType => Error::BadRequest {
