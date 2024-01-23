@@ -187,7 +187,7 @@ impl proto::val_server::Val for broker::DataBroker {
 
             // Not sure how to handle the "global error".
             // Fall back to just use the first path specific error if any
-            let error = match errors.get(0) {
+            let error = match errors.first() {
                 Some(first) => first.error.clone(),
                 None => None,
             };
