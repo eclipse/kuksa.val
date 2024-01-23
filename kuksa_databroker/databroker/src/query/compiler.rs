@@ -79,7 +79,7 @@ pub struct CompiledQuery {
     /// or as part of a condition.
     ///
     /// These needs to be provided in the `input` when
-    /// executing the query.  
+    /// executing the query.
     pub input_spec: HashSet<String>, // Needed datapoints (values) for execution
 }
 
@@ -412,7 +412,7 @@ pub fn compile(
 
     match sqlparser::parser::Parser::parse_sql(&dialect, sql) {
         Ok(ast) => {
-            let select_statement = match &ast.get(0) {
+            let select_statement = match &ast.first() {
                 Some(sqlparser::ast::Statement::Query(q)) => match &q.body {
                     sqlparser::ast::SetExpr::Select(query) => Some(query.clone()),
                     _ => None,

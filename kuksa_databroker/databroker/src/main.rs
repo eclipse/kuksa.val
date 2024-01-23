@@ -84,7 +84,7 @@ async fn add_kuksa_attribute(
             )];
             if let Err(errors) = database.update_entries(ids).await {
                 // There's only one error (since we're only trying to set one)
-                if let Some(error) = errors.get(0) {
+                if let Some(error) = errors.first() {
                     info!("Failed to set value for {}: {:?}", attribute, error.1);
                 }
             }
@@ -143,7 +143,7 @@ async fn read_metadata_file<'a, 'b>(
                     )];
                     if let Err(errors) = database.update_entries(ids).await {
                         // There's only one error (since we're only trying to set one)
-                        if let Some(error) = errors.get(0) {
+                        if let Some(error) = errors.first() {
                             info!("Failed to set default value for {}: {:?}", path, error.1);
                         }
                     }
