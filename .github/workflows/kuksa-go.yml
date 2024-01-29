@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout kuksa.val
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run go tests
         run: |
           cd kuksa_go_client
