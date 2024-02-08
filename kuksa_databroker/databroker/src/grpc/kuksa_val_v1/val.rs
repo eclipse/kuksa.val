@@ -28,6 +28,7 @@ use crate::broker::ReadError;
 use crate::broker::SubscriptionError;
 use crate::glob;
 use crate::permissions::Permissions;
+use crate::types;
 
 #[tonic::async_trait]
 impl proto::val_server::Val for broker::DataBroker {
@@ -409,7 +410,7 @@ impl proto::val_server::Val for broker::DataBroker {
             }
         }
 
-        let mut entries: HashMap<i32, HashSet<broker::Field>> = HashMap::new();
+        let mut entries: HashMap<i32, (HashSet<broker::Field>, types::ChangeType)> = HashMap::new();
 
         if !valid_requests.is_empty() {
             for (path, (regex, fields)) in valid_requests {
@@ -423,9 +424,10 @@ impl proto::val_server::Val for broker::DataBroker {
                             entries
                                 .entry(entry.metadata().id)
                                 .and_modify(|existing_fields| {
-                                    existing_fields.extend(fields.clone());
+                                    existing_fields.0.extend(fields.clone());
+                                    existing_fields.1 = entry.metadata().change_type.clone();
                                 })
-                                .or_insert(fields.clone());
+                                .or_insert((fields.clone(), entry.metadata().change_type.clone()));
 
                             match entry.datapoint() {
                                 Ok(_) => {}

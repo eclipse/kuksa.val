@@ -33,6 +33,7 @@ use crate::{
 };
 
 use super::{conversions, types::*};
+pub use crate::types::ChangeType;
 
 #[tonic::async_trait]
 pub(crate) trait Viss: Send + Sync + 'static {
@@ -253,7 +254,15 @@ impl Viss for Server {
         let Some(entries) = broker
             .get_id_by_path(request.path.as_ref())
             .await
-            .map(|id| HashMap::from([(id, HashSet::from([broker::Field::Datapoint]))]))
+            .map(|id| {
+                HashMap::from([(
+                    id,
+                    (
+                        HashSet::from([broker::Field::Datapoint]),
+                        ChangeType::Static,
+                    ),
+                )])
+            })
         else {
             return Err(SubscribeErrorResponse {
                 request_id,
