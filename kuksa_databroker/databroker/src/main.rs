@@ -73,6 +73,7 @@ async fn add_kuksa_attribute(
                 broker::EntryUpdate {
                     datapoint: Some(broker::Datapoint {
                         ts: std::time::SystemTime::now(),
+                        source_ts: None,
                         value: broker::types::DataValue::String(value),
                     }),
                     path: None,
@@ -134,6 +135,7 @@ async fn read_metadata_file<'a, 'b>(
                         broker::EntryUpdate {
                             datapoint: Some(broker::Datapoint {
                                 ts: std::time::SystemTime::now(),
+                                source_ts: None,
                                 value: default,
                             }),
                             path: None,
