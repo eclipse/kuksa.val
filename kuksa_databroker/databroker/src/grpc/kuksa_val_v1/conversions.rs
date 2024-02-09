@@ -302,12 +302,13 @@ impl TryFrom<&proto::Field> for broker::Field {
 impl From<proto::Datapoint> for broker::Datapoint {
     fn from(from: proto::Datapoint) -> Self {
         Self {
-            ts: match from.timestamp {
+            ts: SystemTime::now(),
+            source_ts: match from.timestamp {
                 Some(ts) => match std::convert::TryInto::try_into(ts) {
-                    Ok(ts) => ts,
-                    Err(_) => SystemTime::now(),
+                    Ok(ts) => Some(ts),
+                    Err(_) => Some(SystemTime::now()),
                 },
-                None => SystemTime::now(),
+                None => None,
             },
             value: broker::DataValue::from(from.value),
         }

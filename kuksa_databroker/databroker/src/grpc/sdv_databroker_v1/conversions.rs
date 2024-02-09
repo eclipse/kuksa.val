@@ -22,13 +22,26 @@ use crate::broker;
 impl From<&proto::Datapoint> for broker::Datapoint {
     fn from(datapoint: &proto::Datapoint) -> Self {
         let value = broker::DataValue::from(datapoint);
+        let ts = SystemTime::now();
 
-        let ts = match &datapoint.timestamp {
-            Some(ts) => ts.clone().try_into().unwrap_or_else(|_| SystemTime::now()),
-            None => SystemTime::now(),
-        };
-
-        broker::Datapoint { ts, value }
+        match &datapoint.timestamp {
+            Some(source_timestamp) => {
+                let source_ts = source_timestamp
+                    .clone()
+                    .try_into()
+                    .unwrap_or_else(|_| SystemTime::now());
+                broker::Datapoint {
+                    ts,
+                    source_ts: Some(source_ts),
+                    value,
+                }
+            }
+            None => broker::Datapoint {
+                ts,
+                source_ts: None,
+                value,
+            },
+        }
     }
 }
 

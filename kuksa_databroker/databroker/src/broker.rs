@@ -72,6 +72,7 @@ pub struct Metadata {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Datapoint {
     pub ts: SystemTime,
+    pub source_ts: Option<SystemTime>,
     pub value: DataValue,
 }
 
@@ -1159,6 +1160,7 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
                 Some(datapoint) => datapoint,
                 None => Datapoint {
                     ts: SystemTime::now(),
+                    source_ts: None,
                     value: DataValue::NotAvailable,
                 },
             },
@@ -1747,6 +1749,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts: time1,
+                        source_ts: None,
                         value: DataValue::Bool(true),
                     }),
                     actuator_target: None,
@@ -1778,6 +1781,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts: time1,
+                        source_ts: None,
                         value: DataValue::Int32(100),
                     }),
                     actuator_target: None,
@@ -1800,6 +1804,7 @@ mod tests {
                     datapoint: None,
                     actuator_target: Some(Some(Datapoint {
                         ts: time2,
+                        source_ts: None,
                         value: DataValue::Bool(true),
                     })),
                     entry_type: None,
@@ -1870,6 +1875,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts: SystemTime::now(),
+                        source_ts: None,
                         value: DataValue::Int32(1),
                     }),
                     actuator_target: None,
@@ -1936,6 +1942,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts: time1,
+                        source_ts: None,
                         value: DataValue::Int32(1),
                     }),
                     actuator_target: None,
@@ -2006,6 +2013,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts: SystemTime::now(),
+                        source_ts: None,
                         value: DataValue::Int32(101),
                     }),
                     actuator_target: None,
@@ -2107,6 +2115,7 @@ mod tests {
                         path: None,
                         datapoint: Some(Datapoint {
                             ts: SystemTime::now(),
+                            source_ts: None,
                             value: DataValue::Int32(i),
                         }),
                         actuator_target: None,
@@ -2189,6 +2198,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts: SystemTime::now(),
+                        source_ts: None,
                         value: DataValue::Int32(200),
                     }),
                     actuator_target: None,
@@ -2247,6 +2257,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts: SystemTime::now(),
+                        source_ts: None,
                         value: DataValue::Int32(102),
                     }),
                     actuator_target: None,
@@ -2344,6 +2355,7 @@ mod tests {
                             path: None,
                             datapoint: Some(Datapoint {
                                 ts: SystemTime::now(),
+                                source_ts: None,
                                 value: DataValue::Int32(-i),
                             }),
                             actuator_target: None,
@@ -2360,6 +2372,7 @@ mod tests {
                             path: None,
                             datapoint: Some(Datapoint {
                                 ts: SystemTime::now(),
+                                source_ts: None,
                                 value: DataValue::Int32(i),
                             }),
                             actuator_target: None,
@@ -2422,6 +2435,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts,
+                        source_ts: None,
                         value: DataValue::BoolArray(vec![true, true, false, true]),
                     }),
                     actuator_target: None,
@@ -2486,6 +2500,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts,
+                        source_ts: None,
                         value: DataValue::StringArray(vec![
                             String::from("yes"),
                             String::from("no"),
@@ -2565,6 +2580,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts,
+                        source_ts: None,
                         value: DataValue::StringArray(vec![
                             String::from("yes"),
                             String::from("no"),
@@ -2620,6 +2636,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts,
+                        source_ts: None,
                         value: DataValue::StringArray(vec![
                             String::from("yes"),
                             String::from("no"),
@@ -2674,6 +2691,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts,
+                        source_ts: None,
                         value: DataValue::StringArray(vec![
                             String::from("yes"),
                             String::from("no"),
@@ -2725,6 +2743,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts,
+                        source_ts: None,
                         value: DataValue::Int32Array(vec![10, 20, 30, 40]),
                     }),
                     actuator_target: None,
@@ -2753,6 +2772,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts,
+                        source_ts: None,
                         value: DataValue::Int32Array(vec![100, 200, 300, 400]),
                     }),
                     actuator_target: None,
@@ -2809,6 +2829,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts,
+                        source_ts: None,
                         value: DataValue::Uint32Array(vec![10, 20, 30, 40]),
                     }),
                     actuator_target: None,
@@ -2837,6 +2858,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts,
+                        source_ts: None,
                         value: DataValue::Uint32Array(vec![100, 200, 300, 400]),
                     }),
                     actuator_target: None,
@@ -2896,6 +2918,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts,
+                        source_ts: None,
                         value: DataValue::FloatArray(vec![10.0, 20.0, 30.0, 40.0]),
                     }),
                     actuator_target: None,
@@ -2982,6 +3005,7 @@ mod tests {
                     path: None,
                     datapoint: Some(Datapoint {
                         ts: SystemTime::now(),
+                        source_ts: None,
                         value: DataValue::Int32(101),
                     }),
                     actuator_target: None,
