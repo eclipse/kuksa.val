@@ -1592,7 +1592,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
 
     pub async fn subscribe(
         &self,
-        valid_entries: HashMap<i32, (HashSet<Field>, types::ChangeType)>,
+        valid_entries: HashMap<i32, HashSet<Field>>,
     ) -> Result<impl Stream<Item = EntryUpdates>, SubscriptionError> {
         if valid_entries.is_empty() {
             return Err(SubscriptionError::InvalidInput);
@@ -1601,21 +1601,36 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
         let mut entries_on_changed: HashMap<i32, HashSet<Field>> = HashMap::new();
         let mut entries_continuous: HashMap<i32, HashSet<Field>> = HashMap::new();
 
-        for (id, (fields, change_type)) in valid_entries {
-            match change_type {
-                types::ChangeType::OnChange => {
-                    entries_on_changed
-                        .entry(id)
-                        .and_modify(|existing_fields| existing_fields.extend(fields.clone()))
-                        .or_insert(fields.clone());
+        let db_read = self.broker.database.read().await;
+        let db_read_access = db_read.authorized_read_access(self.permissions);
+
+        for (id, fields) in valid_entries {
+            match db_read_access.get_entry_by_id(id) {
+                Ok(entry) => {
+                    let change_type = entry.metadata.change_type.clone();
+                    match change_type {
+                        types::ChangeType::OnChange => {
+                            entries_on_changed
+                                .entry(id)
+                                .and_modify(|existing_fields| {
+                                    existing_fields.extend(fields.clone())
+                                })
+                                .or_insert(fields.clone());
+                        }
+                        types::ChangeType::Continuous => {
+                            entries_continuous
+                                .entry(id)
+                                .and_modify(|existing_fields| {
+                                    existing_fields.extend(fields.clone())
+                                })
+                                .or_insert(fields.clone());
+                        }
+                        types::ChangeType::Static => {}
+                    }
                 }
-                types::ChangeType::Continuous => {
-                    entries_continuous
-                        .entry(id)
-                        .and_modify(|existing_fields| existing_fields.extend(fields.clone()))
-                        .or_insert(fields.clone());
+                Err(_) => {
+                    debug!("notify: could not find entry with id {}", id)
                 }
-                types::ChangeType::Static => {}
             }
         }
 
@@ -3145,19 +3160,8 @@ mod tests {
             .await
             .expect("Register datapoint should succeed");
 
-        let my_hashmap: HashMap<i32, (HashSet<Field>, types::ChangeType)> = [(
-            id1,
-            (
-                HashSet::from([Field::Datapoint]),
-                types::ChangeType::OnChange,
-            ),
-        )]
-        .iter()
-        .cloned()
-        .collect();
-
         let mut stream = broker
-            .subscribe(my_hashmap)
+            .subscribe(HashMap::from([(id1, HashSet::from([Field::Datapoint]))]))
             .await
             .expect("subscription should succeed");
 
