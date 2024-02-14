@@ -426,7 +426,7 @@ impl CompilationInput for TestCompilationInput {
 }
 
 #[cfg(test)]
-fn assert_expected(res: Option<Vec<(String, DataValue)>>, expected: &Vec<(String, DataValue)>) {
+fn assert_expected(res: Option<Vec<(String, DataValue)>>, expected: &[(String, DataValue)]) {
     assert!(res.is_some());
     if let Some(fields) = &res {
         assert_eq!(fields.len(), expected.len());
@@ -579,7 +579,7 @@ fn executor_lag_subquery_test() {
     let test_compilation_input = TestCompilationInput {};
     let compiled_query = compiler::compile(sql, &test_compilation_input).unwrap();
     assert_eq!(compiled_query.subquery.len(), 2);
-    if let Some(subquery) = compiled_query.subquery.get(0) {
+    if let Some(subquery) = compiled_query.subquery.first() {
         assert!(subquery
             .input_spec
             .contains("Vehicle.Cabin.Seat.Row1.Pos1.Position"));
