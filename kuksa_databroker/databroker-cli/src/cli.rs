@@ -52,8 +52,8 @@ pub struct Cli {
     ca_cert: Option<String>,
 
     #[arg(value_enum)]
-    #[clap(long, short = 'p', value_enum, default_value = "sdv-databroker-v1")]
-    protocol: CliAPI,
+    #[clap(long, short = 'p', value_enum, default_value_t = Protocol::KuksaValV1)]
+    protocol: Protocol,
 
     // Sub command
     #[clap(subcommand)]
@@ -77,7 +77,7 @@ impl Cli {
         self.server.clone()
     }
 
-    pub fn get_protocol(&mut self) -> CliAPI {
+    pub fn get_protocol(&mut self) -> Protocol {
         self.protocol
     }
 }
@@ -93,8 +93,10 @@ pub enum Commands {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-pub enum CliAPI {
+pub enum Protocol {
+    #[clap(name = "kuksa.val.v1")]
     KuksaValV1 = 1,
+    #[clap(name = "sdv.databroker.v1")]
     SdvDatabrokerV1 = 2,
 }
 

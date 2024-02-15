@@ -244,6 +244,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .long("disable-authorization")
                 .help("Disable authorization")
                 .action(ArgAction::SetTrue),
+        )
+        .arg(
+            Arg::new("enable-databroker-v1")
+                .display_order(30)
+                .long("enable-databroker-v1")
+                .help("Enable sdv.databroker.v1 (GRPC) service")
+                .action(ArgAction::SetTrue),
         );
 
     #[cfg(feature = "tls")]
@@ -437,11 +444,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    let mut apis = vec![grpc::server::Api::KuksaValV1];
+
+    if args.get_flag("enable-databroker-v1") {
+        apis.push(grpc::server::Api::SdvDatabrokerV1);
+    }
+
     grpc::server::serve(
         addr,
         broker,
         #[cfg(feature = "tls")]
         tls_config,
+        &apis,
         authorization,
         shutdown_handler(),
     )

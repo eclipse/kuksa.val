@@ -232,6 +232,7 @@ impl DataBrokerWorld {
                 data_broker,
                 #[cfg(feature = "tls")]
                 CERTS.server_tls_config(),
+                &[grpc::server::Api::KuksaValV1],
                 _authorization,
                 poll_fn(|cx| {
                     let mut state = owned_state

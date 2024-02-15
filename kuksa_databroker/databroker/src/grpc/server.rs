@@ -34,6 +34,12 @@ pub enum ServerTLS {
     Enabled { tls_config: ServerTlsConfig },
 }
 
+#[derive(PartialEq)]
+pub enum Api {
+    KuksaValV1,
+    SdvDatabrokerV1,
+}
+
 impl tonic::service::Interceptor for Authorization {
     fn call(
         &mut self,
@@ -93,6 +99,7 @@ pub async fn serve<F>(
     addr: impl Into<std::net::SocketAddr>,
     broker: broker::DataBroker,
     #[cfg(feature = "tls")] server_tls: ServerTLS,
+    apis: &[Api],
     authorization: Authorization,
     signal: F,
 ) -> Result<(), Box<dyn std::error::Error>>
@@ -106,6 +113,7 @@ where
         broker,
         #[cfg(feature = "tls")]
         server_tls,
+        apis,
         authorization,
         signal,
     )
@@ -116,6 +124,7 @@ pub async fn serve_with_incoming_shutdown<F>(
     listener: TcpListener,
     broker: broker::DataBroker,
     #[cfg(feature = "tls")] server_tls: ServerTLS,
+    apis: &[Api],
     authorization: Authorization,
     signal: F,
 ) -> Result<(), Box<dyn std::error::Error>>
@@ -128,7 +137,7 @@ where
     }
 
     let incoming = TcpListenerStream::new(listener);
-    let mut builder = Server::builder()
+    let mut server = Server::builder()
         .http2_keepalive_interval(Some(Duration::from_secs(10)))
         .http2_keepalive_timeout(Some(Duration::from_secs(20)));
 
@@ -136,7 +145,7 @@ where
     match server_tls {
         ServerTLS::Enabled { tls_config } => {
             info!("Using TLS");
-            builder = builder.tls_config(tls_config)?;
+            server = server.tls_config(tls_config)?;
         }
         ServerTLS::Disabled => {
             info!("TLS is not enabled")
@@ -147,23 +156,35 @@ where
         info!("Authorization is not enabled.");
     }
 
-    builder
-        .add_service(
+    let kuksa_val_v1 = {
+        if apis.contains(&Api::KuksaValV1) {
+            Some(kuksa::val::v1::val_server::ValServer::with_interceptor(
+                broker.clone(),
+                authorization.clone(),
+            ))
+        } else {
+            None
+        }
+    };
+
+    let mut router = server.add_optional_service(kuksa_val_v1);
+
+    if apis.contains(&Api::SdvDatabrokerV1) {
+        router = router.add_optional_service(Some(
             sdv::databroker::v1::broker_server::BrokerServer::with_interceptor(
                 broker.clone(),
                 authorization.clone(),
             ),
-        )
-        .add_service(
+        ));
+        router = router.add_optional_service(Some(
             sdv::databroker::v1::collector_server::CollectorServer::with_interceptor(
                 broker.clone(),
-                authorization.clone(),
+                authorization,
             ),
-        )
-        .add_service(kuksa::val::v1::val_server::ValServer::with_interceptor(
-            broker.clone(),
-            authorization,
-        ))
+        ));
+    }
+
+    router
         .serve_with_incoming_shutdown(incoming, shutdown(broker, signal))
         .await?;
 

@@ -42,7 +42,7 @@ const CLI_COMMANDS: &[(&str, &str, &str)] = &[
         "<QUERY>",
         "Subscribe to signals with QUERY, if you use kuksa feature comma separated list",
     ),
-    ("feed", "<PATH> <VALUE>", "Publish signal value"),
+    ("publish", "<PATH> <VALUE>", "Publish signal value"),
     (
         "metadata",
         "[PATTERN]",
@@ -369,7 +369,7 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                                 format!("{} is not an actuator.", path),
                                             )?;
                                             cli::print_info(
-                                                "If you want to provide the signal value, use `feed`.",
+                                                "If you want to act as a provider and publish a value, use `publish`.",
                                             )?;
                                             continue;
                                         }
@@ -402,7 +402,7 @@ pub async fn kuksa_main(_cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                                 }
                             }
                         }
-                        "feed" => {
+                        "publish" => {
                             interface.add_history_unique(line.clone());
 
                             let (path, value) = cli::split_first_word(args);
@@ -902,7 +902,7 @@ impl<Term: Terminal> Completer<Term> for CliCompleter {
                 Some(compls)
             }
             // Complete command parameters
-            Some("set") | Some("feed") => {
+            Some("set") | Some("publish") => {
                 if words.count() == 0 {
                     self.complete_entry_path(word)
                 } else {
