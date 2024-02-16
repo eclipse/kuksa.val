@@ -33,7 +33,7 @@
 #include <boost/filesystem.hpp>
 #include <jsoncons/json.hpp>
 #include <jsonpath/json_query.hpp>
-#include <thread>                                                               
+#include <thread>
 
 #include "AccessChecker.hpp"
 #include "Authenticator.hpp"
@@ -64,7 +64,7 @@ void ctrlC_Handler(sig_atomic_t signal)
   try
   {
     std::cout << "STOP ..." << std::endl;
-    boost::log::core::get()->remove_all_sinks();                                                 
+    boost::log::core::get()->remove_all_sinks();
     std::signal(signal, former_handler);
     std::raise(signal);
   }
@@ -101,6 +101,8 @@ int main(int argc, const char *argv[]) {
     std::cout << "-dirty";
   std::cout << " from " << GIT_COMMIT_DATE_ISO8601 << std::endl;
 
+  std::cout << "WARNING: KUKSA Server is deprecated and will reach End-of-Life 2024-12-31 " << std::endl;
+
   former_handler = signal(SIGINT,ctrlC_Handler);
   (void) signal(SIGTERM,ctrlC_Handler);
 
@@ -124,7 +126,7 @@ int main(int argc, const char *argv[]) {
       "If provided, `kuksa-val-server` shall use different server address than default _'localhost'_")
     ("port", program_options::value<int>()->default_value(8090),
         "If provided, `kuksa-val-server` shall use different server port than default '8090' value")
-    ("record", program_options::value<string>() -> default_value("noRecord"), 
+    ("record", program_options::value<string>() -> default_value("noRecord"),
         "Enables recording into log file, for later being replayed into the server \nnoRecord: no data will be recorded\nrecordSet: record setting values only\nrecordSetAndGet: record getting value and setting value")
     ("record-path",program_options::value<string>() -> default_value("."),
         "Specifies record file path.")
@@ -235,7 +237,7 @@ int main(int argc, const char *argv[]) {
           std::cout << "Recording inputs\n";
         else if(variables["record"].as<string>() == "recordSetAndGet")
           std::cout << "Recording in- and outputs\n";
-    
+
         database.reset(new VssDatabase_Record(logger,subHandler,variables["record-path"].as<string>(),variables["record"].as<string>()));
     }
     else if(variables["record"].as<string>() !="noRecord")
@@ -276,7 +278,7 @@ int main(int argc, const char *argv[]) {
       std::thread grpc(grpcHandler::RunServer, cmdProcessor, database, subHandler, logger, variables["cert-path"].as<boost::filesystem::path>().string(),insecureConn);
       http.join();
       grpc.join();
-      
+
 
     }
   } catch (const program_options::error &ex) {
