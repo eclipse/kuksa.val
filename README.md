@@ -21,7 +21,7 @@ KUKSA.val contains several components
 | Component      | Description |
 | -------------- | ----------- |
 | [KUKSA Databroker](./kuksa_databroker) | Efficient in-vehicle signal broker written in RUST providing authorized access to VSS data using gRPC
-| [KUKSA Server](kuksa-val-server) | Feature rich in-vehicle data server written in C++ providing authorized access to VSS data using W3C VISS websocket protocol
+| [KUKSA Server](kuksa-val-server) | Feature rich in-vehicle data server written in C++ providing authorized access to VSS data using W3C VISS websocket protocol **Note: KUKSA Server is deprecated and will reach End-of-Life 2024-12-31!**
 | [KUKSA Python SDK](https://github.com/eclipse-kuksa/kuksa-python-sdk)   | Command line tool to interactively explore and modify the VSS data points and data structure. Python library for easy interaction with KUKSA Databroker and Server. *Note: Moved to a separate repository!*
 | [KUKSA GO Client](./kuksa_go_client)   | Example client written in the [GO](https://go.dev/) programming language for easy interaction with KUKSA Databroker and Server
 | [Example Applications](./kuksa_apps) | Some example apps for different programming languages and frameworks

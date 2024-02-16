@@ -1,6 +1,6 @@
 ## Why is there a need for the KUKSA.val databroker?
 The KUKSA.val KUKSA.val server started as a C++ VISS implementation, that later evolved and gained gRPC support. KUKSA.val databroker was a similar project trying to build a modern rust server for VSS data using a binary efficient gRPC protocol. Currently both projects are being joined, and will support the same GRPC API and Python library so you can exchange feeders and apps.
-Check below for the difference in feature set. 
+Check below for the difference in feature set.
 
 ## What is the difference between the KUKSA.val server and KUKSA.val databroker?
 
@@ -15,8 +15,7 @@ Main differences:
 
 For a detailed overview what the KUKSA.val server and KUKSA.val databroker support look [here](protocol/support.md)
 
-## What is the plan for the future? (should be updated freuquently to let the community now what's planned)
-Last updated: October 2022 <br>
-The KUKSA.val server will still be available for those who want to use the VISS.
-The KUKSA.val databroker and the KUKSA.val server will support one unified gRPC API.
-The KUKSA.val databroker will be extended to support the KUKSA.val server security model over JWT Tokens or similar.
+## What is the plan for the future? (should be updated frequently to let the community now what's planned)
+Last updated: February 2024 <br>
+
+**KUKSA Server is deprecated and will reach End-of-Life 2024-12-31!**
