@@ -101,6 +101,24 @@ where
 {
     let socket_addr = addr.into();
     let listener = TcpListener::bind(socket_addr).await?;
+
+    /* On Linux systems try to notify daemon readiness to systemd.
+     * This function determines whether the a system is using systemd
+     * or not, so it is safe to use on non-systemd systems as well.
+     */
+    #[cfg(target_os = "linux")]
+    {
+        match sd_notify::booted() {
+            Ok(true) => {
+                info!("Notifying systemd that the service is ready");
+                sd_notify::notify(false, &[sd_notify::NotifyState::Ready])?;
+            }
+            _ => {
+                debug!("System is not using systemd, will not try to notify");
+            }
+        }
+    }
+
     serve_with_incoming_shutdown(
         listener,
         broker,
