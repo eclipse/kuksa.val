@@ -26,13 +26,13 @@ impl From<&proto::Datapoint> for broker::Datapoint {
 
         match &datapoint.timestamp {
             Some(source_timestamp) => {
-                let source_ts = source_timestamp
-                    .clone()
-                    .try_into()
-                    .unwrap_or_else(|_| SystemTime::now());
+                let source: Option<SystemTime> = match source_timestamp.clone().try_into() {
+                    Ok(source) => Some(source),
+                    Err(_) => None,
+                };
                 broker::Datapoint {
                     ts,
-                    source_ts: Some(source_ts),
+                    source_ts: source,
                     value,
                 }
             }

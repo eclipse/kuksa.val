@@ -162,6 +162,7 @@ impl Viss for Server {
                         datapoint: None,
                         actuator_target: Some(Some(broker::Datapoint {
                             value: actuator_target,
+                            source_ts: None,
                             ts: SystemTime::now(),
                         })),
                         entry_type: None,

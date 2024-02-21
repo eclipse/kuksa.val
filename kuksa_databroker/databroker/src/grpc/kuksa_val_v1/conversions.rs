@@ -306,7 +306,7 @@ impl From<proto::Datapoint> for broker::Datapoint {
             source_ts: match from.timestamp {
                 Some(ts) => match std::convert::TryInto::try_into(ts) {
                     Ok(ts) => Some(ts),
-                    Err(_) => Some(SystemTime::now()),
+                    Err(_) => None,
                 },
                 None => None,
             },
