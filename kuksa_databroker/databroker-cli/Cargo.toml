@@ -15,7 +15,7 @@
 name = "databroker-cli"
 version = "0.4.1"
 authors = ["Eclipse KUKSA Project"]
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]

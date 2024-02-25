@@ -13,6 +13,8 @@
 
 [workspace]
 
+resolver = "2"
+
 members = [
     "kuksa_databroker/databroker",
     "kuksa_databroker/databroker-proto",
