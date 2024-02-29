@@ -8,7 +8,7 @@
 
 Due to limited interest the KUKSA Project intends to declare that KUKSA Server has reached End-of-Life 2024-12-31!
 This means KUKSA Server will not be updated after 2024-12-31 and Pull Requests will not
-be accepted. Users are encouraged to migrate to KUKSA Server.
+be accepted. Users are encouraged to migrate to KUKSA Databroker.
 
 If you have a strong interest in KUKSA Server and are willing be responsible for maintaining it please reach out to KUKSA project by commenting in
 [Issue 737](https://github.com/eclipse/kuksa.val/issues/737).
