@@ -1,5 +1,8 @@
 # Databroker Example Tokens
 
+*NOTE: The tokens here are copies of the tokens stored in [kuksa-common](https://github.com/eclipse-kuksa/kuksa-common/tree/main/jwt)!*
+
+
 This directory contains example tokens for demo and test purposes for KUKSA.val Databroker.
 For more information on token format see [documentation](../doc/KUKSA.val_data_broker/authorization.md).
 
@@ -15,14 +18,5 @@ For more information on token format see [documentation](../doc/KUKSA.val_data_b
 
 ## Create new tokens
 
-Tokens can be generated as described in [documentation](../kuksa_certificates/README.md).
-Note that token generation must take place from the directory containing `createToken.py`
-
-An example is shown below:
-
-```
-~/kuksa.val/kuksa_certificates/jwt$ python -m createToken ../../jwt/actuate-provide-all.json 
-Reading private key from jwt.key
-Reading JWT payload from ../../jwt/actuate-provide-all.json
-Writing signed access token to ../../jwt/actuate-provide-all.token
-```
+Helper scripts and documentation on how to generate new keys and tokens exist in
+[kuksa-common](https://github.com/eclipse-kuksa/kuksa-common/tree/main/jwt).
