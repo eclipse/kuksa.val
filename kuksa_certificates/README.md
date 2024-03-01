@@ -3,12 +3,15 @@
 This directory contains example keys, tokens and certificates that can be used for testing clients and servers in this repository.
 Many of the clients and servers in this repository use keys, tokens and certificates from this directory by default.
 
+*Note that the primary storage location for keys, tokens and certificates usable for KUKSA Databroker*
+*is [kuksa-common](https://github.com/eclipse-kuksa/kuksa-common/tree/main).*
+*Files that also exist here should be considered as copies.*
 
 ## Keys and Certificates for TLS connections
 
 This directory contain a set of example certificates, used by the KUKSA-project during development and testing.
 They may or may not be useful for your test environment.
-If needed you can customize `genCerts.sh` and generate keys and certificates that fits your environment.
+If needed you can customize the [genCerts.sh](https://github.com/eclipse-kuksa/kuksa-common/blob/main/tls/genCerts.sh) script and generate keys and certificates that fits your environment.
 
 See the [KUKSA.val TLS documentation](../doc/tls.md) for general information on the KUKSA.val TLS concept.
 
@@ -24,23 +27,7 @@ This directory contains the following files with cryptographical information.
 | `Server.pem` | Client certificate chain, valid for 365 days, currently not needed as mutual authentication is not supported. |
 
 If the certificates have expired or you by any other reason need to regenerate keys or certificates you can use
-the `genCerts.sh` cript as described below.
-
-### Generating Keys and Certificates for TLS Connections
-
-Execute the script
-
-```
-> ./genCerts.sh
-```
-
-This creates `Client.pem` and `Server.pem` valid for 365 days since the day of generation.
-If you want to also generate new keys, then delete the keys you want to regenerate before running the script.
-This will trigger the script to generate new keys before generating the corresponding certificate.
-If you want to regenerate `CA.pem` you must first delete it.
-
-**NOTE: The script genCerts.sh may not be suitable to use for generating keys and certificates for your production environment!  **
-**NOTE: Please consult with your Project Security Manager (or similar) on how your keys and certificates shall be generated!  **
+the [genCerts.sh](https://github.com/eclipse-kuksa/kuksa-common/blob/main/tls/genCerts.sh) as described in kuksa-common [documentation](https://github.com/eclipse-kuksa/kuksa-common/blob/main/tls/README.md).
 
 ## Java Web Tokens (JWT)
 
@@ -57,15 +44,5 @@ The following example tokens exist:
 
 Note that the tokens have limited validity, if expired the `*.json` files need to be updated and the `*.json.token` files regenerated.
 
-Two helper scripts exist for generating keys and tokens
-
-* [recreateJWTkeyPair.sh](jwt/recreateJWTkeyPair.sh) to regenerate the JWT keys used for signing
-* [createToken.py](jwt/createToken.py) to create signed tokens, requires `*.json` files as parameters
-
-Example use:
-
-
-```bash
-$ pip3 install -r requirements.txt
-$ ./createToken.py all-read-write.json
-```
+Two helper scripts exist for generating keys and tokens, please see
+[kuksa-common documentation](https://github.com/eclipse-kuksa/kuksa-common/tree/main/jwt)
