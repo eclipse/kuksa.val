@@ -1153,6 +1153,7 @@ impl<'a, 'b> DatabaseWriteAccess<'a, 'b> {
                 Some(datapoint) => datapoint,
                 None => Datapoint {
                     ts: SystemTime::now(),
+                    source_ts: None,
                     value: DataValue::NotAvailable,
                 },
             },
