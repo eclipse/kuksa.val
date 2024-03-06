@@ -1,0 +1,98 @@
+{
+    "Vehicle": {
+        "children": {
+            "Immobilizer": {
+                "children": {
+                    "Inhibitor": {
+                        "children": {
+                            "Inhibitor01": {
+                                "children": {
+                                    "SteeringColumn": {
+                                        "children": {
+                                            "IsEnabled": {
+                                                "comment": "This signal can be used by onboard vehicle services to enable mechanical steeringColumn lock.",
+                                                "datatype": "boolean",
+                                                "description": "Enable mechanical steeringColumn lock.",
+                                                "type": "actuator"
+                                            }
+                                        },
+                                        "description": "The inhibitor mechanical steeringColumn.",
+                                        "type": "branch"
+                                    }
+                                },
+                                "description": "The type of Inhibitor.",
+                                "type": "branch"
+                            },
+                            "Inhibitor02": {
+                                "children": {
+                                    "SteeringColumn": {
+                                        "children": {
+                                            "IsEnabled": {
+                                                "comment": "This signal can be used by onboard vehicle services to enable mechanical steeringColumn lock.",
+                                                "datatype": "boolean",
+                                                "description": "Enable mechanical steeringColumn lock.",
+                                                "type": "actuator"
+                                            }
+                                        },
+                                        "description": "The inhibitor mechanical steeringColumn.",
+                                        "type": "branch"
+                                    }
+                                },
+                                "description": "The type of Inhibitor.",
+                                "type": "branch"
+                            }
+                        },
+                        "description": "The key Inhibitor.",
+                        "type": "branch"
+                    },
+                    "KeySystem": {
+                        "children": {
+                            "Key01":{
+                                "type":"branch",
+                                "description": "Key System 01",
+                                "children": {
+                                    "PermissionProvided": {
+                                        "comment": "This signal can be used by onboard vehicle services to decide whether the key is present or not.",
+                                        "datatype": "boolean",
+                                        "description": "Indicates if Physical key of the vehicle is present.",
+                                        "type": "sensor"
+                                    },
+                                    "Name": {
+                                        "comment": "This signal can be used by onboard vehicle services to decide whether the key is present or not.",
+                                        "datatype": "string",
+                                        "description": "Indicates if Physical key of the vehicle is present.",
+                                        "type": "attribute"
+                                    }
+                                }
+                            },
+                            "Key02":{
+                                "type":"branch",
+                                "description": "Key System 02",
+                                "children": {
+                                    "PermissionProvided": {
+                                        "comment": "This signal can be used by onboard vehicle services to decide whether the key is present or not.",
+                                        "datatype": "boolean",
+                                        "description": "Indicates if Physical key of the vehicle is present.",
+                                        "type": "sensor"
+                                    },
+                                    "Name": {
+                                        "comment": "This signal can be used by onboard vehicle services to decide whether the key is present or not.",
+                                        "datatype": "boolean",
+                                        "description": "Indicates if Physical key of the vehicle is present.",
+                                        "type": "attribute"
+                                    }
+                                }
+                            }
+                        },
+                        "description": "The keysystem of the vehicle.",
+                        "type": "branch"
+                    }
+                },
+                "description": "Immobilizer data.",
+                "type": "branch"
+            }
+        },
+        "description": "High-level vehicle data.",
+        "type": "branch"
+    }
+}
