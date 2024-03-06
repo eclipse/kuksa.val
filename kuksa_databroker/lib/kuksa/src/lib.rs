@@ -288,7 +288,10 @@ impl KuksaClient {
             })
         }
 
-        let req = proto::v1::SubscribeRequest { entries };
+        let req = proto::v1::SubscribeRequest {
+            entries,
+            frequency_hertz: None,
+        };
 
         match client.subscribe(req).await {
             Ok(response) => Ok(response.into_inner()),
@@ -321,7 +324,10 @@ impl KuksaClient {
             })
         }
 
-        let req = proto::v1::SubscribeRequest { entries };
+        let req = proto::v1::SubscribeRequest {
+            entries,
+            frequency_hertz: None,
+        };
 
         match client.subscribe(req).await {
             Ok(response) => Ok(response.into_inner()),
@@ -346,7 +352,10 @@ impl KuksaClient {
             })
         }
 
-        let req = proto::v1::SubscribeRequest { entries };
+        let req = proto::v1::SubscribeRequest {
+            entries,
+            frequency_hertz: None,
+        };
 
         match client.subscribe(req).await {
             Ok(response) => Ok(response.into_inner()),

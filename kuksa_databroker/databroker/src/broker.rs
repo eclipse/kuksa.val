@@ -615,7 +615,11 @@ impl Subscriptions {
         self.change_subscriptions.push(subscription)
     }
 
-    pub fn add_continuous_subscription(&mut self, subscription: ContinuousSubscription) {
+    pub fn add_continuous_subscription(
+        &mut self,
+        subscription: ContinuousSubscription,
+        frequency: u64,
+    ) {
         let local_subscription = subscription.clone();
         self.continuous_subscriptions
             .lock()
@@ -627,7 +631,7 @@ impl Subscriptions {
             while !local_subscription.sender.is_closed() {
                 let _ = local_subscription.notify(None).await;
                 // Simulate some asynchronous work
-                tokio::time::sleep(Duration::from_secs(1)).await;
+                tokio::time::sleep(Duration::from_millis(1 / frequency * 1000)).await;
             }
         });
     }
@@ -1593,6 +1597,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
     pub async fn subscribe(
         &self,
         valid_entries: HashMap<i32, HashSet<Field>>,
+        frequency: Option<u64>,
     ) -> Result<impl Stream<Item = EntryUpdates>, SubscriptionError> {
         if valid_entries.is_empty() {
             return Err(SubscriptionError::InvalidInput);
@@ -1636,6 +1641,9 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
 
         let (sender, receiver) = mpsc::channel(10);
         if !entries_on_changed.is_empty() {
+            if frequency.is_some() && entries_continuous.is_empty() {
+                return Err(SubscriptionError::InvalidInput);
+            }
             let subscription = ChangeSubscription {
                 entries: entries_on_changed,
                 sender: sender.clone(),
@@ -1658,6 +1666,9 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
         }
 
         if !entries_continuous.is_empty() {
+            if frequency.is_none() {
+                return Err(SubscriptionError::InvalidInput);
+            }
             let subscription_continuous = ContinuousSubscription {
                 entries: entries_continuous,
                 sender,
@@ -1677,7 +1688,7 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
                 .subscriptions
                 .write()
                 .await
-                .add_continuous_subscription(subscription_continuous);
+                .add_continuous_subscription(subscription_continuous, frequency.unwrap());
         }
 
         let stream = ReceiverStream::new(receiver);
@@ -3161,7 +3172,10 @@ mod tests {
             .expect("Register datapoint should succeed");
 
         let mut stream = broker
-            .subscribe(HashMap::from([(id1, HashSet::from([Field::Datapoint]))]))
+            .subscribe(
+                HashMap::from([(id1, HashSet::from([Field::Datapoint]))]),
+                None,
+            )
             .await
             .expect("subscription should succeed");
 

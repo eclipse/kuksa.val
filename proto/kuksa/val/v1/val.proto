@@ -98,6 +98,7 @@ message SubscribeEntry {
 // Subscribe to changes in datapoints.
 message SubscribeRequest {
   repeated SubscribeEntry entries = 1;
+  optional uint64 frequency_hertz = 2;
 }
 
 // A subscription response
