@@ -130,8 +130,13 @@ impl TryFrom<Claims> for Permissions {
             }
         }
 
-        permissions = permissions
-            .expires_at(std::time::UNIX_EPOCH + std::time::Duration::from_secs(claims.exp));
+        if let Some(expire_date) =
+            std::time::UNIX_EPOCH.checked_add(std::time::Duration::from_secs(claims.exp))
+        {
+            permissions = permissions.expires_at(expire_date);
+        } else {
+            return Err(Error::ClaimsError);
+        }
 
         permissions.build().map_err(|err| match err {
             PermissionsBuildError::BuildError => Error::ClaimsError,
