@@ -15,7 +15,7 @@ name: kuksa_databroker-cli_build
 
 on:
   push:
-    branches: [ master ]
+    #branches: [ master ]
   pull_request:
     paths:
       - ".github/workflows/kuksa_databroker-cli_build.yml"
