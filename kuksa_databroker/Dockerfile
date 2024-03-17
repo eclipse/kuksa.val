@@ -1,5 +1,5 @@
 # /********************************************************************************
-# * Copyright (c) 2022, 2023 Contributors to the Eclipse Foundation
+# * Copyright (c) 2024 Contributors to the Eclipse Foundation
 # *
 # * See the NOTICE file(s) distributed with this work for additional
 # * information regarding copyright ownership.
@@ -44,7 +44,8 @@ COPY ./target/riscv64gc-unknown-linux-gnu/release/databroker /app/databroker
 FROM target-$TARGETARCH as target
 ARG TARGETARCH
 
-COPY ./dist/$TARGETARCH/thirdparty/ /app/thirdparty
+COPY ./dist/$TARGETARCH/sbom.json /app/
+COPY ./dist/$TARGETARCH/thirdparty-licenses/ /app/thirdparty
 
 COPY ./data/vss-core/vss_release_3.1.1.json vss_release_3.1.1.json
 COPY ./data/vss-core/vss_release_4.0.json vss_release_4.0.json

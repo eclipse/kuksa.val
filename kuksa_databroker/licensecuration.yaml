@@ -1,0 +1,21 @@
+# Curation file for thirdparty licenses
+# Will be used by collectlicensefromcyclonedx tool
+# to inform it about choosing the correct license
+# artifacts to be stored in deliverables
+
+components:
+  # ring is based on the standard OpenSSL and BoringSSL
+  # projects, thus licensing of the codebase is complex depending
+  # on parts. This makes sure that except the explanatory text
+  # in ring (and thus in the generated CycloneDX file) are copied
+  # as well as the vanilla text of the ISC and OPENSSL license
+  # OpenSSL seems to be in the process to move to Apache-2.0, but this
+  # may take some time
+  ring:
+    expression: "ring AND ISC AND OPENSSL"
+
+
+expressions:
+    # LLVM exception not relevant for the project, thus in situation
+    # like this we choose to use vanilla Apache-2.0 terms
+    "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT": "Apache-2.0"
