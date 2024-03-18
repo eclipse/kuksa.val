@@ -127,8 +127,8 @@ A message is received every time `Vehicle.Seats.Row1.Position`, `Vehicle.Seats.R
 `Vehicle.Datapoint2` is updated (and the condition is true)
 
 
-| #| ...Datapoint2 | pos1  | pos2 | ...Speed | Response |   |
-|-:|:-------------:|:---- :|:----:|:--------:|----------|:--|
+| #| ...Datapoint2 | pos1 | pos2 | ..Speed | Response  |    |
+|-:|:-------------:|:----:|:----:|---------|:----------|:---|
 | 1| 30            | 250   | 150  | 30       |    | Query posted, nothing is returned since (`Vehicle.Datapoint2 > 50`) isn't true |
 | 2| 30            | 250   | 150  | 30       |    | |
 | 3| 30            | 240*  | 150  | 30       |    | |
