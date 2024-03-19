@@ -72,6 +72,9 @@ jobs:
           ${{ steps.meta.outputs.tags }}
           ttl.sh/kuksa.val/kuksa-server-${{github.sha}}
         labels: ${{ steps.meta.outputs.labels }}
+        # Provenance to solve that an unknown/unkown image is shown on ghcr.io
+        # Same problem as described in https://github.com/orgs/community/discussions/45969
+        provenance: false
 
     - name: Build ephemeral KUKSA Server docker and push to ttl.sh
       if: needs.check_ghcr_push.outputs.push == 'false'
@@ -85,3 +88,6 @@ jobs:
         push: true
         tags: ttl.sh/kuksa.val/kuksa-server-${{github.sha}}
         labels: ${{ steps.meta.outputs.labels }}
+        # Provenance to solve that an unknown/unkown image is shown on ghcr.io
+        # Same problem as described in https://github.com/orgs/community/discussions/45969
+        provenance: false

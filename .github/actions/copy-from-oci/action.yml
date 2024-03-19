@@ -25,7 +25,7 @@ inputs:
     description: |
       This will be the name of the temporary container, making sure we do not leave any stale containers around
       (we try deleting and before and after running this, so we can recover should a workflow for a given id fail before cleaning up)
-      Will be used for artifact name (if export=true) and to identify 
+      Will be used for artifact name (if export=true) and to identify
       This will also be created as directory in cwd.
       !No special characters allowed "/" !
   export:
@@ -35,29 +35,26 @@ inputs:
   transform:
     required: false
     description: Optionally applying chosen --transform to tar when export is set to true
-      
+
 
 runs:
   using: "composite"
   steps:
     - shell: bash
-      run: | 
+      run: |
         mkdir -p ${{ inputs.id }}
         docker rm ${{ inputs.id }} || true
         docker create --name ${{ inputs.id }} --platform  ${{ inputs.platform }}  ${{ inputs.image }}
-        docker cp ${{ inputs.id }}:${{ inputs.src }} ${{ inputs.id }}  
+        docker cp ${{ inputs.id }}:${{ inputs.src }} ${{ inputs.id }}
         docker rm ${{ inputs.id }}
 
-        
+
     - if: inputs.export == 'true'
       shell: bash
       run: tar -czf ${{ inputs.id }}.tar.gz -C ${{ inputs.id }} --transform "${{ inputs.transform }}"  .
-         
+
     - if: inputs.export == 'true'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.id }}
         path: ${{ inputs.id }}.tar.gz
-       
-      
-  
