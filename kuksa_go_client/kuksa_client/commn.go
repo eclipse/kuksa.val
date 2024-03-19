@@ -19,7 +19,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"io/ioutil"
+	"os"
 	"log"
 	"net/url"
 	"sync"
@@ -105,7 +105,7 @@ func (cc *KuksaClientCommWs) startCommunication() error {
 		}
 
 		// Load CA Certificate
-		caCert, err := ioutil.ReadFile(cc.Config.CertsDir + "/CA.pem")
+		caCert, err := os.ReadFile(cc.Config.CertsDir + "/CA.pem")
 		if err != nil {
 			return err
 		}
