@@ -28,7 +28,7 @@ jobs:
     - name: listing test results
       run: ls out
     - name: Upload unittests artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: unittest
         path: ${{github.workspace}}/out

@@ -67,7 +67,7 @@ jobs:
             --exclude-files kuksa_databroker/databroker/tests/world/*
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Code coverage report
           path: cobertura.xml
@@ -119,11 +119,11 @@ jobs:
 
     # only needed for runners without buildx setup, will be slow
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
 
     - name: Set up Docker Buildx
       id: buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
 
     - name: Log in to the Container registry
       if: needs.check_ghcr_push.outputs.push == 'true'
@@ -149,6 +149,9 @@ jobs:
           ${{ steps.meta.outputs.tags }}
           ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}
         labels: ${{ steps.meta.outputs.labels }}
+        # Provenance to solve that an unknown/unkown image is shown on ghcr.io
+        # Same problem as described in https://github.com/orgs/community/discussions/45969
+        provenance: false
 
     - name: Build ephemeral KUKSA Databroker container and push to ttl.sh
       if: needs.check_ghcr_push.outputs.push == 'false'
@@ -164,6 +167,9 @@ jobs:
         push: true
         tags: "ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}"
         labels: ${{ steps.meta.outputs.labels }}
+        # Provenance to solve that an unknown/unkown image is shown on ghcr.io
+        # Same problem as described in https://github.com/orgs/community/discussions/45969
+        provenance: false
 
     - name: Posting message
       uses: ./.github/actions/post-container-location
@@ -171,19 +177,19 @@ jobs:
         image: ttl.sh/kuksa.val/kuksa-databroker-${{github.sha}}
 
     - name: "Archiving AMD64 artifacts"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
           name: databroker-amd64
           path: ${{github.workspace}}/dist/amd64
 
     - name: "Archiving ARM64 artifacts"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
           name: databroker-arm64
           path: ${{github.workspace}}/dist/arm64
 
     - name: "Archiving RISCV64 artifacts"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: databroker-riscv64
         path: ${{github.workspace}}/dist/riscv64
@@ -197,7 +203,7 @@ jobs:
     steps:
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - uses: actions/checkout@v4
 

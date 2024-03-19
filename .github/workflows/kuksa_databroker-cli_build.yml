@@ -81,11 +81,11 @@ jobs:
           type=semver,pattern={{major}}
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
 
     - name: Set up Docker Buildx
       id: buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
 
     - name: Log in to the Container registry
       if: needs.check_ghcr_push.outputs.push == 'true'
@@ -111,6 +111,9 @@ jobs:
           ${{ steps.meta.outputs.tags }}
           ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}
         labels: ${{ steps.meta.outputs.labels }}
+        # Provenance to solve that an unknown/unkown image is shown on ghcr.io
+        # Same problem as described in https://github.com/orgs/community/discussions/45969
+        provenance: false
 
     - name: Build ephemeral KUKSA Databroker container and push to ttl.sh
       if: needs.check_ghcr_push.outputs.push == 'false'
@@ -126,6 +129,9 @@ jobs:
         push: true
         tags: "ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}"
         labels: ${{ steps.meta.outputs.labels }}
+        # Provenance to solve that an unknown/unkown image is shown on ghcr.io
+        # Same problem as described in https://github.com/orgs/community/discussions/45969
+        provenance: false
 
 
     - name: Posting message
@@ -134,19 +140,19 @@ jobs:
         image: ttl.sh/kuksa.val/kuksa-databroker-cli-${{github.sha}}
 
     - name: "Archiving AMD64 artifacts"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: databroker-cli-amd64
         path: ${{github.workspace}}/dist/amd64
 
     - name: "Archiving ARM64 artifacts"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: databroker-cli-arm64
         path: ${{github.workspace}}/dist/arm64
 
     - name: "Archiving RISCV64 artifacts"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: databroker--cli-riscv64
         path: ${{github.workspace}}/dist/riscv64
