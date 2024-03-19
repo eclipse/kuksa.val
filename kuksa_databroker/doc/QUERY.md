@@ -40,7 +40,7 @@ Get a response every time `Vehicle.Seats.Row1.Position` or
 
 ### 1.2.1. Time / conceptual row view
 
-Each time any datapoint changes a new "conceptual row" is created. 
+Each time any datapoint changes a new "conceptual row" is created.
 It contains the values of all datapoints at that point in time.
 
 
@@ -156,12 +156,12 @@ A message is received every time `Vehicle.Seats.Row1.Position`, `Vehicle.Seats.R
 What follows isn't implemented or fully thought through yet.
 
 ```
- _____ _   _ _____ _   _ ____  _____ 
+ _____ _   _ _____ _   _ ____  _____
 |  ___| | | |_   _| | | |  _ \| ____|
-| |_  | | | | | | | | | | |_) |  _|  
-|  _| | |_| | | | | |_| |  _ <| |___ 
+| |_  | | | | | | | | | | |_) |  _|
+|  _| | |_| | | | | |_| |  _ <| |___
 |_|    \___/  |_|  \___/|_| \_\_____|
-                                     
+
    /  BRAINSTORMING FOLLOWS
 ```
 
@@ -264,8 +264,3 @@ WHERE
 | 3| 220 | `true`|
 | 4| 220 | `true`|
 | 5| 210 |`false`|
-
-
-
-
-
