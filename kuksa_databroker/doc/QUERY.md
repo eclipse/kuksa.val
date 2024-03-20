@@ -40,7 +40,7 @@ Get a response every time `Vehicle.Seats.Row1.Position` or
 
 ### 1.2.1. Time / conceptual row view
 
-Each time any datapoint changes a new "conceptual row" is created. 
+Each time any datapoint changes a new "conceptual row" is created.
 It contains the values of all datapoints at that point in time.
 
 
@@ -127,8 +127,8 @@ A message is received every time `Vehicle.Seats.Row1.Position`, `Vehicle.Seats.R
 `Vehicle.Datapoint2` is updated (and the condition is true)
 
 
-| #| ...Datapoint2 | pos1  | pos2 | ...Speed | Response |   |
-|-:|:-------------:|:---- :|:----:|:--------:|----------|:--|
+| #| ...Datapoint2 | pos1 | pos2 | ..Speed | Response  |    |
+|-:|:-------------:|:----:|:----:|---------|:----------|:---|
 | 1| 30            | 250   | 150  | 30       |    | Query posted, nothing is returned since (`Vehicle.Datapoint2 > 50`) isn't true |
 | 2| 30            | 250   | 150  | 30       |    | |
 | 3| 30            | 240*  | 150  | 30       |    | |
@@ -156,12 +156,12 @@ A message is received every time `Vehicle.Seats.Row1.Position`, `Vehicle.Seats.R
 What follows isn't implemented or fully thought through yet.
 
 ```
- _____ _   _ _____ _   _ ____  _____ 
+ _____ _   _ _____ _   _ ____  _____
 |  ___| | | |_   _| | | |  _ \| ____|
-| |_  | | | | | | | | | | |_) |  _|  
-|  _| | |_| | | | | |_| |  _ <| |___ 
+| |_  | | | | | | | | | | |_) |  _|
+|  _| | |_| | | | | |_| |  _ <| |___
 |_|    \___/  |_|  \___/|_| \_\_____|
-                                     
+
    /  BRAINSTORMING FOLLOWS
 ```
 
@@ -264,8 +264,3 @@ WHERE
 | 3| 220 | `true`|
 | 4| 220 | `true`|
 | 5| 210 |`false`|
-
-
-
-
-
