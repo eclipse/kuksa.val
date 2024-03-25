@@ -20,7 +20,7 @@ use crate::permissions::{Permission, Permissions, PermissionsBuildError};
 
 use super::scope;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     PublicKeyError(String),
     DecodeError(String),
@@ -146,6 +146,7 @@ impl TryFrom<Claims> for Permissions {
 
 #[cfg(test)]
 mod test {
+
     use super::*;
 
     #[test]
@@ -172,6 +173,38 @@ AEiqOjPq0D6X45wCzIwjILUCAwEAAQ==
         match decoder.decode(token) {
             Ok(claims) => {
                 assert_eq!(claims.scope, "read:Vehicle.Speed");
+            }
+            Err(err) => panic!("decode should succeed but failed with:{}", err),
+        }
+    }
+
+    #[test]
+    fn test_expiration_safe_addition() {
+        let pub_key = "-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA6ScE9EKXEWVyYhzfhfvg
++LC8NseiuEjfrdFx3HKkb31bRw/SeS0Rye0KDP7uzffwreKf6wWYGxVUPYmyKC7j
+Pji5MpDBGM9r3pIZSvPUFdpTE5TiRHFBxWbqPSYt954BTLq4rMu/W+oq5Pdfnugb
+voYpLf0dclBl1g9KyszkDnItz3TYbWhGMbsUSfyeSPzH0IADzLoifxbc5mgiR73N
+CA/4yNSpfLoqWgQ2vdTM1182sMSmxfqSgMzIMUX/tiaXGdkoKITF1sULlLyWfTo9
+79XRZ0hmUwvfzr3OjMZNoClpYSVbKY+vtxHyux9KOOtv9lPMsgYIaPXvisrsneDZ
+fCS0afOfjgR96uHIe2UPSGAXru3yGziqEfpRZoxsgXaOe905ordLD5bSX14xkN7N
+Cz7rxDLlxPQyxp4Vhog7p/QeUyydBpZjq2bAE5GAJtiu+XGvG8RypzJFKFQwMNsw
+g1BoZVD0mb0MtU8KQmHcZIfY0FVer/CR0mUjfl1rHbtoJB+RY03lQvYNAD04ibAG
+NI1RhlTziu35Xo6NDEgs9hVs9k3WrtF+ZUxhivWmP2VXhWruRakVkC1NzKGh54e5
+/KlluFbBNpWgvWZqzWo9Jr7/fzHtR0Q0IZwkxh+Vd/bUZya1uLKqP+sTcc+aTHbn
+AEiqOjPq0D6X45wCzIwjILUCAwEAAQ==
+-----END PUBLIC KEY-----
+";
+        let token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJsb2NhbCBkZXYiLCJpc3MiOiJjcmVhdGVUb2tlbi5weSIsImF1ZCI6WyJrdWtzYS52YWwiXSwiaWF0IjoxMzMwMTkxMTY1NzI1OTI3MjkxMywiZXhwIjoxNDM0NDUwNTM0NzIwNjk1NDE4MCwic2NvcGUiOiJwcm92aWRlIn0.HW7mVGyQL13VYPABxys0hm93zwCnF_Wnxer1OG2Qt2DExx8hlQj5RC9nbM881McMc6vebyYw4CVlKeAeI1DQAri8PeVx2xxuLKs_mtjVvqzql-DyCMikR5VYBiCsIFrFkg_oN4XtVPfhE-6IS2380tnhzhd7C1NlBs6SukCAdlURdRfHcow9NJ3WU6UlYIcT9biRSlLfMt-gKkn6LUQR1Fi77Q2SChnwbhycz7LvsifWotnP5SLdaCYpfAky5hQi9qu_qIcP-XkF5DxFWlVKe_N3FRqV1AWFapjMHRZPTS0Wwe0gMZWgaRjudXbbdTI4TTFr5HsAsSmJYsEMIixRWgsG6Hk7em_Uxu77zu9yC0Li4EivHddlUZG6nNz6XzmSgxAErmN7AIElwMxpGuaC8KpR8iEkfHoKWwr4WOLqIL-cyBLp6AIfRDm8hXOywqryrz5FsRWYeLNOruJKbYc29BC6VKS0c5H9zY2d9b6BaWxUUXCplLG5wajfVgSCbdRxZTQ0qdBv6y7J4rhplwCf8u7Ks6Pswd3wwZO-oKk3ziozjwMp4hutbUWqL_WtzCQkBkk7CxV310PUFU0tX1c1o0fPDy8VYVKymI7H_N9NyWBV5tfufmcNoe7LlLtNIMO4cU3YaUxjuxHFtHOOCBvQQC-HuIkpAkIoz45pNjx7WRI";
+
+        let decoder = Decoder::new(pub_key).expect("Creation of decoder should succeed");
+
+        match decoder.decode(token) {
+            Ok(claims) => {
+                match Permissions::try_from(claims){
+                    Ok(perm) => panic!("decode should fail but succeeded with:{:?}", perm),
+                    Err(err) => assert_eq!(err, Error::ClaimsError)
+                }
             }
             Err(err) => panic!("decode should succeed but failed with:{}", err),
         }
