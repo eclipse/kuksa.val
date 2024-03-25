@@ -25,7 +25,8 @@ use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
-use std::time::SystemTime;
+use std::sync::Mutex;
+use std::time::{Duration, SystemTime};
 
 use crate::query::{CompiledQuery, ExecutionInput};
 use crate::types::ExecutionInputImplData;
@@ -91,7 +92,7 @@ pub enum Field {
     MetadataUnit,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Database {
     next_id: AtomicI32,
     path_to_id: HashMap<String, i32>,
@@ -102,6 +103,7 @@ pub struct Database {
 pub struct Subscriptions {
     query_subscriptions: Vec<QuerySubscription>,
     change_subscriptions: Vec<ChangeSubscription>,
+    continuous_subscriptions: Arc<Mutex<Vec<ContinuousSubscription>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -157,6 +159,14 @@ pub struct ChangeSubscription {
     entries: HashMap<i32, HashSet<Field>>,
     sender: mpsc::Sender<EntryUpdates>,
     permissions: Permissions,
+}
+
+#[derive(Debug, Clone)]
+pub struct ContinuousSubscription {
+    entries: HashMap<i32, HashSet<Field>>,
+    sender: mpsc::Sender<EntryUpdates>,
+    permissions: Permissions,
+    database: Arc<RwLock<Database>>,
 }
 
 #[derive(Debug)]
@@ -606,6 +616,27 @@ impl Subscriptions {
         self.change_subscriptions.push(subscription)
     }
 
+    pub fn add_continuous_subscription(
+        &mut self,
+        subscription: ContinuousSubscription,
+        frequency: u64,
+    ) {
+        let local_subscription = subscription.clone();
+        self.continuous_subscriptions
+            .lock()
+            .unwrap()
+            .push(subscription);
+
+        tokio::spawn(async move {
+            // Asynchronous code to be executed in the new task
+            while !local_subscription.sender.is_closed() {
+                let _ = local_subscription.notify(None).await;
+                // Simulate some asynchronous work
+                tokio::time::sleep(Duration::from_millis(1 / frequency * 1000)).await;
+            }
+        });
+    }
+
     pub async fn notify(
         &self,
         changed: Option<&HashMap<i32, HashSet<Field>>>,
@@ -649,6 +680,7 @@ impl Subscriptions {
     pub fn clear(&mut self) {
         self.query_subscriptions.clear();
         self.change_subscriptions.clear();
+        self.continuous_subscriptions.lock().unwrap().clear();
     }
 
     pub fn cleanup(&mut self) {
@@ -663,6 +695,14 @@ impl Subscriptions {
         self.change_subscriptions.retain(|sub| {
             if sub.sender.is_closed() {
                 info!("Subscriber gone: removing subscription");
+                false
+            } else {
+                true
+            }
+        });
+        self.continuous_subscriptions.lock().unwrap().retain(|sub| {
+            if sub.sender.is_closed() {
+                info!("Subscriber gone: removing continuous subscription");
                 false
             } else {
                 true
@@ -918,6 +958,117 @@ impl QuerySubscription {
                 }
             }
             None => Ok(None),
+        }
+    }
+}
+
+impl ContinuousSubscription {
+    async fn notify(
+        &self,
+        changed: Option<&HashMap<i32, HashSet<Field>>>,
+    ) -> Result<(), NotificationError> {
+        let db = self.database.read().await;
+        let db_read = db.authorized_read_access(&self.permissions);
+        match changed {
+            Some(changed) => {
+                let mut matches = false;
+                for (id, changed_fields) in changed {
+                    if let Some(fields) = self.entries.get(id) {
+                        if !fields.is_disjoint(changed_fields) {
+                            matches = true;
+                            break;
+                        }
+                    }
+                }
+                if matches {
+                    // notify
+                    let notifications = {
+                        let mut notifications = EntryUpdates::default();
+
+                        for (id, changed_fields) in changed {
+                            if let Some(fields) = self.entries.get(id) {
+                                if !fields.is_disjoint(changed_fields) {
+                                    match db_read.get_entry_by_id(*id) {
+                                        Ok(entry) => {
+                                            let mut update = EntryUpdate::default();
+                                            let mut notify_fields = HashSet::new();
+                                            // TODO: Perhaps make path optional
+                                            update.path = Some(entry.metadata.path.clone());
+                                            if changed_fields.contains(&Field::Datapoint)
+                                                && fields.contains(&Field::Datapoint)
+                                            {
+                                                update.datapoint = Some(entry.datapoint.clone());
+                                                notify_fields.insert(Field::Datapoint);
+                                            }
+                                            if changed_fields.contains(&Field::ActuatorTarget)
+                                                && fields.contains(&Field::ActuatorTarget)
+                                            {
+                                                update.actuator_target =
+                                                    Some(entry.actuator_target.clone());
+                                                notify_fields.insert(Field::ActuatorTarget);
+                                            }
+                                            notifications.updates.push(ChangeNotification {
+                                                update,
+                                                fields: notify_fields,
+                                            });
+                                        }
+                                        Err(_) => {
+                                            debug!("notify: could not find entry with id {}", id)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        notifications
+                    };
+                    if notifications.updates.is_empty() {
+                        Ok(())
+                    } else {
+                        match self.sender.send(notifications).await {
+                            Ok(()) => Ok(()),
+                            Err(_) => Err(NotificationError {}),
+                        }
+                    }
+                } else {
+                    Ok(())
+                }
+            }
+            None => {
+                let notifications = {
+                    let mut notifications = EntryUpdates::default();
+
+                    for (id, fields) in &self.entries {
+                        match db_read.get_entry_by_id(*id) {
+                            Ok(entry) => {
+                                let mut update = EntryUpdate::default();
+                                let mut notify_fields = HashSet::new();
+                                // TODO: Perhaps make path optional
+                                update.path = Some(entry.metadata.path.clone());
+                                if fields.contains(&Field::Datapoint) {
+                                    update.datapoint = Some(entry.datapoint.clone());
+                                    notify_fields.insert(Field::Datapoint);
+                                }
+                                if fields.contains(&Field::ActuatorTarget) {
+                                    update.actuator_target = Some(entry.actuator_target.clone());
+                                    notify_fields.insert(Field::ActuatorTarget);
+                                }
+                                notifications.updates.push(ChangeNotification {
+                                    update,
+                                    fields: notify_fields,
+                                });
+                            }
+                            Err(_) => {
+                                debug!("notify: could not find entry with id {}", id)
+                            }
+                        }
+                    }
+                    notifications
+                };
+                match self.sender.send(notifications).await {
+                    Ok(()) => Ok(()),
+                    Err(_) => Err(NotificationError {}),
+                }
+            }
         }
     }
 }
@@ -1449,31 +1600,99 @@ impl<'a, 'b> AuthorizedAccess<'a, 'b> {
     pub async fn subscribe(
         &self,
         valid_entries: HashMap<i32, HashSet<Field>>,
+        frequency: Option<u64>,
     ) -> Result<impl Stream<Item = EntryUpdates>, SubscriptionError> {
         if valid_entries.is_empty() {
             return Err(SubscriptionError::InvalidInput);
         }
 
-        let (sender, receiver) = mpsc::channel(10);
-        let subscription = ChangeSubscription {
-            entries: valid_entries,
-            sender,
-            permissions: self.permissions.clone(),
-        };
+        let mut entries_on_changed: HashMap<i32, HashSet<Field>> = HashMap::new();
+        let mut entries_continuous: HashMap<i32, HashSet<Field>> = HashMap::new();
 
-        {
-            // Send everything subscribed to in an initial notification
-            let db = self.broker.database.read().await;
-            if subscription.notify(None, &db).await.is_err() {
-                warn!("Failed to create initial notification");
+        let db_read = self.broker.database.read().await;
+        let db_read_access = db_read.authorized_read_access(self.permissions);
+
+        for (id, fields) in valid_entries {
+            match db_read_access.get_entry_by_id(id) {
+                Ok(entry) => {
+                    let change_type = entry.metadata.change_type.clone();
+                    match change_type {
+                        types::ChangeType::OnChange => {
+                            entries_on_changed
+                                .entry(id)
+                                .and_modify(|existing_fields| {
+                                    existing_fields.extend(fields.clone())
+                                })
+                                .or_insert(fields.clone());
+                        }
+                        types::ChangeType::Continuous => {
+                            entries_continuous
+                                .entry(id)
+                                .and_modify(|existing_fields| {
+                                    existing_fields.extend(fields.clone())
+                                })
+                                .or_insert(fields.clone());
+                        }
+                        types::ChangeType::Static => {}
+                    }
+                }
+                Err(_) => {
+                    debug!("notify: could not find entry with id {}", id)
+                }
             }
         }
 
-        self.broker
-            .subscriptions
-            .write()
-            .await
-            .add_change_subscription(subscription);
+        let (sender, receiver) = mpsc::channel(10);
+        if !entries_on_changed.is_empty() {
+            if frequency.is_some() && entries_continuous.is_empty() {
+                return Err(SubscriptionError::InvalidInput);
+            }
+            let subscription = ChangeSubscription {
+                entries: entries_on_changed,
+                sender: sender.clone(),
+                permissions: self.permissions.clone(),
+            };
+
+            {
+                // Send everything subscribed to in an initial notification
+                let db = self.broker.database.read().await;
+                if subscription.notify(None, &db).await.is_err() {
+                    warn!("Failed to create initial notification");
+                }
+            }
+
+            self.broker
+                .subscriptions
+                .write()
+                .await
+                .add_change_subscription(subscription);
+        }
+
+        if !entries_continuous.is_empty() {
+            if frequency.is_none() {
+                return Err(SubscriptionError::InvalidInput);
+            }
+            let subscription_continuous = ContinuousSubscription {
+                entries: entries_continuous,
+                sender,
+                permissions: self.permissions.clone(),
+                database: Arc::clone(&self.broker.database),
+            };
+
+            {
+                // Send everything subscribed to in an initial notification
+                //let db = self.broker.database.read().await;
+                if subscription_continuous.notify(None).await.is_err() {
+                    warn!("Failed to create initial notification");
+                }
+            }
+
+            self.broker
+                .subscriptions
+                .write()
+                .await
+                .add_continuous_subscription(subscription_continuous, frequency.unwrap());
+        }
 
         let stream = ReceiverStream::new(receiver);
         Ok(stream)
@@ -2977,7 +3196,10 @@ mod tests {
             .expect("Register datapoint should succeed");
 
         let mut stream = broker
-            .subscribe(HashMap::from([(id1, HashSet::from([Field::Datapoint]))]))
+            .subscribe(
+                HashMap::from([(id1, HashSet::from([Field::Datapoint]))]),
+                None,
+            )
             .await
             .expect("subscription should succeed");
 
