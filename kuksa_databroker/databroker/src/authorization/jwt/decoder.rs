@@ -200,12 +200,10 @@ AEiqOjPq0D6X45wCzIwjILUCAwEAAQ==
         let decoder = Decoder::new(pub_key).expect("Creation of decoder should succeed");
 
         match decoder.decode(token) {
-            Ok(claims) => {
-                match Permissions::try_from(claims){
-                    Ok(perm) => panic!("decode should fail but succeeded with:{:?}", perm),
-                    Err(err) => assert_eq!(err, Error::ClaimsError)
-                }
-            }
+            Ok(claims) => match Permissions::try_from(claims) {
+                Ok(perm) => panic!("decode should fail but succeeded with:{:?}", perm),
+                Err(err) => assert_eq!(err, Error::ClaimsError),
+            },
             Err(err) => panic!("decode should succeed but failed with:{}", err),
         }
     }
