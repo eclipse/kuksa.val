@@ -23,7 +23,6 @@ use tokio_stream::Stream;
 
 use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
-use std::mem::take;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -632,8 +631,6 @@ impl Subscriptions {
                 Ok(_) => {}
                 Err(err) => {
                     error = Some(err);
-                    let taken_sender = take(&mut sub.sender);
-                    drop(taken_sender);
                 }
             }
         }
@@ -664,13 +661,20 @@ impl Subscriptions {
                 true
             }
         });
-        self.change_subscriptions.retain(|sub| {
+        self.change_subscriptions.retain_mut(|sub| {
             if let Some(sender) = &sub.sender {
                 if sender.is_closed() {
                     info!("Subscriber gone: removing subscription");
                     false
                 } else {
-                    true
+                    match &sub.permissions.expired() {
+                        Ok(()) => true,
+                        Err(PermissionError::Expired) => {
+                            sub.sender = None;
+                            false
+                        }
+                        Err(err) => panic!("Error: {:?}", err),
+                    }
                 }
             } else {
                 info!("Subscriber gone: removing subscription");
