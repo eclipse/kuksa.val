@@ -319,6 +319,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     databroker::init_logging();
 
     info!("Starting Kuksa Databroker {}", version);
+    warn!("Databroker has been migrated to https://github.com/eclipse-kuksa/kuksa-databroker");
+    warn!("Consider migrating to the new repository!");
 
     let ip_addr = args.get_one::<String>("address").unwrap().parse()?;
     let port = args
