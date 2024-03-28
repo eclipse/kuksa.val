@@ -20,6 +20,8 @@ mod sdv_cli;
 
 #[tokio::main]
 async fn main() {
+    println!("WARNING: Databroker has been migrated to https://github.com/eclipse-kuksa/kuksa-databroker");
+    println!("Consider migrating to the new repository!");
     let mut cli = cli::Cli::parse();
     if cli.get_protocol() == CliAPI::SdvDatabrokerV1 {
         let err = sdv_cli::sdv_main(cli.clone()).await;

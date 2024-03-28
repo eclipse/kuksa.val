@@ -1,4 +1,10 @@
 ![Rust](https://img.shields.io/badge/rust-000000.svg?style=for-the-badge&logo=rust&logoColor=white)![Docker](https://img.shields.io/badge/docker-1D63ED.svg?style=for-the-badge&logo=docker&logoColor=white)
+
+
+**The KUKSA Databroker has been moved to a [new repository](https://github.com/eclipse-kuksa/kuksa-databroker)!**
+
+*Use this repository only for accessing older versions!*
+
 <!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
 <a name="readme-top"></a>
 
