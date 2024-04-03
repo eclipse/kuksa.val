@@ -4,7 +4,7 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
-        "node-red-contrib-web-worldmap": "~2.31.3",
-        "node-red-dashboard": "~3.2.0"
+        "node-red-contrib-web-worldmap": "~4.6.5",
+        "node-red-dashboard": "~3.6.5"
     }
 }
