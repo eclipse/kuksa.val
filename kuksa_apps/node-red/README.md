@@ -1,5 +1,7 @@
 # Flow for node-red dashboard
 
+**NOTE: This example is deprecated and will reach End-of-Life 2024-12-31!**
+
 This example uses [node-red](https://nodered.org/) but an installation is not required at your machine, as we are using Docker. You can import the json file to receive data from kuksa-val-server. Then you can use the node-red dashboard feature to view data.
 
 ## Dependencies
