@@ -263,7 +263,7 @@ impl Viss for Server {
             });
         };
 
-        match broker.subscribe(entries).await {
+        match broker.subscribe(entries, None).await {
             Ok(stream) => {
                 let subscription_id = SubscriptionId::new();
 
