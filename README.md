@@ -1,5 +1,7 @@
 # This repository is deprecated
 
+**NOTE: All content in this repository will reach End-of-Life 2024-12-31!**
+
 Components intended to be maintained has been moved to other repositories:
 
 | Component      | New Repository |
@@ -17,7 +19,6 @@ This is KUKSA.val, the KUKSA **V**ehicle **A**bstraction **L**ayer.
 KUKSA.val provides in-vehicle software components for working with in-vehicle signals modelled using the [COVESA VSS data model](https://github.com/COVESA/vehicle_signal_specification).
 
 If you are new here, try the [Quickstart](doc/quickstart.md), which should not take more than 10 min of your time.
-
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Gitter](https://img.shields.io/gitter/room/kuksa-val/community)](https://gitter.im/kuksa-val/community)

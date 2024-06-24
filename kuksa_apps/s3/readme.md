@@ -1,5 +1,7 @@
 # S3 uploader
 
+**NOTE: This example is deprecated and will reach End-of-Life 2024-12-31!**
+
 This client periodically gets data from either kuksa_val_server or kuksa_databroker, packs it using [parquet format](https://parquet.apache.org/docs/) and upload it to a S3 server.
 
 Check [config.ini](./config.ini) file for the configuration of this client.
