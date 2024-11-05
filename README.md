@@ -1,8 +1,8 @@
-# This repository is deprecated
+# THIS REPOSITORY HAS BEEN ARCHIVED
 
-**NOTE: All content in this repository will reach End-of-Life 2024-12-31!**
+The repository has been archived because the development of Eclipse Kuksa moved to a project-specific organization in [github.com/eclipse-kuksa](https://github.com/eclipse-kuksa).
 
-Components intended to be maintained has been moved to other repositories:
+Components intended to be maintained have been moved to other repositories:
 
 | Component      | New Repository |
 | -------------- | ----------- |
